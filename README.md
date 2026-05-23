@@ -200,6 +200,7 @@ Start here:
 
 Additional docs:
 
+- [docs/ENVIRONMENT_SETUP.md](docs/ENVIRONMENT_SETUP.md)
 - [docs/VERICONOMY_DUAL_EXPLORER_PHASE_1.md](docs/VERICONOMY_DUAL_EXPLORER_PHASE_1.md)
 - [docs/VRM_PROOF_OF_CONCEPT.md](docs/VRM_PROOF_OF_CONCEPT.md)
 - [docs/INDEXER_V2_API.md](docs/INDEXER_V2_API.md)
