@@ -1,0 +1,64 @@
+extends ../layout
+
+block headContent
+	title Verium Address #{addressResult.address}
+
+block content
+	+pageTitle("Verium Address", addressResult.address, true)
+
+	if (!addressResult.found)
+		+warningAlert
+			h6.mb-2 Address Not Found In Trusted Index
+			| This address has no indexed VRM balance or transaction history.
+
+	+contentSection("Balance")
+		+summaryRow(5)
+			+summaryItem("Balance")
+				| #{addressResult.balance.balance.amount} #{addressResult.balance.balance.ticker}
+			+summaryItem("Received")
+				| #{addressResult.balance.totalReceived.amount} #{addressResult.balance.totalReceived.ticker}
+			+summaryItem("Sent")
+				| #{addressResult.balance.totalSent.amount} #{addressResult.balance.totalSent.ticker}
+			+summaryItem("Transactions")
+				| #{addressResult.balance.txCount.toLocaleString()}
+			+summaryItem("Source")
+				span.badge.bg-primary #{addressResult.source.label}
+
+	+contentSection("Transactions")
+		if addressResult.transactions.length == 0
+			p.mb-0.text-muted No indexed transactions found.
+		else
+			.table-responsive
+				table.table.table-sm.align-middle
+					thead
+						tr
+							th Txid
+							th.text-end Block
+							th.text-end Net Change
+							th.text-end Type
+							th.text-end Time
+					tbody
+						each tx in addressResult.transactions
+							tr
+								td.font-monospace
+									a(href=`./vrm/tx/${tx.txid}`) #{utils.ellipsizeMiddle(tx.txid, 36)}
+								td.text-end
+									a(href=`./vrm/block/${tx.blockHeight}`) #{tx.blockHeight.toLocaleString()}
+								td.text-end(class=(tx.netDeltaAtomic.startsWith("-") ? "text-danger" : "text-success")) #{tx.netDelta.amount} #{tx.netDelta.ticker}
+								td.text-end
+									if tx.isCoinbase
+										span.badge.bg-secondary coinbase
+									else if tx.isCoinstake
+										span.badge.bg-secondary coinstake
+									else
+										span transfer
+								td.text-end
+									+timestamp(tx.time, {agoOptions:{oneElement:true}})
+
+			.d-flex.justify-content-between
+				div
+					if addressResult.paging.offset > 0
+						a.btn.btn-outline-primary.btn-sm(href=`./vrm/address/${addressResult.address}?limit=${limit}&offset=${Math.max(0, addressResult.paging.offset - limit)}`) Previous
+				div
+					if addressResult.paging.hasMore
+						a.btn.btn-outline-primary.btn-sm(href=`./vrm/address/${addressResult.address}?limit=${limit}&offset=${addressResult.paging.offset + limit}`) Next

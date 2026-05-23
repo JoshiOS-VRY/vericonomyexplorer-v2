@@ -1,0 +1,11 @@
+extends ../layout
+
+block headContent
+	title #{metaTitle || "Indexer Error"}
+
+block content
+	+pageTitle(metaTitle || "Indexer Error", "The index-backed explorer could not build this page")
+
+	+warningAlert
+		h6.mb-2 Indexer Page Error
+		| #{indexerError}

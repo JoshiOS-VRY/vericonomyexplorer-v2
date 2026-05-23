@@ -1,0 +1,70 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Development files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation
+README.md
+CHANGELOG*.md
+docs/
+*.md
+
+# Temporary files
+temp-newer-version/
+temp-check/
+*.tmp
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Cache directories
+cache/
+.cache/
+database/*.db
+database/*.db-shm
+database/*.db-wal
+database/*.sqlite
+database/*.sqlite-shm
+database/*.sqlite-wal
+configs/chains.json
+
+# Test files
+test/
+tests/
+__tests__/
+
+# Raw assets
+raw/
+*.psd
+
+# Screenshots
+screenshots/
+
+# Build artifacts
+dist/
+build/

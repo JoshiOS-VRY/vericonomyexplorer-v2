@@ -1,0 +1,59 @@
+extends ../layout
+
+block headContent
+	title Verium Richlist
+
+block content
+	+pageTitle("Verium Richlist", "Trusted balances calculated from the VRM genesis index")
+
+	if (!richlist.enabled && richlist.message)
+		+warningAlert
+			h6.mb-2 Richlist Disabled
+			| #{richlist.message}
+	else
+		+contentSection("Source")
+			+summaryRow(4)
+				+summaryItem("Trust")
+					span.badge(class=(richlist.trusted ? "bg-success" : "bg-warning text-dark")) #{richlist.source.healthStatus}
+				+summaryItem("Label")
+					span.badge.bg-primary #{richlist.source.label}
+				+summaryItem("Showing")
+					| #{(richlist.paging.offset + 1).toLocaleString()} - #{Math.min(richlist.paging.offset + richlist.paging.limit, richlist.paging.total).toLocaleString()}
+				+summaryItem("Addresses")
+					| #{richlist.paging.total.toLocaleString()}
+
+		+contentSection("Balances")
+			.table-responsive
+				table.table.table-sm.align-middle
+					thead
+						tr
+							th Rank
+							th Address
+							th.text-end Balance
+							th.text-end Received
+							th.text-end Sent
+							th.text-end Tx
+							th.text-end Last Seen
+					tbody
+						each item in richlist.items
+							tr
+								td ##{item.rank}
+								td.font-monospace
+									a(href=`./vrm/address/${item.address}`) #{item.address}
+								td.text-end #{item.balance.amount} #{item.balance.ticker}
+								td.text-end #{item.totalReceived.amount}
+								td.text-end #{item.totalSent.amount}
+								td.text-end #{item.txCount.toLocaleString()}
+								td.text-end
+									if item.lastSeenHeight != null
+										a(href=`./vrm/block/${item.lastSeenHeight}`) #{item.lastSeenHeight.toLocaleString()}
+									else
+										| N/A
+
+			.d-flex.justify-content-between
+				div
+					if richlist.paging.offset > 0
+						a.btn.btn-outline-primary.btn-sm(href=`./vrm/richlist?limit=${limit}&offset=${Math.max(0, richlist.paging.offset - limit)}`) Previous
+				div
+					if richlist.paging.hasMore
+						a.btn.btn-outline-primary.btn-sm(href=`./vrm/richlist?limit=${limit}&offset=${richlist.paging.offset + limit}`) Next

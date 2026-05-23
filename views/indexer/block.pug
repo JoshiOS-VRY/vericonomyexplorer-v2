@@ -1,0 +1,77 @@
+extends ../layout
+
+block headContent
+	title Verium Block
+
+block content
+	if (!blockResult.found)
+		+pageTitle("Verium Block", blockResult.query, true)
+		+warningAlert
+			h6.mb-2 Block Not Found In Index
+			| No indexed VRM block matched this height or hash.
+	else
+		+pageTitle("Verium Block", blockResult.block.hash, true)
+
+		+contentSection("Summary")
+			+summaryRow(5)
+				+summaryItem("Height")
+					| #{blockResult.block.height.toLocaleString()}
+				+summaryItem("Transactions")
+					| #{blockResult.block.txCount.toLocaleString()}
+				+summaryItem("Size")
+					| #{blockResult.block.size == null ? "N/A" : blockResult.block.size.toLocaleString()}
+				+summaryItem("Difficulty")
+					| #{blockResult.block.difficulty || "N/A"}
+				+summaryItem("Source")
+					span.badge.bg-primary #{blockResult.source.label}
+
+		+contentSection("Chain Links")
+			+summaryRow(3)
+				+summaryItem("Previous")
+					if blockResult.block.previousHash
+						a.font-monospace(href=`./vrm/block/${blockResult.block.previousHash}`) #{utils.ellipsizeMiddle(blockResult.block.previousHash, 18)}
+					else
+						| N/A
+				+summaryItem("Current")
+					a(href=`./vrm/block/${blockResult.block.height}`) #{blockResult.block.height.toLocaleString()}
+				+summaryItem("Next")
+					if blockResult.block.nextHash
+						a.font-monospace(href=`./vrm/block/${blockResult.block.nextHash}`) #{utils.ellipsizeMiddle(blockResult.block.nextHash, 18)}
+					else
+						| N/A
+
+		+contentSection("Transactions")
+			if blockResult.transactions.length == 0
+				p.mb-0.text-muted No indexed transactions found.
+			else
+				.table-responsive
+					table.table.table-sm.align-middle
+						thead
+							tr
+								th #
+								th Txid
+								th.text-end Type
+								th.text-end Time
+						tbody
+							each tx in blockResult.transactions
+								tr
+									td #{tx.txIndex}
+									td.font-monospace
+										a(href=`./vrm/tx/${tx.txid}`) #{utils.ellipsizeMiddle(tx.txid, 42)}
+									td.text-end
+										if tx.isCoinbase
+											span.badge.bg-secondary coinbase
+										else if tx.isCoinstake
+											span.badge.bg-secondary coinstake
+										else
+											span transfer
+									td.text-end
+										+timestamp(tx.time, {agoOptions:{oneElement:true}})
+
+				.d-flex.justify-content-between
+					div
+						if blockResult.paging.offset > 0
+							a.btn.btn-outline-primary.btn-sm(href=`./vrm/block/${blockResult.block.height}?limit=${limit}&offset=${Math.max(0, blockResult.paging.offset - limit)}`) Previous
+					div
+						if blockResult.paging.hasMore
+							a.btn.btn-outline-primary.btn-sm(href=`./vrm/block/${blockResult.block.height}?limit=${limit}&offset=${blockResult.paging.offset + limit}`) Next

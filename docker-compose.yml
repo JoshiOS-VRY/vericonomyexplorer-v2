@@ -1,0 +1,70 @@
+version: '3.8'
+
+networks:
+  verium-network:
+    driver: bridge
+
+services:
+  verium-explorer:
+    container_name: verium-rpc-explorer
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: verium-rpc-explorer:latest
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    environment:
+      # Core Verium Configuration
+      BTCEXP_COIN: VRM
+      BTCEXP_HOST: 0.0.0.0
+      BTCEXP_PORT: 3003
+      BTCEXP_DISPLAY_CURRENCY: vrm
+      BTCEXP_UI_THEME: dark
+      
+      # Verium Node Connection
+      BTCEXP_BITCOIND_URI: ${BTCEXP_BITCOIND_URI:-bitcoin://rpcuser:rpcpassword@127.0.0.1:36988/}
+      
+      # Address API Configuration
+      BTCEXP_ADDRESS_API: ${BTCEXP_ADDRESS_API:-electrum}
+      BTCEXP_ELECTRUM_SERVERS: ${BTCEXP_ELECTRUM_SERVERS:-tcp://127.0.0.1:50001}
+      
+      # Performance Settings
+      BTCEXP_SLOW_DEVICE_MODE: ${BTCEXP_SLOW_DEVICE_MODE:-false}
+      BTCEXP_RPC_CONCURRENCY: ${BTCEXP_RPC_CONCURRENCY:-10}
+      
+      # Privacy and External Data (uncomment to enable)
+      # BTCEXP_PRIVACY_MODE: true
+      # BTCEXP_NO_RATES: true
+      
+      # Security (uncomment to enable)
+      # BTCEXP_BASIC_AUTH_PASSWORD: ${BTCEXP_BASIC_AUTH_PASSWORD}
+      
+      # Cache Configuration
+      BTCEXP_FILESYSTEM_CACHE_DIR: /app/cache
+      BTCEXP_USE_SQLITE: ${BTCEXP_USE_SQLITE:-true}
+      BTCEXP_SQLITE_PATH: /app/database/explorer.db
+      
+      # Logging
+      DEBUG: btcexp:app,btcexp:error
+      
+    volumes:
+      - verium-cache:/app/cache
+      - verium-database:/app/database
+      - /etc/localtime:/etc/localtime:ro
+      
+    networks:
+      - verium-network
+      
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  verium-cache:
+    driver: local
+  verium-database:
+    driver: local

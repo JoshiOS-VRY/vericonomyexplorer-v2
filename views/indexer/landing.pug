@@ -1,0 +1,165 @@
+extends ../layout
+
+block headContent
+	title VeriConomy Explorer
+
+block content
+	- const vrmHealth = landing.vrmSummary.health;
+	- const vrcHealth = landing.vrcSummary.health;
+
+	.vce-shell
+		section.vce-hero
+			.vce-hero-copy
+				h1 VeriConomy Explorer
+				p.vce-hero-subtitle Dual-chain explorer surface for VeriCoin and Verium, built around source-labeled data and a trusted genesis index.
+				form.vce-search(method="post", action="./vrm/search")
+					input(type="hidden", name="_csrf", value=csrfToken)
+					input(type="text", name="query", placeholder="Search VRM block, txid, or address", autocomplete="off", spellcheck="false")
+					button(type="submit")
+						i.bi-search
+						span Search
+				.vce-hero-actions
+					a.vce-button.vce-button-primary(href="./vrm") Launch Verium Explorer
+					a.vce-button.vce-button-secondary(href="./vrm/richlist") View VRM Richlist
+			.vce-hero-visual
+				img(src=assetUrl("./img/vericonomy/binary-chain-pairing.png"), alt="Binary-chain pairing visual")
+				.vce-live-stack
+					article.vce-live-card
+						.vce-live-head
+							img(src=assetUrl("./img/vericonomy/verium-logo.svg"), alt="")
+							div
+								strong Verium
+								span VRM · PoWT
+							em(class=(vrmHealth.trusted ? "is-live" : "")) #{vrmHealth.status}
+						dl
+							div
+								dt Height
+								dd #{vrmHealth.heights.maxIndexedHeight == null ? "N/A" : vrmHealth.heights.maxIndexedHeight.toLocaleString()}
+							div
+								dt Indexed Addresses
+								dd #{vrmHealth.counts.addressCount.toLocaleString()}
+							div
+								dt Blocks Behind
+								dd #{vrmHealth.heights.blocksBehind == null ? "N/A" : vrmHealth.heights.blocksBehind.toLocaleString()}
+							div
+								dt Tx Lookup
+								dd Index-required
+						a(href="./vrm") Open VRM
+					article.vce-live-card.is-muted(id="vrc-later")
+						.vce-live-head
+							img(src=assetUrl("./img/vericonomy/vericoin-logo.svg"), alt="")
+							div
+								strong VeriCoin
+								span VRC · PoST
+							em Coming later
+						dl
+							div
+								dt Index Status
+								dd #{vrcHealth.status}
+							div
+								dt Public Richlist
+								dd Deferred
+							div
+								dt Address History
+								dd Same API path
+							div
+								dt Launch Plan
+								dd VRC update
+						span.vce-disabled-link Plug-in ready
+
+		section.vce-section
+			.vce-section-head
+				div
+					span.vce-label Trusted VRM Surface
+					h2 Verium is the proof-of-concept chain.
+				p VRM is indexed from genesis and can support honest address balances, transaction lookup, richlist, and transfer-activity leaderboards now. VRC stays wired into the same system and ships after its compact index is trusted.
+			.vce-card-grid.vce-card-grid-3
+				article.vce-feature-card
+					i.bi-shield-check
+					h3 Trusted index
+					p #{vrmHealth.message}
+					strong #{vrmHealth.sourceLabels.addressBalances}
+				article.vce-feature-card
+					i.bi-list-ol
+					h3 Richlist
+					p Positive-balance VRM addresses ordered from the trusted balance table.
+					a(href="./vrm/richlist") Open richlist
+				article.vce-feature-card
+					i.bi-graph-up-arrow
+					h3 Leaderboard
+					p Weekly and monthly transfer activity derived from address deltas, not guessed ownership.
+					a(href="./vrm/leaderboard") Open leaderboard
+
+		section.vce-section.vce-split
+			.vce-panel
+				.vce-panel-head
+					h2 Latest VRM Blocks
+					a(href="./vrm") View explorer
+				.vce-table-wrap
+					table.vce-table
+						thead
+							tr
+								th Height
+								th Hash
+								th Tx
+								th Time
+						tbody
+							each block in landing.vrmSummary.latestBlocks.slice(0, 8)
+								tr
+									td
+										a(href=`./vrm/block/${block.height}`) #{block.height.toLocaleString()}
+									td.vce-mono
+										a(href=`./vrm/block/${block.hash}`) #{utils.ellipsizeMiddle(block.hash, 24)}
+									td #{block.txCount.toLocaleString()}
+									td
+										+timestamp(block.time, {agoOptions:{oneElement:true}})
+			.vce-panel
+				.vce-panel-head
+					h2 Top VRM Balances
+					a(href="./vrm/richlist") Full list
+				.vce-rank-list
+					each item in landing.vrmRichlist.items
+						a.vce-rank-row(href=`./vrm/address/${item.address}`)
+							span ##{item.rank}
+							strong.vce-mono #{utils.ellipsizeMiddle(item.address, 18)}
+							em #{item.balance.amount} #{item.balance.ticker}
+
+		section.vce-section
+			.vce-section-head
+				div
+					span.vce-label Dual-chain landing
+					h2 One front door, staged chain readiness.
+				p The landing page can show both chains without blurring trust. VRM is live from the trusted index; VRC is present as a planned update until its own index passes the same checks.
+			.vce-chain-grid
+				article.vce-chain-card
+					img(src=assetUrl("./img/vericonomy/verium-logo.svg"), alt="")
+					div
+						h3 Verium
+						p Digital commodity secured by Proof-of-Work-Time.
+					ul
+						li
+							span Status
+							strong #{vrmHealth.status}
+						li
+							span Richlist
+							strong Enabled
+						li
+							span Tx Query
+							strong Index-first
+					a.vce-button.vce-button-primary(href="./vrm") Explore VRM
+				article.vce-chain-card.is-muted
+					img(src=assetUrl("./img/vericonomy/vericoin-logo.svg"), alt="")
+					div
+						h3 VeriCoin
+						p Digital currency secured by Proof-of-Stake-Time.
+					ul
+						li
+							span Status
+							strong #{vrcHealth.status}
+						li
+							span Richlist
+							strong Deferred
+						li
+							span Tx Query
+							strong Plug-in path ready
+					span.vce-button.vce-button-disabled VRC update later

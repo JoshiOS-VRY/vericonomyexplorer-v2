@@ -1,0 +1,106 @@
+extends ../layout
+
+block headContent
+	title Verium Transaction #{txResult.txid || (txResult.transaction && txResult.transaction.txid)}
+
+block content
+	if (!txResult.found)
+		+pageTitle("Verium Transaction", txResult.txid, true)
+		+warningAlert
+			h6.mb-2 Transaction Not Found In Index
+			| Verium transaction lookup uses the local trusted index because arbitrary RPC tx queries are not reliable in the current Verium codebase.
+	else
+		+pageTitle("Verium Transaction", txResult.transaction.txid, true)
+
+		+contentSection("Summary")
+			+summaryRow(5)
+				+summaryItem("Block")
+					a(href=`./vrm/block/${txResult.transaction.blockHeight}`) #{txResult.transaction.blockHeight.toLocaleString()}
+				+summaryItem("Index")
+					| #{txResult.transaction.txIndex.toLocaleString()}
+				+summaryItem("Type")
+					if txResult.transaction.isCoinbase
+						span.badge.bg-secondary coinbase
+					else if txResult.transaction.isCoinstake
+						span.badge.bg-secondary coinstake
+					else
+						span transfer
+				+summaryItem("Source")
+					span.badge.bg-primary #{txResult.source.label}
+				+summaryItem("Time")
+					+timestamp(txResult.transaction.time, {agoOptions:{oneElement:true}})
+
+		.row
+			.col-lg-6
+				+contentSection("Inputs")
+					if txResult.inputs.length == 0
+						p.mb-0.text-muted No indexed inputs.
+					else
+						.table-responsive
+							table.table.table-sm.align-middle.mb-0
+								thead
+									tr
+										th #
+										th Address
+										th.text-end Value
+								tbody
+									each input in txResult.inputs
+										tr
+											td #{input.n}
+											td.font-monospace
+												if input.address
+													a(href=`./vrm/address/${input.address}`) #{utils.ellipsizeMiddle(input.address, 20)}
+												else
+													span.text-muted coinbase
+											td.text-end
+												if input.value
+													| #{input.value.amount} #{input.value.ticker}
+												else
+													| N/A
+			.col-lg-6
+				+contentSection("Outputs")
+					if txResult.outputs.length == 0
+						p.mb-0.text-muted No indexed outputs.
+					else
+						.table-responsive
+							table.table.table-sm.align-middle.mb-0
+								thead
+									tr
+										th #
+										th Address
+										th.text-end Value
+										th.text-end Spent
+								tbody
+									each output in txResult.outputs
+										tr
+											td #{output.n}
+											td.font-monospace
+												if output.address
+													a(href=`./vrm/address/${output.address}`) #{utils.ellipsizeMiddle(output.address, 20)}
+												else
+													span.text-muted #{output.scriptType || "unknown"}
+											td.text-end #{output.value.amount} #{output.value.ticker}
+											td.text-end
+												if output.isSpent
+													a(href=`./vrm/tx/${output.spentByTxid}`) yes
+												else
+													span.text-success no
+
+		+contentSection("Address Deltas")
+			if txResult.addressEvents.length == 0
+				p.mb-0.text-muted No address deltas recorded.
+			else
+				.table-responsive
+					table.table.table-sm.align-middle.mb-0
+						thead
+							tr
+								th Address
+								th Event
+								th.text-end Delta
+						tbody
+							each event in txResult.addressEvents
+								tr
+									td.font-monospace
+										a(href=`./vrm/address/${event.address}`) #{event.address}
+									td #{event.eventType}
+									td.text-end(class=(event.deltaAtomic.startsWith("-") ? "text-danger" : "text-success")) #{event.delta.amount} #{event.delta.ticker}

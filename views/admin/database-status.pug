@@ -1,0 +1,130 @@
+extends ../layout
+
+include ./admin-mixins.pug
+
+block headContent
+	title Database Status
+
+block content
+	+adminNav("Database Status")
+
+	+pageTitle("Database Status")
+
+	if (!databaseStatus.enabled)
+		.alert.alert-warning
+			h5 SQLite Not Enabled
+			p #{databaseStatus.message}
+
+	else if (!databaseStatus.available)
+		.alert.alert-danger
+			h5 Database Not Available
+			p #{databaseStatus.message}
+
+	else if (databaseStatus.error)
+		.alert.alert-danger
+			h5 Error
+			p #{databaseStatus.error}
+
+	else
+		+contentSection("Database File")
+			+summaryRow(3)
+				+summaryItem("Path")
+					code #{databaseStatus.dbFileInfo.path}
+
+				+summaryItem("Size")
+					| #{databaseStatus.dbFileInfo.sizeMB} MB
+					br
+					small.text-muted (#{databaseStatus.dbFileInfo.size.toLocaleString()} bytes)
+
+				+summaryItem("Last Modified")
+					| #{moment(databaseStatus.dbFileInfo.lastModified).format('YYYY-MM-DD HH:mm:ss')}
+					br
+					small.text-muted
+						- var age = databaseStatus.dbFileInfo.lastModifiedAgo;
+						if (age < 60)
+							| #{age} seconds ago
+						else if (age < 3600)
+							| #{Math.floor(age / 60)} minutes ago
+						else
+							| #{Math.floor(age / 3600)} hours ago
+
+		+contentSection("Sync Status")
+			+summaryRow(4)
+				+summaryItem("Current Blockchain Height")
+					if (databaseStatus.currentHeight !== null)
+						| #{databaseStatus.currentHeight.toLocaleString()}
+					else
+						span.text-muted N/A
+
+				+summaryItem("Last Synced Height")
+					if (databaseStatus.lastSyncedHeight !== null)
+						| #{databaseStatus.lastSyncedHeight.toLocaleString()}
+					else
+						span.text-muted None
+
+				+summaryItem("Backfill Status")
+					if (databaseStatus.backfillActive)
+						span.badge.bg-warning Active
+						br
+						small.text-muted Starting from height #{databaseStatus.backfillStartHeight || 0}
+					else
+						span.badge.bg-success Inactive
+
+				+summaryItem("Sync Activity")
+					if (databaseStatus.lastSyncActivity)
+						if (databaseStatus.lastSyncActivity.isActive)
+							span.badge.bg-success Active
+						else
+							span.badge.bg-warning Idle
+						br
+						small.text-muted
+							| Last sync: #{databaseStatus.lastSyncActivity.ageMinutes} minutes ago
+							br
+							| (Height: #{databaseStatus.lastSyncActivity.height.toLocaleString()})
+					else
+						span.text-muted No sync activity recorded
+
+		if (databaseStatus.syncProgress)
+			+contentSection("Sync Progress")
+				+summaryRow(4)
+					+summaryItem("Blocks Synced")
+						| #{databaseStatus.syncProgress.blocksSynced.toLocaleString()}
+
+					+summaryItem("Total Blocks")
+						| #{databaseStatus.syncProgress.totalBlocks.toLocaleString()}
+
+					+summaryItem("Blocks Behind")
+						if (databaseStatus.syncProgress.blocksBehind <= 10)
+							span.text-success #{databaseStatus.syncProgress.blocksBehind.toLocaleString()}
+						else
+							span.text-warning #{databaseStatus.syncProgress.blocksBehind.toLocaleString()}
+
+					+summaryItem("Progress")
+						| #{databaseStatus.syncProgress.percentComplete}%
+						br
+						.progress.mt-2(style="height: 20px;")
+							.progress-bar(role="progressbar" style=`width: ${databaseStatus.syncProgress.percentComplete}%` aria-valuenow=databaseStatus.syncProgress.percentComplete aria-valuemin="0" aria-valuemax="100")
+								| #{databaseStatus.syncProgress.percentComplete}%
+
+		+contentSection("Database Contents")
+			+summaryRow(4)
+				+summaryItem("Blocks")
+					| #{databaseStatus.blockCount.toLocaleString()}
+					if (databaseStatus.heightRange && databaseStatus.heightRange.min_height !== null)
+						br
+						small.text-muted
+							| Height range: #{databaseStatus.heightRange.min_height.toLocaleString()} - #{databaseStatus.heightRange.max_height.toLocaleString()}
+
+				+summaryItem("Transactions")
+					| #{databaseStatus.txCount.toLocaleString()}
+
+				+summaryItem("Address Transactions")
+					| #{databaseStatus.addrTxCount.toLocaleString()}
+
+				+summaryItem("Addresses with Balances")
+					| #{databaseStatus.addrBalCount.toLocaleString()}
+
+		+contentSection("Raw Data (JSON)")
+			pre
+				code.json #{JSON.stringify(databaseStatus, null, 4)}
+

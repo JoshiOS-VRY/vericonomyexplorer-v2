@@ -1,0 +1,29 @@
+include ../includes/shared-mixins.pug
+
+
++summaryRow(1)
+	
+	+summaryItem
+
+		if (currentHashrate && currentHashrate > 0)
+			div
+				// Display in KH/m format (already converted in route)
+				- var hashrateValue = new Decimal(currentHashrate).toDP(2);
+				span.me-1 #{hashrateValue}
+				span.small.text-muted.border-dotted(title="Kilo-hashes per minute (KH/m). This represents the network's total mining hashrate." data-bs-toggle='tooltip') KH/m
+
+				if (hashrate7d && hashrate7d > 0)
+					- var ratio = currentHashrate / hashrate7d;
+					span.text-tiny.text-muted.ms-2
+						| (
+						span.border-dotted(title='Current hashrate vs 7-day average.' data-bs-toggle='tooltip')
+							if (ratio > 1)
+								span.text-success
+									| +#{new Decimal(ratio - 1).times(100).toDP(1)}%
+							else
+								span.text-danger
+									| #{new Decimal(ratio - 1).times(100).toDP(1)}%
+						| )
+		else
+			span.text-muted(title="Hashrate data unavailable. This may be due to insufficient block data or RPC limitations.", data-bs-toggle="tooltip") -
+

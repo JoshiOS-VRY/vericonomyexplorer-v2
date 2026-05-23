@@ -1,0 +1,24 @@
+extends layout
+
+block headContent
+	title Verium Whitepaper
+
+block content
+	+pageTitle("Verium Whitepaper", "(Extracted from the blockchain!)")
+
+	+dismissableInfoAlert("whitepaperPageNoteDismissed", "About the Verium Whitepaper Tool...")
+		p Below is the Verium whitepaper, extracted from data in the Verium blockchain (transaction 
+			a(href="./tx/0000000000000000000000000000000000000000000000000000000000000000") 0000000000…
+			span.ms-2 to be precise), served by your <b>Verium Core</b> node.
+
+		div The data has been decoded by this tool and is displayed in an iframe below. You can view it directly and/or download it at 
+			a(href="./verium.pdf") /verium.pdf
+			|.
+
+	if (global.activeBlockchain == "main")
+		iframe(src="./verium.pdf", title="The Verium Whitepaper", style="width: 100%;", height="800")
+
+	else
+		+warningAlert
+			.mb-2 Whoops! The Verium Whitepaper is embedded in a particular transaction in the mainnet blockchain. It looks like this node is configured for a different network, so the data is not available to be extracted.
+			| Try running a mainnet node to use this tool.
