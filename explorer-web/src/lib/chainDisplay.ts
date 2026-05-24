@@ -37,7 +37,7 @@ export type ChainExplorerConfig = {
   exploreHref: string | null;
   richlistHref: string | null;
   leaderboardHref: string | null;
-  blockHref: (height: number) => string | null;
+  blockHref: ((height: number) => string) | null;
 };
 
 export const CHAIN_EXPLORERS: Record<"vrm" | "vrc", ChainExplorerConfig> = {

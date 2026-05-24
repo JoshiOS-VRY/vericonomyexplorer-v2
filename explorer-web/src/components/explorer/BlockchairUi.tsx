@@ -89,14 +89,17 @@ export function BcTableLink({
   href,
   children,
   className,
+  title,
 }: {
   href: string;
   children: React.ReactNode;
   className?: string;
+  title?: string;
 }) {
   return (
     <Link
       href={href}
+      title={title}
       className={cn("font-medium text-accent hover:underline", className)}
     >
       {children}

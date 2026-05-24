@@ -242,11 +242,13 @@ function ChainBlocksPanel({ summary }: { summary: ChainSummary }) {
               </tr>
             </thead>
             <tbody>
-              {blocks.map((block) => (
+              {blocks.map((block) => {
+                const blockHref = config.blockHref?.(block.height);
+                return (
                 <tr key={block.hash}>
                   <td>
-                    {config.blockHref ? (
-                      <BcTableLink href={config.blockHref(block.height)} className="tabular-nums">
+                    {blockHref ? (
+                      <BcTableLink href={blockHref} className="tabular-nums">
                         {formatHeight(block.height)}
                       </BcTableLink>
                     ) : (
@@ -258,7 +260,8 @@ function ChainBlocksPanel({ summary }: { summary: ChainSummary }) {
                   </td>
                   <td className="text-right tabular-nums text-fg-muted">{formatHeight(block.txCount)}</td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
