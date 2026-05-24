@@ -8,7 +8,7 @@
 			"consensus": "PoST",
 			"rpc": {
 				"host": "127.0.0.1",
-				"port": 8502,
+				"port": 58683,
 				"usernameEnv": "VCEXP_VRC_RPC_USER",
 				"passwordEnv": "VCEXP_VRC_RPC_PASS",
 				"cookiePathEnv": "VCEXP_VRC_RPC_COOKIE"
@@ -33,7 +33,7 @@
 			"consensus": "PoWT",
 			"rpc": {
 				"host": "127.0.0.1",
-				"port": 36987,
+				"port": 33987,
 				"usernameEnv": "VCEXP_VRM_RPC_USER",
 				"passwordEnv": "VCEXP_VRM_RPC_PASS",
 				"cookiePathEnv": "VCEXP_VRM_RPC_COOKIE"

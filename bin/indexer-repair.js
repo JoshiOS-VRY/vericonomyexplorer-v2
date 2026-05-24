@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 "use strict";
 
+require("../app/indexerV2/loadEnv.js");
+
 const { repairUnresolvedInputs } = require("../app/indexerV2/repair.js");
 const dbModule = require("../app/indexerV2/db.js");
 

@@ -256,7 +256,7 @@ function shouldCacheTransaction(tx) {
 
 
 function getBlockchainInfo() {
-	return tryCacheThenRpcApi(miscCache, "getBlockchainInfo", 10 * ONE_SEC, rpcApi.getBlockchainInfo);
+	return tryCacheThenRpcApi(miscCache, "getBlockchainInfo", 30 * ONE_SEC, rpcApi.getBlockchainInfo);
 }
 
 function getDeploymentInfo() {

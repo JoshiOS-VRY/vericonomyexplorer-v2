@@ -2,6 +2,7 @@
 
 const dbModule = require("./db.js");
 const health = require("./health.js");
+const utils = require("../utils.js");
 const { atomicUnitsToDecimal } = require("./valueUtils.js");
 
 const defaultLimit = 25;
@@ -29,6 +30,7 @@ function getChainSummary(chainId, options = {}) {
 		ORDER BY height DESC
 		LIMIT 10
 	`).all(chain).map(block => mapBlock(block));
+	const enrichedLatestBlocks = enrichLatestBlocks(db, chain, latestBlocks);
 	const recentTransactions = db.prepare(`
 		SELECT txid, block_height, block_hash, tx_index, time, is_coinbase, is_coinstake
 		FROM transactions
@@ -40,7 +42,7 @@ function getChainSummary(chainId, options = {}) {
 	return {
 		chainId: chain,
 		health: chainHealth,
-		latestBlocks,
+		latestBlocks: enrichedLatestBlocks,
 		recentTransactions,
 		source: getSource(chainHealth, "summary")
 	};
@@ -53,7 +55,7 @@ function getRichlist(chainId, options = {}) {
 	const offset = normalizeOffset(options.offset);
 	const chainHealth = health.getChainHealth(chain, { db });
 
-	if (!chainHealth.trusted && options.allowUntrusted !== true) {
+	if (!chainHealth.checks.hasBlocks) {
 		return disabledResponse(chain, chainHealth, "richlist");
 	}
 
@@ -90,7 +92,7 @@ function getLeaderboard(chainId, options = {}) {
 	const sort = normalizeLeaderboardSort(options.sort);
 	const chainHealth = health.getChainHealth(chain, { db });
 
-	if (!chainHealth.trusted && options.allowUntrusted !== true) {
+	if (!chainHealth.checks.hasBlocks) {
 		return disabledResponse(chain, chainHealth, "leaderboards");
 	}
 
@@ -322,7 +324,7 @@ function disabledResponse(chainId, chainHealth, feature) {
 		enabled: false,
 		trusted: false,
 		source: getSource(chainHealth, feature),
-		message: `${feature} is disabled until this chain is indexed from genesis, internally consistent, and near tip.`,
+		message: `${feature} is unavailable until blocks have been indexed.`,
 		health: chainHealth
 	};
 }
@@ -336,8 +338,79 @@ function mapBlock(block) {
 		time: toNumber(block.time),
 		txCount: toNumber(block.tx_count),
 		size: toNullableNumber(block.size),
-		difficulty: block.difficulty === null || block.difficulty === undefined ? null : String(block.difficulty)
+		difficulty: block.difficulty === null || block.difficulty === undefined ? null : String(block.difficulty),
+		outputCount: block.outputCount == null ? null : toNumber(block.outputCount),
+		extractedBy: block.extractedBy || null,
+		extractedByAddress: block.extractedByAddress || null
 	};
+}
+
+function enrichLatestBlocks(db, chain, blocks) {
+	if (!blocks.length) {
+		return blocks;
+	}
+
+	if (blocks.every(block => block.outputCount != null)) {
+		return blocks;
+	}
+
+	const heights = blocks.map(block => block.height);
+	const placeholders = heights.map(() => "?").join(",");
+	const outputCounts = db.prepare(`
+		SELECT t.block_height AS height, COUNT(*) AS count
+		FROM vouts v
+		INNER JOIN transactions t ON t.chain_id = v.chain_id AND t.txid = v.txid
+		WHERE v.chain_id = ? AND t.block_height IN (${placeholders})
+		GROUP BY t.block_height
+	`).all(chain, ...heights);
+	const outputCountByHeight = Object.fromEntries(
+		outputCounts.map(row => [row.height, toNumber(row.count)])
+	);
+
+	const coinbaseVouts = db.prepare(`
+		SELECT t.block_height AS height, v.n, v.address, v.value_sats
+		FROM vouts v
+		INNER JOIN transactions t ON t.chain_id = v.chain_id AND t.txid = v.txid
+		WHERE v.chain_id = ? AND t.block_height IN (${placeholders}) AND t.is_coinbase = 1
+		ORDER BY t.block_height DESC, v.n ASC
+	`).all(chain, ...heights);
+	const coinbaseVoutsByHeight = {};
+
+	for (const row of coinbaseVouts) {
+		if (!coinbaseVoutsByHeight[row.height]) {
+			coinbaseVoutsByHeight[row.height] = [];
+		}
+		coinbaseVoutsByHeight[row.height].push(row);
+	}
+
+	return blocks.map(block => {
+		if (block.outputCount != null) {
+			return block;
+		}
+
+		const coinbaseRows = coinbaseVoutsByHeight[block.height] || [];
+		const miner = coinbaseRows.length > 0 ? identifyMinerFromVouts(coinbaseRows, block) : null;
+
+		return Object.assign({}, block, {
+			outputCount: outputCountByHeight[block.height] ?? null,
+			extractedBy: miner ? miner.name : null,
+			extractedByAddress: miner && miner.type === "address-only" ? miner.name : null
+		});
+	});
+}
+
+function identifyMinerFromVouts(vouts, block) {
+	const coinbaseTx = {
+		blockhash: block.hash,
+		vin: [{ coinbase: "00" }],
+		vout: vouts.map(row => ({
+			n: row.n,
+			value: Number(row.value_sats) / 100000000,
+			scriptPubKey: row.address ? { address: row.address } : {}
+		}))
+	};
+
+	return utils.identifyMiner(coinbaseTx, block.height);
 }
 
 function mapTransaction(tx) {

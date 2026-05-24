@@ -117,9 +117,9 @@ function getChainHealth(chainId, options = {}) {
 		sourceLabels: {
 			blocks: "rpc+index",
 			transactions: chainId === "vrm" ? "index-required" : "rpc-or-index",
-			addressBalances: classification.status === "trusted" ? "trusted-index" : "partial-index",
-			richlist: classification.status === "trusted" ? "trusted-index" : "disabled-until-trusted",
-			leaderboards: classification.status === "trusted" ? "trusted-index" : "disabled-until-trusted"
+			addressBalances: "index",
+			richlist: "index",
+			leaderboards: "index"
 		}
 	};
 }
@@ -252,7 +252,73 @@ function toNumber(value) {
 	return Number(value);
 }
 
+function enrichWithLiveRpc(chainHealth, liveRpcHeight, options = {}) {
+	if (liveRpcHeight === null || liveRpcHeight === undefined) {
+		return chainHealth;
+	}
+
+	const tipThreshold = getTipThreshold(options);
+	const lastIndexedHeight = chainHealth.heights.lastIndexedHeight;
+	const blocksBehind = lastIndexedHeight === null
+		? null
+		: Math.max(0, liveRpcHeight - lastIndexedHeight);
+	const nearTip = blocksBehind !== null && blocksBehind <= tipThreshold;
+	const checks = Object.assign({}, chainHealth.checks, {
+		hasRpcTip: true,
+		nearTip
+	});
+	const classification = classify(checks, {
+		indexedBlockCount: chainHealth.counts.indexedBlockCount,
+		bestRpcHeight: liveRpcHeight,
+		blocksBehind
+	});
+	const explorerStatus = getExplorerStatus(blocksBehind);
+
+	return Object.assign({}, chainHealth, {
+		status: classification.status,
+		trusted: classification.status === "trusted",
+		trustLevel: classification.trustLevel,
+		message: classification.message,
+		reasons: classification.reasons,
+		checks,
+		heights: Object.assign({}, chainHealth.heights, {
+			bestRpcHeight: liveRpcHeight,
+			blocksBehind,
+			tipThreshold
+		}),
+		explorerStatus
+	});
+}
+
+function getExplorerStatus(blocksBehind) {
+	if (blocksBehind === null) {
+		return {
+			label: "Unknown",
+			message: "Chain tip unavailable.",
+			syncing: false
+		};
+	}
+
+	if (blocksBehind > 0) {
+		return {
+			label: "Syncing",
+			message: `${blocksBehind.toLocaleString()} block${blocksBehind === 1 ? "" : "s"} behind chain tip.`,
+			syncing: true,
+			blocksBehind
+		};
+	}
+
+	return {
+		label: "Live",
+		message: "Up to date with the chain tip.",
+		syncing: false,
+		blocksBehind: 0
+	};
+}
+
 module.exports = {
 	getIndexerHealth,
-	getChainHealth
+	getChainHealth,
+	enrichWithLiveRpc,
+	getExplorerStatus
 };

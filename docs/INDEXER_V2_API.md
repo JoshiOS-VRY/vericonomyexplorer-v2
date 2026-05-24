@@ -1,10 +1,33 @@
 # Indexer V2 API
 
-The Indexer V2 API exposes SQLite-backed chain data separately from the legacy RPC-first explorer routes. The first proof-of-concept launch should use these endpoints for Verium only. VeriCoin can use the same API after it has a trusted compact index.
+The Indexer V2 API exposes SQLite-backed chain data separately from the legacy RPC-first explorer routes.
 
-Set `VCEXP_INDEXER_SQLITE_PATH` to the index database path before starting the explorer.
+**Preferred:** use the lean **explorer-api** service on port **3003** (`/v1/*`). Legacy Express routes on port **3002** remain for unmigrated Pug pages only — see [LEGACY_API.md](./LEGACY_API.md).
 
-## Status
+Set `VCEXP_INDEXER_SQLITE_PATH` to the index database path before starting the indexer workers and explorer-api.
+
+## Fast API (explorer-api :3003)
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /v1/health` | Service health |
+| `GET /v1/indexer/status` | Indexer health for all chains |
+| `GET /v1/landing` | Home dashboard bundle (both chains) |
+| `GET /v1/vrm/dashboard` | Verium explorer dashboard bundle |
+| `GET /v1/:chain/tip` | Live tip `{ height, hash, time }` (in-memory) |
+| `GET /v1/:chain/tip/height` | Plain-text tip height (sub-ms) |
+| `GET /v1/:chain/tip/stream` | SSE stream of tip updates |
+| `GET /v1/:chain/summary` | Chain summary |
+| `GET /v1/:chain/richlist` | Rich list |
+| `GET /v1/:chain/leaderboard` | Leaderboard |
+| `GET /v1/:chain/address/:address` | Address detail |
+| `GET /v1/:chain/tx/:txid` | Transaction detail |
+| `GET /v1/:chain/block/:hashOrHeight` | Block detail |
+| `GET /v1/:chain/search?q=` | Search disambiguation |
+
+Next.js rewrites `/v1/*` to explorer-api. Client live data uses SSE (`/v1/:chain/tip/stream`) instead of polling legacy `/api/blocks/tip/height`.
+
+## Legacy Status (Express :3002)
 
 `GET /api/indexer/status`
 

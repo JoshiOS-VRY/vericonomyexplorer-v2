@@ -1,0 +1,371 @@
+@import "tailwindcss";
+
+/* Explicit scan paths for Tailwind v4 (Next.js app router + src/) */
+@source "../**/*.{js,ts,jsx,tsx,mdx}";
+
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+
+/*
+ * Verium desktop theme tokens — aligned with verium/desktop/verium-app/src/index.css
+ * Dark = default (:root). Light = `.light` on <html>.
+ */
+:root {
+  --bg: rgb(7 10 15);
+  --bg-subtle: rgb(11 16 24);
+  --bg-panel: rgb(26 34 48);
+  --fg: rgb(226 232 240);
+  --fg-muted: rgb(148 163 184);
+  --fg-subtle: rgb(100 116 139);
+  --border: rgb(30 41 59);
+  --border-strong: rgb(51 65 85);
+  --accent: rgb(65 139 202);
+  --accent-fg: rgb(240 249 255);
+  --success: rgb(53 155 55);
+  --warning: rgb(245 158 11);
+  --danger: rgb(233 58 93);
+}
+
+.light {
+  --bg: rgb(236 239 245);
+  --bg-subtle: rgb(248 249 252);
+  --bg-panel: rgb(255 255 255);
+  --fg: rgb(28 32 38);
+  --fg-muted: rgb(92 100 112);
+  --fg-subtle: rgb(130 138 152);
+  --border: rgb(220 225 234);
+  --border-strong: rgb(198 205 218);
+  --accent: rgb(0 102 204);
+  --accent-fg: rgb(255 255 255);
+  --success: rgb(22 132 41);
+  --warning: rgb(217 119 6);
+  --danger: rgb(220 38 76);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-bg-panel: var(--bg-panel);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@layer base {
+  html,
+  body {
+    @apply h-full bg-bg text-fg antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+.wallet-panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg-panel) 40%, transparent) 0%,
+    color-mix(in srgb, var(--bg-subtle) 80%, transparent) 100%
+  );
+}
+
+.explorer-link {
+  color: var(--accent);
+  transition: color 0.15s ease;
+}
+
+.explorer-link:hover {
+  color: var(--accent);
+  filter: brightness(1.12);
+}
+
+.nav-link-active {
+  background: var(--bg-panel);
+  color: var(--fg);
+}
+
+.theme-toggle-active {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+
+.theme-toggle-btn:not(.theme-toggle-active):hover {
+  background: var(--bg-panel);
+  color: var(--fg);
+}
+
+.hash-mono {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  word-break: break-all;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.data-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-panel);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+
+.data-table th {
+  padding: 0.5rem 1rem;
+  text-align: left;
+  font-weight: 500;
+}
+
+.data-table tbody tr {
+  border-top: 1px solid var(--border);
+  transition: background-color 0.15s ease;
+}
+
+.data-table tbody tr:nth-child(odd) {
+  background: color-mix(in srgb, var(--bg-subtle) 30%, transparent);
+}
+
+.data-table tbody tr:hover {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.data-table td {
+  padding: 0.5rem 1rem;
+  vertical-align: middle;
+}
+
+.copy-btn[data-copy-state="copied"] {
+  border-color: color-mix(in srgb, var(--success) 45%, transparent);
+  color: var(--success);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong);
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateX(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.toast-enter {
+  animation: toast-enter 0.25s ease-out;
+}
+
+@keyframes live-block-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes live-block-flash {
+  0% {
+    background-color: color-mix(in srgb, var(--accent) 22%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 1px transparent;
+  }
+}
+
+@keyframes live-height-pulse {
+  0% {
+    transform: scale(1);
+    color: var(--fg);
+  }
+  35% {
+    transform: scale(1.025);
+    color: var(--accent);
+  }
+  100% {
+    transform: scale(1);
+    color: var(--fg);
+  }
+}
+
+@keyframes live-toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes live-dot-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.35);
+  }
+}
+
+.live-block-new {
+  animation:
+    live-block-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    live-block-flash 2s ease-out;
+}
+
+.live-height-pulse {
+  animation: live-height-pulse 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.live-toast {
+  animation: live-toast-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.live-dot-breathe {
+  animation: live-dot-breathe 2.4s ease-in-out infinite;
+}
+
+.live-feed-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Blockchair-inspired table & layout */
+.bc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.bc-table-fixed {
+  table-layout: fixed;
+}
+
+.bc-table thead {
+  background: var(--bg-subtle);
+}
+
+.bc-table th {
+  padding: 0.625rem 1rem;
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.bc-table td {
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border);
+}
+
+.bc-table tbody tr {
+  transition: background-color 0.12s ease;
+}
+
+.bc-table tbody tr:hover {
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+
+.bc-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.bc-table tbody tr.live-block-new {
+  animation:
+    live-block-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    live-block-flash 2s ease-out;
+}
+
+.bc-hash-link {
+  letter-spacing: -0.01em;
+}
+
+.bc-col-age {
+  width: 7.5rem;
+  min-width: 7.5rem;
+  max-width: 7.5rem;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.bc-age-text {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+.bc-header {
+  backdrop-filter: blur(8px);
+}
+
+.bc-stat {
+  transition: box-shadow 0.15s ease;
+}
+
+.bc-stat:hover {
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.bc-panel {
+  transition: box-shadow 0.15s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-enter {
+    animation: none;
+  }
+
+  .live-block-new,
+  .live-height-pulse,
+  .live-toast,
+  .live-dot-breathe {
+    animation: none;
+  }
+}

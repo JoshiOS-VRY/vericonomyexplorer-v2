@@ -6,7 +6,16 @@
 	"bin": "bin/cli.js",
 	"scripts": {
 		"start": "node ./bin/www",
-		"indexer:vrm": "node ./bin/indexer-v2.js --chain vrm",
+		"dev": "npm run web:dev",
+		"web:dev": "npm --prefix explorer-web run dev",
+		"web:build": "npm --prefix explorer-web run build",
+		"web:start": "npm --prefix explorer-web run start",
+		"dev:full": "concurrently -n api,indexer-vrc,indexer-vrm,web -c blue,cyan,magenta,green \"npm run api:dev\" \"npm run indexer:vrc\" \"npm run indexer:vrm\" \"npm run web:dev\"",
+		"api:dev": "npm --prefix explorer-api run dev",
+		"api:rebuild-native": "npm rebuild better-sqlite3",
+		"api:bench": "npm --prefix explorer-api run bench",
+		"indexer:vrc": "node ./bin/indexer-v2-loop.js --chain vrc --batch-size 100 --pause-ms 500",
+		"indexer:vrm": "node ./bin/indexer-v2-loop.js --chain vrm",
 		"indexer:v2": "node ./bin/indexer-v2.js",
 		"indexer:v2:repair": "node ./bin/indexer-repair.js",
 		"indexer:v2:rollback": "node ./bin/indexer-rollback.js",
@@ -91,6 +100,7 @@
 		"event-loop-stats": "^1.4.1"
 	},
 	"devDependencies": {
+		"concurrently": "^9.2.1",
 		"eslint": "^9.34.0",
 		"sass": "^1.90.0",
 		"sharp": "^0.34.5"

@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 "use strict";
 
+require("../app/indexerV2/loadEnv.js");
+
 const args = parseArgs(process.argv.slice(2));
 
 if (args.help) {

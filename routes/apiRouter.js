@@ -27,6 +27,7 @@ const apiDocs = require("./../docs/api.js");
 const btcQuotes = require("./../app/coins/btcQuotes.js");
 const indexerHealth = require("./../app/indexerV2/health.js");
 const indexerQuery = require("./../app/indexerV2/query.js");
+const indexerSummary = require("./../app/indexerV2/summary.js");
 
 
 
@@ -66,10 +67,9 @@ router.get("/version", function(req, res, next) {
 	next();
 });
 
-router.get("/indexer/status", function(req, res, next) {
+router.get("/indexer/status", asyncHandler(async (req, res, next) => {
 	try {
-		res.json(indexerHealth.getIndexerHealth());
-
+		res.json(await indexerSummary.getIndexerHealth());
 	} catch (err) {
 		utils.logError("indexer-status-api", err);
 
@@ -80,18 +80,37 @@ router.get("/indexer/status", function(req, res, next) {
 	}
 
 	next();
-});
+}));
 
-router.get("/indexer/:chainId/summary", function(req, res, next) {
+router.get("/indexer/landing", asyncHandler(async (req, res, next) => {
 	try {
-		res.json(indexerQuery.getChainSummary(req.params.chainId));
-
+		res.json(await indexerSummary.getLandingData());
 	} catch (err) {
 		handleIndexerApiError(res, err);
 	}
 
 	next();
-});
+}));
+
+router.get("/indexer/vrm/dashboard", asyncHandler(async (req, res, next) => {
+	try {
+		res.json(await indexerSummary.getVrmDashboard());
+	} catch (err) {
+		handleIndexerApiError(res, err);
+	}
+
+	next();
+}));
+
+router.get("/indexer/:chainId/summary", asyncHandler(async (req, res, next) => {
+	try {
+		res.json(await indexerSummary.getChainSummary(req.params.chainId));
+	} catch (err) {
+		handleIndexerApiError(res, err);
+	}
+
+	next();
+}));
 
 router.get("/indexer/:chainId/richlist", function(req, res, next) {
 	try {
@@ -150,19 +169,18 @@ router.get("/indexer/:chainId/tx/:txid", function(req, res, next) {
 	next();
 });
 
-router.get("/indexer/:chainId/block/:hashOrHeight", function(req, res, next) {
+router.get("/indexer/:chainId/block/:hashOrHeight", asyncHandler(async (req, res, next) => {
 	try {
-		res.json(indexerQuery.getBlock(req.params.chainId, req.params.hashOrHeight, {
+		res.json(await indexerSummary.getBlock(req.params.chainId, req.params.hashOrHeight, {
 			limit: req.query.limit,
 			offset: req.query.offset
 		}));
-
 	} catch (err) {
 		handleIndexerApiError(res, err);
 	}
 
 	next();
-});
+}));
 
 function handleIndexerApiError(res, err) {
 	utils.logError("indexer-query-api", err);

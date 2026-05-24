@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 "use strict";
 
+require("../app/indexerV2/loadEnv.js");
+
 const health = require("../app/indexerV2/health.js");
 const dbModule = require("../app/indexerV2/db.js");
 
