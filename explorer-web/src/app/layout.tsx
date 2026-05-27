@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { headers } from "next/headers";
 import { AppShell } from "@/components/layout/AppShell";
+import { getChainSummary } from "@/lib/api/indexer";
 import { getUiThemeDefault } from "@/lib/env";
 import "./globals.css";
 
@@ -28,6 +29,10 @@ export default async function RootLayout({
 }>) {
   const defaultTheme = getUiThemeDefault();
   const pathname = (await headers()).get("x-pathname") ?? "/";
+  const [initialVrmSummary, initialVrcSummary] = await Promise.all([
+    getChainSummary("vrm").catch(() => null),
+    getChainSummary("vrc").catch(() => null),
+  ]);
 
   return (
     <html lang="en" suppressHydrationWarning data-ui-theme={defaultTheme} className={inter.variable}>
@@ -37,7 +42,11 @@ export default async function RootLayout({
         <script src="/theme-boot.js" />
       </head>
       <body className={`${inter.className} min-h-full bg-bg text-fg antialiased`}>
-        <AppShell pathname={pathname}>
+        <AppShell
+          pathname={pathname}
+          initialVrmSummary={initialVrmSummary}
+          initialVrcSummary={initialVrcSummary}
+        >
           {children}
         </AppShell>
         <script src="/explorer-ui.js" defer />

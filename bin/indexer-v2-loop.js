@@ -6,21 +6,23 @@ require("../app/indexerV2/loadEnv.js");
 const args = parseArgs(process.argv.slice(2));
 
 if (args.help) {
-	printHelp();
-	process.exit(0);
+  printHelp();
+  process.exit(0);
 }
 
 if (!args.chain) {
-	console.error("Missing required --chain");
-	printHelp();
-	process.exit(1);
+  console.error("Missing required --chain");
+  printHelp();
+  process.exit(1);
 }
 
 const { syncRange } = require("../app/indexerV2/worker.js");
 const dbModule = require("../app/indexerV2/db.js");
 
-const idleMs = Number(args["idle-ms"] === undefined ? 30000 : args["idle-ms"]);
-const errorMs = Number(args["error-ms"] === undefined ? 10000 : args["error-ms"]);
+const idleMs = Number(args["idle-ms"] === undefined ? 5000 : args["idle-ms"]);
+const errorMs = Number(
+  args["error-ms"] === undefined ? 10000 : args["error-ms"],
+);
 const logEvery = getLogEvery(args["log-every"]);
 const chain = args.chain;
 
@@ -30,144 +32,158 @@ process.on("SIGINT", handleStop);
 process.on("SIGTERM", handleStop);
 
 function handleStop() {
-	if (stopping) {
-		return;
-	}
+  if (stopping) {
+    return;
+  }
 
-	stopping = true;
-	console.log(`\n[${chain}] indexer loop shutting down...`);
+  stopping = true;
+  console.log(`\n[${chain}] indexer loop shutting down...`);
 }
 
-runLoop().catch(err => {
-	console.error(err.stack || err.message);
-	dbModule.closeDatabase();
-	process.exit(1);
+runLoop().catch((err) => {
+  console.error(err.stack || err.message);
+  dbModule.closeDatabase();
+  process.exit(1);
 });
 
 async function runLoop() {
-	console.log(`[${chain}] indexer loop started (idle-ms=${idleMs}, error-ms=${errorMs})`);
+  console.log(
+    `[${chain}] indexer loop started (idle-ms=${idleMs}, error-ms=${errorMs})`,
+  );
 
-	while (!stopping) {
-		try {
-			const result = await syncRange(buildSyncOptions());
-			console.log(JSON.stringify(result, null, 2));
+  while (!stopping) {
+    try {
+      const result = await syncRange(buildSyncOptions());
+      console.log(JSON.stringify(result, null, 2));
 
-			if (stopping) {
-				break;
-			}
+      if (stopping) {
+        break;
+      }
 
-			const waitMs = getIdleWaitMs(result);
-			if (waitMs > 0) {
-				console.log(`[${chain}] caught up at height ${result.endHeight}; waiting ${waitMs}ms`);
-				const checkpoint = dbModule.maybeCheckpointWal();
-				if (checkpoint.ran) {
-					console.log(`[${chain}] wal checkpoint ${checkpoint.walSizeMbBefore?.toFixed(1)}MB -> ${checkpoint.walSizeMbAfter?.toFixed(1)}MB`);
-				}
-				await sleep(waitMs);
-			}
-		} catch (err) {
-			console.error(`[${chain}] sync failed: ${err.stack || err.message}`);
-			if (stopping) {
-				break;
-			}
+      const waitMs = getIdleWaitMs(result);
+      if (waitMs > 0) {
+        console.log(
+          `[${chain}] caught up at height ${result.endHeight}; waiting ${waitMs}ms`,
+        );
+        const checkpoint = dbModule.maybeCheckpointWal();
+        if (checkpoint.ran) {
+          console.log(
+            `[${chain}] wal checkpoint ${checkpoint.walSizeMbBefore?.toFixed(1)}MB -> ${checkpoint.walSizeMbAfter?.toFixed(1)}MB`,
+          );
+        }
+        await sleep(waitMs);
+      }
+    } catch (err) {
+      console.error(`[${chain}] sync failed: ${err.stack || err.message}`);
+      if (stopping) {
+        break;
+      }
 
-			console.log(`[${chain}] retrying in ${errorMs}ms`);
-			await sleep(errorMs);
-		}
-	}
+      console.log(`[${chain}] retrying in ${errorMs}ms`);
+      await sleep(errorMs);
+    }
+  }
 
-	dbModule.closeDatabase();
+  dbModule.closeDatabase();
 }
 
 function buildSyncOptions() {
-	return {
-		chain,
-		startHeight: args.start === undefined ? undefined : Number(args.start),
-		endHeight: args.end === undefined ? undefined : Number(args.end),
-		configPath: args.config,
-		force: args.force === true,
-		batchSize: args["batch-size"] === undefined ? undefined : Number(args["batch-size"]),
-		pauseMs: args["pause-ms"] === undefined ? undefined : Number(args["pause-ms"]),
-		storeRawJson: parseStoreRawJson(args["store-raw-json"]),
-		autoRollback: parseAutoRollback(args["auto-rollback"]),
-		onProgress: info => {
-			if (info.rolledBack) {
-				const rollback = info.rollback || {};
-				console.log(`[${info.chainId}] rolled back from block ${rollback.fromHeight} to ${rollback.newTipHeight === null ? "empty" : rollback.newTipHeight}`);
-				return;
-			}
+  return {
+    chain,
+    startHeight: args.start === undefined ? undefined : Number(args.start),
+    endHeight: args.end === undefined ? undefined : Number(args.end),
+    configPath: args.config,
+    force: args.force === true,
+    batchSize:
+      args["batch-size"] === undefined ? undefined : Number(args["batch-size"]),
+    pauseMs:
+      args["pause-ms"] === undefined ? undefined : Number(args["pause-ms"]),
+    storeRawJson: parseStoreRawJson(args["store-raw-json"]),
+    autoRollback: parseAutoRollback(args["auto-rollback"]),
+    onProgress: (info) => {
+      if (info.rolledBack) {
+        const rollback = info.rollback || {};
+        console.log(
+          `[${info.chainId}] rolled back from block ${rollback.fromHeight} to ${rollback.newTipHeight === null ? "empty" : rollback.newTipHeight}`,
+        );
+        return;
+      }
 
-			if (!shouldLogProgress(info, logEvery)) {
-				return;
-			}
+      if (!shouldLogProgress(info, logEvery)) {
+        return;
+      }
 
-			const action = info.skipped ? "skipped" : "indexed";
-			const memory = info.memory ? ` rss=${info.memory.rssMb}MB heap=${info.memory.heapUsedMb}/${info.memory.heapTotalMb}MB` : "";
-			console.log(`[${info.chainId}] ${action} block ${info.height}/${info.endHeight} ${info.hash}${memory}`);
-		}
-	};
+      const action = info.skipped ? "skipped" : "indexed";
+      const memory = info.memory
+        ? ` rss=${info.memory.rssMb}MB heap=${info.memory.heapUsedMb}/${info.memory.heapTotalMb}MB`
+        : "";
+      console.log(
+        `[${info.chainId}] ${action} block ${info.height}/${info.endHeight} ${info.hash}${memory}`,
+      );
+    },
+  };
 }
 
 function getIdleWaitMs(result) {
-	return idleMs;
+  return idleMs;
 }
 
 function parseArgs(argv) {
-	const result = {};
+  const result = {};
 
-	for (let i = 0; i < argv.length; i++) {
-		const arg = argv[i];
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
 
-		if (arg === "--help" || arg === "-h") {
-			result.help = true;
-		} else if (arg === "--force") {
-			result.force = true;
-		} else if (arg.startsWith("--")) {
-			const key = arg.substring(2);
-			const next = argv[i + 1];
-			if (!next || next.startsWith("--")) {
-				result[key] = true;
-			} else {
-				result[key] = next;
-				i++;
-			}
-		}
-	}
+    if (arg === "--help" || arg === "-h") {
+      result.help = true;
+    } else if (arg === "--force") {
+      result.force = true;
+    } else if (arg.startsWith("--")) {
+      const key = arg.substring(2);
+      const next = argv[i + 1];
+      if (!next || next.startsWith("--")) {
+        result[key] = true;
+      } else {
+        result[key] = next;
+        i++;
+      }
+    }
+  }
 
-	return result;
+  return result;
 }
 
 function parseStoreRawJson(value) {
-	if (value === undefined) {
-		return undefined;
-	}
+  if (value === undefined) {
+    return undefined;
+  }
 
-	return !["0", "false", "no", "off"].includes(String(value).toLowerCase());
+  return !["0", "false", "no", "off"].includes(String(value).toLowerCase());
 }
 
 function parseAutoRollback(value) {
-	if (value === undefined) {
-		return undefined;
-	}
+  if (value === undefined) {
+    return undefined;
+  }
 
-	return !["0", "false", "no", "off"].includes(String(value).toLowerCase());
+  return !["0", "false", "no", "off"].includes(String(value).toLowerCase());
 }
 
 function getLogEvery(value) {
-	const parsed = Number(value === undefined ? 1 : value);
-	return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1;
+  const parsed = Number(value === undefined ? 1 : value);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : 1;
 }
 
 function shouldLogProgress(info, interval) {
-	return info.height === info.endHeight || info.height % interval === 0;
+  return info.height === info.endHeight || info.height % interval === 0;
 }
 
 function sleep(ms) {
-	return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function printHelp() {
-	console.log(`
+  console.log(`
 Usage:
   node bin/indexer-v2-loop.js --chain vrc --batch-size 100 --pause-ms 500
   node bin/indexer-v2-loop.js --chain vrm

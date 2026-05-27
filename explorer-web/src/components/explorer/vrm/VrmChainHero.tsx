@@ -20,7 +20,7 @@ export function ChainExplorerHero({
   tipBlock: IndexedBlock | undefined;
 }) {
   const config = CHAIN_EXPLORERS[chainId];
-  const live = isChainLive(health);
+  const live = isChainLive(health, tipBlock?.height);
   const tipHref = tipBlock && config.blockHref ? config.blockHref(tipBlock.height) : null;
   const chainLabel = chainId === "vrm" ? "Verium blockchain" : "VeriCoin blockchain";
   const description =
@@ -62,7 +62,7 @@ export function ChainExplorerHero({
                   )}
                 >
                   <StatusDot tone={live ? "success" : "neutral"} pulse={live} />
-                  {live ? "Live at tip" : health.explorerStatus?.label ?? health.status}
+                  {live ? "Live" : "Offline"}
                 </span>
                 {chainHeight != null ? (
                   <span

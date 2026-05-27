@@ -22,9 +22,10 @@ import type {
 import {
   CHAIN_EXPLORERS,
   formatBlocksBehind,
-  getChainStatusLabel,
   getChainStatusTone,
+  getChainSyncLabel,
   getChainTipHeight,
+  isChainAtTip,
 } from "@/lib/chainDisplay";
 import { cn, ellipsizeMiddle } from "@/lib/utils";
 
@@ -107,7 +108,8 @@ function ChainOverviewPanel({ summary }: { summary: ChainSummary }) {
   const health = summary.health;
   const tipHeight = getChainTipHeight(health);
   const tipBlock = summary.latestBlocks[0];
-  const tone = getChainStatusTone(health);
+  const tone = getChainStatusTone(health, tipBlock?.height);
+  const atTip = isChainAtTip(health, tipBlock?.height);
   const exploreReady = config.exploreHref != null;
 
   return (
@@ -130,8 +132,8 @@ function ChainOverviewPanel({ summary }: { summary: ChainSummary }) {
               <span className="text-xs text-fg-subtle">{config.consensus}</span>
             </div>
             <div className="mt-1.5 flex items-center gap-2 text-sm text-fg-muted">
-              <StatusDot tone={tone} pulse={health.explorerStatus?.syncing} />
-              <span>{getChainStatusLabel(health)}</span>
+              <StatusDot tone={tone} pulse={atTip} />
+              <span>{getChainSyncLabel(health, tipBlock?.height)}</span>
             </div>
           </div>
         </div>

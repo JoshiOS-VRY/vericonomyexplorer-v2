@@ -1,6 +1,4 @@
 import Image from "next/image";
-import type { RecentBlocksByChain } from "@/components/explorer/ExplorerSearchCombobox";
-import { SearchForm } from "@/components/explorer/SearchForm";
 import { ChainExploreButton } from "@/components/explorer/home/ChainExploreButton";
 import { StatusDot } from "@/components/explorer/ExplorerUi";
 import { CHAIN_EXPLORERS } from "@/lib/chainDisplay";
@@ -9,16 +7,15 @@ import { cn } from "@/lib/utils";
 interface BinaryChainHeroProps {
   vrmLive: boolean;
   vrcLive: boolean;
-  recentBlocks?: RecentBlocksByChain;
 }
 
-export function BinaryChainHero({ vrmLive, vrcLive, recentBlocks }: BinaryChainHeroProps) {
+export function BinaryChainHero({ vrmLive, vrcLive }: BinaryChainHeroProps) {
   const vrm = CHAIN_EXPLORERS.vrm;
   const vrc = CHAIN_EXPLORERS.vrc;
 
   return (
     <section className="binary-chain-hero overflow-hidden rounded-xl border border-border bg-gradient-to-br from-bg-panel via-bg-panel to-accent/5 shadow-sm">
-      <div className="border-b border-border/70 px-5 py-6 sm:px-6">
+      <div className="px-5 py-6 sm:px-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-4">
             <div className="flex -space-x-2">
@@ -57,9 +54,6 @@ export function BinaryChainHero({ vrmLive, vrcLive, recentBlocks }: BinaryChainH
             <ChainExploreButton chainId="vrc" />
           </div>
         </div>
-      </div>
-      <div className="px-5 py-4 sm:px-6">
-        <SearchForm variant="blockchair" recentBlocks={recentBlocks} />
       </div>
     </section>
   );

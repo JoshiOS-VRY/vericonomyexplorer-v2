@@ -1,6 +1,7 @@
 import { getPageTitle } from "@/lib/pageTitles";
 import { MobileNav } from "@/components/layout/Sidebar";
-import { SyncStatusPill } from "@/components/layout/SyncStatusPill";
+import { SyncStatusPills } from "@/components/layout/SyncStatusPills";
+import type { ChainSummary } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
 type ThemeMode = "light" | "dark" | "system";
@@ -38,13 +39,24 @@ function ThemeToggle() {
   );
 }
 
-export function TopBar({ pathname }: { pathname: string }) {
+export function TopBar({
+  pathname,
+  initialVrmSummary,
+  initialVrcSummary,
+}: {
+  pathname: string;
+  initialVrmSummary?: ChainSummary | null;
+  initialVrcSummary?: ChainSummary | null;
+}) {
   return (
     <header className="shrink-0 border-b border-border bg-bg-subtle">
       <div className="flex h-14 items-center justify-between gap-4 px-4 sm:px-8">
         <h1 className="truncate text-lg font-semibold">{getPageTitle(pathname)}</h1>
         <div className="flex items-center gap-3">
-          <SyncStatusPill />
+          <SyncStatusPills
+            initialVrmSummary={initialVrmSummary}
+            initialVrcSummary={initialVrcSummary}
+          />
           <ThemeToggle />
         </div>
       </div>

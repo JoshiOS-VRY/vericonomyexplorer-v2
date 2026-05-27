@@ -1,9 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { SearchForm } from "@/components/explorer/SearchForm";
-import { SyncStatusPill } from "@/components/layout/SyncStatusPill";
+import { SyncStatusPills } from "@/components/layout/SyncStatusPills";
 import { headerNav } from "@/components/layout/navLinks";
 import { isNavLinkActive } from "@/lib/navUtils";
+import type { ChainSummary } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
 type ThemeMode = "light" | "dark" | "system";
@@ -66,7 +67,15 @@ function HeaderNavLink({
   );
 }
 
-export function BlockchairHeader({ pathname }: { pathname: string }) {
+export function BlockchairHeader({
+  pathname,
+  initialVrmSummary,
+  initialVrcSummary,
+}: {
+  pathname: string;
+  initialVrmSummary?: ChainSummary | null;
+  initialVrcSummary?: ChainSummary | null;
+}) {
   return (
     <header className="bc-header sticky top-0 z-40 border-b border-border bg-bg-panel shadow-sm">
       <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
@@ -96,7 +105,10 @@ export function BlockchairHeader({ pathname }: { pathname: string }) {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
-          <SyncStatusPill />
+          <SyncStatusPills
+            initialVrmSummary={initialVrmSummary}
+            initialVrcSummary={initialVrcSummary}
+          />
           <ThemeToggle />
         </div>
       </div>

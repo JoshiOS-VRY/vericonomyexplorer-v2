@@ -12,12 +12,54 @@ export function getChainStatusLabel(health: ChainHealth): string {
   return health.explorerStatus?.label ?? health.status;
 }
 
+/** Latest indexed block height used for sync checks (falls back to health heights). */
+export function getLatestIndexedHeight(
+  health: ChainHealth,
+  latestBlockHeight?: number | null,
+): number | null {
+  if (latestBlockHeight != null) return latestBlockHeight;
+  const { lastIndexedHeight, maxIndexedHeight } = health.heights;
+  return lastIndexedHeight ?? maxIndexedHeight;
+}
+
+/** True when the indexed tip matches the live chain tip height. */
+export function isChainAtTip(
+  health: ChainHealth,
+  latestBlockHeight?: number | null,
+  liveTipHeight?: number | null,
+): boolean {
+  const { blocksBehind } = health.heights;
+  if (blocksBehind != null) return blocksBehind === 0;
+
+  const tipHeight =
+    health.heights.bestRpcHeight ?? liveTipHeight ?? getChainTipHeight(health);
+  if (tipHeight == null) return false;
+
+  const indexedHeight = getLatestIndexedHeight(health, latestBlockHeight);
+  if (indexedHeight == null) return false;
+  return indexedHeight >= tipHeight;
+}
+
+export function getChainSyncLabel(
+  health: ChainHealth,
+  latestBlockHeight?: number | null,
+  liveTipHeight?: number | null,
+): "Live" | "Offline" {
+  return isChainAtTip(health, latestBlockHeight, liveTipHeight) ? "Live" : "Offline";
+}
+
 export function getChainStatusTone(
   health: ChainHealth,
+  latestBlockHeight?: number | null,
+  liveTipHeight?: number | null,
 ): "success" | "warning" | "neutral" {
-  const label = getChainStatusLabel(health).toLowerCase();
-  if (health.explorerStatus?.syncing || label.includes("sync")) return "warning";
-  if (label.includes("live") || label.includes("online")) return "success";
+  if (isChainAtTip(health, latestBlockHeight, liveTipHeight)) return "success";
+  if (
+    health.explorerStatus?.syncing ||
+    (health.heights.blocksBehind ?? 0) > 0
+  ) {
+    return "warning";
+  }
   return "neutral";
 }
 
@@ -28,12 +70,12 @@ export function formatBlocksBehind(health: ChainHealth): string {
   return formatNumber(behind);
 }
 
-export function isChainLive(health: ChainHealth): boolean {
-  const behind = health.heights.blocksBehind;
-  if (behind === 0) return true;
-  if (behind == null && health.trusted) return true;
-  const label = getChainStatusLabel(health).toLowerCase();
-  return !health.explorerStatus?.syncing && (label.includes("live") || label.includes("online"));
+export function isChainLive(
+  health: ChainHealth,
+  latestBlockHeight?: number | null,
+  liveTipHeight?: number | null,
+): boolean {
+  return isChainAtTip(health, latestBlockHeight, liveTipHeight);
 }
 
 export type ChainExplorerConfig = {

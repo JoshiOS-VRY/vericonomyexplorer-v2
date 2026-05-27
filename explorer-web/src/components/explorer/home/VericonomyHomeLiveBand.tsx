@@ -29,8 +29,14 @@ export function VericonomyHomeLiveBand({
   );
   const { network: liveNetwork } = useHomeNetworkLive(initialNetwork);
 
-  const vrmLive = isChainLive(live.vrm.summary.health);
-  const vrcLive = isChainLive(live.vrc.summary.health);
+  const vrmLive = isChainLive(
+    live.vrm.summary.health,
+    live.vrm.summary.latestBlocks[0]?.height,
+  );
+  const vrcLive = isChainLive(
+    live.vrc.summary.health,
+    live.vrc.summary.latestBlocks[0]?.height,
+  );
 
   const toastChainId: "vrm" | "vrc" | null = live.vrm.toastBlock
     ? "vrm"
@@ -38,22 +44,13 @@ export function VericonomyHomeLiveBand({
       ? "vrc"
       : null;
 
-  const recentBlocks = {
-    vrm: live.vrm.latestBlocks,
-    vrc: live.vrc.latestBlocks,
-  };
-
   return (
     <div className="space-y-8">
       {live.toastBlock && toastChainId ? (
         <NewBlockToast block={live.toastBlock} chainId={toastChainId} />
       ) : null}
 
-      <BinaryChainHero
-        vrmLive={vrmLive}
-        vrcLive={vrcLive}
-        recentBlocks={recentBlocks}
-      />
+      <BinaryChainHero vrmLive={vrmLive} vrcLive={vrcLive} />
 
       <div className="grid gap-4 xl:grid-cols-2">
         <ChainSummaryCard

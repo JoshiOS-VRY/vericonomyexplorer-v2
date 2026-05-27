@@ -16,9 +16,10 @@ import type {
 } from "@/lib/api/types";
 import {
   CHAIN_EXPLORERS,
-  getChainStatusLabel,
   getChainStatusTone,
+  getChainSyncLabel,
   getChainTipHeight,
+  isChainAtTip,
 } from "@/lib/chainDisplay";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +41,8 @@ export function ChainSummaryCard({
   const config = CHAIN_EXPLORERS[chainId];
   const health = summary.health;
   const tipBlock = summary.latestBlocks[0];
-  const statusTone = getChainStatusTone(health);
+  const atTip = isChainAtTip(health, tipBlock?.height);
+  const statusTone = getChainStatusTone(health, tipBlock?.height);
   const exploreReady = config.exploreHref != null;
   const displayHeight = chainHeight ?? getChainTipHeight(health);
 
@@ -64,8 +66,8 @@ export function ChainSummaryCard({
               <span className="text-xs text-fg-subtle">{config.consensus}</span>
             </div>
             <div className="mt-1.5 flex items-center gap-2 text-sm text-fg-muted">
-              <StatusDot tone={statusTone} pulse={health.explorerStatus?.syncing} />
-              <span>{getChainStatusLabel(health)}</span>
+              <StatusDot tone={statusTone} pulse={atTip} />
+              <span>{getChainSyncLabel(health, tipBlock?.height)}</span>
             </div>
           </div>
         </div>

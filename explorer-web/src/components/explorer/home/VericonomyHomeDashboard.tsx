@@ -49,8 +49,14 @@ export function VericonomyHomeDashboard({
     fetchedAt: initialHome.fetchedAt,
   });
 
-  const vrmLive = isChainLive(live.vrm.summary.health);
-  const vrcLive = isChainLive(live.vrc.summary.health);
+  const vrmLive = isChainLive(
+    live.vrm.summary.health,
+    live.vrm.summary.latestBlocks[0]?.height,
+  );
+  const vrcLive = isChainLive(
+    live.vrc.summary.health,
+    live.vrc.summary.latestBlocks[0]?.height,
+  );
 
   const toastChainId: "vrm" | "vrc" | null = live.vrm.toastBlock
     ? "vrm"
@@ -152,7 +158,7 @@ function ChainOverviewPanel({
   const config = CHAIN_EXPLORERS[chainId];
   const health = summary.health;
   const tipBlock = summary.latestBlocks[0];
-  const live = isChainLive(health);
+  const live = isChainLive(health, tipBlock?.height);
   const exploreReady = config.exploreHref != null;
 
   return (
@@ -176,7 +182,7 @@ function ChainOverviewPanel({
             </div>
             <div className="mt-1.5 flex items-center gap-2 text-sm text-fg-muted">
               <StatusDot tone={live ? "success" : "warning"} pulse={live} />
-              <span>{live ? "Online" : health.status}</span>
+              <span>{live ? "Live" : "Offline"}</span>
             </div>
           </div>
         </div>

@@ -113,6 +113,15 @@ export function useTipStream(_chainId: string) {
 }
 
 export function useChainTipState(chainId: string): ChainTipState {
-  const { getChainState } = useTipStream(chainId);
+  const { getChainState, subscribe } = useTipStream(chainId);
+  const [revision, setRevision] = useState(0);
+
+  useEffect(() => {
+    return subscribe(chainId, () => {
+      setRevision((value) => value + 1);
+    });
+  }, [chainId, subscribe]);
+
+  void revision;
   return getChainState(chainId);
 }

@@ -1,6 +1,6 @@
 "use strict";
 
-const schemaVersion = 1;
+const schemaVersion = 2;
 
 const tables = [
 	`CREATE TABLE IF NOT EXISTS indexer_meta (
@@ -218,9 +218,33 @@ function getSchemaSql() {
 	return tables.concat(indexes).join("\n\n");
 }
 
-function applySchema(db) {
-	db.exec(getSchemaSql());
+function tableHasColumn(db, table, column) {
+	return db
+		.prepare(`PRAGMA table_info(${table})`)
+		.all()
+		.some((row) => row.name === column);
+}
 
+function ensureColumn(db, table, column, definition) {
+	if (!tableHasColumn(db, table, column)) {
+		db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+	}
+}
+
+function getStoredSchemaVersion(db) {
+	const row = db.prepare(`
+		SELECT value FROM indexer_meta WHERE key = 'schema_version'
+	`).get();
+
+	if (!row) {
+		return 0;
+	}
+
+	const parsed = Number(row.value);
+	return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function setStoredSchemaVersion(db, version) {
 	const now = Date.now();
 	db.prepare(`
 		INSERT INTO indexer_meta (key, value, updated_at)
@@ -228,7 +252,25 @@ function applySchema(db) {
 		ON CONFLICT(key) DO UPDATE SET
 			value = excluded.value,
 			updated_at = excluded.updated_at
-	`).run(String(schemaVersion), now);
+	`).run(String(version), now);
+}
+
+function applyMigrations(db) {
+	// Always repair known legacy column gaps (idempotent). Some databases were
+	// stamped schema v2 before these columns were actually added.
+	ensureColumn(db, "address_period_stats", "last_seen_height", "INTEGER");
+	ensureColumn(db, "address_period_stats", "last_seen_time", "INTEGER");
+
+	const stored = getStoredSchemaVersion(db);
+	if (stored < schemaVersion) {
+		setStoredSchemaVersion(db, schemaVersion);
+	}
+}
+
+function applySchema(db) {
+	db.exec(getSchemaSql());
+	applyMigrations(db);
+	setStoredSchemaVersion(db, schemaVersion);
 }
 
 module.exports = {
@@ -236,5 +278,9 @@ module.exports = {
 	tables,
 	indexes,
 	getSchemaSql,
-	applySchema
+	applySchema,
+	applyMigrations,
+	ensureColumn,
+	tableHasColumn,
+	getStoredSchemaVersion
 };
