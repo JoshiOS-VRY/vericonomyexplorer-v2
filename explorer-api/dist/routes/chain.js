@@ -48,10 +48,11 @@ const activityHistoryCache = createSwrCache({
         if (signal.aborted)
             throw new Error("aborted");
         const [chainId, maxPoints, since] = key.split(":");
-        return fetchChainActivityHistory(chainId, {
+        const result = await fetchChainActivityHistory(chainId, {
             maxPoints: maxPoints ? Number(maxPoints) : undefined,
             since: since ? Number(since) : undefined,
         });
+        return result;
     },
 });
 function safeCacheDelete(cache, key) {

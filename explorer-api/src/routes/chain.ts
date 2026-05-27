@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import type { LRUCache } from "lru-cache";
-import { cacheKey, createSwrCache } from "../cache/swrCache.js";
+import { cacheKey, createSwrCache, type CacheValue } from "../cache/swrCache.js";
 import {
   fetchChainHealth,
   fetchChainActivityHistory,
@@ -56,14 +56,15 @@ const activityHistoryCache = createSwrCache({
   fetch: async (key, signal) => {
     if (signal.aborted) throw new Error("aborted");
     const [chainId, maxPoints, since] = key.split(":");
-    return fetchChainActivityHistory(chainId, {
+    const result = await fetchChainActivityHistory(chainId, {
       maxPoints: maxPoints ? Number(maxPoints) : undefined,
       since: since ? Number(since) : undefined,
     });
+    return result as CacheValue;
   },
 });
 
-function safeCacheDelete(cache: LRUCache<string, unknown, unknown>, key: string): void {
+function safeCacheDelete<T extends CacheValue>(cache: LRUCache<string, T, unknown>, key: string): void {
   try {
     cache.delete(key);
   } catch {
