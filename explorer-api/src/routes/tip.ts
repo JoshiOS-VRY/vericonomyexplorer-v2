@@ -41,10 +41,17 @@ export async function registerTipRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const broker = getBroker(chainId);
+    // Hijack so Fastify does not send a second response after SSE headers.
+    reply.hijack();
     initSse(reply.raw);
 
     const sendTip = (tip: TipState) => {
-      writeSse(reply.raw, { event: "tip", data: JSON.stringify(tip) });
+      if (reply.raw.writableEnded || reply.raw.destroyed) return;
+      try {
+        writeSse(reply.raw, { event: "tip", data: JSON.stringify(tip) });
+      } catch {
+        /* client disconnected */
+      }
     };
 
     const current = broker.getTip();
@@ -56,15 +63,25 @@ export async function registerTipRoutes(app: FastifyInstance): Promise<void> {
     broker.on("tip", onUpdate);
 
     const heartbeat = setInterval(() => {
-      reply.raw.write(": ping\n\n");
+      if (reply.raw.writableEnded || reply.raw.destroyed) {
+        clearInterval(heartbeat);
+        return;
+      }
+      try {
+        reply.raw.write(": ping\n\n");
+      } catch {
+        clearInterval(heartbeat);
+      }
     }, 15_000);
 
     await new Promise<void>((resolve) => {
-      request.raw.on("close", () => {
+      const cleanup = () => {
         broker.off("tip", onUpdate);
         clearInterval(heartbeat);
         resolve();
-      });
+      };
+      request.raw.on("close", cleanup);
+      request.raw.on("error", cleanup);
     });
   });
 }

@@ -2,9 +2,14 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { cn, ellipsizeMiddle, formatBlockAge, formatNumber, formatUnixTime } from "@/lib/utils";
 import type { SourceInfo } from "@/lib/api/types";
+import { formatExplorerSourceLabel } from "@/lib/explorerCopy";
 
 export function SourceBadge({ source }: { source: SourceInfo }) {
-  return <Badge tone="neutral">{source.label}</Badge>;
+  const label = formatExplorerSourceLabel(source);
+  if (!label) {
+    return null;
+  }
+  return <Badge tone="neutral">{label}</Badge>;
 }
 
 export function StatusDot({
@@ -214,21 +219,25 @@ export function PaginationLinks({
   basePath,
   paging,
   extraParams = {},
+  offsetParam = "offset",
+  limitParam = "limit",
 }: {
   basePath: string;
   paging: { limit: number; offset: number; hasMore: boolean };
   extraParams?: Record<string, string | number>;
+  offsetParam?: string;
+  limitParam?: string;
 }) {
   const prevOffset = Math.max(0, paging.offset - paging.limit);
   const nextOffset = paging.offset + paging.limit;
   const buildHref = (offset: number) => {
-    const params = new URLSearchParams({
-      limit: String(paging.limit),
-      offset: String(offset),
-      ...Object.fromEntries(
+    const params = new URLSearchParams(
+      Object.fromEntries(
         Object.entries(extraParams).map(([k, v]) => [k, String(v)]),
       ),
-    });
+    );
+    params.set(limitParam, String(paging.limit));
+    params.set(offsetParam, String(offset));
     return `${basePath}?${params.toString()}`;
   };
 
@@ -262,10 +271,12 @@ export function DataTable({
   headers,
   rows,
   compact = false,
+  rowClassName,
 }: {
   headers: string[];
   rows: React.ReactNode[][];
   compact?: boolean;
+  rowClassName?: (rowIndex: number) => string | undefined;
 }) {
   return (
     <div className={cn("overflow-auto", compact ? "max-h-[360px]" : undefined)}>
@@ -279,7 +290,7 @@ export function DataTable({
         </thead>
         <tbody>
           {rows.map((row, index) => (
-            <tr key={index}>
+            <tr key={index} className={rowClassName?.(index)}>
               {row.map((cell, cellIndex) => (
                 <td key={cellIndex}>{cell}</td>
               ))}
@@ -295,14 +306,17 @@ export function MonoLink({
   href,
   value,
   maxLength = 24,
+  prefetch,
 }: {
   href: string;
   value: string;
   maxLength?: number;
+  prefetch?: boolean;
 }) {
   return (
     <Link
       href={href}
+      prefetch={prefetch}
       className="hash-mono text-accent underline-offset-2 hover:underline"
     >
       {ellipsizeMiddle(value, maxLength)}

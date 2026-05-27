@@ -1,0 +1,72 @@
+import type { ChainId } from "../types.js";
+export interface ChainMarket {
+    usd: number | null;
+    btc: number | null;
+    marketCap: number | null;
+    volume24h: number | null;
+    change24h: number | null;
+    circulatingSupply: number | null;
+    source: "livecoinwatch" | "coingecko" | "computed" | "unavailable";
+    updatedAt: string | null;
+    priceHistory24h: {
+        time: number;
+        value: number;
+    }[];
+}
+export interface VrmNetworkStats {
+    hashrateKhPerMin: number | null;
+    hashrate7dKhPerMin: number | null;
+    difficulty: number | null;
+    blocks: number | null;
+    supply: number | null;
+    maxSupply: number | null;
+}
+export interface VrcNetworkStats {
+    difficulty: number | null;
+    blocks: number | null;
+    supply: number | null;
+    maxSupply: number | null;
+    interestRatePercent: number | null;
+    netStakeWeight: number | null;
+    percentStaked: number | null;
+    expectedStakeTimeSeconds: number | null;
+}
+export interface HomeChainSection {
+    summary: Record<string, unknown>;
+    richlist: Record<string, unknown>;
+    market: ChainMarket;
+    network: VrmNetworkStats | VrcNetworkStats;
+}
+export interface HomePayload {
+    vrm: HomeChainSection & {
+        network: VrmNetworkStats;
+    };
+    vrc: HomeChainSection & {
+        network: VrcNetworkStats;
+    };
+    vrmLeaderboard: Record<string, unknown>;
+    fetchedAt: string;
+}
+export interface HomeMarketPayload {
+    vrm: ChainMarket;
+    vrc: ChainMarket;
+    fetchedAt: string;
+}
+export interface HomeShellPayload {
+    vrm: {
+        summary: Record<string, unknown>;
+        richlist: Record<string, unknown>;
+    };
+    vrc: {
+        summary: Record<string, unknown>;
+        richlist: Record<string, unknown>;
+    };
+    vrmLeaderboard: Record<string, unknown>;
+    fetchedAt: string;
+}
+export interface HomeNetworkPayload {
+    vrm: VrmNetworkStats;
+    vrc: VrcNetworkStats;
+    fetchedAt: string;
+}
+export declare const LCW_CHAIN_CODES: Record<ChainId, string>;

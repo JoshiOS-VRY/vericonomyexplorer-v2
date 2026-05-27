@@ -25,9 +25,6 @@ function resolveFastApiBase(): string {
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: rootDir,
-  images: {
-    unoptimized: true,
-  },
   env: {
     EXPLORER_API_URL: resolveApiBase(),
     EXPLORER_FAST_API_URL: resolveFastApiBase(),

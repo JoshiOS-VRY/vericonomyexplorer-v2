@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { SearchForm } from "@/components/explorer/SearchForm";
 import { SyncStatusPill } from "@/components/layout/SyncStatusPill";
-import { sidebarNav } from "@/components/layout/navLinks";
+import { headerNav } from "@/components/layout/navLinks";
 import { isNavLinkActive } from "@/lib/navUtils";
 import { cn } from "@/lib/utils";
 
@@ -40,15 +40,37 @@ function ThemeToggle() {
   );
 }
 
-const primaryNav = sidebarNav.filter((item) =>
-  ["/", "/vrm", "/vrm/richlist", "/vrm/leaderboard"].includes(item.href),
-);
+function HeaderNavLink({
+  pathname,
+  item,
+  className,
+}: {
+  pathname: string;
+  item: (typeof headerNav)[number];
+  className?: string;
+}) {
+  const active = isNavLinkActive(pathname, item.href, item.exact, item.prefix);
+
+  return (
+    <Link
+      href={item.href}
+      prefetch
+      data-nav-link
+      data-nav-exact={item.exact ? "true" : undefined}
+      data-nav-prefix={item.prefix ? "true" : undefined}
+      aria-current={active ? "page" : undefined}
+      className={cn(className, active ? "bg-accent/10 text-accent" : "text-fg-muted hover:bg-bg-subtle hover:text-fg")}
+    >
+      {item.label}
+    </Link>
+  );
+}
 
 export function BlockchairHeader({ pathname }: { pathname: string }) {
   return (
     <header className="bc-header sticky top-0 z-40 border-b border-border bg-bg-panel shadow-sm">
       <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5">
+        <Link href="/" prefetch className="flex shrink-0 items-center gap-2.5">
           <Image
             src="/img/vericonomy/binary-chain-icon.svg"
             alt=""
@@ -63,49 +85,14 @@ export function BlockchairHeader({ pathname }: { pathname: string }) {
         </Link>
 
         <nav className="hidden items-center gap-0.5 md:flex" aria-label="Main">
-          {primaryNav.map((item) => {
-            const active = isNavLinkActive(pathname, item.href, item.exact, item.prefix);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                data-nav-link
-                data-nav-exact={item.exact ? "true" : undefined}
-                data-nav-prefix={item.prefix ? "true" : undefined}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "rounded px-3 py-1.5 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-accent/10 text-accent"
-                    : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
-                )}
-              >
-                {item.label === "Overview" ? "Home" : item.label}
-              </Link>
-            );
-          })}
-          <Link
-            href="/tools"
-            className={cn(
-              "rounded px-3 py-1.5 text-sm font-medium transition-colors",
-              pathname.startsWith("/tools")
-                ? "bg-accent/10 text-accent"
-                : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
-            )}
-          >
-            Tools
-          </Link>
-          <Link
-            href="/api/docs"
-            className={cn(
-              "rounded px-3 py-1.5 text-sm font-medium transition-colors",
-              pathname.startsWith("/api")
-                ? "bg-accent/10 text-accent"
-                : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
-            )}
-          >
-            API
-          </Link>
+          {headerNav.map((item) => (
+            <HeaderNavLink
+              key={item.href}
+              pathname={pathname}
+              item={item}
+              className="rounded px-3 py-1.5 text-sm font-medium transition-colors"
+            />
+          ))}
         </nav>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
@@ -122,21 +109,14 @@ export function BlockchairHeader({ pathname }: { pathname: string }) {
 
       <div className="border-t border-border/60 px-4 py-2 md:hidden sm:px-6">
         <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto">
-          {primaryNav.map((item) => {
-            const active = isNavLinkActive(pathname, item.href, item.exact, item.prefix);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "shrink-0 rounded px-2.5 py-1 text-xs font-medium",
-                  active ? "bg-accent/10 text-accent" : "text-fg-muted",
-                )}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+          {headerNav.map((item) => (
+            <HeaderNavLink
+              key={item.href}
+              pathname={pathname}
+              item={item}
+              className="shrink-0 rounded px-2.5 py-1 text-xs font-medium"
+            />
+          ))}
         </div>
       </div>
     </header>

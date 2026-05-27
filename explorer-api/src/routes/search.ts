@@ -21,14 +21,14 @@ export async function registerSearchRoutes(app: FastifyInstance): Promise<void> 
       }
 
       if (/^[a-fA-F0-9]{64}$/.test(query)) {
-        const tx = await fetchTransaction(chainId, query);
+        const tx = (await fetchTransaction(chainId, query)) as { found?: boolean };
         if (tx.found) {
           return { path: `/${chainId}/tx/${query}` };
         }
         return { path: `/${chainId}/block/${query}` };
       }
 
-      const address = await fetchAddress(chainId, query, { limit: 1 });
+      const address = (await fetchAddress(chainId, query, { limit: 1 })) as { found?: boolean };
       if (address.found) {
         return { path: `/${chainId}/address/${query}` };
       }

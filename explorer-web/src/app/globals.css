@@ -3,11 +3,6 @@
 /* Explicit scan paths for Tailwind v4 (Next.js app router + src/) */
 @source "../**/*.{js,ts,jsx,tsx,mdx}";
 
-@import "@fontsource/inter/400.css";
-@import "@fontsource/inter/500.css";
-@import "@fontsource/inter/600.css";
-@import "@fontsource/inter/700.css";
-
 /*
  * Verium desktop theme tokens — aligned with verium/desktop/verium-app/src/index.css
  * Dark = default (:root). Light = `.light` on <html>.
@@ -23,6 +18,11 @@
   --border-strong: rgb(51 65 85);
   --accent: rgb(65 139 202);
   --accent-fg: rgb(240 249 255);
+  --chain-vrm: rgb(65 139 202);
+  --chain-vrm-hover: rgb(50 119 179);
+  --chain-vrc: rgb(180 108 60);
+  --chain-vrc-hover: rgb(156 84 36);
+  --chain-btn-fg: rgb(255 255 255);
   --success: rgb(53 155 55);
   --warning: rgb(245 158 11);
   --danger: rgb(233 58 93);
@@ -39,6 +39,11 @@
   --border-strong: rgb(198 205 218);
   --accent: rgb(0 102 204);
   --accent-fg: rgb(255 255 255);
+  --chain-vrm: rgb(65 139 202);
+  --chain-vrm-hover: rgb(50 119 179);
+  --chain-vrc: rgb(180 108 60);
+  --chain-vrc-hover: rgb(156 84 36);
+  --chain-btn-fg: rgb(255 255 255);
   --success: rgb(22 132 41);
   --warning: rgb(217 119 6);
   --danger: rgb(220 38 76);
@@ -79,6 +84,43 @@
     color-mix(in srgb, var(--bg-panel) 40%, transparent) 0%,
     color-mix(in srgb, var(--bg-subtle) 80%, transparent) 100%
   );
+}
+
+.chain-explore-btn {
+  display: inline-flex;
+  shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-width: 1px;
+  border-style: solid;
+  font-weight: 600;
+  color: var(--chain-btn-fg);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+  transition: background-color 0.15s ease, border-color 0.15s ease, filter 0.15s ease;
+}
+
+.chain-explore-btn:hover {
+  filter: brightness(0.95);
+}
+
+.chain-explore-btn-vrm {
+  background-color: var(--chain-vrm);
+  border-color: var(--chain-vrm);
+}
+
+.chain-explore-btn-vrm:hover {
+  background-color: var(--chain-vrm-hover);
+  border-color: var(--chain-vrm-hover);
+}
+
+.chain-explore-btn-vrc {
+  background-color: var(--chain-vrc);
+  border-color: var(--chain-vrc);
+}
+
+.chain-explore-btn-vrc:hover {
+  background-color: var(--chain-vrc-hover);
+  border-color: var(--chain-vrc-hover);
 }
 
 .explorer-link {
@@ -353,11 +395,87 @@
   box-shadow: 0 2px 8px color-mix(in srgb, var(--border) 60%, transparent);
 }
 
+.chain-summary-card {
+  transition:
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.chain-summary-card-vrm:hover,
+.chain-summary-card-vrm:focus-visible {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--chain-vrm) 55%, var(--border));
+  box-shadow:
+    0 8px 24px rgb(0 0 0 / 0.12),
+    inset 3px 0 0 var(--chain-vrm);
+}
+
+.chain-summary-card-vrc:hover,
+.chain-summary-card-vrc:focus-visible {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--chain-vrc) 55%, var(--border));
+  box-shadow:
+    0 8px 24px rgb(0 0 0 / 0.12),
+    inset 3px 0 0 var(--chain-vrc);
+}
+
+.chain-summary-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.chain-summary-stat-grid .bc-stat {
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.chain-summary-card:hover .chain-summary-stat-grid .bc-stat {
+  background-color: color-mix(in srgb, var(--bg-subtle) 35%, var(--bg-panel));
+}
+
+.binary-chain-hero {
+  transition: box-shadow 0.2s ease;
+}
+
+.binary-chain-hero:hover {
+  box-shadow: 0 4px 20px rgb(0 0 0 / 0.1);
+}
+
+.search-dropdown {
+  animation: search-dropdown-enter 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes search-dropdown-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .bc-panel {
   transition: box-shadow 0.15s ease;
 }
 
+.bc-panel:hover {
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.08);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .chain-summary-card-vrm:hover,
+  .chain-summary-card-vrc:hover,
+  .chain-summary-card-vrm:focus-visible,
+  .chain-summary-card-vrc:focus-visible {
+    transform: none;
+  }
+
+  .search-dropdown {
+    animation: none;
+  }
+
   .toast-enter {
     animation: none;
   }

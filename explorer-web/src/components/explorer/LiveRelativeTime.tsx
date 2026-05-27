@@ -1,14 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRelativeTimeTick } from "@/components/explorer/RelativeTimeProvider";
 import { cn, formatBlockAge, formatUnixTime } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 export type LiveRelativeTimeInterval = "second" | "minute";
-
-const INTERVAL_MS: Record<LiveRelativeTimeInterval, number> = {
-  second: 1_000,
-  minute: 60_000,
-};
 
 export function LiveRelativeTime({
   time,
@@ -24,18 +20,11 @@ export function LiveRelativeTime({
   fixedWidth?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
-  const [, setTick] = useState(0);
+  useRelativeTimeTick(interval);
 
   useEffect(() => {
     setMounted(true);
-    if (time == null) return;
-
-    const id = window.setInterval(() => {
-      setTick((value) => value + 1);
-    }, INTERVAL_MS[interval]);
-
-    return () => window.clearInterval(id);
-  }, [time, interval]);
+  }, []);
 
   if (!time) {
     return <span className={className}>—</span>;
@@ -44,7 +33,6 @@ export function LiveRelativeTime({
   const title = formatUnixTime(time);
   const classes = cn(fixedWidth && "bc-age-text", className);
 
-  // Relative time depends on Date.now(); render only after mount so SSR and hydration match.
   if (!mounted) {
     return (
       <span className={classes} title={title} aria-hidden="true">

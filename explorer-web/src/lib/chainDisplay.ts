@@ -28,6 +28,14 @@ export function formatBlocksBehind(health: ChainHealth): string {
   return formatNumber(behind);
 }
 
+export function isChainLive(health: ChainHealth): boolean {
+  const behind = health.heights.blocksBehind;
+  if (behind === 0) return true;
+  if (behind == null && health.trusted) return true;
+  const label = getChainStatusLabel(health).toLowerCase();
+  return !health.explorerStatus?.syncing && (label.includes("live") || label.includes("online"));
+}
+
 export type ChainExplorerConfig = {
   id: "vrm" | "vrc";
   name: string;
@@ -38,6 +46,25 @@ export type ChainExplorerConfig = {
   richlistHref: string | null;
   leaderboardHref: string | null;
   blockHref: ((height: number) => string) | null;
+};
+
+/** Verium logo blue (#418BCA) and VeriCoin logo copper (#b46c3c). */
+export const CHAIN_THEME: Record<
+  "vrm" | "vrc",
+  { accent: string; accentHover: string; accentFg: string; accentSoft: string }
+> = {
+  vrm: {
+    accent: "rgb(65 139 202)",
+    accentHover: "rgb(50 119 179)",
+    accentFg: "rgb(255 255 255)",
+    accentSoft: "rgb(65 139 202 / 0.12)",
+  },
+  vrc: {
+    accent: "rgb(180 108 60)",
+    accentHover: "rgb(156 84 36)",
+    accentFg: "rgb(255 255 255)",
+    accentSoft: "rgb(180 108 60 / 0.12)",
+  },
 };
 
 export const CHAIN_EXPLORERS: Record<"vrm" | "vrc", ChainExplorerConfig> = {
@@ -58,8 +85,8 @@ export const CHAIN_EXPLORERS: Record<"vrm" | "vrc", ChainExplorerConfig> = {
     ticker: "VRC",
     consensus: "PoST",
     logo: "/img/vericonomy/vericoin-logo.svg",
-    exploreHref: null,
-    richlistHref: null,
+    exploreHref: "/vrc",
+    richlistHref: "/vrc/richlist",
     leaderboardHref: null,
     blockHref: null,
   },

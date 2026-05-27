@@ -9,7 +9,7 @@ const txCache = createSwrCache({
   fetch: async (key, signal) => {
     if (signal.aborted) throw new Error("aborted");
     const [chainId, txid] = key.split(":");
-    return fetchTransaction(chainId, txid);
+    return fetchTransaction(chainId, txid) as Promise<Record<string, unknown>>;
   },
 });
 

@@ -57,15 +57,20 @@ async function getLandingData(options = {}) {
 async function getVrmDashboard(options = {}) {
 	const db = options.db || dbModule.openDatabase();
 	const shared = Object.assign({}, options, { db });
+	const since30d = Math.floor(Date.now() / 1000) - 30 * 86_400;
 	const richlist = indexerQuery.getRichlist("vrm", Object.assign({}, shared, { limit: 5 }));
 	const leaderboard = indexerQuery.getLeaderboard("vrm", Object.assign({}, shared, {
 		period: "month",
 		sort: "activity",
 		limit: 5
 	}));
+	const activityHistory = indexerQuery.getChainActivityHistory("vrm", Object.assign({}, shared, {
+		since: since30d,
+		maxPoints: 100
+	}));
 	const summary = await getChainSummary("vrm", shared);
 
-	return { summary, richlist, leaderboard };
+	return { summary, richlist, leaderboard, activityHistory };
 }
 
 async function getIndexerHealth(options = {}) {

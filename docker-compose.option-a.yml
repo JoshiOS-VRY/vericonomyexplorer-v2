@@ -1,0 +1,122 @@
+networks:
+  edge:
+    driver: bridge
+  private:
+    driver: bridge
+    internal: true
+
+services:
+  caddy:
+    image: caddy:2.9
+    container_name: vericonomy-caddy
+    restart: unless-stopped
+    environment:
+      ACME_EMAIL: ${ACME_EMAIL}
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN}
+      LEGACY_PUBLIC_DOMAIN: ${LEGACY_PUBLIC_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/option-a/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - explorer-web
+      - explorer-express
+    networks:
+      - edge
+      - private
+
+  explorer-web:
+    container_name: vericonomy-explorer-web
+    build:
+      context: ./explorer-web
+      dockerfile: Dockerfile
+    image: vericonomy-explorer-web:option-a
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-.env.production}
+    environment:
+      PORT: ${WEB_PORT:-3000}
+      EXPLORER_API_URL: ${EXPLORER_API_URL:-http://explorer-express:3002}
+      EXPLORER_FAST_API_URL: ${EXPLORER_FAST_API_URL:-http://explorer-fast-api:3003}
+      VCEXP_FAST_API_HOST: explorer-fast-api
+      VCEXP_FAST_API_PORT: ${FAST_API_PORT:-3003}
+    expose:
+      - "${WEB_PORT:-3000}"
+    depends_on:
+      - explorer-fast-api
+      - explorer-express
+    networks:
+      - private
+
+  explorer-express:
+    container_name: vericonomy-explorer-express
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vericonomy-explorer-express:option-a
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-.env.production}
+    environment:
+      BTCEXP_HOST: 0.0.0.0
+      BTCEXP_PORT: ${EXPRESS_PORT:-3002}
+    expose:
+      - "${EXPRESS_PORT:-3002}"
+    volumes:
+      - vericonomy-cache:/app/cache
+      - vericonomy-database:/app/database
+      - ./configs/chains.json:/app/configs/chains.json:ro
+    networks:
+      - private
+
+  explorer-fast-api:
+    container_name: vericonomy-explorer-fast-api
+    build:
+      context: .
+      dockerfile: explorer-api/Dockerfile
+    image: vericonomy-explorer-fast-api:option-a
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-.env.production}
+    environment:
+      VCEXP_FAST_API_HOST: 0.0.0.0
+      VCEXP_FAST_API_PORT: ${FAST_API_PORT:-3003}
+      VCEXP_INDEXER_SQLITE_PATH: ${VCEXP_INDEXER_SQLITE_PATH:-/app/database/vericonomy-index.sqlite}
+      VCEXP_CHAINS_CONFIG: ${VCEXP_CHAINS_CONFIG:-/app/configs/chains.json}
+    expose:
+      - "${FAST_API_PORT:-3003}"
+    volumes:
+      - vericonomy-database:/app/database
+      - ./configs/chains.json:/app/configs/chains.json:ro
+    depends_on:
+      - explorer-express
+    networks:
+      - private
+
+  vrm-indexer:
+    container_name: vericonomy-vrm-indexer
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vericonomy-vrm-indexer:option-a
+    restart: unless-stopped
+    command: ["npm", "run", "indexer:vrm"]
+    env_file:
+      - ${ENV_FILE:-.env.production}
+    environment:
+      VCEXP_INDEXER_SQLITE_PATH: ${VCEXP_INDEXER_SQLITE_PATH:-/app/database/vericonomy-index.sqlite}
+      VCEXP_CHAINS_CONFIG: ${VCEXP_CHAINS_CONFIG:-/app/configs/chains.json}
+    volumes:
+      - vericonomy-database:/app/database
+      - ./configs/chains.json:/app/configs/chains.json:ro
+    networks:
+      - private
+
+volumes:
+  caddy_data:
+  caddy_config:
+  vericonomy-cache:
+  vericonomy-database:

@@ -1,4 +1,4 @@
-# Multi-stage build for Verium RPC Explorer
+# Multi-stage build for Verium RPC Explorer / indexer image
 FROM node:20-alpine AS builder
 
 # Install build dependencies
@@ -47,20 +47,20 @@ RUN mkdir -p /app/cache && chown -R verium:nodejs /app/cache
 ENV NODE_ENV=production
 ENV BTCEXP_COIN=VRM
 ENV BTCEXP_HOST=0.0.0.0
-ENV BTCEXP_PORT=3003
+ENV BTCEXP_PORT=3002
 ENV BTCEXP_DISPLAY_CURRENCY=vrm
 ENV BTCEXP_UI_THEME=dark
 ENV BTCEXP_SLOW_DEVICE_MODE=false
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:3003/ || exit 1
+    CMD sh -c 'curl -fsS "http://localhost:${BTCEXP_PORT:-3002}/" >/dev/null || exit 1'
 
 # Switch to non-root user
 USER verium
 
-# Expose port
-EXPOSE 3003
+# Expose default Express port
+EXPOSE 3002
 
 # Start the application
 CMD ["npm", "start"]

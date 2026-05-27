@@ -1,0 +1,23 @@
+{
+  email {$ACME_EMAIL}
+  admin off
+}
+
+{$PUBLIC_DOMAIN} {
+  encode zstd gzip
+
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "SAMEORIGIN"
+    Referrer-Policy "strict-origin-when-cross-origin"
+  }
+
+  reverse_proxy explorer-web:3000
+}
+
+# Keep legacy Express routes public on a dedicated hostname.
+{$LEGACY_PUBLIC_DOMAIN} {
+  encode zstd gzip
+  reverse_proxy explorer-express:3002
+}

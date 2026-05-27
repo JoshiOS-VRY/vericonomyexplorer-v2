@@ -1,20 +1,16 @@
 import { UserMessageBanner } from "@/components/explorer/UserMessageBanner";
 import { AlertBanner } from "@/components/explorer/ExplorerUi";
-import { VrmLiveDashboard } from "@/components/explorer/VrmLiveDashboard";
+import { VrmChainDashboard } from "@/components/explorer/vrm/VrmChainDashboard";
 import { getVrmDashboard } from "@/lib/api/indexer";
 
 export default async function VrmChainPage() {
   try {
-    const { summary, richlist, leaderboard } = await getVrmDashboard();
+    const dashboard = await getVrmDashboard();
 
     return (
       <>
         <UserMessageBanner />
-        <VrmLiveDashboard
-          initialSummary={summary}
-          initialRichlist={richlist}
-          initialLeaderboard={leaderboard}
-        />
+        <VrmChainDashboard {...dashboard} />
       </>
     );
   } catch {

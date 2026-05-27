@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       redirect(target);
     }
     const cookieStore = await cookies();
-    cookieStore.set("explorer_message", `No indexed Verium result found for query: ${query}`, {
+    cookieStore.set("explorer_message", `No Verium result found for query: ${query}`, {
       path: "/",
       maxAge: 60,
     });

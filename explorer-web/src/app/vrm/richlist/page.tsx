@@ -5,6 +5,7 @@ import {
 } from "@/components/explorer/ExplorerUi";
 import { BcHashLink, BcPageHeader, BcPanel } from "@/components/explorer/BlockchairUi";
 import { getRichlist } from "@/lib/api/indexer";
+import { formatExplorerUserMessage } from "@/lib/explorerCopy";
 import { normalizeLimit, normalizeOffset } from "@/lib/utils";
 
 export default async function RichlistPage({
@@ -27,7 +28,7 @@ export default async function RichlistPage({
     return (
       <div className="space-y-6">
         <BcPageHeader title="Rich list" subtitle="Top VRM addresses by balance." />
-        <AlertBanner title="Richlist Unavailable">{richlist.message}</AlertBanner>
+        <AlertBanner title="Richlist Unavailable">{formatExplorerUserMessage(richlist.message)}</AlertBanner>
       </div>
     );
   }
@@ -61,7 +62,7 @@ export default async function RichlistPage({
                 <tr key={item.address}>
                   <td className="tabular-nums text-fg-subtle">{item.rank}</td>
                   <td>
-                    <BcHashLink href={`/vrm/address/${item.address}`} value={item.address} />
+                    <BcHashLink href={`/vrm/address/${item.address}`} value={item.address} prefetch />
                   </td>
                   <td className="text-right font-medium tabular-nums">
                     {item.balance.amount} {item.balance.ticker}

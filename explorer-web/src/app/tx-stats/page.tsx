@@ -1,14 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import {
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 
 const sample = [
   { label: "Day 1", value: 120 },
@@ -18,6 +11,14 @@ const sample = [
   { label: "Day 5", value: 160 },
 ];
 
+const TxStatsChart = dynamic(
+  () => import("@/components/explorer/charts/TxStatsChart").then((module) => module.TxStatsChart),
+  {
+    ssr: false,
+    loading: () => <div className="h-80 animate-pulse rounded-md bg-bg-subtle" />,
+  },
+);
+
 export default function TxStatsPage() {
   return (
     <div className="space-y-6">
@@ -25,20 +26,7 @@ export default function TxStatsPage() {
       <Card>
         <CardHeader><CardTitle>Daily Transaction Volume (sample)</CardTitle></CardHeader>
         <CardContent className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={sample}>
-              <XAxis dataKey="label" stroke="rgb(var(--fg-subtle))" fontSize={11} />
-              <YAxis stroke="rgb(var(--fg-subtle))" fontSize={11} />
-              <Tooltip
-                contentStyle={{
-                  background: "rgb(var(--bg-panel))",
-                  border: "1px solid rgb(var(--border))",
-                  borderRadius: 6,
-                }}
-              />
-              <Line type="monotone" dataKey="value" stroke="rgb(var(--accent))" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+          <TxStatsChart data={sample} />
         </CardContent>
       </Card>
     </div>

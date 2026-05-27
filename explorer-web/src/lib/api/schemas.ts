@@ -106,6 +106,80 @@ export const leaderboardSchema = z.object({
   items: z.array(z.record(z.string(), z.unknown())).optional().default([]),
 });
 
+const amountSchema = z.object({
+  amount: z.string(),
+  ticker: z.string(),
+});
+
+export const transactionResultSchema = z.object({
+  found: z.boolean(),
+  chainId: z.string().optional(),
+  txid: z.string().optional(),
+  trusted: z.boolean().optional(),
+  transaction: z
+    .object({
+      txid: z.string(),
+      blockHeight: z.number(),
+      blockHash: z.string().optional(),
+      txIndex: z.number(),
+      time: z.number().nullable(),
+      isCoinbase: z.boolean().optional(),
+      isCoinstake: z.boolean().optional(),
+      source: z.string().optional(),
+    })
+    .optional(),
+  inputs: z.array(z.record(z.string(), z.unknown())).default([]),
+  outputs: z.array(z.record(z.string(), z.unknown())).default([]),
+  addressEvents: z.array(z.record(z.string(), z.unknown())).default([]),
+  totals: z
+    .object({
+      inputAtomic: z.string(),
+      outputAtomic: z.string(),
+      feeAtomic: z.string(),
+      input: amountSchema,
+      output: amountSchema,
+      fee: amountSchema,
+    })
+    .optional(),
+  confirmations: z.number().nullable().optional(),
+  siblings: z
+    .object({
+      prevTxid: z.string().nullable(),
+      nextTxid: z.string().nullable(),
+    })
+    .optional(),
+  changeOutputs: z.array(z.number()).optional(),
+  source: sourceSchema,
+});
+
+export const blockResultSchema = z.object({
+  found: z.boolean(),
+  chainId: z.string().optional(),
+  query: z.string().optional(),
+  trusted: z.boolean().optional(),
+  block: z.record(z.string(), z.unknown()).optional(),
+  transactions: z.array(z.record(z.string(), z.unknown())).default([]),
+  paging: pagingSchema,
+  confirmations: z.number().nullable().optional(),
+  coinbase: z
+    .object({
+      txid: z.string(),
+      rewardAtomic: z.string(),
+      reward: amountSchema,
+    })
+    .nullable()
+    .optional(),
+  totals: z
+    .object({
+      feeAtomic: z.string(),
+      fee: amountSchema,
+      outputValueAtomic: z.string(),
+      outputValue: amountSchema,
+    })
+    .optional(),
+  source: sourceSchema,
+});
+
 export function parseOrThrow<T>(schema: z.ZodType<T>, data: unknown): T {
   return schema.parse(data);
 }

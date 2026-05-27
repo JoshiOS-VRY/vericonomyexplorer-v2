@@ -12,7 +12,7 @@ const richlistCache = createSwrCache({
     return fetchRichlist(chainId, {
       limit: limit ? Number(limit) : undefined,
       offset: offset ? Number(offset) : undefined,
-    });
+    }) as Promise<Record<string, unknown>>;
   },
 });
 
@@ -27,7 +27,7 @@ const leaderboardCache = createSwrCache({
       sort: sort || undefined,
       limit: limit ? Number(limit) : undefined,
       offset: offset ? Number(offset) : undefined,
-    });
+    }) as Promise<Record<string, unknown>>;
   },
 });
 

@@ -43,6 +43,27 @@ Next.js loads the repo root `.env` and `.env.local` automatically (see `next.con
 
 All `VCEXP_*` indexer vars are consumed by the Express/indexer processes, not Next directly.
 
+## Dev performance
+
+The VRM address and transaction pages use **progressive loading**: SSR fetches only critical data (`getAddress` / `getTransaction`), while balance charts, UTXOs, and related activity load client-side after first paint.
+
+Tips for faster local iteration:
+
+- Run the full stack with `npm run dev:full` (Next uses Turbopack via `next dev --turbo`)
+- Set `VCEXP_API_CACHE_TTL_MS=300000` in `.env.local` to keep explorer-api responses warm longer
+- After bulk indexing, checkpoint SQLite WAL: `npm run indexer:checkpoint` (stop indexer + api first if it blocks)
+- For perf testing without HMR noise: `npm run web:build && npm run web:start`
+
+| Variable | Description |
+|---|---|
+| `EXPLORER_FAST_API_URL` | Fast `/v1/*` API used by Next (default `http://127.0.0.1:3003`) |
+| `VCEXP_API_CACHE_TTL_MS` | explorer-api in-memory cache TTL override (ms) |
+| `VCEXP_WAL_CHECKPOINT_MB` | Auto-checkpoint WAL when idle and WAL exceeds this size |
+| `VCEXP_LCW_API_KEY` | LiveCoinWatch API key for home page market data (set in repo root `.env`) |
+| `VCEXP_MARKET_CACHE_TTL_MS` | Market data cache TTL in explorer-api (default 120000) |
+
+The home page (`/`) uses `GET /v1/home` from explorer-api with live SSE tip updates and periodic market refresh.
+
 ## Production
 
 ```bash

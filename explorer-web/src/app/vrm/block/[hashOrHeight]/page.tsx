@@ -1,18 +1,14 @@
-import {
-  AlertBanner,
-  PaginationLinks,
-  TxTypeBadge,
-  formatHeight,
-} from "@/components/explorer/ExplorerUi";
-import {
-  BcHashLink,
-  BcPageHeader,
-  BcPanel,
-} from "@/components/explorer/BlockchairUi";
-import { BlockChainNav } from "@/components/explorer/BlockDetail";
+import { AlertBanner, formatHeight } from "@/components/explorer/ExplorerUi";
+import { BlockDetailHero } from "@/components/explorer/BlockDetail";
 import { Breadcrumb } from "@/components/explorer/Breadcrumb";
+import { BlockAdvancedPanel } from "@/components/explorer/block/BlockAdvancedPanel";
+import { BlockMetricStrip } from "@/components/explorer/block/BlockMetricStrip";
+import { BlockMiningCard } from "@/components/explorer/block/BlockMiningCard";
+import { BlockShareActions } from "@/components/explorer/block/BlockShareActions";
+import { BlockStatusBar } from "@/components/explorer/block/BlockStatusBar";
+import { BlockTxTable } from "@/components/explorer/block/BlockTxTable";
 import { getBlock } from "@/lib/api/indexer";
-import { formatDifficulty, formatUnixTime, normalizeLimit, normalizeOffset } from "@/lib/utils";
+import { normalizeLimit, normalizeOffset } from "@/lib/utils";
 
 export default async function BlockPage({
   params,
@@ -61,7 +57,7 @@ export default async function BlockPage({
   const blockTime = result.transactions.find((tx) => tx.time)?.time ?? block.time ?? null;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-4">
       <Breadcrumb
         items={[
           { label: "Verium", href: "/vrm" },
@@ -70,81 +66,23 @@ export default async function BlockPage({
         ]}
       />
 
-      <BcPageHeader
-        title={`Block ${formatHeight(block.height)}`}
-        subtitle={blockTime ? formatUnixTime(blockTime) : undefined}
+      <BlockDetailHero
+        height={block.height}
+        hash={block.hash}
+        blockTime={blockTime}
+        txCount={block.txCount}
+        size={block.size ?? null}
+        difficulty={block.difficulty}
+        previousHash={block.previousHash}
+        nextHash={block.nextHash}
+        actions={<BlockShareActions hash={block.hash} height={block.height} />}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatChip label="Transactions" value={formatHeight(block.txCount)} />
-        <StatChip label="Size" value={block.size != null ? `${formatHeight(block.size)} B` : "—"} />
-        <StatChip label="Difficulty" value={block.difficulty ? formatDifficulty(block.difficulty) : "—"} />
-        <StatChip label="Hash" value={<BcHashLink href={`/vrm/block/${block.hash}`} value={`${block.hash.slice(0, 16)}…`} />} />
-      </div>
-
-      <BcPanel title="Block hash" flush>
-        <p className="break-all px-4 py-3 font-mono text-sm text-fg-muted sm:px-5">{block.hash}</p>
-        <BlockChainNav
-          height={block.height}
-          previousHash={block.previousHash}
-          nextHash={block.nextHash}
-        />
-      </BcPanel>
-
-      <BcPanel
-        title="Transactions"
-        flush
-        action={
-          <span className="text-xs font-semibold tabular-nums text-fg-muted">
-            {formatHeight(block.txCount)} total
-          </span>
-        }
-      >
-        {result.transactions.length === 0 ? (
-          <p className="px-5 py-4 text-sm text-fg-muted">No transactions found.</p>
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="bc-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Transaction ID</th>
-                    <th>Type</th>
-                    <th>Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.transactions.map((tx) => (
-                    <tr key={tx.txid}>
-                      <td className="tabular-nums text-fg-subtle">{tx.txIndex ?? "—"}</td>
-                      <td>
-                        <BcHashLink href={`/vrm/tx/${tx.txid}`} value={tx.txid} />
-                      </td>
-                      <td>
-                        <TxTypeBadge isCoinbase={tx.isCoinbase} isCoinstake={tx.isCoinstake} />
-                      </td>
-                      <td className="text-fg-muted">{tx.time ? formatUnixTime(tx.time) : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="border-t border-border px-5 py-4">
-              <PaginationLinks basePath={`/vrm/block/${block.height}`} paging={result.paging} />
-            </div>
-          </>
-        )}
-      </BcPanel>
-    </div>
-  );
-}
-
-function StatChip({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div className="bc-stat rounded-lg border border-border bg-bg-panel p-3 shadow-sm">
-      <div className="text-[10px] font-bold uppercase tracking-wide text-fg-subtle">{label}</div>
-      <div className="mt-1 text-sm font-semibold text-fg">{value}</div>
+      <BlockStatusBar result={result} />
+      <BlockMiningCard result={result} />
+      <BlockMetricStrip result={result} />
+      <BlockTxTable result={result} blockHeight={block.height} />
+      <BlockAdvancedPanel result={result} />
     </div>
   );
 }

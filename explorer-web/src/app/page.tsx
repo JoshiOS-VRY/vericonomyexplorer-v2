@@ -1,44 +1,77 @@
 import { AlertBanner } from "@/components/explorer/ExplorerUi";
-import { ExplorerHomeDashboard } from "@/components/explorer/ExplorerHomeDashboard";
 import { UserMessageBanner } from "@/components/explorer/UserMessageBanner";
-import { getLandingData } from "@/lib/api/indexer";
-import type { ChainSummary } from "@/lib/api/types";
+import { VericonomyHomeLiveBand } from "@/components/explorer/home/VericonomyHomeLiveBand";
+import { VericonomyHomeStatic } from "@/components/explorer/home/VericonomyHomeSections";
+import { getHomeMarket, getHomeNetwork, getHomeShell } from "@/lib/api/indexer";
+import type {
+  ChainSummary,
+  HomeMarketPayload,
+  HomeNetworkPayload,
+  HomeShellPayload,
+  LeaderboardResult,
+  RichlistResult,
+} from "@/lib/api/types";
 
 export default async function HomePage() {
-  let landing;
+  let shell: HomeShellPayload;
+  let market: HomeMarketPayload;
+  let network: HomeNetworkPayload;
 
   try {
-    landing = await getLandingData();
+    [shell, market, network] = await Promise.all([
+      getHomeShell(),
+      getHomeMarket().catch(() => emptyMarketPayload()),
+      getHomeNetwork().catch(() => emptyNetworkPayload()),
+    ]);
   } catch {
     return (
       <AlertBanner title="Explorer Unavailable">
-        Unable to load chain data from the indexer API. Ensure the API server and indexer worker are running.
+        Unable to load chain data. Ensure the API server is running.
       </AlertBanner>
     );
   }
 
-  const { vrmSummary, vrcSummary, vrmRichlist, vrcRichlist, vrmLeaderboard } = landing;
-
-  if (!vrmSummary && !vrcSummary) {
+  if (!shell.vrm?.summary && !shell.vrc?.summary) {
     return (
       <AlertBanner title="Explorer Unavailable">
-        Unable to load chain data from the indexer API. Ensure the API server and indexer worker are running.
+        Unable to load chain data. Ensure the API server is running.
       </AlertBanner>
     );
   }
 
+  const normalized = normalizeShell(shell);
+
   return (
-    <>
+    <div className="space-y-8">
       <UserMessageBanner />
-      <ExplorerHomeDashboard
-        vrmSummary={vrmSummary ?? emptySummary("vrm")}
-        vrcSummary={vrcSummary ?? emptySummary("vrc")}
-        vrmRichlist={vrmRichlist}
-        vrcRichlist={vrcRichlist}
-        vrmLeaderboard={vrmLeaderboard}
+      <VericonomyHomeLiveBand
+        initialShell={normalized}
+        market={market}
+        network={network}
       />
-    </>
+
+      <VericonomyHomeStatic
+        vrmRichlist={normalized.vrm.richlist}
+        vrcRichlist={normalized.vrc.richlist}
+        vrmLeaderboard={normalized.vrmLeaderboard}
+      />
+    </div>
   );
+}
+
+function normalizeShell(shell: HomeShellPayload): HomeShellPayload {
+  return {
+    vrm: {
+      summary: shell.vrm?.summary ?? emptySummary("vrm"),
+      richlist: shell.vrm?.richlist ?? emptyRichlist("vrm"),
+    },
+    vrc: {
+      summary: shell.vrc?.summary ?? emptySummary("vrc"),
+      richlist: shell.vrc?.richlist ?? emptyRichlist("vrc"),
+    },
+    vrmLeaderboard: shell.vrmLeaderboard ?? emptyLeaderboard(),
+    fetchedAt: shell.fetchedAt ?? new Date().toISOString(),
+  };
 }
 
 function emptySummary(chainId: "vrm" | "vrc"): ChainSummary {
@@ -74,5 +107,69 @@ function emptySummary(chainId: "vrm" | "vrc"): ChainSummary {
     latestBlocks: [],
     recentTransactions: [],
     source: { label: "unavailable" },
+  };
+}
+
+function emptyRichlist(chainId: string): RichlistResult {
+  return {
+    chainId,
+    trusted: false,
+    enabled: false,
+    source: { label: "unavailable" },
+    items: [],
+  };
+}
+
+function emptyLeaderboard(): LeaderboardResult {
+  return {
+    chainId: "vrm",
+    trusted: false,
+    enabled: false,
+    source: { label: "unavailable" },
+    items: [],
+  };
+}
+
+function emptyMarketPayload(): HomeMarketPayload {
+  const empty = {
+    usd: null,
+    btc: null,
+    marketCap: null,
+    volume24h: null,
+    change24h: null,
+    circulatingSupply: null,
+    source: "unavailable" as const,
+    updatedAt: null,
+    priceHistory24h: [],
+  };
+
+  return {
+    vrm: empty,
+    vrc: empty,
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
+function emptyNetworkPayload(): HomeNetworkPayload {
+  return {
+    vrm: {
+      hashrateKhPerMin: null,
+      hashrate7dKhPerMin: null,
+      difficulty: null,
+      blocks: null,
+      supply: null,
+      maxSupply: null,
+    },
+    vrc: {
+      difficulty: null,
+      blocks: null,
+      supply: null,
+      maxSupply: null,
+      interestRatePercent: null,
+      netStakeWeight: null,
+      percentStaked: null,
+      expectedStakeTimeSeconds: null,
+    },
+    fetchedAt: new Date().toISOString(),
   };
 }

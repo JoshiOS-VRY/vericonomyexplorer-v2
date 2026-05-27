@@ -1,19 +1,29 @@
 import { v1Fetch, v1FetchText } from "@/lib/api/v1";
-import { parseOrThrow, chainSummarySchema, indexerHealthSchema, richlistSchema, leaderboardSchema } from "@/lib/api/schemas";
+import { parseOrThrow, chainSummarySchema, indexerHealthSchema, richlistSchema, leaderboardSchema, transactionResultSchema, blockResultSchema } from "@/lib/api/schemas";
 import type {
+  AddressBalanceHistoryResult,
   AddressResult,
+  AddressUtxosResult,
   BlockResult,
+  ChainActivityHistoryResult,
   ChainSummary,
+  HomeMarketPayload,
+  HomeNetworkPayload,
+  HomePayload,
+  HomeShellPayload,
   IndexerHealth,
   LeaderboardResult,
   RichlistResult,
   TransactionResult,
+  VrmDashboardPayload,
 } from "@/lib/api/types";
 
-const REVALIDATE_SECONDS = 30;
+const SUMMARY_REVALIDATE_SECONDS = 30;
+const BLOCK_TX_REVALIDATE_SECONDS = 60;
+const LANDING_REVALIDATE_SECONDS = 60;
 
 export async function getIndexerHealth(): Promise<IndexerHealth> {
-  const data = await v1Fetch<IndexerHealth>("/indexer/status", { revalidate: REVALIDATE_SECONDS });
+  const data = await v1Fetch<IndexerHealth>("/indexer/status", { revalidate: SUMMARY_REVALIDATE_SECONDS });
   return parseOrThrow(indexerHealthSchema, data);
 }
 
@@ -30,7 +40,7 @@ export async function getLandingData(): Promise<{
     vrmRichlist: unknown;
     vrcRichlist: unknown;
     vrmLeaderboard: unknown;
-  }>("/landing", { revalidate: 60 });
+  }>("/landing", { revalidate: LANDING_REVALIDATE_SECONDS });
 
   return {
     vrmSummary: parseOrThrow(chainSummarySchema, data.vrmSummary) as unknown as ChainSummary,
@@ -41,26 +51,54 @@ export async function getLandingData(): Promise<{
   };
 }
 
-export async function getVrmDashboard(): Promise<{
-  summary: ChainSummary;
-  richlist: RichlistResult;
-  leaderboard: LeaderboardResult;
-}> {
-  const data = await v1Fetch<{
-    summary: unknown;
-    richlist: unknown;
-    leaderboard: unknown;
-  }>("/vrm/dashboard", { revalidate: REVALIDATE_SECONDS });
+export async function getHomeShell(): Promise<HomeShellPayload> {
+  return v1Fetch<HomeShellPayload>("/home/shell", { revalidate: SUMMARY_REVALIDATE_SECONDS });
+}
+
+export async function getHomeData(): Promise<HomePayload> {
+  return v1Fetch<HomePayload>("/home", { revalidate: SUMMARY_REVALIDATE_SECONDS });
+}
+
+export async function getHomeMarket(): Promise<HomeMarketPayload> {
+  return v1Fetch<HomeMarketPayload>("/home/market", { revalidate: 120 });
+}
+
+export async function getHomeNetwork(): Promise<HomeNetworkPayload> {
+  return v1Fetch<HomeNetworkPayload>("/home/network", { revalidate: 120 });
+}
+
+export async function getVrmDashboard(): Promise<VrmDashboardPayload> {
+  const data = await v1Fetch<VrmDashboardPayload>("/vrm/dashboard", {
+    revalidate: SUMMARY_REVALIDATE_SECONDS,
+  });
 
   return {
     summary: parseOrThrow(chainSummarySchema, data.summary) as unknown as ChainSummary,
     richlist: parseOrThrow(richlistSchema, data.richlist) as unknown as RichlistResult,
     leaderboard: parseOrThrow(leaderboardSchema, data.leaderboard) as unknown as LeaderboardResult,
+    network: data.network,
+    market: data.market,
+    activityHistory: data.activityHistory as ChainActivityHistoryResult,
+    fetchedAt: data.fetchedAt,
   };
 }
 
+export async function getChainActivityHistory(
+  chainId: string,
+  params: { maxPoints?: number; since?: number } = {},
+): Promise<ChainActivityHistoryResult> {
+  const search = new URLSearchParams();
+  if (params.maxPoints != null) search.set("maxPoints", String(params.maxPoints));
+  if (params.since != null) search.set("since", String(params.since));
+  const qs = search.toString();
+  return v1Fetch<ChainActivityHistoryResult>(
+    `/${chainId}/activity-history${qs ? `?${qs}` : ""}`,
+    { revalidate: SUMMARY_REVALIDATE_SECONDS },
+  );
+}
+
 export async function getChainSummary(chainId: string): Promise<ChainSummary> {
-  const data = await v1Fetch<unknown>(`/${chainId}/summary`, { revalidate: REVALIDATE_SECONDS });
+  const data = await v1Fetch<unknown>(`/${chainId}/summary`, { revalidate: SUMMARY_REVALIDATE_SECONDS });
   return parseOrThrow(chainSummarySchema, data) as unknown as ChainSummary;
 }
 
@@ -73,7 +111,7 @@ export async function getRichlist(
   if (params.offset != null) search.set("offset", String(params.offset));
   const qs = search.toString();
   const data = await v1Fetch<unknown>(`/${chainId}/richlist${qs ? `?${qs}` : ""}`, {
-    revalidate: REVALIDATE_SECONDS,
+    revalidate: SUMMARY_REVALIDATE_SECONDS,
   });
   return parseOrThrow(richlistSchema, data) as unknown as RichlistResult;
 }
@@ -94,7 +132,7 @@ export async function getLeaderboard(
   if (params.offset != null) search.set("offset", String(params.offset));
   const qs = search.toString();
   const data = await v1Fetch<unknown>(`/${chainId}/leaderboard${qs ? `?${qs}` : ""}`, {
-    revalidate: REVALIDATE_SECONDS,
+    revalidate: SUMMARY_REVALIDATE_SECONDS,
   });
   return parseOrThrow(leaderboardSchema, data) as unknown as LeaderboardResult;
 }
@@ -110,7 +148,37 @@ export async function getAddress(
   const qs = search.toString();
   return v1Fetch<AddressResult>(
     `/${chainId}/address/${encodeURIComponent(address)}${qs ? `?${qs}` : ""}`,
-    { revalidate: REVALIDATE_SECONDS },
+    { revalidate: SUMMARY_REVALIDATE_SECONDS },
+  );
+}
+
+export async function getAddressBalanceHistory(
+  chainId: string,
+  address: string,
+  params: { maxPoints?: number; since?: number } = {},
+): Promise<AddressBalanceHistoryResult> {
+  const search = new URLSearchParams();
+  if (params.maxPoints != null) search.set("maxPoints", String(params.maxPoints));
+  if (params.since != null) search.set("since", String(params.since));
+  const qs = search.toString();
+  return v1Fetch<AddressBalanceHistoryResult>(
+    `/${chainId}/address/${encodeURIComponent(address)}/balance-history${qs ? `?${qs}` : ""}`,
+    { revalidate: SUMMARY_REVALIDATE_SECONDS },
+  );
+}
+
+export async function getAddressUtxos(
+  chainId: string,
+  address: string,
+  params: { limit?: number; offset?: number } = {},
+): Promise<AddressUtxosResult> {
+  const search = new URLSearchParams();
+  if (params.limit != null) search.set("limit", String(params.limit));
+  if (params.offset != null) search.set("offset", String(params.offset));
+  const qs = search.toString();
+  return v1Fetch<AddressUtxosResult>(
+    `/${chainId}/address/${encodeURIComponent(address)}/utxos${qs ? `?${qs}` : ""}`,
+    { revalidate: SUMMARY_REVALIDATE_SECONDS },
   );
 }
 
@@ -118,9 +186,10 @@ export async function getTransaction(
   chainId: string,
   txid: string,
 ): Promise<TransactionResult> {
-  return v1Fetch<TransactionResult>(`/${chainId}/tx/${encodeURIComponent(txid)}`, {
-    revalidate: REVALIDATE_SECONDS,
+  const data = await v1Fetch<unknown>(`/${chainId}/tx/${encodeURIComponent(txid)}`, {
+    revalidate: BLOCK_TX_REVALIDATE_SECONDS,
   });
+  return parseOrThrow(transactionResultSchema, data) as unknown as TransactionResult;
 }
 
 export async function getBlock(
@@ -132,10 +201,11 @@ export async function getBlock(
   if (params.limit != null) search.set("limit", String(params.limit));
   if (params.offset != null) search.set("offset", String(params.offset));
   const qs = search.toString();
-  return v1Fetch<BlockResult>(
+  const data = await v1Fetch<unknown>(
     `/${chainId}/block/${encodeURIComponent(hashOrHeight)}${qs ? `?${qs}` : ""}`,
-    { revalidate: REVALIDATE_SECONDS },
+    { revalidate: SUMMARY_REVALIDATE_SECONDS },
   );
+  return parseOrThrow(blockResultSchema, data) as unknown as BlockResult;
 }
 
 export async function getTipHeight(chainId: string): Promise<number> {

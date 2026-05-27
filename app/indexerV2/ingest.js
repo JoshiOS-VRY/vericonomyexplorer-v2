@@ -2,6 +2,12 @@
 
 const dbModule = require("./db.js");
 const {
+	createPeriodStatStatements,
+	recordAddressPeriodEvent,
+	recordBlockActivity,
+	recordTransactionActivity
+} = require("./periodStats.js");
+const {
 	decimalToAtomicUnits,
 	getVoutAddresses,
 	isCoinbaseTx,
@@ -190,6 +196,8 @@ function ingestBlock(chainId, block, options = {}) {
 	}
 
 	const run = db.transaction(() => {
+		const periodStatements = createPeriodStatStatements(db);
+
 		statements.upsertBlock.run({
 			chain_id: chainId,
 			height: block.height,
@@ -208,10 +216,12 @@ function ingestBlock(chainId, block, options = {}) {
 		});
 
 		for (let txIndex = 0; txIndex < txs.length; txIndex++) {
-			ingestTransaction(statements, chainId, block, txs[txIndex], txIndex, now, {
+			ingestTransaction(statements, periodStatements, chainId, block, txs[txIndex], txIndex, now, {
 				storeRawJson
 			});
 		}
+
+		recordBlockActivity(periodStatements, chainId, block.time || block.blocktime || 0, now);
 
 		statements.upsertSyncState.run(
 			chainId,
@@ -235,7 +245,7 @@ function ingestBlock(chainId, block, options = {}) {
 	};
 }
 
-function ingestTransaction(statements, chainId, block, tx, txIndex, now, options = {}) {
+function ingestTransaction(statements, periodStatements, chainId, block, tx, txIndex, now, options = {}) {
 	const coinbase = isCoinbaseTx(tx);
 	const coinstake = isCoinstakeTx(tx);
 	const txid = tx.txid || tx.hash;
@@ -259,11 +269,19 @@ function ingestTransaction(statements, chainId, block, tx, txIndex, now, options
 		indexed_at: now
 	});
 
-	processInputs(statements, chainId, block, tx, txid, coinbase, now);
-	processOutputs(statements, chainId, block, tx, txid, now);
+	processInputs(statements, periodStatements, chainId, block, tx, txid, coinbase, now);
+	processOutputs(statements, periodStatements, chainId, block, tx, txid, now);
+	recordTransactionActivity(
+		periodStatements,
+		chainId,
+		block.time || block.blocktime || 0,
+		coinbase,
+		coinstake,
+		now
+	);
 }
 
-function processInputs(statements, chainId, block, tx, txid, coinbase, now) {
+function processInputs(statements, periodStatements, chainId, block, tx, txid, coinbase, now) {
 	const vins = Array.isArray(tx.vin) ? tx.vin : [];
 
 	for (let vinIndex = 0; vinIndex < vins.length; vinIndex++) {
@@ -309,11 +327,21 @@ function processInputs(statements, chainId, block, tx, txid, coinbase, now) {
 			const txCountIncrement = recordAddressTransaction(statements, chainId, address, txid, block, now);
 			statements.insertAddressEvent.run(chainId, address, txid, block.height, block.time || 0, delta, "spend", now);
 			statements.upsertSpendBalance.run(chainId, address, delta, valueSats, txCountIncrement, block.height, now);
+			recordAddressPeriodEvent(
+				periodStatements,
+				chainId,
+				address,
+				delta,
+				block.height,
+				block.time || block.blocktime || 0,
+				txCountIncrement,
+				now
+			);
 		}
 	}
 }
 
-function processOutputs(statements, chainId, block, tx, txid, now) {
+function processOutputs(statements, periodStatements, chainId, block, tx, txid, now) {
 	const vouts = Array.isArray(tx.vout) ? tx.vout : [];
 
 	for (let outputIndex = 0; outputIndex < vouts.length; outputIndex++) {
@@ -341,6 +369,16 @@ function processOutputs(statements, chainId, block, tx, txid, now) {
 			const txCountIncrement = recordAddressTransaction(statements, chainId, primaryAddress, txid, block, now);
 			statements.insertAddressEvent.run(chainId, primaryAddress, txid, block.height, block.time || 0, valueSats, "receive", now);
 			statements.upsertReceiveBalance.run(chainId, primaryAddress, valueSats, valueSats, txCountIncrement, block.height, now);
+			recordAddressPeriodEvent(
+				periodStatements,
+				chainId,
+				primaryAddress,
+				valueSats,
+				block.height,
+				block.time || block.blocktime || 0,
+				txCountIncrement,
+				now
+			);
 		}
 	}
 }

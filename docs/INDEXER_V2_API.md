@@ -96,11 +96,33 @@ Amounts are returned in two forms:
 
 Returns indexed transaction metadata, resolved inputs, outputs, and address delta events. This is the preferred lookup path for Verium because arbitrary transaction lookup through RPC is not reliable in the current Verium codebase.
 
+Response includes:
+
+- `transaction`: block height, index, time, coinbase/coinstake flags
+- `inputs`: resolved vins with `prevTxid`, `prevVout`, `value`, `resolved`
+- `outputs`: vouts with spend lifecycle (`isSpent`, `spentByTxid`, `spentHeight`)
+- `addressEvents`: per-address receive/spend deltas
+- `totals`: `inputAtomic`, `outputAtomic`, `feeAtomic` plus display amounts
+- `confirmations`: depth from chain tip when tip height is known
+- `siblings`: `prevTxid` / `nextTxid` within the same block
+- `changeOutputs`: output indices likely returning change to a sender address
+- `trusted` and `source`: index trust labeling for UI honesty
+
 ## Block
 
 `GET /api/indexer/:chainId/block/:hashOrHeight?limit=25&offset=0`
 
 Returns indexed block metadata and paged transactions from that block.
+
+Response includes:
+
+- `block`: height, hash, previous/next hash, time, tx count, size, difficulty, `outputCount`, `extractedBy`, `extractedByAddress`
+- `transactions`: paged tx list with optional `summary` (`outputCount`, `totalOutput`, `fee` for non-coinbase)
+- `paging`: limit, offset, total, hasMore
+- `confirmations`: depth from chain tip when tip height is known
+- `coinbase`: first coinbase tx in block with `txid` and `reward`
+- `totals`: block-level `fee` and `outputValue`
+- `trusted` and `source`: index trust labeling for UI honesty
 
 ## Smoke Test
 

@@ -83,6 +83,28 @@ export interface IndexedTransaction {
   isCoinbase?: boolean;
   isCoinstake?: boolean;
   source?: string;
+  summary?: TransactionSummary;
+}
+
+export interface TransactionSummary {
+  outputCount: number;
+  totalOutputAtomic: string;
+  totalOutput: AmountDisplay;
+  feeAtomic?: string;
+  fee?: AmountDisplay;
+}
+
+export interface BlockCoinbaseSummary {
+  txid: string;
+  rewardAtomic: string;
+  reward: AmountDisplay;
+}
+
+export interface BlockTotals {
+  feeAtomic: string;
+  fee: AmountDisplay;
+  outputValueAtomic: string;
+  outputValue: AmountDisplay;
 }
 
 export interface Paging {
@@ -157,15 +179,144 @@ export interface AddressTransaction {
   netDeltaAtomic: string;
 }
 
+export interface AddressRichlistInfo {
+  enabled: boolean;
+  eligible: boolean;
+  rank: number | null;
+  total: number;
+  percentile: number | null;
+}
+
+export interface AddressBalanceInfo {
+  balance: AmountDisplay;
+  balanceAtomic?: string;
+  totalReceived: AmountDisplay;
+  totalSent: AmountDisplay;
+  txCount: number;
+  firstSeenHeight?: number | null;
+  firstSeenTime?: number | null;
+  lastSeenHeight?: number | null;
+}
+
+export interface AddressActivityCategory {
+  id: "mined" | "staked" | "received" | "spent";
+  label: string;
+}
+
+export interface AddressBalanceActivityBucket {
+  startTime: number;
+  endTime: number;
+  label: string;
+  minedAtomic: string;
+  stakedAtomic: string;
+  receivedAtomic: string;
+  spentAtomic: string;
+  mined: AmountDisplay;
+  staked: AmountDisplay;
+  received: AmountDisplay;
+  spent: AmountDisplay;
+  minedAmount: number;
+  stakedAmount: number;
+  receivedAmount: number;
+  spentAmount: number;
+  ticker: string;
+}
+
+export interface AddressBalanceHistoryPoint {
+  height: number | null;
+  time: number;
+  balanceAtomic: string;
+  balance: AmountDisplay;
+  balanceAmount: number;
+  ticker: string;
+}
+
+export type AddressBalanceChartView = "activity" | "balance";
+
+export interface AddressBalanceHistoryResult {
+  chainId: string;
+  address: string;
+  found: boolean;
+  trusted?: boolean;
+  source: SourceInfo;
+  truncated: boolean;
+  eventCount?: number;
+  maxEvents?: number;
+  since?: number | null;
+  categories: AddressActivityCategory[];
+  buckets: AddressBalanceActivityBucket[];
+  points: AddressBalanceHistoryPoint[];
+  currentBalanceAtomic: string;
+}
+
+export type AddressBalanceHistoryPeriodId = "7d" | "30d" | "90d" | "1y" | "all";
+
+export interface ChainActivityCategory {
+  id: "mined" | "staked" | "received";
+  label: string;
+}
+
+export interface ChainActivityBucket {
+  startTime: number;
+  endTime: number;
+  label: string;
+  minedCount: number;
+  stakedCount: number;
+  receivedCount: number;
+  blockCount: number;
+}
+
+export type ChainActivityChartView = "activity" | "blocks";
+
+export interface ChainActivityHistoryResult {
+  chainId: string;
+  trusted?: boolean;
+  source: SourceInfo;
+  since?: number | null;
+  categories: ChainActivityCategory[];
+  buckets: ChainActivityBucket[];
+}
+
+export interface VrmDashboardPayload {
+  summary: ChainSummary;
+  richlist: RichlistResult;
+  leaderboard: LeaderboardResult;
+  network: VrmNetworkStats;
+  market: ChainMarket;
+  activityHistory: ChainActivityHistoryResult;
+  fetchedAt?: string;
+}
+
+export interface AddressUtxoItem {
+  txid: string;
+  vout: number;
+  valueAtomic: string;
+  value: AmountDisplay;
+  blockHeight: number;
+  time: number;
+}
+
+export interface AddressUtxosResult {
+  chainId: string;
+  address: string;
+  trusted?: boolean;
+  source: SourceInfo;
+  summary: {
+    utxoCount: number;
+    totalValueAtomic: string;
+    totalValue: AmountDisplay;
+  };
+  paging: Paging;
+  items: AddressUtxoItem[];
+}
+
 export interface AddressResult {
+  chainId?: string;
   found: boolean;
   address: string;
-  balance: {
-    balance: AmountDisplay;
-    totalReceived: AmountDisplay;
-    totalSent: AmountDisplay;
-    txCount: number;
-  };
+  trusted?: boolean;
+  balance: AddressBalanceInfo;
+  richlist: AddressRichlistInfo;
   transactions: AddressTransaction[];
   paging: Paging;
   source: SourceInfo;
@@ -173,17 +324,26 @@ export interface AddressResult {
 
 export interface TxInput {
   n: number;
+  prevTxid?: string | null;
+  prevVout?: number | null;
   address: string | null;
   value: AmountDisplay | null;
+  valueAtomic?: string | null;
+  source?: string;
+  resolved?: boolean;
 }
 
 export interface TxOutput {
   n: number;
   address: string | null;
   scriptType?: string;
+  scriptPubKey?: string | null;
   value: AmountDisplay;
+  valueAtomic?: string;
   isSpent: boolean;
   spentByTxid?: string | null;
+  spentByVin?: number | null;
+  spentHeight?: number | null;
 }
 
 export interface AddressEvent {
@@ -193,22 +353,47 @@ export interface AddressEvent {
   deltaAtomic: string;
 }
 
+export interface TransactionTotals {
+  inputAtomic: string;
+  outputAtomic: string;
+  feeAtomic: string;
+  input: AmountDisplay;
+  output: AmountDisplay;
+  fee: AmountDisplay;
+}
+
+export interface TransactionSiblings {
+  prevTxid: string | null;
+  nextTxid: string | null;
+}
+
 export interface TransactionResult {
   found: boolean;
+  chainId?: string;
   txid?: string;
+  trusted?: boolean;
   transaction?: IndexedTransaction & { txIndex: number };
   inputs: TxInput[];
   outputs: TxOutput[];
   addressEvents: AddressEvent[];
+  totals?: TransactionTotals;
+  confirmations?: number | null;
+  siblings?: TransactionSiblings;
+  changeOutputs?: number[];
   source: SourceInfo;
 }
 
 export interface BlockResult {
   found: boolean;
+  chainId?: string;
   query?: string;
+  trusted?: boolean;
   block?: IndexedBlock;
   transactions: IndexedTransaction[];
   paging: Paging;
+  confirmations?: number | null;
+  coinbase?: BlockCoinbaseSummary | null;
+  totals?: BlockTotals;
   source: SourceInfo;
 }
 
@@ -222,4 +407,80 @@ export interface IndexerHealth {
 export interface ApiError {
   success: false;
   error: string;
+}
+
+export interface PriceHistoryPoint {
+  time: number;
+  value: number;
+}
+
+export interface ChainMarket {
+  usd: number | null;
+  btc: number | null;
+  marketCap: number | null;
+  volume24h: number | null;
+  change24h: number | null;
+  circulatingSupply: number | null;
+  source: "livecoinwatch" | "coingecko" | "computed" | "unavailable";
+  updatedAt: string | null;
+  priceHistory24h: PriceHistoryPoint[];
+}
+
+export interface VrmNetworkStats {
+  hashrateKhPerMin: number | null;
+  hashrate7dKhPerMin: number | null;
+  difficulty: number | null;
+  blocks: number | null;
+  supply: number | null;
+  maxSupply: number | null;
+}
+
+export interface VrcNetworkStats {
+  difficulty: number | null;
+  blocks: number | null;
+  supply: number | null;
+  maxSupply: number | null;
+  interestRatePercent: number | null;
+  netStakeWeight: number | null;
+  percentStaked: number | null;
+  expectedStakeTimeSeconds: number | null;
+}
+
+export interface HomeChainSection<TNetwork> {
+  summary: ChainSummary;
+  richlist: RichlistResult;
+  market: ChainMarket;
+  network: TNetwork;
+}
+
+export interface HomePayload {
+  vrm: HomeChainSection<VrmNetworkStats>;
+  vrc: HomeChainSection<VrcNetworkStats>;
+  vrmLeaderboard: LeaderboardResult;
+  fetchedAt: string;
+}
+
+export interface HomeShellPayload {
+  vrm: {
+    summary: ChainSummary;
+    richlist: RichlistResult;
+  };
+  vrc: {
+    summary: ChainSummary;
+    richlist: RichlistResult;
+  };
+  vrmLeaderboard: LeaderboardResult;
+  fetchedAt: string;
+}
+
+export interface HomeNetworkPayload {
+  vrm: VrmNetworkStats;
+  vrc: VrcNetworkStats;
+  fetchedAt: string;
+}
+
+export interface HomeMarketPayload {
+  vrm: ChainMarket;
+  vrc: ChainMarket;
+  fetchedAt: string;
 }

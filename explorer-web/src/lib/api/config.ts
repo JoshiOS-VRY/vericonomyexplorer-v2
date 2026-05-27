@@ -1,3 +1,4 @@
+import { buildFetchInit, type CacheFetchOptions } from "@/lib/api/fetchInit";
 import { getApiBasePath, getApiBaseUrl } from "@/lib/env";
 
 export { getApiBaseUrl, getApiBasePath };
@@ -6,10 +7,7 @@ export function getInternalApiBaseUrl(): string {
   return `${getApiBaseUrl()}/internal-api`;
 }
 
-export interface FetchOptions {
-  revalidate?: number | false;
-  cache?: RequestCache;
-}
+export type FetchOptions = CacheFetchOptions;
 
 export class ApiFetchError extends Error {
   status: number;
@@ -28,14 +26,9 @@ export async function apiFetch<T>(
   const basePath = getApiBasePath();
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   const url = `${getApiBaseUrl()}${basePath === "" ? "" : basePath}${normalizedPath}`;
-  const init: RequestInit & { next?: { revalidate?: number | false } } = {
+  const init = buildFetchInit(options, {
     headers: { Accept: "application/json" },
-    cache: options.cache ?? "no-store",
-  };
-
-  if (options.revalidate !== undefined) {
-    init.next = { revalidate: options.revalidate };
-  }
+  });
 
   const response = await fetch(url, init);
   if (!response.ok) {

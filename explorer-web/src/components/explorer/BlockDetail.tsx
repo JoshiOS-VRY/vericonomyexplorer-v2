@@ -79,6 +79,7 @@ export function BlockDetailHero({
   difficulty,
   previousHash,
   nextHash,
+  actions,
 }: {
   height: number;
   hash: string;
@@ -88,16 +89,20 @@ export function BlockDetailHero({
   difficulty?: number | string | null;
   previousHash?: string | null;
   nextHash?: string | null;
+  actions?: React.ReactNode;
 }) {
   return (
     <section className="wallet-panel">
-      {blockTime ? (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-border/70 px-4 py-2.5 sm:px-5">
-          <span className="text-xs text-fg-muted" suppressHydrationWarning>
-            {formatUnixTime(blockTime)} · {formatBlockAge(blockTime)}
-          </span>
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 px-4 py-2.5 sm:px-5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          {blockTime ? (
+            <span className="text-xs text-fg-muted" suppressHydrationWarning>
+              {formatUnixTime(blockTime)} · {formatBlockAge(blockTime)}
+            </span>
+          ) : null}
         </div>
-      ) : null}
+        {actions}
+      </div>
 
       <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div className="min-w-0">
@@ -171,12 +176,14 @@ export function EntityHero({
   hash,
   meta,
   badges,
+  footer,
 }: {
   eyebrow: string;
   title: string;
   hash?: string;
   meta?: React.ReactNode;
   badges?: React.ReactNode;
+  footer?: React.ReactNode;
 }) {
   return (
     <section className="wallet-panel">
@@ -198,6 +205,7 @@ export function EntityHero({
           </div>
         ) : null}
       </div>
+      {footer}
     </section>
   );
 }

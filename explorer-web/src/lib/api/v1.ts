@@ -1,11 +1,9 @@
+import { buildFetchInit, type CacheFetchOptions } from "@/lib/api/fetchInit";
 import { loadRootEnv } from "@/lib/env";
 
 export type { getClientV1Url, getTipStreamUrl } from "@/lib/api/v1Urls";
 
-export interface V1FetchOptions {
-  revalidate?: number | false;
-  cache?: RequestCache;
-}
+export type V1FetchOptions = CacheFetchOptions;
 
 export class V1FetchError extends Error {
   status: number;
@@ -32,14 +30,9 @@ export async function v1Fetch<T>(path: string, options: V1FetchOptions = {}): Pr
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const v1Path = normalized.startsWith("/v1/") ? normalized : `/v1${normalized}`;
   const url = `${getFastApiBaseUrl()}${v1Path}`;
-  const init: RequestInit & { next?: { revalidate?: number | false } } = {
+  const init = buildFetchInit(options, {
     headers: { Accept: "application/json" },
-    cache: options.cache ?? "no-store",
-  };
-
-  if (options.revalidate !== undefined) {
-    init.next = { revalidate: options.revalidate };
-  }
+  });
 
   const response = await fetch(url, init);
   if (!response.ok) {
@@ -60,14 +53,7 @@ export async function v1FetchText(path: string, options: V1FetchOptions = {}): P
   const normalized = path.startsWith("/") ? path : `/${path}`;
   const v1Path = normalized.startsWith("/v1/") ? normalized : `/v1${normalized}`;
   const url = `${getFastApiBaseUrl()}${v1Path}`;
-  const init: RequestInit & { next?: { revalidate?: number | false } } = {
-    cache: options.cache ?? "no-store",
-  };
-
-  if (options.revalidate !== undefined) {
-    init.next = { revalidate: options.revalidate };
-  }
-
+  const init = buildFetchInit(options);
   const response = await fetch(url, init);
   if (!response.ok) {
     throw new V1FetchError(`Request failed: ${response.status}`, response.status);

@@ -1,6 +1,6 @@
 import { PageHero, AlertBanner } from "@/components/explorer/ExplorerUi";
 
-export default async function IndexerErrorPage({
+export default async function ExplorerErrorPage({
   searchParams,
 }: {
   searchParams: Promise<{ message?: string }>;
@@ -8,15 +8,15 @@ export default async function IndexerErrorPage({
   const params = await searchParams;
   const message =
     params.message ??
-    "The index-backed explorer could not build this page.";
+    "The explorer could not build this page.";
 
   return (
     <div className="space-y-6">
       <PageHero
-        title="Indexer Error"
-        subtitle="The index-backed explorer could not build this page."
+        title="Explorer error"
+        subtitle="The explorer could not build this page."
       />
-      <AlertBanner title="Indexer Page Error">{message}</AlertBanner>
+      <AlertBanner title="Page error">{message}</AlertBanner>
     </div>
   );
 }

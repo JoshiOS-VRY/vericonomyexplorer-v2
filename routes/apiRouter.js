@@ -158,6 +158,48 @@ router.get("/indexer/:chainId/address/:address", function(req, res, next) {
 	next();
 });
 
+router.get("/indexer/:chainId/activity-history", function(req, res, next) {
+	try {
+		res.json(indexerQuery.getChainActivityHistory(req.params.chainId, {
+			maxPoints: req.query.maxPoints,
+			since: req.query.since
+		}));
+
+	} catch (err) {
+		handleIndexerApiError(res, err);
+	}
+
+	next();
+});
+
+router.get("/indexer/:chainId/address/:address/balance-history", function(req, res, next) {
+	try {
+		res.json(indexerQuery.getAddressBalanceHistory(req.params.chainId, req.params.address, {
+			maxPoints: req.query.maxPoints,
+			since: req.query.since
+		}));
+
+	} catch (err) {
+		handleIndexerApiError(res, err);
+	}
+
+	next();
+});
+
+router.get("/indexer/:chainId/address/:address/utxos", function(req, res, next) {
+	try {
+		res.json(indexerQuery.getAddressUtxos(req.params.chainId, req.params.address, {
+			limit: req.query.limit,
+			offset: req.query.offset
+		}));
+
+	} catch (err) {
+		handleIndexerApiError(res, err);
+	}
+
+	next();
+});
+
 router.get("/indexer/:chainId/tx/:txid", function(req, res, next) {
 	try {
 		res.json(indexerQuery.getTransaction(req.params.chainId, req.params.txid));

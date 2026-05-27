@@ -24,6 +24,7 @@
 		"indexer:v2:rollback-smoke": "node ./app/indexerV2/rollbackSmoke.js",
 		"indexer:v2:reorg-smoke": "node ./app/indexerV2/reorgAutoSmoke.js",
 		"indexer:v2:query-smoke": "node ./app/indexerV2/querySmoke.js",
+		"indexer:checkpoint": "node ./bin/indexer-checkpoint.js",
 		"indexer:v2:smoke": "node ./app/indexerV2/smoke.js",
 		"test": "node ./bin/test.js",
 		"miners": "node ./bin/refresh-mining-pool-configs.js",

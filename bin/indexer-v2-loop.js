@@ -59,6 +59,10 @@ async function runLoop() {
 			const waitMs = getIdleWaitMs(result);
 			if (waitMs > 0) {
 				console.log(`[${chain}] caught up at height ${result.endHeight}; waiting ${waitMs}ms`);
+				const checkpoint = dbModule.maybeCheckpointWal();
+				if (checkpoint.ran) {
+					console.log(`[${chain}] wal checkpoint ${checkpoint.walSizeMbBefore?.toFixed(1)}MB -> ${checkpoint.walSizeMbAfter?.toFixed(1)}MB`);
+				}
 				await sleep(waitMs);
 			}
 		} catch (err) {

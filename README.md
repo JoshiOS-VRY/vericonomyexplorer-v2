@@ -177,6 +177,13 @@ The next Docker pass should split the app into separate services:
 - `vrm-indexer`: runs Verium indexing.
 - later `vrc-indexer`: runs conservative VeriCoin indexing when ready.
 
+Option A production launch assets are available in:
+
+- `docker-compose.option-a.yml`
+- `deploy/option-a/README.md`
+- `deploy/option-a/.env.production.example`
+- `deploy/option-a/Caddyfile`
+
 Do not expose node RPC ports to the public internet.
 
 ## Security Notes

@@ -91,6 +91,58 @@ function seedChains(targetDb) {
 	});
 }
 
+function getWalPath(dbPath = getDatabasePath()) {
+	return `${dbPath}-wal`;
+}
+
+function getWalSizeMb(dbPath = getDatabasePath()) {
+	const walPath = getWalPath(dbPath);
+	if (!fs.existsSync(walPath)) {
+		return 0;
+	}
+
+	return fs.statSync(walPath).size / (1024 * 1024);
+}
+
+function maybeCheckpointWal(targetDb = db, options = {}) {
+	const activeDb = targetDb || db;
+	if (!activeDb) {
+		return {
+			ran: false,
+			reason: "database-not-open"
+		};
+	}
+
+	const thresholdMb = options.thresholdMb === undefined
+		? Number(process.env.VCEXP_WAL_CHECKPOINT_MB ?? 512)
+		: Number(options.thresholdMb);
+	const force = options.force === true;
+	const dbPath = getDatabasePath();
+	const walSizeMb = getWalSizeMb(dbPath);
+
+	if (!force && walSizeMb < thresholdMb) {
+		return {
+			ran: false,
+			reason: "below-threshold",
+			walSizeMb,
+			thresholdMb
+		};
+	}
+
+	const beforeMb = walSizeMb;
+	activeDb.pragma("wal_checkpoint(TRUNCATE)");
+	const afterMb = getWalSizeMb(dbPath);
+
+	debugLog(`WAL checkpoint complete: ${beforeMb.toFixed(1)}MB -> ${afterMb.toFixed(1)}MB`);
+
+	return {
+		ran: true,
+		walSizeMbBefore: beforeMb,
+		walSizeMbAfter: afterMb,
+		thresholdMb
+	};
+}
+
 function closeDatabase() {
 	if (!db) {
 		return;
@@ -112,5 +164,7 @@ module.exports = {
 	openDatabase,
 	closeDatabase,
 	getDatabasePath,
+	getWalSizeMb,
+	maybeCheckpointWal,
 	getStatus
 };

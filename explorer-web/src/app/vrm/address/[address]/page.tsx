@@ -1,16 +1,22 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { AddressBalanceChartSection } from "@/components/explorer/address/AddressBalanceChartSection";
+import { AddressChartSkeleton } from "@/components/explorer/address/AddressSectionSkeleton";
+import { AddressHero } from "@/components/explorer/address/AddressHero";
+import { AddressMetricStrip } from "@/components/explorer/address/AddressMetricStrip";
+import { AddressRichlistCard } from "@/components/explorer/address/AddressRichlistCard";
+import { AddressUtxoPanelServer } from "@/components/explorer/address/AddressUtxoPanelServer";
+import { AddressUtxoPanelSkeleton } from "@/components/explorer/address/AddressSectionSkeleton";
+import { BcPageHeader, BcPanel } from "@/components/explorer/BlockchairUi";
+import { Breadcrumb } from "@/components/explorer/Breadcrumb";
 import {
   AlertBanner,
-  DataTable,
   MonoLink,
   PaginationLinks,
-  SummaryGrid,
   TimeCell,
   TxTypeBadge,
   formatHeight,
 } from "@/components/explorer/ExplorerUi";
-import { DetailSection, EntityHero } from "@/components/explorer/BlockDetail";
-import { Breadcrumb } from "@/components/explorer/Breadcrumb";
 import { getAddress } from "@/lib/api/indexer";
 import { ellipsizeMiddle, normalizeLimit, normalizeOffset } from "@/lib/utils";
 
@@ -19,42 +25,41 @@ export default async function AddressPage({
   searchParams,
 }: {
   params: Promise<{ address: string }>;
-  searchParams: Promise<{ limit?: string; offset?: string }>;
+  searchParams: Promise<{ limit?: string; offset?: string; utxoLimit?: string; utxoOffset?: string }>;
 }) {
   const { address } = await params;
   const query = await searchParams;
   const limit = normalizeLimit(query.limit, 25);
   const offset = normalizeOffset(query.offset);
+  const utxoLimit = normalizeLimit(query.utxoLimit, 25);
+  const utxoOffset = normalizeOffset(query.utxoOffset);
 
   let result;
+
   try {
     result = await getAddress("vrm", address, { limit, offset });
   } catch {
     return <AlertBanner title="Address Lookup Failed">Unable to load address data.</AlertBanner>;
   }
 
+  const basePath = `/vrm/address/${result.address}`;
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="space-y-6">
       <Breadcrumb
         items={[
           { label: "Verium", href: "/vrm" },
-          { label: "Address", href: "/vrm/richlist" },
+          { label: "Rich list", href: "/vrm/richlist" },
           { label: ellipsizeMiddle(result.address, 16) },
         ]}
       />
 
-      <EntityHero
-        eyebrow="Verium address"
-        title={ellipsizeMiddle(result.address, 28)}
-        hash={result.address}
-        meta={
-          result.found ? (
-            <span className="text-sm font-semibold tabular-nums text-fg">
-              {result.balance.balance.amount} {result.balance.balance.ticker}
-            </span>
-          ) : undefined
-        }
+      <BcPageHeader
+        title="Address"
+        subtitle={result.found ? "Verium address activity and holdings." : "Address not found."}
       />
+
+      <AddressHero result={result} />
 
       {!result.found ? (
         <AlertBanner title="Address Not Found">
@@ -62,20 +67,32 @@ export default async function AddressPage({
         </AlertBanner>
       ) : (
         <>
-          <DetailSection title="Balance">
-            <SummaryGrid
-              items={[
-                { label: "Balance", value: `${result.balance.balance.amount} ${result.balance.balance.ticker}` },
-                { label: "Received", value: `${result.balance.totalReceived.amount} ${result.balance.totalReceived.ticker}` },
-                { label: "Sent", value: `${result.balance.totalSent.amount} ${result.balance.totalSent.ticker}` },
-                { label: "Transactions", value: formatHeight(result.balance.txCount) },
-              ]}
-            />
-          </DetailSection>
+          <AddressMetricStrip result={result} />
 
-          <DetailSection
-            flush
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <Suspense fallback={<AddressChartSkeleton />}>
+                <AddressBalanceChartSection chainId="vrm" address={result.address} />
+              </Suspense>
+            </div>
+            <div>
+              <AddressRichlistCard richlist={result.richlist} address={result.address} />
+            </div>
+          </div>
+
+          <Suspense fallback={<AddressUtxoPanelSkeleton />}>
+            <AddressUtxoPanelServer
+              chainId="vrm"
+              address={result.address}
+              basePath={basePath}
+              utxoLimit={utxoLimit}
+              utxoOffset={utxoOffset}
+            />
+          </Suspense>
+
+          <BcPanel
             title="Transactions"
+            flush
             action={
               <span className="rounded-md bg-bg-subtle px-2 py-0.5 text-[11px] font-medium tabular-nums text-fg-subtle">
                 {formatHeight(result.balance.txCount)} total
@@ -83,32 +100,66 @@ export default async function AddressPage({
             }
           >
             {result.transactions.length === 0 ? (
-              <p className="px-5 py-4 text-sm text-fg-muted">No indexed transactions found.</p>
+              <p className="px-5 py-4 text-sm text-fg-muted">No transactions found.</p>
             ) : (
               <>
-                <DataTable
-                  headers={["Txid", "Block", "Net Change", "Type", "Time"]}
-                  rows={result.transactions.map((tx) => [
-                    <MonoLink key="tx" href={`/vrm/tx/${tx.txid}`} value={tx.txid} maxLength={36} />,
-                    <Link key="b" href={`/vrm/block/${tx.blockHeight}`} className="text-accent hover:underline">
-                      {formatHeight(tx.blockHeight)}
-                    </Link>,
-                    <span key="n" className={tx.netDeltaAtomic.startsWith("-") ? "text-danger" : "text-success"}>
-                      {tx.netDelta.amount} {tx.netDelta.ticker}
-                    </span>,
-                    <TxTypeBadge key="type" isCoinbase={tx.isCoinbase} isCoinstake={tx.isCoinstake} />,
-                    <TimeCell key="t" time={tx.time} absolute />,
-                  ])}
-                />
-                <div className="px-5 pb-4">
+                <div className="overflow-x-auto">
+                  <table className="bc-table">
+                    <thead>
+                      <tr>
+                        <th>Txid</th>
+                        <th>Block</th>
+                        <th className="text-right">Net change</th>
+                        <th>Type</th>
+                        <th>Time</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {result.transactions.map((tx) => (
+                        <tr key={tx.txid}>
+                          <td>
+                            <MonoLink href={`/vrm/tx/${tx.txid}`} value={tx.txid} maxLength={36} prefetch />
+                          </td>
+                          <td>
+                            <Link
+                              href={`/vrm/block/${tx.blockHeight}`}
+                              prefetch
+                              className="text-accent hover:underline tabular-nums"
+                            >
+                              {formatHeight(tx.blockHeight)}
+                            </Link>
+                          </td>
+                          <td
+                            className={`text-right font-medium tabular-nums ${
+                              tx.netDeltaAtomic.startsWith("-") ? "text-danger" : "text-success"
+                            }`}
+                          >
+                            {tx.netDelta.amount} {tx.netDelta.ticker}
+                          </td>
+                          <td>
+                            <TxTypeBadge isCoinbase={tx.isCoinbase} isCoinstake={tx.isCoinstake} />
+                          </td>
+                          <td>
+                            <TimeCell time={tx.time} absolute />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="border-t border-border px-5 py-4">
                   <PaginationLinks
-                    basePath={`/vrm/address/${result.address}`}
+                    basePath={basePath}
                     paging={result.paging}
+                    extraParams={{
+                      ...(utxoOffset > 0 ? { utxoOffset } : {}),
+                      ...(utxoLimit !== 25 ? { utxoLimit } : {}),
+                    }}
                   />
                 </div>
               </>
             )}
-          </DetailSection>
+          </BcPanel>
         </>
       )}
     </div>

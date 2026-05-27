@@ -1,5 +1,6 @@
-import type { ChainSummary } from "@/lib/api/types";
+import type { AddressUtxosResult, ChainSummary, HomeMarketPayload, HomeNetworkPayload } from "@/lib/api/types";
 import { getClientV1Url, getTipStreamUrl } from "@/lib/api/v1Urls";
+
 export class ClientApiError extends Error {
   status: number;
 
@@ -35,6 +36,21 @@ export async function clientApiFetch<T>(path: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+export async function fetchAddressUtxosClient(
+  chainId: string,
+  address: string,
+  params: { limit?: number; offset?: number } = {},
+): Promise<AddressUtxosResult> {
+  const search = new URLSearchParams();
+  if (params.limit != null) search.set("limit", String(params.limit));
+  if (params.offset != null) search.set("offset", String(params.offset));
+  const qs = search.toString();
+
+  return clientApiFetch<AddressUtxosResult>(
+    `/${chainId}/address/${encodeURIComponent(address)}/utxos${qs ? `?${qs}` : ""}`,
+  );
+}
+
 export async function fetchBlockHeight(chainId = "vrm"): Promise<number> {
   const response = await fetch(getClientV1Url(`/${chainId}/tip/height`), {
     cache: "no-store",
@@ -54,6 +70,27 @@ export async function fetchBlockHeight(chainId = "vrm"): Promise<number> {
 
 export async function fetchChainSummary(chainId: string): Promise<ChainSummary> {
   return clientApiFetch<ChainSummary>(`/${chainId}/summary`);
+}
+
+export async function fetchHomeMarket(): Promise<HomeMarketPayload> {
+  return clientApiFetch<HomeMarketPayload>("/home/market");
+}
+
+export async function fetchHomeNetwork(): Promise<HomeNetworkPayload> {
+  return clientApiFetch<HomeNetworkPayload>("/home/network");
+}
+
+export async function searchChainClient(
+  chainId: string,
+  query: string,
+): Promise<string | null> {
+  const trimmed = query.trim();
+  if (!trimmed) return null;
+
+  const result = await clientApiFetch<{ path: string | null }>(
+    `/${chainId}/search?q=${encodeURIComponent(trimmed)}`,
+  );
+  return result.path;
 }
 
 export { getTipStreamUrl };

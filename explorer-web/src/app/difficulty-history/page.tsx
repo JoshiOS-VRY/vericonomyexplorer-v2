@@ -1,14 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import {
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 
 const sample = [
   { height: "100k", difficulty: 1.2 },
@@ -17,6 +10,14 @@ const sample = [
   { height: "400k", difficulty: 2.1 },
 ];
 
+const DifficultyHistoryChart = dynamic(
+  () => import("@/components/explorer/charts/DifficultyHistoryChart").then((module) => module.DifficultyHistoryChart),
+  {
+    ssr: false,
+    loading: () => <div className="h-80 animate-pulse rounded-md bg-bg-subtle" />,
+  },
+);
+
 export default function DifficultyHistoryPage() {
   return (
     <div className="space-y-6">
@@ -24,20 +25,7 @@ export default function DifficultyHistoryPage() {
       <Card>
         <CardHeader><CardTitle>Difficulty Trend (sample)</CardTitle></CardHeader>
         <CardContent className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={sample}>
-              <XAxis dataKey="height" stroke="rgb(var(--fg-subtle))" fontSize={11} />
-              <YAxis stroke="rgb(var(--fg-subtle))" fontSize={11} />
-              <Tooltip
-                contentStyle={{
-                  background: "rgb(var(--bg-panel))",
-                  border: "1px solid rgb(var(--border))",
-                  borderRadius: 6,
-                }}
-              />
-              <Line type="monotone" dataKey="difficulty" stroke="rgb(var(--accent))" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+          <DifficultyHistoryChart data={sample} />
         </CardContent>
       </Card>
     </div>

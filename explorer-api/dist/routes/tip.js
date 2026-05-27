@@ -1,0 +1,75 @@
+import { getBroker, getTip } from "../live/brokers.js";
+import { initSse, writeSse } from "../live/sse.js";
+import { parseChainId } from "../types.js";
+export async function registerTipRoutes(app) {
+    app.get("/v1/:chain/tip", async (request, reply) => {
+        const chainId = parseChainId(request.params.chain);
+        if (!chainId) {
+            return reply.code(400).send({ error: "Invalid chain id" });
+        }
+        const tip = getTip(chainId);
+        if (!tip) {
+            return reply.code(503).send({ error: "Tip unavailable" });
+        }
+        return tip;
+    });
+    app.get("/v1/:chain/tip/height", async (request, reply) => {
+        const chainId = parseChainId(request.params.chain);
+        if (!chainId) {
+            return reply.code(400).send({ error: "Invalid chain id" });
+        }
+        const tip = getTip(chainId);
+        if (!tip) {
+            return reply.code(503).send({ error: "Tip unavailable" });
+        }
+        reply.header("content-type", "text/plain; charset=utf-8");
+        return String(tip.height);
+    });
+    app.get("/v1/:chain/tip/stream", async (request, reply) => {
+        const chainId = parseChainId(request.params.chain);
+        if (!chainId) {
+            return reply.code(400).send({ error: "Invalid chain id" });
+        }
+        const broker = getBroker(chainId);
+        // Hijack so Fastify does not send a second response after SSE headers.
+        reply.hijack();
+        initSse(reply.raw);
+        const sendTip = (tip) => {
+            if (reply.raw.writableEnded || reply.raw.destroyed)
+                return;
+            try {
+                writeSse(reply.raw, { event: "tip", data: JSON.stringify(tip) });
+            }
+            catch {
+                /* client disconnected */
+            }
+        };
+        const current = broker.getTip();
+        if (current) {
+            sendTip(current);
+        }
+        const onUpdate = (tip) => sendTip(tip);
+        broker.on("tip", onUpdate);
+        const heartbeat = setInterval(() => {
+            if (reply.raw.writableEnded || reply.raw.destroyed) {
+                clearInterval(heartbeat);
+                return;
+            }
+            try {
+                reply.raw.write(": ping\n\n");
+            }
+            catch {
+                clearInterval(heartbeat);
+            }
+        }, 15_000);
+        await new Promise((resolve) => {
+            const cleanup = () => {
+                broker.off("tip", onUpdate);
+                clearInterval(heartbeat);
+                resolve();
+            };
+            request.raw.on("close", cleanup);
+            request.raw.on("error", cleanup);
+        });
+    });
+}

@@ -1,0 +1,133 @@
+export type SearchQueryKind = "height" | "hash" | "address" | "unknown";
+
+export function classifySearchQuery(query: string): SearchQueryKind {
+  const trimmed = query.trim();
+  if (!trimmed) return "unknown";
+  if (/^\d+$/.test(trimmed)) return "height";
+  if (/^[a-fA-F0-9]{64}$/.test(trimmed)) return "hash";
+  return "address";
+}
+
+export type SearchSuggestion = {
+  id: string;
+  label: string;
+  sublabel?: string;
+  path: string;
+  chainId: "vrm" | "vrc";
+  primary?: boolean;
+};
+
+export function heightSuggestions(height: string): SearchSuggestion[] {
+  return (["vrm", "vrc"] as const).map((chainId) => ({
+    id: `${chainId}-block-${height}`,
+    label: `Block #${height}`,
+    sublabel: chainId.toUpperCase(),
+    path: `/${chainId}/block/${height}`,
+    chainId,
+  }));
+}
+
+export function fallbackSuggestions(
+  query: string,
+  kind: SearchQueryKind,
+): SearchSuggestion[] {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  return (["vrm", "vrc"] as const).map((chainId) => {
+    if (kind === "height") {
+      return {
+        id: `${chainId}-block-${trimmed}`,
+        label: `Block #${trimmed}`,
+        sublabel: chainId.toUpperCase(),
+        path: `/${chainId}/block/${trimmed}`,
+        chainId,
+      };
+    }
+    if (kind === "hash") {
+      return {
+        id: `${chainId}-hash-${trimmed}`,
+        label: "Search hash",
+        sublabel: `${chainId.toUpperCase()} · tx or block`,
+        path: `/${chainId}/tx/${trimmed}`,
+        chainId,
+      };
+    }
+    return {
+      id: `${chainId}-addr-${trimmed}`,
+      label: trimmed.length > 20 ? `${trimmed.slice(0, 10)}…${trimmed.slice(-6)}` : trimmed,
+      sublabel: `${chainId.toUpperCase()} address`,
+      path: `/${chainId}/address/${encodeURIComponent(trimmed)}`,
+      chainId,
+    };
+  });
+}
+
+export function recentBlockSuggestions(
+  chainId: "vrm" | "vrc",
+  blocks: { height: number; hash: string }[],
+  limit = 4,
+): SearchSuggestion[] {
+  return blocks.slice(0, limit).map((block) => ({
+    id: `${chainId}-recent-${block.hash}`,
+    label: `Block #${block.height.toLocaleString()}`,
+    sublabel: `${chainId.toUpperCase()} · recent`,
+    path: `/${chainId}/block/${block.height}`,
+    chainId,
+  }));
+}
+
+export function mergeSearchResults(
+  vrmPath: string | null,
+  vrcPath: string | null,
+  query: string,
+): SearchSuggestion[] {
+  const kind = classifySearchQuery(query);
+  const hits: SearchSuggestion[] = [];
+
+  if (vrmPath) {
+    hits.push({
+      id: "vrm-hit",
+      label: suggestionLabelFromPath(vrmPath, query, kind),
+      sublabel: "Verium",
+      path: vrmPath,
+      chainId: "vrm",
+      primary: vrcPath == null,
+    });
+  }
+  if (vrcPath) {
+    hits.push({
+      id: "vrc-hit",
+      label: suggestionLabelFromPath(vrcPath, query, kind),
+      sublabel: "VeriCoin",
+      path: vrcPath,
+      chainId: "vrc",
+      primary: vrmPath == null,
+    });
+  }
+
+  if (hits.length === 0) {
+    return fallbackSuggestions(query, kind);
+  }
+
+  if (hits.length === 1) {
+    hits[0].primary = true;
+  }
+
+  return hits;
+}
+
+function suggestionLabelFromPath(
+  path: string,
+  query: string,
+  kind: SearchQueryKind,
+): string {
+  if (kind === "height") return `Block #${query.trim()}`;
+  if (path.includes("/tx/")) return "Transaction";
+  if (path.includes("/block/")) return "Block hash";
+  if (path.includes("/address/")) {
+    const trimmed = query.trim();
+    return trimmed.length > 24 ? `${trimmed.slice(0, 12)}…${trimmed.slice(-8)}` : trimmed;
+  }
+  return query.trim();
+}

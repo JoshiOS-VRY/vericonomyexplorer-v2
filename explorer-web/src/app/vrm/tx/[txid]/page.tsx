@@ -1,16 +1,18 @@
-import Link from "next/link";
+import { Suspense } from "react";
 import {
   AlertBanner,
-  DataTable,
-  MonoLink,
-  SummaryGrid,
-  TimeCell,
-  TxTypeBadge,
   formatHeight,
 } from "@/components/explorer/ExplorerUi";
-import { DetailSection, EntityHero } from "@/components/explorer/BlockDetail";
+import { EntityHero } from "@/components/explorer/BlockDetail";
 import { Breadcrumb } from "@/components/explorer/Breadcrumb";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { TxAddressStory } from "@/components/explorer/tx/TxAddressStory";
+import { TxAdvancedPanel } from "@/components/explorer/tx/TxAdvancedPanel";
+import { TxBlockNav } from "@/components/explorer/tx/TxBlockNav";
+import { TxFlowDiagram } from "@/components/explorer/tx/TxFlowDiagram";
+import { TxMetricStrip } from "@/components/explorer/tx/TxMetricStrip";
+import { TxRelatedActivitySection } from "@/components/explorer/tx/TxRelatedActivitySection";
+import { TxShareActions } from "@/components/explorer/tx/TxShareActions";
+import { TxStatusBar } from "@/components/explorer/tx/TxStatusBar";
 import { getTransaction } from "@/lib/api/indexer";
 import { ellipsizeMiddle } from "@/lib/utils";
 
@@ -54,108 +56,23 @@ export default async function TransactionPage({
         eyebrow="Verium transaction"
         title={ellipsizeMiddle(tx.txid, 24)}
         hash={tx.txid}
+        badges={<TxShareActions txid={tx.txid} />}
         meta={
           <span className="text-xs text-fg-muted">
-            Block {formatHeight(tx.blockHeight)} · <TimeCell time={tx.time} absolute />
+            Block {formatHeight(tx.blockHeight)} · position {formatHeight(tx.txIndex)}
           </span>
         }
       />
 
-      <DetailSection title="Summary">
-        <SummaryGrid
-          items={[
-            {
-              label: "Block",
-              value: <Link href={`/vrm/block/${tx.blockHeight}`} className="text-accent hover:underline">{formatHeight(tx.blockHeight)}</Link>,
-            },
-            { label: "Index", value: formatHeight(tx.txIndex) },
-            { label: "Type", value: <TxTypeBadge isCoinbase={tx.isCoinbase} isCoinstake={tx.isCoinstake} /> },
-            { label: "Time", value: <TimeCell time={tx.time} absolute /> },
-          ]}
-        />
-      </DetailSection>
-
-      <section className="grid gap-4 lg:grid-cols-2">
-        <IoTable
-          title="Inputs"
-          rows={result.inputs.map((input) => [
-            String(input.n),
-            input.address ? (
-              <MonoLink key="a" href={`/vrm/address/${input.address}`} value={input.address} maxLength={20} />
-            ) : (
-              <span className="text-fg-muted">coinbase</span>
-            ),
-            input.value ? `${input.value.amount} ${input.value.ticker}` : "N/A",
-          ])}
-          headers={["#", "Address", "Value"]}
-          empty="No indexed inputs."
-        />
-        <IoTable
-          title="Outputs"
-          rows={result.outputs.map((output) => [
-            String(output.n),
-            output.address ? (
-              <MonoLink key="a" href={`/vrm/address/${output.address}`} value={output.address} maxLength={20} />
-            ) : (
-              <span className="text-fg-muted">{output.scriptType || "unknown"}</span>
-            ),
-            `${output.value.amount} ${output.value.ticker}`,
-            output.isSpent ? (
-              <Link key="s" href={`/vrm/tx/${output.spentByTxid}`} className="text-accent hover:underline">
-                yes
-              </Link>
-            ) : (
-              <span className="text-success">no</span>
-            ),
-          ])}
-          headers={["#", "Address", "Value", "Spent"]}
-          empty="No indexed outputs."
-        />
-      </section>
-
-      <DetailSection flush title="Address Deltas">
-        {result.addressEvents.length === 0 ? (
-          <p className="px-5 py-4 text-sm text-fg-muted">No address deltas recorded.</p>
-        ) : (
-          <DataTable
-            headers={["Address", "Event", "Delta"]}
-            rows={result.addressEvents.map((event) => [
-              <Link key="a" href={`/vrm/address/${event.address}`} className="hash-mono text-accent hover:underline">
-                {ellipsizeMiddle(event.address, 24)}
-              </Link>,
-              event.eventType,
-              <span key="d" className={event.deltaAtomic.startsWith("-") ? "text-danger" : "text-success"}>
-                {event.delta.amount} {event.delta.ticker}
-              </span>,
-            ])}
-          />
-        )}
-      </DetailSection>
+      <TxStatusBar result={result} />
+      <TxFlowDiagram result={result} />
+      <TxMetricStrip result={result} />
+      <TxAddressStory events={result.addressEvents} />
+      <TxBlockNav result={result} />
+      <TxAdvancedPanel result={result} />
+      <Suspense fallback={null}>
+        <TxRelatedActivitySection chainId="vrm" txid={tx.txid} result={result} />
+      </Suspense>
     </div>
-  );
-}
-
-function IoTable({
-  title,
-  headers,
-  rows,
-  empty,
-}: {
-  title: string;
-  headers: string[];
-  rows: React.ReactNode[][];
-  empty: string;
-}) {
-  return (
-    <Card>
-      <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
-      <CardContent className={rows.length > 0 ? "p-0" : undefined}>
-        {rows.length === 0 ? (
-          <p className="text-sm text-fg-muted">{empty}</p>
-        ) : (
-          <DataTable headers={headers} rows={rows} />
-        )}
-      </CardContent>
-    </Card>
   );
 }

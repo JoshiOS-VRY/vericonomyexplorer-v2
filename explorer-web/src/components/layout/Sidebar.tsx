@@ -111,7 +111,7 @@ export function Sidebar({ pathname }: { pathname: string }) {
         <div className="min-w-0 leading-tight">
           <div className="truncate text-sm font-semibold">VeriConomy</div>
           <div className="text-[10px] uppercase tracking-wider text-fg-subtle">
-            VRM · Explorer
+            Binary Chain · Explorer
           </div>
         </div>
       </div>

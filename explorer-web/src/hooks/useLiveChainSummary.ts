@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchChainSummary, getTipStreamUrl } from "@/lib/api/client";
+import { useTipStream } from "@/components/explorer/TipStreamProvider";
+import { fetchChainSummary } from "@/lib/api/client";
+import { usePageVisible } from "@/hooks/usePageVisible";
 import type { ChainSummary, IndexedBlock } from "@/lib/api/types";
 
 const HIGHLIGHT_MS = 2_400;
@@ -20,16 +22,12 @@ export interface LiveChainState {
   error: string | null;
 }
 
-interface TipEvent {
-  height: number;
-  hash: string;
-  time: number;
-}
-
 export function useLiveChainSummary(
   chainId: string,
   initialSummary: ChainSummary,
 ): LiveChainState {
+  const { subscribe } = useTipStream(chainId);
+  const visible = usePageVisible();
   const knownHashesRef = useRef(new Set(initialSummary.latestBlocks.map((b) => b.hash)));
   const tipRef = useRef<number | null>(
     initialSummary.health.heights.bestRpcHeight ??
@@ -80,6 +78,10 @@ export function useLiveChainSummary(
   }, []);
 
   const refresh = useCallback(async () => {
+    if (!visible) {
+      return;
+    }
+
     setIsRefreshing(true);
     try {
       const next = await fetchChainSummary(chainId);
@@ -89,27 +91,17 @@ export function useLiveChainSummary(
     } finally {
       setIsRefreshing(false);
     }
-  }, [applySummary, chainId]);
+  }, [applySummary, chainId, visible]);
 
   useEffect(() => {
-    const source = new EventSource(getTipStreamUrl(chainId));
+    if (!visible) {
+      return;
+    }
 
-    source.addEventListener("tip", (event) => {
-      try {
-        const tip = JSON.parse(event.data) as TipEvent;
-        if (tipRef.current != null && tip.height <= tipRef.current) return;
-        void refresh();
-      } catch {
-        /* ignore malformed events */
-      }
+    return subscribe(chainId, () => {
+      void refresh();
     });
-
-    source.onerror = () => {
-      setError("Live tip stream disconnected");
-    };
-
-    return () => source.close();
-  }, [chainId, refresh]);
+  }, [chainId, refresh, subscribe, visible]);
 
   const chainHeight =
     summary.health.heights.bestRpcHeight ?? summary.health.heights.maxIndexedHeight;

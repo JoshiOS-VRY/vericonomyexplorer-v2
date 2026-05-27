@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getLeaderboard } from "@/lib/api/indexer";
+import { formatExplorerUserMessage } from "@/lib/explorerCopy";
 import { normalizeLimit, normalizeOffset } from "@/lib/utils";
 
 const filters = [
@@ -46,8 +47,8 @@ export default async function LeaderboardPage({
   if (!leaderboard.enabled && leaderboard.message) {
     return (
       <div className="space-y-6">
-        <PageHero title="Verium Leaderboard" subtitle="Indexed transfer activity." />
-        <AlertBanner title="Leaderboard Disabled">{leaderboard.message}</AlertBanner>
+        <PageHero title="Verium Leaderboard" subtitle="Transfer activity by period." />
+        <AlertBanner title="Leaderboard Disabled">{formatExplorerUserMessage(leaderboard.message)}</AlertBanner>
       </div>
     );
   }
