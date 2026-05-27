@@ -3,7 +3,6 @@ networks:
     driver: bridge
   private:
     driver: bridge
-    internal: true
 
 services:
   caddy:

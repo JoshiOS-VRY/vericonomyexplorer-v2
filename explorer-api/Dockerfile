@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Install root deps first because explorer-api loads root modules at runtime.
-COPY package.json package-lock.json npm-shrinkwrap.json ./
+COPY package.json npm-shrinkwrap.json ./
 RUN npm ci
 
 # Install explorer-api deps and build.
