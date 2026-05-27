@@ -31,15 +31,49 @@ See [docs/INDEXER_V2_API.md](../docs/INDEXER_V2_API.md) — all `/v1/*` routes.
 Home dashboard data (market + network stats + summaries):
 
 - `GET /v1/home` — full home payload (cached ~30s)
+- `GET /v1/home/shell` — indexed landing data only (cached ~30s)
+- `GET /v1/home/network` — RPC network stats (cached ~120s)
 - `GET /v1/home/market` — market-only refresh for client polling (cached ~120s)
 
 Market data is fetched server-side from LiveCoinWatch (`VCEXP_LCW_API_KEY`) with optional CoinGecko BTC reference (`VCEXP_COINGECKO_API_KEY`).
 
 ## Performance
 
-SQLite reads run in a small worker pool (`VCEXP_API_DB_WORKERS`, default `2`) so concurrent `/v1/*` requests do not block each other on the main event loop.
+SQLite reads run in a worker pool (default **4** workers, capped by CPU count) so concurrent `/v1/*` requests do not block the Fastify event loop. Indexed queries use readonly worker connections; live RPC enrichment runs on the main thread after worker DB reads complete.
 
-In-memory route caches honor `VCEXP_API_CACHE_TTL_MS` when set (default per-route TTL otherwise). For local development, `300000` (5 minutes) reduces repeated cold-query latency.
+### Tuning environment variables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `VCEXP_API_DB_WORKERS` | `min(cpus, 4)` | Worker-thread pool size for SQLite reads |
+| `VCEXP_API_DB_WORKER_TIMEOUT_MS` | `60000` | Worker query timeout (504 on expiry) |
+| `VCEXP_API_SEARCH_TIMEOUT_MS` | `15000` | Search query worker timeout |
+| `VCEXP_API_CACHE_TTL_MS` | per-route | Override all in-memory SWR cache TTLs |
+| `VCEXP_MARKET_CACHE_TTL_MS` | `120000` | Market data cache TTL |
+| `VCEXP_WAL_CHECKPOINT_MB` | `512` | WAL checkpoint threshold (indexer) |
+
+For local development, `VCEXP_API_CACHE_TTL_MS=300000` (5 minutes) reduces repeated cold-query latency.
+
+### Benchmarks
+
+With explorer-api running on port 3003:
+
+```bash
+cd explorer-api
+npm run bench:hotpaths
+```
+
+Optional env: `BENCH_URL`, `BENCH_DURATION`, `BENCH_CONNECTIONS`, `BENCH_CHAIN`, `BENCH_ADDRESS`, `BENCH_BLOCK`, `BENCH_TX`.
+
+### Indexer stats backfill
+
+After upgrading schema (balance/activity buckets), backfill materialized stats for existing indexed data:
+
+```bash
+# From repo root — stop indexer first if database is busy
+node app/indexerV2/backfillStats.js
+node app/indexerV2/backfillStats.js vrm   # single chain
+```
 
 The indexer loop runs `maybeCheckpointWal()` when caught up and the WAL file exceeds `VCEXP_WAL_CHECKPOINT_MB` (default `512` MB). Manual checkpoint:
 
@@ -47,3 +81,9 @@ The indexer loop runs `maybeCheckpointWal()` when caught up and the WAL file exc
 # Stop indexer + api if checkpoint blocks on a busy database
 npm run indexer:checkpoint
 ```
+
+## Reliability
+
+- Global error handler maps worker timeouts to **504**, validation errors to **400**, with `requestId` on all error responses.
+- Market/network failures degrade gracefully (partial payloads, stale market fallback).
+- Worker slots respawn automatically on crash; idempotent reads retry once.

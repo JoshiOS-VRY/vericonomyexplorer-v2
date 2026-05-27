@@ -56,15 +56,22 @@ const ADDRESS_UTXO_UNSPENT_SQL = `
 		AND (vouts.address IS NULL OR vouts.address != ?)
 `;
 
-const ADDRESS_UTXO_ROWS_SQL = `
+const ADDRESS_UTXO_QUERY_SQL = `
 	WITH unspent AS (${ADDRESS_UTXO_UNSPENT_SQL})
-	SELECT txid, n, value_sats, block_height, time
+	SELECT
+		txid,
+		n,
+		value_sats,
+		block_height,
+		time,
+		COUNT(*) OVER() AS total_count,
+		COALESCE(SUM(value_sats) OVER(), 0) AS total_sats
 	FROM unspent
 	ORDER BY value_sats DESC, txid ASC, n ASC
 	LIMIT ? OFFSET ?
 `;
 
-const ADDRESS_UTXO_SUMMARY_SQL = `
+const ADDRESS_UTXO_SUMMARY_ONLY_SQL = `
 	WITH unspent AS (${ADDRESS_UTXO_UNSPENT_SQL})
 	SELECT COUNT(*) AS count, COALESCE(SUM(value_sats), 0) AS total_sats
 	FROM unspent
@@ -175,20 +182,20 @@ function getLeaderboard(chainId, options = {}) {
 
 	if (statsCountRow.count > 0) {
 		const rows = db.prepare(`
-			SELECT
-				address,
-				received_sats,
-				sent_sats,
-				net_sats,
-				tx_count,
-				last_seen_height,
-				last_seen_time
-			FROM address_period_stats
-			WHERE chain_id = ? AND period = ? AND period_start = ?
-				AND (received_sats > 0 OR sent_sats > 0)
-			ORDER BY ${orderColumn} DESC, address ASC
-			LIMIT ? OFFSET ?
-		`).all(chain, periodBounds.type, periodBounds.start, limit, offset);
+		SELECT
+			address,
+			received_sats,
+			sent_sats,
+			net_sats,
+			tx_count,
+			last_seen_height,
+			last_seen_time
+		FROM address_period_stats
+		WHERE chain_id = ? AND period = ? AND period_start = ?
+			AND (received_sats > 0 OR sent_sats > 0)
+		ORDER BY ${orderColumn} DESC, address ASC
+		LIMIT ? OFFSET ?
+	`).all(chain, periodBounds.type, periodBounds.start, limit, offset);
 
 		return {
 			chainId: chain,
@@ -214,53 +221,16 @@ function getLeaderboard(chainId, options = {}) {
 		};
 	}
 
-	const rows = db.prepare(`
-		SELECT
-			address,
-			SUM(CASE WHEN delta_sats > 0 THEN delta_sats ELSE 0 END) AS received_sats,
-			SUM(CASE WHEN delta_sats < 0 THEN ABS(delta_sats) ELSE 0 END) AS sent_sats,
-			SUM(delta_sats) AS net_sats,
-			COUNT(DISTINCT txid) AS tx_count,
-			MAX(block_height) AS last_seen_height,
-			MAX(time) AS last_seen_time
-		FROM address_events
-		WHERE chain_id = ? AND time >= ? AND time < ?
-		GROUP BY address
-		HAVING received_sats > 0 OR sent_sats > 0
-		ORDER BY ${orderColumn} DESC, address ASC
-		LIMIT ? OFFSET ?
-	`).all(chain, periodBounds.start, periodBounds.end, limit, offset);
-	const countRow = db.prepare(`
-		SELECT COUNT(*) AS count
-		FROM (
-			SELECT address
-			FROM address_events
-			WHERE chain_id = ? AND time >= ? AND time < ?
-			GROUP BY address
-		)
-	`).get(chain, periodBounds.start, periodBounds.end);
-
 	return {
 		chainId: chain,
-		trusted: chainHealth.trusted,
+		trusted: false,
 		source: getSource(chainHealth, "leaderboards"),
 		period: periodBounds,
 		sort,
 		label: "Indexed transfer activity",
-		paging: getPaging(limit, offset, countRow.count),
-		items: rows.map((row, index) => ({
-			rank: offset + index + 1,
-			address: row.address,
-			receivedAtomic: stringifyInteger(row.received_sats),
-			received: formatAtomic(chain, row.received_sats),
-			sentAtomic: stringifyInteger(row.sent_sats),
-			sent: formatAtomic(chain, row.sent_sats),
-			netAtomic: stringifyInteger(row.net_sats),
-			net: formatAtomic(chain, row.net_sats),
-			txCount: toNumber(row.tx_count),
-			lastSeenHeight: toNullableNumber(row.last_seen_height),
-			lastSeenTime: toNullableNumber(row.last_seen_time)
-		}))
+		backfillRequired: true,
+		paging: getPaging(limit, offset, 0),
+		items: []
 	};
 }
 
@@ -327,7 +297,15 @@ function getAddress(chainId, address, options = {}) {
 		trusted: chainHealth.trusted,
 		source: getSource(chainHealth, "address"),
 		balance,
-		richlist: getAddressRichlist(db, chain, chainHealth, balanceRow),
+		richlist: options.includeRank === false
+			? {
+				enabled: chainHealth.checks.hasBlocks,
+				eligible: null,
+				rank: null,
+				total: null,
+				percentile: null
+			}
+			: getAddressRichlist(db, chain, chainHealth, balanceRow),
 		paging: getPaging(limit, offset, countRow.count),
 		transactions: txRows.map(row => mapAddressTransaction(chain, row))
 	};
@@ -538,6 +516,112 @@ function mapActivityBucket(chainId, bucket) {
 	};
 }
 
+function getAddressBalanceHistoryFromBuckets(db, chain, cleanAddress, since, maxPoints, chainHealth, balanceRow) {
+	const bucketCountRow = prepare(db, `
+		SELECT COUNT(*) AS count
+		FROM address_balance_buckets
+		WHERE chain_id = ? AND address = ?
+	`).get(chain, cleanAddress);
+
+	if (!toNumber(bucketCountRow.count)) {
+		return null;
+	}
+
+	let priorBalance = 0n;
+	if (since) {
+		const priorFromBuckets = prepare(db, `
+			SELECT COALESCE(SUM(delta_sats), 0) AS total
+			FROM address_balance_buckets
+			WHERE chain_id = ? AND address = ? AND bucket_start < ?
+		`).get(chain, cleanAddress, since);
+		priorBalance = toBigInt(priorFromBuckets.total);
+	}
+
+	const bucketRows = since
+		? prepare(db, `
+			SELECT bucket_start, mined_sats, staked_sats, received_sats, spent_sats, delta_sats
+			FROM address_balance_buckets
+			WHERE chain_id = ? AND address = ? AND bucket_start >= ?
+			ORDER BY bucket_start ASC
+		`).all(chain, cleanAddress, since)
+		: prepare(db, `
+			SELECT bucket_start, mined_sats, staked_sats, received_sats, spent_sats, delta_sats
+			FROM address_balance_buckets
+			WHERE chain_id = ? AND address = ?
+			ORDER BY bucket_start ASC
+		`).all(chain, cleanAddress);
+
+	const boundsRow = prepare(db, `
+		SELECT MIN(bucket_start) AS min_time, MAX(bucket_start) AS max_time
+		FROM address_balance_buckets
+		WHERE chain_id = ? AND address = ?
+	`).get(chain, cleanAddress);
+	const firstTime = toNullableNumber(boundsRow.min_time);
+	const lastTime = toNullableNumber(boundsRow.max_time);
+	const bucketPlan = buildActivityBucketPlan(since, maxPoints, firstTime, lastTime);
+
+	for (const row of bucketRows) {
+		const time = toNumber(row.bucket_start);
+		const bucketIndex = findActivityBucketIndex(bucketPlan, time);
+		const bucket = bucketPlan[bucketIndex];
+		bucket.minedAtomic += toBigInt(row.mined_sats);
+		bucket.stakedAtomic += toBigInt(row.staked_sats);
+		bucket.receivedAtomic += toBigInt(row.received_sats);
+		bucket.spentAtomic += toBigInt(row.spent_sats);
+	}
+
+	const rawPoints = [];
+	let running = priorBalance;
+
+	if (since && (priorBalance !== 0n || bucketRows.length > 0)) {
+		const balance = formatAtomic(chain, priorBalance);
+		rawPoints.push({
+			height: null,
+			time: since,
+			balanceAtomic: stringifyInteger(priorBalance),
+			balance,
+			balanceAmount: Number.parseFloat(balance.amount) || 0,
+			ticker: balance.ticker
+		});
+	}
+
+	for (const row of bucketRows) {
+		running += toBigInt(row.delta_sats);
+		const balance = formatAtomic(chain, running);
+		rawPoints.push({
+			height: null,
+			time: toNumber(row.bucket_start) + 3599,
+			balanceAtomic: stringifyInteger(running),
+			balance,
+			balanceAmount: Number.parseFloat(balance.amount) || 0,
+			ticker: balance.ticker
+		});
+	}
+
+	const eventCountRow = prepare(db, `
+		SELECT COUNT(*) AS count
+		FROM address_events
+		WHERE chain_id = ? AND address = ?
+	`).get(chain, cleanAddress);
+
+	return {
+		chainId: chain,
+		address: cleanAddress,
+		found: !!balanceRow || bucketRows.length > 0 || priorBalance !== 0n,
+		trusted: chainHealth.trusted,
+		source: getSource(chainHealth, "address"),
+		truncated: false,
+		eventCount: toNumber(eventCountRow.count),
+		since,
+		categories: addressActivityCategories,
+		buckets: bucketPlan.map(bucket => mapActivityBucket(chain, bucket)),
+		points: downsampleBalanceHistoryPoints(rawPoints, maxPoints),
+		currentBalanceAtomic: balanceRow
+			? stringifyInteger(balanceRow.balance_sats)
+			: stringifyInteger(running)
+	};
+}
+
 function getAddressBalanceHistory(chainId, address, options = {}) {
 	const db = options.db || dbModule.openDatabase();
 	const chain = normalizeChainId(chainId);
@@ -556,6 +640,19 @@ function getAddressBalanceHistory(chainId, address, options = {}) {
 		WHERE chain_id = ? AND address = ?
 	`).get(chain, cleanAddress);
 	const eventCount = toNumber(eventCountRow.count);
+
+	const bucketResult = getAddressBalanceHistoryFromBuckets(
+		db,
+		chain,
+		cleanAddress,
+		since,
+		maxPoints,
+		chainHealth,
+		balanceRow
+	);
+	if (bucketResult) {
+		return bucketResult;
+	}
 
 	if (eventCount > maxBalanceHistoryEvents) {
 		return {
@@ -729,63 +826,15 @@ function getChainActivityHistory(chainId, options = {}) {
 			bucket.receivedCount += toNumber(row.received_count);
 			bucket.blockCount += toNumber(row.block_count);
 		}
-	} else {
-		const txRows = since
-			? prepare(db, `
-				SELECT time, is_coinbase, is_coinstake
-				FROM transactions
-				WHERE chain_id = ? AND time IS NOT NULL AND time >= ?
-				ORDER BY time ASC
-			`).all(chain, since)
-			: prepare(db, `
-				SELECT time, is_coinbase, is_coinstake
-				FROM transactions
-				WHERE chain_id = ? AND time IS NOT NULL
-				ORDER BY time ASC
-			`).all(chain);
-
-		for (const row of txRows) {
-			const time = toNumber(row.time);
-			const bucketIndex = findActivityBucketIndex(bucketPlan, time);
-			const bucket = bucketPlan[bucketIndex];
-			const category = getTxActivityCategory(row);
-
-			if (category === "mined") {
-				bucket.minedCount += 1;
-			} else if (category === "staked") {
-				bucket.stakedCount += 1;
-			} else {
-				bucket.receivedCount += 1;
-			}
-		}
-
-		const blockRows = since
-			? prepare(db, `
-				SELECT time
-				FROM blocks
-				WHERE chain_id = ? AND status = 'main' AND time IS NOT NULL AND time >= ?
-				ORDER BY time ASC
-			`).all(chain, since)
-			: prepare(db, `
-				SELECT time
-				FROM blocks
-				WHERE chain_id = ? AND status = 'main' AND time IS NOT NULL
-				ORDER BY time ASC
-			`).all(chain);
-
-		for (const row of blockRows) {
-			const time = toNumber(row.time);
-			const bucketIndex = findActivityBucketIndex(bucketPlan, time);
-			bucketPlan[bucketIndex].blockCount += 1;
-		}
 	}
 
 	return {
 		chainId: chain,
-		trusted: chainHealth.trusted,
+		trusted: bucketRows.length > 0 ? chainHealth.trusted : false,
 		source: getSource(chainHealth, "summary"),
 		since,
 		categories: chainActivityCategories,
+		backfillRequired: bucketRows.length === 0,
 		buckets: bucketPlan.map(mapChainActivityBucket)
 	};
 }
@@ -798,8 +847,10 @@ function getAddressUtxos(chainId, address, options = {}) {
 	const offset = normalizeOffset(options.offset);
 	const chainHealth = health.getChainHealth(chain, { db });
 	const utxoParams = [chain, cleanAddress, chain, cleanAddress, cleanAddress];
-	const rows = prepare(db, ADDRESS_UTXO_ROWS_SQL).all(...utxoParams, limit, offset);
-	const summaryRow = prepare(db, ADDRESS_UTXO_SUMMARY_SQL).get(...utxoParams);
+	const rows = prepare(db, ADDRESS_UTXO_QUERY_SQL).all(...utxoParams, limit, offset);
+	const summaryRow = rows.length
+		? { count: rows[0].total_count, total_sats: rows[0].total_sats }
+		: prepare(db, ADDRESS_UTXO_SUMMARY_ONLY_SQL).get(...utxoParams);
 
 	return {
 		chainId: chain,

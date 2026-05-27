@@ -19,10 +19,30 @@ export function createSwrCache(options) {
 export function cacheKey(chainId, resource, suffix = "") {
     return `${chainId}:${resource}${suffix ? `:${suffix}` : ""}`;
 }
+export function safeCacheDelete(cache, key) {
+    try {
+        cache.delete(key);
+    }
+    catch {
+        /* entry may be mid-fetch (lru-cache throws "deleted") */
+    }
+}
+export async function swrFetch(cache, key, fallback) {
+    try {
+        const data = await cache.fetch(key);
+        return (data ?? (await fallback()));
+    }
+    catch (err) {
+        if (err instanceof Error && err.message === "deleted") {
+            return fallback();
+        }
+        throw err;
+    }
+}
 export function invalidateChain(cache, chainId) {
     for (const key of cache.keys()) {
         if (key.startsWith(`${chainId}:`)) {
-            cache.delete(key);
+            safeCacheDelete(cache, key);
         }
     }
 }

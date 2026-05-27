@@ -65,6 +65,20 @@ function createPeriodStatStatements(db) {
 				received_count = received_count + excluded.received_count,
 				block_count = block_count + excluded.block_count,
 				updated_at = excluded.updated_at
+		`),
+
+		upsertAddressBalanceBucket: db.prepare(`
+			INSERT INTO address_balance_buckets (
+				chain_id, address, bucket_start,
+				mined_sats, staked_sats, received_sats, spent_sats, delta_sats, updated_at
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			ON CONFLICT(chain_id, address, bucket_start) DO UPDATE SET
+				mined_sats = mined_sats + excluded.mined_sats,
+				staked_sats = staked_sats + excluded.staked_sats,
+				received_sats = received_sats + excluded.received_sats,
+				spent_sats = spent_sats + excluded.spent_sats,
+				delta_sats = delta_sats + excluded.delta_sats,
+				updated_at = excluded.updated_at
 		`)
 	};
 }
@@ -136,10 +150,42 @@ function recordBlockActivity(statements, chainId, blockTime, now) {
 	statements.upsertActivityBucket.run(chainId, bucketStart, 0, 0, 0, 1, now);
 }
 
+function recordAddressBalanceBucket(statements, chainId, address, deltaSats, blockTime, category, now) {
+	if (!address) {
+		return;
+	}
+
+	const bucketStart = hourBucketStart(blockTime);
+	if (!bucketStart) {
+		return;
+	}
+
+	const delta = BigInt(deltaSats || 0);
+	const magnitude = delta < 0n ? -delta : delta;
+	const mined = category === "mined" ? magnitude : 0n;
+	const staked = category === "staked" ? magnitude : 0n;
+	const received = category === "received" ? magnitude : 0n;
+	const spent = category === "spent" ? magnitude : 0n;
+
+	statements.upsertAddressBalanceBucket.run(
+		chainId,
+		address,
+		bucketStart,
+		mined,
+		staked,
+		received,
+		spent,
+		delta,
+		now
+	);
+}
+
 module.exports = {
 	createPeriodStatStatements,
 	recordAddressPeriodEvent,
+	recordAddressBalanceBucket,
 	recordTransactionActivity,
 	recordBlockActivity,
-	hourBucketStart
+	hourBucketStart,
+	getPeriodBoundsForTime
 };

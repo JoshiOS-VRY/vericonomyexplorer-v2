@@ -1,0 +1,10 @@
+import type { LRUCache } from "lru-cache";
+import type { ChainId } from "../types.js";
+import { type CacheValue } from "./swrCache.js";
+type AnyCache = LRUCache<string, CacheValue, unknown>;
+export declare function registerGlobalCache(cache: AnyCache): void;
+export declare function registerChainScopedCache(cache: AnyCache): void;
+export declare function invalidateGlobalCaches(keys: string[]): void;
+export declare function invalidateAllChainCaches(chainId: ChainId): void;
+export declare function invalidateAllTipCaches(chainId: ChainId): void;
+export {};

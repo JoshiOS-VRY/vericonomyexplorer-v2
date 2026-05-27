@@ -3,6 +3,7 @@ import { UserMessageBanner } from "@/components/explorer/UserMessageBanner";
 import { VericonomyHomeLiveBand } from "@/components/explorer/home/VericonomyHomeLiveBand";
 import { VericonomyHomeStatic } from "@/components/explorer/home/VericonomyHomeSections";
 import { getHomeMarket, getHomeNetwork, getHomeShell } from "@/lib/api/indexer";
+import { enrichHomeNetworkPayload } from "@/lib/enrichNetwork";
 import type {
   ChainSummary,
   HomeMarketPayload,
@@ -40,6 +41,11 @@ export default async function HomePage() {
   }
 
   const normalized = normalizeShell(shell);
+  const networkPayload = enrichHomeNetworkPayload(
+    network,
+    normalized.vrm.summary,
+    normalized.vrc.summary,
+  );
 
   return (
     <div className="space-y-8">
@@ -47,7 +53,7 @@ export default async function HomePage() {
       <VericonomyHomeLiveBand
         initialShell={normalized}
         market={market}
-        network={network}
+        network={networkPayload}
       />
 
       <VericonomyHomeStatic

@@ -21,8 +21,10 @@ export function ChainExplorerHero({
 }) {
   const config = CHAIN_EXPLORERS[chainId];
   const live = isChainLive(health, tipBlock?.height);
-  const tipHref = tipBlock && config.blockHref ? config.blockHref(tipBlock.height) : null;
-  const chainLabel = chainId === "vrm" ? "Verium blockchain" : "VeriCoin blockchain";
+  const tipHref =
+    tipBlock && config.blockHref ? config.blockHref(tipBlock.height) : null;
+  const chainLabel =
+    chainId === "vrm" ? "Verium blockchain" : "VeriCoin blockchain";
   const description =
     chainId === "vrm"
       ? "Explore blocks, transactions, and addresses on the Verium proof-of-work-time chain."
@@ -45,13 +47,19 @@ export function ChainExplorerHero({
                 {chainLabel}
               </p>
               <div className="mt-1 flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">{config.name}</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">
+                  {config.name}
+                </h1>
                 <span className="rounded bg-accent/10 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-accent">
                   {config.ticker}
                 </span>
-                <span className="text-xs text-fg-subtle">{config.consensus}</span>
+                <span className="text-xs text-fg-subtle">
+                  {config.consensus}
+                </span>
               </div>
-              <p className="mt-2 max-w-2xl text-sm text-fg-muted">{description}</p>
+              <p className="mt-2 max-w-2xl text-sm text-fg-muted">
+                {description}
+              </p>
               <div className="mt-3 flex flex-wrap items-center gap-4">
                 <span
                   className={cn(
@@ -77,18 +85,7 @@ export function ChainExplorerHero({
               </div>
             </div>
           </div>
-          {tipHref ? (
-            <Link
-              href={tipHref}
-              className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-fg transition hover:bg-accent/90"
-            >
-              Latest block
-            </Link>
-          ) : null}
         </div>
-      </div>
-      <div className="px-5 py-4 sm:px-6">
-        <SearchForm variant="blockchair" />
       </div>
     </section>
   );

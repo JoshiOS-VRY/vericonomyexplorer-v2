@@ -42,7 +42,7 @@ describe("isChainAtTip", () => {
     expect(getChainSyncLabel(baseHealth(), 100)).toBe("Live");
   });
 
-  it("is offline when blocksBehind is positive", () => {
+  it("is offline when blocksBehind is positive and indexed tip is behind", () => {
     const health = baseHealth({
       heights: {
         bestRpcHeight: 105,
@@ -61,6 +61,21 @@ describe("isChainAtTip", () => {
 
     expect(isChainAtTip(health, 100)).toBe(false);
     expect(getChainSyncLabel(health, 100)).toBe("Offline");
+  });
+
+  it("is live when indexed latest block matches tip even if sync_state blocksBehind is stale", () => {
+    const health = baseHealth({
+      heights: {
+        bestRpcHeight: 105,
+        minIndexedHeight: 0,
+        maxIndexedHeight: 105,
+        lastIndexedHeight: 100,
+        blocksBehind: 5,
+      },
+    });
+
+    expect(isChainAtTip(health, 105)).toBe(true);
+    expect(getChainSyncLabel(health, 105)).toBe("Live");
   });
 
   it("is offline when latest indexed block height differs from rpc tip", () => {

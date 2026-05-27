@@ -36,13 +36,40 @@ export function cacheKey(chainId: ChainId, resource: string, suffix = ""): strin
   return `${chainId}:${resource}${suffix ? `:${suffix}` : ""}`;
 }
 
+export function safeCacheDelete<T extends CacheValue>(
+  cache: LRUCache<string, T, unknown>,
+  key: string,
+): void {
+  try {
+    cache.delete(key);
+  } catch {
+    /* entry may be mid-fetch (lru-cache throws "deleted") */
+  }
+}
+
+export async function swrFetch<T>(
+  cache: LRUCache<string, CacheValue, unknown>,
+  key: string,
+  fallback: () => Promise<T>,
+): Promise<T> {
+  try {
+    const data = await cache.fetch(key);
+    return (data ?? (await fallback())) as T;
+  } catch (err) {
+    if (err instanceof Error && err.message === "deleted") {
+      return fallback();
+    }
+    throw err;
+  }
+}
+
 export function invalidateChain(
   cache: LRUCache<string, CacheValue, unknown>,
   chainId: ChainId,
 ): void {
   for (const key of cache.keys()) {
     if (key.startsWith(`${chainId}:`)) {
-      cache.delete(key);
+      safeCacheDelete(cache, key);
     }
   }
 }

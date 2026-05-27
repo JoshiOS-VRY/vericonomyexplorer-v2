@@ -6,9 +6,6 @@ const requireRoot = createRequire(path.join(repoRoot, "package.json"));
 // Use the repo-root native module so explorer-api matches indexer/Express Node ABI.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const DatabaseConstructor = requireRoot("better-sqlite3");
-const require = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const schema = require(`${repoRoot}/app/indexerV2/schema.js`);
 const statementCache = new Map();
 let dbInstance = null;
 let dbError = null;
@@ -16,50 +13,6 @@ function getDatabasePath() {
     return (process.env.VCEXP_INDEXER_SQLITE_PATH ??
         process.env.BTCEXP_INDEXER_SQLITE_PATH ??
         path.join(repoRoot, "database", "vericonomy-index.sqlite"));
-}
-function seedChains(db) {
-    const now = Date.now();
-    const insertChain = db.prepare(`
-    INSERT INTO chains (
-      id, ticker, name, network, consensus, rpc_capabilities_json, created_at, updated_at
-    ) VALUES (
-      @id, @ticker, @name, @network, @consensus, @rpc_capabilities_json, @created_at, @updated_at
-    )
-    ON CONFLICT(id) DO UPDATE SET
-      ticker = excluded.ticker,
-      name = excluded.name,
-      network = excluded.network,
-      consensus = excluded.consensus,
-      updated_at = excluded.updated_at
-  `);
-    insertChain.run({
-        id: "vrc",
-        ticker: "VRC",
-        name: "VeriCoin",
-        network: "main",
-        consensus: "PoST",
-        rpc_capabilities_json: JSON.stringify({
-            txLookup: "rpc-or-index",
-            addressBalances: "index",
-            staking: true,
-        }),
-        created_at: now,
-        updated_at: now,
-    });
-    insertChain.run({
-        id: "vrm",
-        ticker: "VRM",
-        name: "Verium",
-        network: "main",
-        consensus: "PoWT",
-        rpc_capabilities_json: JSON.stringify({
-            txLookup: "index-first",
-            addressBalances: "index",
-            arbitraryTxQuery: false,
-        }),
-        created_at: now,
-        updated_at: now,
-    });
 }
 export function getDb() {
     if (dbInstance)
@@ -72,14 +25,10 @@ export function getDb() {
         if (!fs.existsSync(dbDir)) {
             fs.mkdirSync(dbDir, { recursive: true });
         }
-        dbInstance = new DatabaseConstructor(dbPath);
+        dbInstance = new DatabaseConstructor(dbPath, { readonly: true });
         dbInstance.defaultSafeIntegers(true);
-        dbInstance.pragma("journal_mode = WAL");
         dbInstance.pragma("foreign_keys = ON");
         dbInstance.pragma("busy_timeout = 10000");
-        dbInstance.pragma("synchronous = NORMAL");
-        schema.applySchema(dbInstance);
-        seedChains(dbInstance);
         return dbInstance;
     }
     catch (err) {

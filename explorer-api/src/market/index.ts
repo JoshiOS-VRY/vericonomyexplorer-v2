@@ -54,15 +54,26 @@ function finalizeMarket(
   };
 }
 
+let btcUsdInflight: Promise<number | null> | null = null;
+
+async function getSharedBtcUsd(): Promise<number | null> {
+  if (!btcUsdInflight) {
+    btcUsdInflight = fetchCoinGeckoBtcUsd().finally(() => {
+      btcUsdInflight = null;
+    });
+  }
+  return btcUsdInflight;
+}
+
 async function fetchChainMarketInternal(
   chainId: ChainId,
   onChainSupply: number | null,
+  btcUsd: number | null,
 ): Promise<ChainMarket> {
-  const [usdData, btcData, history, btcUsd, cgVrc] = await Promise.all([
+  const [usdData, btcData, history, cgVrc] = await Promise.all([
     fetchLcwSingle(chainId, "USD"),
     fetchLcwSingle(chainId, "BTC"),
     fetchLcwHistory24h(chainId),
-    fetchCoinGeckoBtcUsd(),
     chainId === "vrc" ? fetchCoinGeckoVericoin() : Promise.resolve(null),
   ]);
 
@@ -88,9 +99,11 @@ const marketCache = createSwrCache({
     if (signal.aborted) throw new Error("aborted");
     const [chainId, supplyStr] = key.split(":");
     const supply = supplyStr === "null" ? null : Number(supplyStr);
+    const btcUsd = await getSharedBtcUsd();
     const result = await fetchChainMarketInternal(
       chainId as ChainId,
       Number.isFinite(supply) ? supply : null,
+      btcUsd,
     );
     return result as unknown as Record<string, unknown>;
   },
@@ -101,17 +114,27 @@ export async function fetchChainMarket(
   onChainSupply: number | null = null,
 ): Promise<ChainMarket> {
   const key = `${chainId}:${onChainSupply ?? "null"}`;
-  const cached = await marketCache.fetch(key);
-  return (cached ?? emptyMarket()) as unknown as ChainMarket;
+
+  try {
+    const cached = await marketCache.fetch(key);
+    return (cached ?? emptyMarket()) as unknown as ChainMarket;
+  } catch {
+    const stale = marketCache.get(key, { allowStale: true }) as ChainMarket | undefined;
+    if (stale) {
+      return stale;
+    }
+    return emptyMarket();
+  }
 }
 
 export async function fetchHomeMarket(
   vrmSupply: number | null,
   vrcSupply: number | null,
 ): Promise<HomeMarketPayload> {
+  const btcUsd = await getSharedBtcUsd();
   const [vrm, vrc] = await Promise.all([
-    fetchChainMarket("vrm", vrmSupply),
-    fetchChainMarket("vrc", vrcSupply),
+    fetchChainMarketInternal("vrm", vrmSupply, btcUsd),
+    fetchChainMarketInternal("vrc", vrcSupply, btcUsd),
   ]);
 
   return {

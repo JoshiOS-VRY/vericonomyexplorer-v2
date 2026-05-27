@@ -224,10 +224,6 @@ function ChainOverviewPanel({
             )
           }
         />
-        <BcStat
-          label="Indexed blocks"
-          value={formatHeight(health.counts.indexedBlockCount)}
-        />
       </BcStatGrid>
     </section>
   );

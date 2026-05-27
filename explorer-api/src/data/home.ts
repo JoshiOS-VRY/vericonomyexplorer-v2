@@ -61,36 +61,29 @@ export async function fetchHomeNetwork(): Promise<HomeNetworkPayload> {
 }
 
 export async function fetchHomeData(): Promise<HomePayload> {
-  const [landing, vrmNetwork, vrcNetwork, market] = await Promise.all([
-    fetchLandingData(),
-    fetchVrmNetworkStats().catch(emptyVrmNetwork),
-    fetchVrcNetworkStats().catch(emptyVrcNetwork),
-    fetchHomeMarket(null, null).catch(
-      (): HomeMarketPayload => ({
-        vrm: emptyMarket(),
-        vrc: emptyMarket(),
-        fetchedAt: new Date().toISOString(),
-      }),
-    ),
+  const [shell, network, market] = await Promise.all([
+    fetchHomeShell(),
+    fetchHomeNetwork(),
+    fetchHomeMarketOnly(),
   ]);
 
-  const vrmMarket = applySupplyMcap(market.vrm, vrmNetwork.supply);
-  const vrcMarket = applySupplyMcap(market.vrc, vrcNetwork.supply);
+  const vrmMarket = applySupplyMcap(market.vrm, network.vrm.supply);
+  const vrcMarket = applySupplyMcap(market.vrc, network.vrc.supply);
 
   return {
     vrm: {
-      summary: landing.vrmSummary as Record<string, unknown>,
-      richlist: landing.vrmRichlist as Record<string, unknown>,
+      summary: shell.vrm.summary,
+      richlist: shell.vrm.richlist,
       market: vrmMarket,
-      network: vrmNetwork,
+      network: network.vrm,
     },
     vrc: {
-      summary: landing.vrcSummary as Record<string, unknown>,
-      richlist: landing.vrcRichlist as Record<string, unknown>,
+      summary: shell.vrc.summary,
+      richlist: shell.vrc.richlist,
       market: vrcMarket,
-      network: vrcNetwork,
+      network: network.vrc,
     },
-    vrmLeaderboard: landing.vrmLeaderboard as Record<string, unknown>,
+    vrmLeaderboard: shell.vrmLeaderboard,
     fetchedAt: new Date().toISOString(),
   };
 }

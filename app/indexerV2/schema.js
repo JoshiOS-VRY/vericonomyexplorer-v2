@@ -1,6 +1,6 @@
 "use strict";
 
-const schemaVersion = 2;
+const schemaVersion = 3;
 
 const tables = [
 	`CREATE TABLE IF NOT EXISTS indexer_meta (
@@ -188,6 +188,20 @@ const tables = [
 		updated_at INTEGER NOT NULL,
 		PRIMARY KEY (chain_id, bucket_start),
 		FOREIGN KEY (chain_id) REFERENCES chains(id) ON DELETE CASCADE
+	);`,
+
+	`CREATE TABLE IF NOT EXISTS address_balance_buckets (
+		chain_id TEXT NOT NULL,
+		address TEXT NOT NULL,
+		bucket_start INTEGER NOT NULL,
+		mined_sats INTEGER NOT NULL DEFAULT 0,
+		staked_sats INTEGER NOT NULL DEFAULT 0,
+		received_sats INTEGER NOT NULL DEFAULT 0,
+		spent_sats INTEGER NOT NULL DEFAULT 0,
+		delta_sats INTEGER NOT NULL DEFAULT 0,
+		updated_at INTEGER NOT NULL,
+		PRIMARY KEY (chain_id, address, bucket_start),
+		FOREIGN KEY (chain_id) REFERENCES chains(id) ON DELETE CASCADE
 	);`
 ];
 
@@ -211,7 +225,8 @@ const indexes = [
 	"CREATE INDEX IF NOT EXISTS idx_address_transactions_chain_address_height ON address_transactions(chain_id, address, first_seen_height DESC);",
 	"CREATE INDEX IF NOT EXISTS idx_address_balances_chain_balance ON address_balances(chain_id, balance_sats DESC);",
 	"CREATE INDEX IF NOT EXISTS idx_period_stats_chain_period_net ON address_period_stats(chain_id, period, period_start, net_sats DESC);",
-	"CREATE INDEX IF NOT EXISTS idx_period_stats_chain_period_received ON address_period_stats(chain_id, period, period_start, received_sats DESC);"
+	"CREATE INDEX IF NOT EXISTS idx_period_stats_chain_period_received ON address_period_stats(chain_id, period, period_start, received_sats DESC);",
+	"CREATE INDEX IF NOT EXISTS idx_address_balance_buckets_chain_address_start ON address_balance_buckets(chain_id, address, bucket_start ASC);"
 ];
 
 function getSchemaSql() {

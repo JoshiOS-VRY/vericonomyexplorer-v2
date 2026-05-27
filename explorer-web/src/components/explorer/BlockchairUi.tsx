@@ -40,7 +40,7 @@ export function BcStatGrid({
   return (
     <div
       className={cn(
-        "bc-stat-grid grid grid-cols-2 gap-3 px-3 py-2 sm:grid-cols-4 lg:gap-4",
+        "bc-stat-grid grid grid-cols-2 gap-3 px-3 py-2 sm:grid-cols-3 lg:gap-4",
         className,
       )}
     >

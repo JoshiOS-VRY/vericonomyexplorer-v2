@@ -1,6 +1,14 @@
 import type { FastifyInstance } from "fastify";
-import type { LRUCache } from "lru-cache";
-import { cacheKey, createSwrCache, type CacheValue } from "../cache/swrCache.js";
+import {
+  cacheKey,
+  createSwrCache,
+  type CacheValue,
+} from "../cache/swrCache.js";
+import {
+  invalidateAllTipCaches,
+  registerChainScopedCache,
+  registerGlobalCache,
+} from "../cache/registry.js";
 import {
   fetchChainHealth,
   fetchChainActivityHistory,
@@ -11,7 +19,7 @@ import {
 import { fetchVrmDashboardBundle } from "../data/vrmDashboard.js";
 import { onAnyTip } from "../live/brokers.js";
 import { parseChainId, type ChainId } from "../types.js";
-import { homeCache } from "./home.js";
+import { homeCache, homeShellCache } from "./home.js";
 
 const summaryCache = createSwrCache({
   max: 32,
@@ -19,7 +27,7 @@ const summaryCache = createSwrCache({
   fetch: async (key, signal) => {
     const chainId = key.split(":")[0] as ChainId;
     if (signal.aborted) throw new Error("aborted");
-    return fetchChainSummary(chainId);
+    return (await fetchChainSummary(chainId)) as CacheValue;
   },
 });
 
@@ -28,7 +36,7 @@ const landingCache = createSwrCache({
   ttlMs: 60_000,
   fetch: async (_key, signal) => {
     if (signal.aborted) throw new Error("aborted");
-    return fetchLandingData();
+    return (await fetchLandingData()) as CacheValue;
   },
 });
 
@@ -37,7 +45,7 @@ const dashboardCache = createSwrCache({
   ttlMs: 30_000,
   fetch: async (_key, signal) => {
     if (signal.aborted) throw new Error("aborted");
-    return fetchVrmDashboardBundle();
+    return (await fetchVrmDashboardBundle()) as CacheValue;
   },
 });
 
@@ -46,7 +54,17 @@ const healthCache = createSwrCache({
   ttlMs: 10_000,
   fetch: async (_key, signal) => {
     if (signal.aborted) throw new Error("aborted");
-    return fetchIndexerHealth();
+    return (await fetchIndexerHealth()) as CacheValue;
+  },
+});
+
+const chainHealthCache = createSwrCache({
+  max: 8,
+  ttlMs: 10_000,
+  fetch: async (key, signal) => {
+    if (signal.aborted) throw new Error("aborted");
+    const chainId = key.split(":")[0] as ChainId;
+    return (await fetchChainHealth(chainId)) as CacheValue;
   },
 });
 
@@ -64,30 +82,18 @@ const activityHistoryCache = createSwrCache({
   },
 });
 
-function safeCacheDelete<T extends CacheValue>(cache: LRUCache<string, T, unknown>, key: string): void {
-  try {
-    cache.delete(key);
-  } catch {
-    /* entry may be mid-fetch (lru-cache throws "deleted") */
-  }
-}
+registerChainScopedCache(summaryCache);
+registerChainScopedCache(activityHistoryCache);
+registerChainScopedCache(chainHealthCache);
+registerGlobalCache(landingCache);
+registerGlobalCache(dashboardCache);
+registerGlobalCache(healthCache);
+registerGlobalCache(homeCache);
+registerGlobalCache(homeShellCache);
 
 export function registerCacheInvalidation(): void {
   onAnyTip((chainId) => {
-    for (const key of summaryCache.keys()) {
-      if (key.startsWith(`${chainId}:`)) {
-        safeCacheDelete(summaryCache, key);
-      }
-    }
-    for (const key of activityHistoryCache.keys()) {
-      if (key.startsWith(`${chainId}:`)) {
-        safeCacheDelete(activityHistoryCache, key);
-      }
-    }
-    safeCacheDelete(landingCache, "landing");
-    safeCacheDelete(homeCache, "home");
-    safeCacheDelete(dashboardCache, "dashboard");
-    safeCacheDelete(healthCache, "health");
+    invalidateAllTipCaches(chainId);
   });
 }
 
@@ -116,7 +122,7 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
     if (!chainId) {
       return reply.code(400).send({ error: "Invalid chain id" });
     }
-    return fetchChainHealth(chainId);
+    return chainHealthCache.fetch(cacheKey(chainId, "health"));
   });
 
   app.get<{ Params: { chain: string }; Querystring: { maxPoints?: string; since?: string } }>(
@@ -140,6 +146,6 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(400).send({ error: "Invalid chain id" });
     }
     const summary = await summaryCache.fetch(cacheKey(chainId, "summary"));
-    return summary.latestBlocks;
+    return summary?.latestBlocks ?? [];
   });
 }

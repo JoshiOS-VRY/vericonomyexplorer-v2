@@ -5,6 +5,7 @@ import { useTipStream } from "@/components/explorer/TipStreamProvider";
 import { fetchHomeNetwork } from "@/lib/api/client";
 import { usePageVisible } from "@/hooks/usePageVisible";
 import type { HomeNetworkPayload } from "@/lib/api/types";
+import { mergeHomeNetworkPayload } from "@/lib/enrichNetwork";
 
 const FALLBACK_INTERVAL_MS = 90_000;
 
@@ -23,7 +24,7 @@ export function useHomeNetworkLive(initialNetwork: HomeNetworkPayload) {
     setIsRefreshing(true);
     try {
       const next = await fetchHomeNetwork();
-      setNetwork(next);
+      setNetwork((prev) => mergeHomeNetworkPayload(prev, next));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to refresh network");

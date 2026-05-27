@@ -28,16 +28,18 @@ export function isChainAtTip(
   latestBlockHeight?: number | null,
   liveTipHeight?: number | null,
 ): boolean {
+  const tipHeight =
+    health.heights.bestRpcHeight ?? liveTipHeight ?? getChainTipHeight(health);
+  const indexedHeight = getLatestIndexedHeight(health, latestBlockHeight);
+
+  if (tipHeight != null && indexedHeight != null) {
+    return indexedHeight >= tipHeight;
+  }
+
   const { blocksBehind } = health.heights;
   if (blocksBehind != null) return blocksBehind === 0;
 
-  const tipHeight =
-    health.heights.bestRpcHeight ?? liveTipHeight ?? getChainTipHeight(health);
-  if (tipHeight == null) return false;
-
-  const indexedHeight = getLatestIndexedHeight(health, latestBlockHeight);
-  if (indexedHeight == null) return false;
-  return indexedHeight >= tipHeight;
+  return false;
 }
 
 export function getChainSyncLabel(

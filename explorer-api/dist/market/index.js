@@ -39,12 +39,20 @@ function finalizeMarket(partial, onChainSupply, btcUsd) {
         source,
     };
 }
-async function fetchChainMarketInternal(chainId, onChainSupply) {
-    const [usdData, btcData, history, btcUsd, cgVrc] = await Promise.all([
+let btcUsdInflight = null;
+async function getSharedBtcUsd() {
+    if (!btcUsdInflight) {
+        btcUsdInflight = fetchCoinGeckoBtcUsd().finally(() => {
+            btcUsdInflight = null;
+        });
+    }
+    return btcUsdInflight;
+}
+async function fetchChainMarketInternal(chainId, onChainSupply, btcUsd) {
+    const [usdData, btcData, history, cgVrc] = await Promise.all([
         fetchLcwSingle(chainId, "USD"),
         fetchLcwSingle(chainId, "BTC"),
         fetchLcwHistory24h(chainId),
-        fetchCoinGeckoBtcUsd(),
         chainId === "vrc" ? fetchCoinGeckoVericoin() : Promise.resolve(null),
     ]);
     let partial = mapLcwToMarket(usdData, btcData, history);
@@ -67,19 +75,30 @@ const marketCache = createSwrCache({
             throw new Error("aborted");
         const [chainId, supplyStr] = key.split(":");
         const supply = supplyStr === "null" ? null : Number(supplyStr);
-        const result = await fetchChainMarketInternal(chainId, Number.isFinite(supply) ? supply : null);
+        const btcUsd = await getSharedBtcUsd();
+        const result = await fetchChainMarketInternal(chainId, Number.isFinite(supply) ? supply : null, btcUsd);
         return result;
     },
 });
 export async function fetchChainMarket(chainId, onChainSupply = null) {
     const key = `${chainId}:${onChainSupply ?? "null"}`;
-    const cached = await marketCache.fetch(key);
-    return (cached ?? emptyMarket());
+    try {
+        const cached = await marketCache.fetch(key);
+        return (cached ?? emptyMarket());
+    }
+    catch {
+        const stale = marketCache.get(key, { allowStale: true });
+        if (stale) {
+            return stale;
+        }
+        return emptyMarket();
+    }
 }
 export async function fetchHomeMarket(vrmSupply, vrcSupply) {
+    const btcUsd = await getSharedBtcUsd();
     const [vrm, vrc] = await Promise.all([
-        fetchChainMarket("vrm", vrmSupply),
-        fetchChainMarket("vrc", vrcSupply),
+        fetchChainMarketInternal("vrm", vrmSupply, btcUsd),
+        fetchChainMarketInternal("vrc", vrcSupply, btcUsd),
     ]);
     return {
         vrm,

@@ -1,4 +1,4 @@
-import { emptyMarket, fetchHomeMarket } from "../market/index.js";
+import { fetchHomeMarket } from "../market/index.js";
 import { fetchVrcNetworkStats, fetchVrmNetworkStats } from "../network/index.js";
 import { fetchLandingData } from "./legacy.js";
 const emptyVrmNetwork = () => ({
@@ -46,32 +46,27 @@ export async function fetchHomeNetwork() {
     };
 }
 export async function fetchHomeData() {
-    const [landing, vrmNetwork, vrcNetwork, market] = await Promise.all([
-        fetchLandingData(),
-        fetchVrmNetworkStats().catch(emptyVrmNetwork),
-        fetchVrcNetworkStats().catch(emptyVrcNetwork),
-        fetchHomeMarket(null, null).catch(() => ({
-            vrm: emptyMarket(),
-            vrc: emptyMarket(),
-            fetchedAt: new Date().toISOString(),
-        })),
+    const [shell, network, market] = await Promise.all([
+        fetchHomeShell(),
+        fetchHomeNetwork(),
+        fetchHomeMarketOnly(),
     ]);
-    const vrmMarket = applySupplyMcap(market.vrm, vrmNetwork.supply);
-    const vrcMarket = applySupplyMcap(market.vrc, vrcNetwork.supply);
+    const vrmMarket = applySupplyMcap(market.vrm, network.vrm.supply);
+    const vrcMarket = applySupplyMcap(market.vrc, network.vrc.supply);
     return {
         vrm: {
-            summary: landing.vrmSummary,
-            richlist: landing.vrmRichlist,
+            summary: shell.vrm.summary,
+            richlist: shell.vrm.richlist,
             market: vrmMarket,
-            network: vrmNetwork,
+            network: network.vrm,
         },
         vrc: {
-            summary: landing.vrcSummary,
-            richlist: landing.vrcRichlist,
+            summary: shell.vrc.summary,
+            richlist: shell.vrc.richlist,
             market: vrcMarket,
-            network: vrcNetwork,
+            network: network.vrc,
         },
-        vrmLeaderboard: landing.vrmLeaderboard,
+        vrmLeaderboard: shell.vrmLeaderboard,
         fetchedAt: new Date().toISOString(),
     };
 }

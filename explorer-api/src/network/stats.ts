@@ -26,7 +26,7 @@ export async function fetchOnChainSupply(
   try {
     const utxo = await Promise.race([
       rpcCall("gettxoutsetinfo"),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 4_000)),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 8_000)),
     ]);
     if (utxo && typeof utxo === "object" && "total_amount" in utxo) {
       const supply = Number((utxo as { total_amount?: number | string }).total_amount);
@@ -107,37 +107,38 @@ export async function fetchVrmHashrate(
   const blocks7Days = blocksPerDay * 7;
   const blocks1Day = blocksPerDay;
 
+  const [miningInfoResult, hashrate7dResult, hashrate1dResult, blockchainInfoResult] =
+    await Promise.allSettled([
+      rpcCall("getmininginfo"),
+      safeNetworkHashrate(rpcCall, blocks7Days),
+      safeNetworkHashrate(rpcCall, blocks1Day),
+      rpcCall("getblockchaininfo"),
+    ]);
+
   let currentHashPerSec: number | null = null;
   let hashrate7dHashPerSec: number | null = null;
 
-  try {
-    const miningInfo = (await rpcCall("getmininginfo")) as { networkhashps?: number };
+  if (miningInfoResult.status === "fulfilled") {
+    const miningInfo = miningInfoResult.value as { networkhashps?: number };
     if (miningInfo?.networkhashps && miningInfo.networkhashps > 0) {
       currentHashPerSec = miningInfo.networkhashps;
     }
-  } catch {
-    /* optional */
   }
 
-  try {
-    hashrate7dHashPerSec = await safeNetworkHashrate(rpcCall, blocks7Days);
-    if (!currentHashPerSec || currentHashPerSec <= 0) {
-      currentHashPerSec = await safeNetworkHashrate(rpcCall, blocks1Day);
-    }
-  } catch {
-    /* optional */
+  if (hashrate7dResult.status === "fulfilled") {
+    hashrate7dHashPerSec = hashrate7dResult.value;
   }
 
-  if (!currentHashPerSec || currentHashPerSec <= 0) {
-    try {
-      const blockchainInfo = (await rpcCall("getblockchaininfo")) as { difficulty?: number };
-      if (blockchainInfo?.difficulty) {
-        const difficulty = Number(blockchainInfo.difficulty);
-        const calculated = (difficulty * 2 ** 32) / targetBlockTimeSeconds;
-        if (calculated > 0) currentHashPerSec = calculated;
-      }
-    } catch {
-      /* optional */
+  if ((!currentHashPerSec || currentHashPerSec <= 0) && hashrate1dResult.status === "fulfilled") {
+    currentHashPerSec = hashrate1dResult.value;
+  }
+
+  if ((!currentHashPerSec || currentHashPerSec <= 0) && blockchainInfoResult.status === "fulfilled") {
+    const blockchainInfo = blockchainInfoResult.value as { difficulty?: number };
+    if (blockchainInfo?.difficulty) {
+      const difficulty = Number(blockchainInfo.difficulty);
+      const calculated = (difficulty * 2 ** 32) / targetBlockTimeSeconds;
+      if (calculated > 0) currentHashPerSec = calculated;
     }
   }
 
@@ -153,7 +154,10 @@ async function safeNetworkHashrate(
   blockCount: number,
 ): Promise<number | null> {
   try {
-    const hashrate = (await rpcCall("getnetworkhashps", [blockCount])) as number | null;
+    const hashrate = (await Promise.race([
+      rpcCall("getnetworkhashps", [blockCount]),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 8_000)),
+    ])) as number | null;
     if (typeof hashrate === "number" && hashrate > 0) return hashrate;
   } catch {
     /* method may not exist on Verium */

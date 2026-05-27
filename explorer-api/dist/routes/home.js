@@ -1,4 +1,5 @@
-import { createSwrCache } from "../cache/swrCache.js";
+import { createSwrCache, safeCacheDelete, swrFetch } from "../cache/swrCache.js";
+import { registerGlobalCache } from "../cache/registry.js";
 import { fetchHomeData, fetchHomeMarketOnly, fetchHomeNetwork, fetchHomeShell, } from "../data/home.js";
 import { onAnyTip } from "../live/brokers.js";
 const homeCache = createSwrCache({
@@ -41,28 +42,19 @@ const homeMarketCache = createSwrCache({
         return data;
     },
 });
+registerGlobalCache(homeCache);
+registerGlobalCache(homeShellCache);
+registerGlobalCache(homeNetworkCache);
+registerGlobalCache(homeMarketCache);
 export function registerHomeCacheInvalidation() {
     onAnyTip(() => {
-        homeCache.delete("home");
-        homeShellCache.delete("shell");
+        safeCacheDelete(homeShellCache, "shell");
     });
 }
 export async function registerHomeRoutes(app) {
-    app.get("/v1/home", async () => {
-        const data = await homeCache.fetch("home");
-        return data ?? fetchHomeData();
-    });
-    app.get("/v1/home/shell", async () => {
-        const data = await homeShellCache.fetch("shell");
-        return data ?? fetchHomeShell();
-    });
-    app.get("/v1/home/network", async () => {
-        const data = await homeNetworkCache.fetch("network");
-        return data ?? fetchHomeNetwork();
-    });
-    app.get("/v1/home/market", async () => {
-        const data = await homeMarketCache.fetch("market");
-        return data ?? fetchHomeMarketOnly();
-    });
+    app.get("/v1/home", async () => swrFetch(homeCache, "home", fetchHomeData));
+    app.get("/v1/home/shell", async () => swrFetch(homeShellCache, "shell", fetchHomeShell));
+    app.get("/v1/home/network", async () => swrFetch(homeNetworkCache, "network", fetchHomeNetwork));
+    app.get("/v1/home/market", async () => swrFetch(homeMarketCache, "market", fetchHomeMarketOnly));
 }
 export { homeCache, homeMarketCache, homeNetworkCache, homeShellCache };

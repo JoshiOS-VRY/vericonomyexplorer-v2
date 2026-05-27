@@ -1,6 +1,7 @@
 import { emptyMarket, fetchHomeMarket } from "../market/index.js";
 import { fetchVrmNetworkStats } from "../network/index.js";
-import { fetchChainActivityHistory, fetchChainSummary, fetchLeaderboard, fetchRichlist, } from "./legacy.js";
+import { enrichChainSummary } from "./liveEnrichment.js";
+import { fetchVrmDashboardIndexed } from "./legacy.js";
 const emptyVrmNetwork = () => ({
     hashrateKhPerMin: null,
     hashrate7dKhPerMin: null,
@@ -20,27 +21,24 @@ function applySupplyMcap(market, supply) {
     };
 }
 export async function fetchVrmDashboardBundle() {
-    const since30d = Math.floor(Date.now() / 1000) - 30 * 86_400;
-    const [summary, richlist, leaderboard, network, marketPayload, activityHistory] = await Promise.all([
-        fetchChainSummary("vrm", { skipLiveBlocks: true }),
-        fetchRichlist("vrm", { limit: 5 }),
-        fetchLeaderboard("vrm", { period: "month", sort: "activity", limit: 5 }),
+    const [indexed, network, marketPayload] = await Promise.all([
+        fetchVrmDashboardIndexed(),
         fetchVrmNetworkStats().catch(emptyVrmNetwork),
         fetchHomeMarket(null, null).catch(() => ({
             vrm: emptyMarket(),
             vrc: emptyMarket(),
             fetchedAt: new Date().toISOString(),
         })),
-        fetchChainActivityHistory("vrm", { since: since30d, maxPoints: 100 }),
     ]);
+    const summary = await enrichChainSummary(indexed.summary, "vrm", { skipLiveBlocks: true });
     const market = applySupplyMcap(marketPayload.vrm, network.supply);
     return {
         summary,
-        richlist,
-        leaderboard,
+        richlist: indexed.richlist,
+        leaderboard: indexed.leaderboard,
         network,
         market,
-        activityHistory,
+        activityHistory: indexed.activityHistory,
         fetchedAt: new Date().toISOString(),
     };
 }

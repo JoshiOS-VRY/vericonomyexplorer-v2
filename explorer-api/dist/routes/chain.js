@@ -1,9 +1,10 @@
-import { cacheKey, createSwrCache } from "../cache/swrCache.js";
+import { cacheKey, createSwrCache, } from "../cache/swrCache.js";
+import { invalidateAllTipCaches, registerChainScopedCache, registerGlobalCache, } from "../cache/registry.js";
 import { fetchChainHealth, fetchChainActivityHistory, fetchChainSummary, fetchIndexerHealth, fetchLandingData, } from "../data/legacy.js";
 import { fetchVrmDashboardBundle } from "../data/vrmDashboard.js";
 import { onAnyTip } from "../live/brokers.js";
 import { parseChainId } from "../types.js";
-import { homeCache } from "./home.js";
+import { homeCache, homeShellCache } from "./home.js";
 const summaryCache = createSwrCache({
     max: 32,
     ttlMs: 5_000,
@@ -11,7 +12,7 @@ const summaryCache = createSwrCache({
         const chainId = key.split(":")[0];
         if (signal.aborted)
             throw new Error("aborted");
-        return fetchChainSummary(chainId);
+        return (await fetchChainSummary(chainId));
     },
 });
 const landingCache = createSwrCache({
@@ -20,7 +21,7 @@ const landingCache = createSwrCache({
     fetch: async (_key, signal) => {
         if (signal.aborted)
             throw new Error("aborted");
-        return fetchLandingData();
+        return (await fetchLandingData());
     },
 });
 const dashboardCache = createSwrCache({
@@ -29,7 +30,7 @@ const dashboardCache = createSwrCache({
     fetch: async (_key, signal) => {
         if (signal.aborted)
             throw new Error("aborted");
-        return fetchVrmDashboardBundle();
+        return (await fetchVrmDashboardBundle());
     },
 });
 const healthCache = createSwrCache({
@@ -38,7 +39,17 @@ const healthCache = createSwrCache({
     fetch: async (_key, signal) => {
         if (signal.aborted)
             throw new Error("aborted");
-        return fetchIndexerHealth();
+        return (await fetchIndexerHealth());
+    },
+});
+const chainHealthCache = createSwrCache({
+    max: 8,
+    ttlMs: 10_000,
+    fetch: async (key, signal) => {
+        if (signal.aborted)
+            throw new Error("aborted");
+        const chainId = key.split(":")[0];
+        return (await fetchChainHealth(chainId));
     },
 });
 const activityHistoryCache = createSwrCache({
@@ -55,30 +66,17 @@ const activityHistoryCache = createSwrCache({
         return result;
     },
 });
-function safeCacheDelete(cache, key) {
-    try {
-        cache.delete(key);
-    }
-    catch {
-        /* entry may be mid-fetch (lru-cache throws "deleted") */
-    }
-}
+registerChainScopedCache(summaryCache);
+registerChainScopedCache(activityHistoryCache);
+registerChainScopedCache(chainHealthCache);
+registerGlobalCache(landingCache);
+registerGlobalCache(dashboardCache);
+registerGlobalCache(healthCache);
+registerGlobalCache(homeCache);
+registerGlobalCache(homeShellCache);
 export function registerCacheInvalidation() {
     onAnyTip((chainId) => {
-        for (const key of summaryCache.keys()) {
-            if (key.startsWith(`${chainId}:`)) {
-                safeCacheDelete(summaryCache, key);
-            }
-        }
-        for (const key of activityHistoryCache.keys()) {
-            if (key.startsWith(`${chainId}:`)) {
-                safeCacheDelete(activityHistoryCache, key);
-            }
-        }
-        safeCacheDelete(landingCache, "landing");
-        safeCacheDelete(homeCache, "home");
-        safeCacheDelete(dashboardCache, "dashboard");
-        safeCacheDelete(healthCache, "health");
+        invalidateAllTipCaches(chainId);
     });
 }
 export async function registerChainRoutes(app) {
@@ -101,7 +99,7 @@ export async function registerChainRoutes(app) {
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });
         }
-        return fetchChainHealth(chainId);
+        return chainHealthCache.fetch(cacheKey(chainId, "health"));
     });
     app.get("/v1/:chain/activity-history", async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
@@ -119,6 +117,6 @@ export async function registerChainRoutes(app) {
             return reply.code(400).send({ error: "Invalid chain id" });
         }
         const summary = await summaryCache.fetch(cacheKey(chainId, "summary"));
-        return summary.latestBlocks;
+        return summary?.latestBlocks ?? [];
     });
 }

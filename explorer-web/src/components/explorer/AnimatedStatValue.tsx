@@ -3,6 +3,7 @@
 import { animate, useReducedMotion } from "motion/react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { useHydrated } from "@/hooks/useHydrated";
 import { cn } from "@/lib/utils";
 
 interface AnimatedStatValueProps {
@@ -20,6 +21,7 @@ export function AnimatedStatValue({
   className,
   pulse = false,
 }: AnimatedStatValueProps) {
+  const hydrated = useHydrated();
   const reducedMotion = useReducedMotion();
   const prevNumericRef = useRef(numericValue);
   const prevValueRef = useRef(value);
@@ -78,6 +80,10 @@ export function AnimatedStatValue({
       return () => window.clearTimeout(timer);
     }
   }, [value, numericValue, reducedMotion]);
+
+  if (!hydrated) {
+    return <span className={className}>{value}</span>;
+  }
 
   return (
     <motion.span

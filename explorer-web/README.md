@@ -26,7 +26,19 @@ cd explorer-web
 npm run dev
 ```
 
-Requires Express API already running at `EXPLORER_API_URL` or `BTCEXP_HOST:BTCEXP_PORT`.
+Requires **explorer-api** (port 3003) for `/v1/*` data. Run the full stack from repo root:
+
+```bash
+npm run dev:full
+```
+
+Or start services separately: `npm run api:dev`, indexers, then `npm run web:dev`.
+
+If you see hydration errors after editing components, clear the Turbopack cache:
+
+```bash
+cd explorer-web && npm run clean && npm run dev
+```
 
 ## Environment
 

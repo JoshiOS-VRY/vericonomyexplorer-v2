@@ -1,52 +1,56 @@
-import { createRequire } from "node:module";
-import { repoRoot } from "../env.js";
-import { getDb } from "./db.js";
-import { getTip } from "../live/brokers.js";
 import { runIndexerQuery } from "../db/queryPool.js";
+import { getTip } from "../live/brokers.js";
 import type { ChainId } from "../types.js";
+import {
+  enrichChainSummary,
+  enrichIndexerHealth,
+  fetchBlockWithRpcFallback,
+} from "./liveEnrichment.js";
 
-const require = createRequire(import.meta.url);
+export async function fetchChainSummary(
+  chainId: string,
+  options: Record<string, unknown> = {},
+) {
+  const summary = (await runIndexerQuery<Record<string, unknown>>(
+    "getChainSummaryIndexed",
+    [chainId],
+    options,
+  )) as Record<string, unknown>;
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const indexerSummary = require(`${repoRoot}/app/indexerV2/summary.js`);
-
-const sharedDb = () => ({ db: getDb() });
-
-function sharedWithTip(chainId: string, extra: Record<string, unknown> = {}) {
-  const tip = getTip(chainId as ChainId);
-  return {
-    db: getDb(),
-    tip: tip ? { height: tip.height, hash: tip.hash } : undefined,
-    ...extra,
-  };
-}
-
-export async function fetchChainSummary(chainId: string, options: Record<string, unknown> = {}) {
-  return indexerSummary.getChainSummary(chainId, sharedWithTip(chainId, options));
+  return enrichChainSummary(summary, chainId as ChainId, options);
 }
 
 export async function fetchLandingData() {
-  const [vrmSummary, vrcSummary, vrmRichlist, vrcRichlist, vrmLeaderboard] = await Promise.all([
-    fetchChainSummary("vrm", { skipLiveBlocks: true }),
-    fetchChainSummary("vrc", { skipLiveBlocks: true }),
-    fetchRichlist("vrm", { limit: 5 }),
-    fetchRichlist("vrc", { limit: 5 }),
-    fetchLeaderboard("vrm", { period: "month", sort: "activity", limit: 5 }),
+  const bundle = (await runIndexerQuery<{
+    vrmSummary: Record<string, unknown>;
+    vrcSummary: Record<string, unknown>;
+    vrmRichlist: Record<string, unknown>;
+    vrcRichlist: Record<string, unknown>;
+    vrmLeaderboard: Record<string, unknown>;
+  }>("getLandingBundle", [], {})) as {
+    vrmSummary: Record<string, unknown>;
+    vrcSummary: Record<string, unknown>;
+    vrmRichlist: Record<string, unknown>;
+    vrcRichlist: Record<string, unknown>;
+    vrmLeaderboard: Record<string, unknown>;
+  };
+
+  const [vrmSummary, vrcSummary] = await Promise.all([
+    enrichChainSummary(bundle.vrmSummary, "vrm", { skipLiveBlocks: true }),
+    enrichChainSummary(bundle.vrcSummary, "vrc", { skipLiveBlocks: true }),
   ]);
 
-  return { vrmSummary, vrcSummary, vrmRichlist, vrcRichlist, vrmLeaderboard };
+  return {
+    vrmSummary,
+    vrcSummary,
+    vrmRichlist: bundle.vrmRichlist,
+    vrcRichlist: bundle.vrcRichlist,
+    vrmLeaderboard: bundle.vrmLeaderboard,
+  };
 }
 
-export async function fetchVrmDashboard() {
-  const since30d = Math.floor(Date.now() / 1000) - 30 * 86_400;
-  const [summary, richlist, leaderboard, activityHistory] = await Promise.all([
-    fetchChainSummary("vrm", { skipLiveBlocks: true }),
-    fetchRichlist("vrm", { limit: 5 }),
-    fetchLeaderboard("vrm", { period: "month", sort: "activity", limit: 5 }),
-    fetchChainActivityHistory("vrm", { since: since30d, maxPoints: 100 }),
-  ]);
-
-  return { summary, richlist, leaderboard, activityHistory };
+export async function fetchVrmDashboardIndexed() {
+  return runIndexerQuery("getVrmDashboardBundle", [], {});
 }
 
 export function fetchChainActivityHistory(
@@ -57,7 +61,12 @@ export function fetchChainActivityHistory(
 }
 
 export async function fetchIndexerHealth() {
-  return indexerSummary.getIndexerHealth(sharedDb());
+  const baseHealth = await runIndexerQuery<Record<string, unknown>>(
+    "getIndexerHealthIndexed",
+    [],
+    {},
+  );
+  return enrichIndexerHealth(baseHealth);
 }
 
 export function fetchRichlist(
@@ -82,7 +91,7 @@ export function fetchLeaderboard(
 export function fetchAddress(
   chainId: string,
   address: string,
-  options: { limit?: number; offset?: number } = {},
+  options: { limit?: number; offset?: number; includeRank?: boolean } = {},
 ) {
   return runIndexerQuery("getAddress", [chainId, address], options);
 }
@@ -104,7 +113,12 @@ export function fetchAddressUtxos(
 }
 
 export function fetchTransaction(chainId: string, txid: string) {
-  return runIndexerQuery("getTransaction", [chainId, txid], {});
+  return runIndexerQuery(
+    "getTransaction",
+    [chainId, txid],
+    {},
+    { timeoutMs: 15_000 },
+  );
 }
 
 export async function fetchBlock(
@@ -112,9 +126,20 @@ export async function fetchBlock(
   hashOrHeight: string,
   options: { limit?: number; offset?: number } = {},
 ) {
-  return indexerSummary.getBlock(chainId, hashOrHeight, { ...sharedDb(), ...options });
+  const indexed = (await runIndexerQuery<Record<string, unknown>>(
+    "getBlockIndexed",
+    [chainId, hashOrHeight],
+    options,
+  )) as Record<string, unknown>;
+
+  return fetchBlockWithRpcFallback(chainId as ChainId, hashOrHeight, indexed, options);
 }
 
 export function fetchChainHealth(chainId: string) {
   return runIndexerQuery("getChainHealth", [chainId], {});
+}
+
+export function getCachedTip(chainId: ChainId) {
+  const tip = getTip(chainId);
+  return tip ? { height: tip.height, hash: tip.hash } : undefined;
 }

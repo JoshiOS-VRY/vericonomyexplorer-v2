@@ -75,7 +75,9 @@ export function ChainSummaryCard({
           <span
             className={cn(
               "chain-explore-btn pointer-events-none shrink-0 rounded-lg px-3 py-1.5 text-xs",
-              chainId === "vrm" ? "chain-explore-btn-vrm" : "chain-explore-btn-vrc",
+              chainId === "vrm"
+                ? "chain-explore-btn-vrm"
+                : "chain-explore-btn-vrc",
             )}
             aria-hidden
           >
@@ -119,12 +121,6 @@ export function ChainSummaryCard({
             )
           }
         />
-        <BcStat
-          label="Indexed blocks"
-          value={formatHeight(health.counts.indexedBlockCount)}
-          numericValue={health.counts.indexedBlockCount}
-          animated
-        />
       </BcStatGrid>
 
       <div className="border-t border-border">
@@ -132,7 +128,12 @@ export function ChainSummaryCard({
       </div>
 
       <div className="border-t border-border">
-        <ChainNetworkCard chainId={chainId} network={network} embedded animated />
+        <ChainNetworkCard
+          chainId={chainId}
+          network={network}
+          embedded
+          animated
+        />
       </div>
     </>
   );
@@ -144,7 +145,9 @@ export function ChainSummaryCard({
         prefetch
         className={cn(
           "chain-summary-card block overflow-hidden rounded-xl border border-border bg-bg-panel shadow-sm outline-none",
-          chainId === "vrm" ? "chain-summary-card-vrm" : "chain-summary-card-vrc",
+          chainId === "vrm"
+            ? "chain-summary-card-vrm"
+            : "chain-summary-card-vrc",
         )}
       >
         {content}
@@ -167,7 +170,10 @@ export function ChainSummaryCardSkeleton() {
       </div>
       <div className="m-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-20 animate-pulse rounded-lg border border-border bg-bg-subtle" />
+          <div
+            key={index}
+            className="h-20 animate-pulse rounded-lg border border-border bg-bg-subtle"
+          />
         ))}
       </div>
       <div className="h-28 animate-pulse border-t border-border bg-bg-subtle" />

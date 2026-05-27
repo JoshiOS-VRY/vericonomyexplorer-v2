@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { getHost, getPort, loadEnv } from "./env.js";
+import { mapErrorToResponse } from "./errors.js";
 loadEnv();
 const { default: cors } = await import("@fastify/cors");
 const { default: Fastify } = await import("fastify");
@@ -14,6 +16,7 @@ const app = Fastify({
     logger: {
         level: process.env.VCEXP_FAST_API_LOG_LEVEL ?? "info",
     },
+    genReqId: () => randomUUID(),
 });
 await app.register(cors, {
     origin: true,
@@ -21,6 +24,20 @@ await app.register(cors, {
 });
 app.addHook("onSend", async (request, reply) => {
     applyCacheHeaders(request, reply);
+});
+app.setErrorHandler((error, request, reply) => {
+    const mapped = mapErrorToResponse(error);
+    request.log.error({ err: error, requestId: request.id }, mapped.error);
+    reply.code(mapped.statusCode).send({
+        error: mapped.error,
+        requestId: request.id,
+    });
+});
+app.setNotFoundHandler((request, reply) => {
+    reply.code(404).send({
+        error: "Not found",
+        requestId: request.id,
+    });
 });
 await registerRoutes(app);
 await initBrokers();

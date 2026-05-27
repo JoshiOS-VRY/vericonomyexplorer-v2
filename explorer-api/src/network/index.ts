@@ -13,24 +13,35 @@ function rpcCall(chainId: ChainId) {
   return (method: string, params: unknown[] = []) => client.call(method, params);
 }
 
+function parseRpcNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
 export async function fetchVrmNetworkStats(): Promise<VrmNetworkStats> {
   const call = rpcCall("vrm");
 
   try {
-    const [blockchainInfo, hashrates, supply] = await Promise.all([
-      call("getblockchaininfo").catch(() => null),
-      fetchVrmHashrate(call, "vrm"),
-      call("getblockchaininfo")
-        .then((info) => {
-          const blocks = (info as { blocks?: number })?.blocks;
-          return typeof blocks === "number" ? fetchOnChainSupply("vrm", call, blocks) : null;
-        })
-        .catch(() => null),
-    ]);
+    const blockchainInfo = (await call("getblockchaininfo").catch(() => null)) as {
+      blocks?: unknown;
+      difficulty?: unknown;
+    } | null;
 
-    const info = blockchainInfo as { blocks?: number; difficulty?: number } | null;
-    const blocks = typeof info?.blocks === "number" ? info.blocks : null;
-    const difficulty = typeof info?.difficulty === "number" ? info.difficulty : null;
+    const blocks = parseRpcNumber(blockchainInfo?.blocks);
+    const difficulty = parseRpcNumber(blockchainInfo?.difficulty);
+
+    const [hashrates, supply] = await Promise.all([
+      fetchVrmHashrate(call, "vrm"),
+      blocks != null ? fetchOnChainSupply("vrm", call, blocks) : Promise.resolve(null),
+    ]);
 
     return {
       hashrateKhPerMin:
@@ -63,13 +74,12 @@ export async function fetchVrcNetworkStats(): Promise<VrcNetworkStats> {
 
   try {
     const blockchainInfo = (await call("getblockchaininfo").catch(() => null)) as {
-      blocks?: number;
-      difficulty?: number;
+      blocks?: unknown;
+      difficulty?: unknown;
     } | null;
 
-    const blocks = typeof blockchainInfo?.blocks === "number" ? blockchainInfo.blocks : null;
-    const difficulty =
-      typeof blockchainInfo?.difficulty === "number" ? blockchainInfo.difficulty : null;
+    const blocks = parseRpcNumber(blockchainInfo?.blocks);
+    const difficulty = parseRpcNumber(blockchainInfo?.difficulty);
 
     const [supply, stakingInfo, interestRate] = await Promise.all([
       blocks != null ? fetchOnChainSupply("vrc", call, blocks) : Promise.resolve(null),

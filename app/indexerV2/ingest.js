@@ -4,6 +4,7 @@ const dbModule = require("./db.js");
 const {
 	createPeriodStatStatements,
 	recordAddressPeriodEvent,
+	recordAddressBalanceBucket,
 	recordBlockActivity,
 	recordTransactionActivity
 } = require("./periodStats.js");
@@ -269,8 +270,8 @@ function ingestTransaction(statements, periodStatements, chainId, block, tx, txI
 		indexed_at: now
 	});
 
-	processInputs(statements, periodStatements, chainId, block, tx, txid, coinbase, now);
-	processOutputs(statements, periodStatements, chainId, block, tx, txid, now);
+	processInputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now);
+	processOutputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now);
 	recordTransactionActivity(
 		periodStatements,
 		chainId,
@@ -281,7 +282,7 @@ function ingestTransaction(statements, periodStatements, chainId, block, tx, txI
 	);
 }
 
-function processInputs(statements, periodStatements, chainId, block, tx, txid, coinbase, now) {
+function processInputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now) {
 	const vins = Array.isArray(tx.vin) ? tx.vin : [];
 
 	for (let vinIndex = 0; vinIndex < vins.length; vinIndex++) {
@@ -337,11 +338,20 @@ function processInputs(statements, periodStatements, chainId, block, tx, txid, c
 				txCountIncrement,
 				now
 			);
+			recordAddressBalanceBucket(
+				periodStatements,
+				chainId,
+				address,
+				delta,
+				block.time || block.blocktime || 0,
+				"spent",
+				now
+			);
 		}
 	}
 }
 
-function processOutputs(statements, periodStatements, chainId, block, tx, txid, now) {
+function processOutputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now) {
 	const vouts = Array.isArray(tx.vout) ? tx.vout : [];
 
 	for (let outputIndex = 0; outputIndex < vouts.length; outputIndex++) {
@@ -369,6 +379,7 @@ function processOutputs(statements, periodStatements, chainId, block, tx, txid, 
 			const txCountIncrement = recordAddressTransaction(statements, chainId, primaryAddress, txid, block, now);
 			statements.insertAddressEvent.run(chainId, primaryAddress, txid, block.height, block.time || 0, valueSats, "receive", now);
 			statements.upsertReceiveBalance.run(chainId, primaryAddress, valueSats, valueSats, txCountIncrement, block.height, now);
+			const category = coinstake ? "staked" : coinbase ? "mined" : "received";
 			recordAddressPeriodEvent(
 				periodStatements,
 				chainId,
@@ -377,6 +388,15 @@ function processOutputs(statements, periodStatements, chainId, block, tx, txid, 
 				block.height,
 				block.time || block.blocktime || 0,
 				txCountIncrement,
+				now
+			);
+			recordAddressBalanceBucket(
+				periodStatements,
+				chainId,
+				primaryAddress,
+				valueSats,
+				block.time || block.blocktime || 0,
+				category,
 				now
 			);
 		}
