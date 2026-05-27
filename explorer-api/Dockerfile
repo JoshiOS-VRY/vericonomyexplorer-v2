@@ -13,11 +13,11 @@ WORKDIR /app
 
 # Install root deps first because explorer-api loads root modules at runtime.
 COPY package.json npm-shrinkwrap.json ./
-RUN npm ci
+RUN npm ci && npm rebuild better-sqlite3
 
 # Install explorer-api deps and build.
 COPY explorer-api/package.json explorer-api/package-lock.json ./explorer-api/
-RUN npm --prefix explorer-api ci
+RUN npm --prefix explorer-api ci && npm rebuild zeromq --prefix explorer-api
 
 COPY . .
 RUN npm --prefix explorer-api run build

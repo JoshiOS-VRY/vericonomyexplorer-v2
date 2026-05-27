@@ -151,7 +151,26 @@ class QueryPool {
   }
 }
 
-export const queryPool = new QueryPool(workerCount);
+let queryPoolInstance: QueryPool | null = null;
+
+function getQueryPool(): QueryPool {
+  if (!queryPoolInstance) {
+    queryPoolInstance = new QueryPool(workerCount);
+  }
+  return queryPoolInstance;
+}
+
+export const queryPool = {
+  run(method: string, args: unknown[], options: Record<string, unknown> = {}): Promise<unknown> {
+    return getQueryPool().run(method, args, options);
+  },
+  terminate(): Promise<void> {
+    if (!queryPoolInstance) {
+      return Promise.resolve();
+    }
+    return queryPoolInstance.terminate();
+  },
+};
 
 export async function runIndexerQuery<T>(
   method: string,

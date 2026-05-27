@@ -1,5 +1,4 @@
 import { EventEmitter } from "node:events";
-import { Subscriber } from "zeromq";
 import { getSyncTipHeight } from "../data/db.js";
 import type { RpcClient } from "../rpc/pool.js";
 import type { ChainId, TipState } from "../types.js";
@@ -82,6 +81,7 @@ export class TipBroker extends EventEmitter {
 
   private async startZmq(url: string): Promise<void> {
     this.zmqAbort = new AbortController();
+    const { Subscriber } = await import("zeromq");
     const sock = new Subscriber();
     try {
       sock.connect(url);
