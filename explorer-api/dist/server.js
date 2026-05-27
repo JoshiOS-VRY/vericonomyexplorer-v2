@@ -1,15 +1,15 @@
-import cors from "@fastify/cors";
-import Fastify from "fastify";
-import { applyCacheHeaders } from "./cache/httpCache.js";
-import { closeDb } from "./data/db.js";
-import { queryPool } from "./db/queryPool.js";
 import { getHost, getPort, loadEnv } from "./env.js";
-import { initBrokers, stopBrokers } from "./live/brokers.js";
-import { closeAllRpcClients } from "./rpc/index.js";
-import { registerCacheInvalidation } from "./routes/chain.js";
-import { registerHomeCacheInvalidation } from "./routes/home.js";
-import { registerRoutes } from "./routes/index.js";
 loadEnv();
+const { default: cors } = await import("@fastify/cors");
+const { default: Fastify } = await import("fastify");
+const { applyCacheHeaders } = await import("./cache/httpCache.js");
+const { closeDb } = await import("./data/db.js");
+const { queryPool } = await import("./db/queryPool.js");
+const { initBrokers, stopBrokers } = await import("./live/brokers.js");
+const { closeAllRpcClients } = await import("./rpc/index.js");
+const { registerCacheInvalidation } = await import("./routes/chain.js");
+const { registerHomeCacheInvalidation } = await import("./routes/home.js");
+const { registerRoutes } = await import("./routes/index.js");
 const app = Fastify({
     logger: {
         level: process.env.VCEXP_FAST_API_LOG_LEVEL ?? "info",

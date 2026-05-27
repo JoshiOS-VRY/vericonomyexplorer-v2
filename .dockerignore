@@ -20,10 +20,11 @@ Dockerfile*
 docker-compose*.yml
 .dockerignore
 
-# Documentation
+# Documentation (keep docs/api.js — required by app/config.js at runtime)
 README.md
 CHANGELOG*.md
-docs/
+docs/*
+!docs/api.js
 *.md
 
 # Temporary files

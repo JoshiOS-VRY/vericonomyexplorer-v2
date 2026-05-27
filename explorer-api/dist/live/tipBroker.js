@@ -1,5 +1,4 @@
 import { EventEmitter } from "node:events";
-import { Subscriber } from "zeromq";
 import { getSyncTipHeight } from "../data/db.js";
 function noop() {
     /* ignore */
@@ -78,6 +77,7 @@ export class TipBroker extends EventEmitter {
     }
     async startZmq(url) {
         this.zmqAbort = new AbortController();
+        const { Subscriber } = await import("zeromq");
         const sock = new Subscriber();
         try {
             sock.connect(url);

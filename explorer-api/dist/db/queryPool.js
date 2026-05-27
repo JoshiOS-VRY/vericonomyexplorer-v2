@@ -106,7 +106,24 @@ class QueryPool {
         this.slots = [];
     }
 }
-export const queryPool = new QueryPool(workerCount);
+let queryPoolInstance = null;
+function getQueryPool() {
+    if (!queryPoolInstance) {
+        queryPoolInstance = new QueryPool(workerCount);
+    }
+    return queryPoolInstance;
+}
+export const queryPool = {
+    run(method, args, options = {}) {
+        return getQueryPool().run(method, args, options);
+    },
+    terminate() {
+        if (!queryPoolInstance) {
+            return Promise.resolve();
+        }
+        return queryPoolInstance.terminate();
+    },
+};
 export async function runIndexerQuery(method, args, options = {}) {
     return queryPool.run(method, args, options);
 }
