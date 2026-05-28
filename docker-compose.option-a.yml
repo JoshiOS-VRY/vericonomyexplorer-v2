@@ -32,6 +32,9 @@ services:
     build:
       context: .
       dockerfile: explorer-web/Dockerfile
+      args:
+        EXPLORER_FAST_API_URL: http://explorer-fast-api:3003
+        EXPLORER_API_URL: http://explorer-express:3002
     image: vericonomy-explorer-web:option-a
     restart: unless-stopped
     env_file:

@@ -19,6 +19,14 @@ COPY --from=deps /app/explorer-web/node_modules ./explorer-web/node_modules
 
 WORKDIR /app/explorer-web
 ENV NEXT_TELEMETRY_DISABLED=1
+ARG EXPLORER_FAST_API_URL=http://explorer-fast-api:3003
+ARG EXPLORER_API_URL=http://explorer-express:3002
+ENV EXPLORER_FAST_API_URL=${EXPLORER_FAST_API_URL}
+ENV EXPLORER_API_URL=${EXPLORER_API_URL}
+ENV VCEXP_FAST_API_HOST=explorer-fast-api
+ENV VCEXP_FAST_API_PORT=3003
+ENV BTCEXP_HOST=explorer-express
+ENV BTCEXP_PORT=3002
 RUN npm run build
 
 FROM node:20-alpine AS runner
