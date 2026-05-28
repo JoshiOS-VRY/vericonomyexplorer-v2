@@ -1,4 +1,4 @@
-import { createSwrCache } from "../cache/swrCache.js";
+import { createSwrCache, swrFetch } from "../cache/swrCache.js";
 import { fetchBlock } from "../data/legacy.js";
 import { parseChainId } from "../types.js";
 const blockCache = createSwrCache({
@@ -23,7 +23,7 @@ export async function registerBlockRoutes(app) {
         }
         const limit = request.query.limit ? Number(request.query.limit) : undefined;
         const offset = request.query.offset ? Number(request.query.offset) : undefined;
-        const cacheKey = `${chainId}:${request.params.hashOrHeight}:${limit ?? ""}:${offset ?? ""}`;
-        return blockCache.fetch(cacheKey);
+        const key = `${chainId}:${request.params.hashOrHeight}:${limit ?? ""}:${offset ?? ""}`;
+        return swrFetch(blockCache, key, () => fetchBlock(chainId, request.params.hashOrHeight, { limit, offset }));
     });
 }

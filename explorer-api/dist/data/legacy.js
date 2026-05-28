@@ -6,17 +6,29 @@ export async function fetchChainSummary(chainId, options = {}) {
     return enrichChainSummary(summary, chainId, options);
 }
 export async function fetchLandingData() {
-    const bundle = (await runIndexerQuery("getLandingBundle", [], {}));
+    const skipLiveBlocks = { skipLiveBlocks: true };
+    // Run indexed reads in parallel (one worker each) instead of one serial getLandingBundle call.
+    const [vrmSummaryRaw, vrcSummaryRaw, vrmRichlist, vrcRichlist, vrmLeaderboard] = await Promise.all([
+        runIndexerQuery("getChainSummaryIndexed", ["vrm"], skipLiveBlocks),
+        runIndexerQuery("getChainSummaryIndexed", ["vrc"], skipLiveBlocks),
+        runIndexerQuery("getRichlist", ["vrm"], { limit: 5 }),
+        runIndexerQuery("getRichlist", ["vrc"], { limit: 5 }),
+        runIndexerQuery("getLeaderboard", ["vrm"], {
+            period: "month",
+            sort: "activity",
+            limit: 5,
+        }),
+    ]);
     const [vrmSummary, vrcSummary] = await Promise.all([
-        enrichChainSummary(bundle.vrmSummary, "vrm", { skipLiveBlocks: true }),
-        enrichChainSummary(bundle.vrcSummary, "vrc", { skipLiveBlocks: true }),
+        enrichChainSummary(vrmSummaryRaw, "vrm", skipLiveBlocks),
+        enrichChainSummary(vrcSummaryRaw, "vrc", skipLiveBlocks),
     ]);
     return {
         vrmSummary,
         vrcSummary,
-        vrmRichlist: bundle.vrmRichlist,
-        vrcRichlist: bundle.vrcRichlist,
-        vrmLeaderboard: bundle.vrmLeaderboard,
+        vrmRichlist,
+        vrcRichlist,
+        vrmLeaderboard,
     };
 }
 export async function fetchVrmDashboardIndexed() {

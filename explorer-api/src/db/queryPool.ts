@@ -39,7 +39,7 @@ function defaultWorkerCount(): number {
 }
 
 const workerCount = defaultWorkerCount();
-const defaultWorkerTimeoutMs = Number(process.env.VCEXP_API_DB_WORKER_TIMEOUT_MS ?? 60_000);
+const defaultWorkerTimeoutMs = Number(process.env.VCEXP_API_DB_WORKER_TIMEOUT_MS ?? 120_000);
 const workerFile = path.join(repoRoot, "explorer-api", "src", "db", "queryWorker.cjs");
 
 class QueryWorkerSlot {

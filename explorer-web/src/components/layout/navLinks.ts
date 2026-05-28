@@ -1,7 +1,7 @@
 export type SidebarItem = {
   href: string;
   label: string;
-  icon: "overview" | "explorer" | "richlist" | "leaderboard" | "blocks" | "tools" | "api";
+  icon: "overview" | "explorer" | "richlist" | "leaderboard" | "blocks" | "api";
   exact?: boolean;
   prefix?: boolean;
   section?: "explorer" | "data";
@@ -20,7 +20,6 @@ export const headerNav: HeaderNavItem[] = [
   { href: "/vrc", label: "Vericoin", prefix: true },
   { href: "/vrm/richlist", label: "Richlist" },
   { href: "/vrm/leaderboard", label: "Leaderboard", prefix: true },
-  { href: "/tools", label: "Tools", prefix: true },
   { href: "/api/docs", label: "API", prefix: true },
 ];
 
@@ -31,6 +30,5 @@ export const sidebarNav: SidebarItem[] = [
   { href: "/vrm/richlist", label: "Richlist", icon: "richlist", section: "explorer" },
   { href: "/vrm/leaderboard", label: "Leaderboard", icon: "leaderboard", section: "explorer" },
   { href: "/blocks", label: "Block list", icon: "blocks", prefix: true, section: "data" },
-  { href: "/tools", label: "Tools", icon: "tools", section: "data" },
   { href: "/api/docs", label: "API", icon: "api", section: "data" },
 ];

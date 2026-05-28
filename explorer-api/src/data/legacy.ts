@@ -21,31 +21,33 @@ export async function fetchChainSummary(
 }
 
 export async function fetchLandingData() {
-  const bundle = (await runIndexerQuery<{
-    vrmSummary: Record<string, unknown>;
-    vrcSummary: Record<string, unknown>;
-    vrmRichlist: Record<string, unknown>;
-    vrcRichlist: Record<string, unknown>;
-    vrmLeaderboard: Record<string, unknown>;
-  }>("getLandingBundle", [], {})) as {
-    vrmSummary: Record<string, unknown>;
-    vrcSummary: Record<string, unknown>;
-    vrmRichlist: Record<string, unknown>;
-    vrcRichlist: Record<string, unknown>;
-    vrmLeaderboard: Record<string, unknown>;
-  };
+  const skipLiveBlocks = { skipLiveBlocks: true };
+
+  // Run indexed reads in parallel (one worker each) instead of one serial getLandingBundle call.
+  const [vrmSummaryRaw, vrcSummaryRaw, vrmRichlist, vrcRichlist, vrmLeaderboard] =
+    await Promise.all([
+      runIndexerQuery<Record<string, unknown>>("getChainSummaryIndexed", ["vrm"], skipLiveBlocks),
+      runIndexerQuery<Record<string, unknown>>("getChainSummaryIndexed", ["vrc"], skipLiveBlocks),
+      runIndexerQuery<Record<string, unknown>>("getRichlist", ["vrm"], { limit: 5 }),
+      runIndexerQuery<Record<string, unknown>>("getRichlist", ["vrc"], { limit: 5 }),
+      runIndexerQuery<Record<string, unknown>>("getLeaderboard", ["vrm"], {
+        period: "month",
+        sort: "activity",
+        limit: 5,
+      }),
+    ]);
 
   const [vrmSummary, vrcSummary] = await Promise.all([
-    enrichChainSummary(bundle.vrmSummary, "vrm", { skipLiveBlocks: true }),
-    enrichChainSummary(bundle.vrcSummary, "vrc", { skipLiveBlocks: true }),
+    enrichChainSummary(vrmSummaryRaw, "vrm", skipLiveBlocks),
+    enrichChainSummary(vrcSummaryRaw, "vrc", skipLiveBlocks),
   ]);
 
   return {
     vrmSummary,
     vrcSummary,
-    vrmRichlist: bundle.vrmRichlist,
-    vrcRichlist: bundle.vrcRichlist,
-    vrmLeaderboard: bundle.vrmLeaderboard,
+    vrmRichlist,
+    vrcRichlist,
+    vrmLeaderboard,
   };
 }
 

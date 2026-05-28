@@ -159,7 +159,7 @@ export const blockResultSchema = z.object({
   trusted: z.boolean().optional(),
   block: z.record(z.string(), z.unknown()).optional(),
   transactions: z.array(z.record(z.string(), z.unknown())).default([]),
-  paging: pagingSchema,
+  paging: pagingSchema.optional(),
   confirmations: z.number().nullable().optional(),
   coinbase: z
     .object({

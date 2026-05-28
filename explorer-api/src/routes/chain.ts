@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import {
   cacheKey,
   createSwrCache,
+  swrFetch,
   type CacheValue,
 } from "../cache/swrCache.js";
 import {
@@ -103,18 +104,24 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
     service: "explorer-api",
   }));
 
-  app.get("/v1/indexer/status", async () => healthCache.fetch("health"));
+  app.get("/v1/indexer/status", async () =>
+    swrFetch(healthCache, "health", fetchIndexerHealth),
+  );
 
-  app.get("/v1/landing", async () => landingCache.fetch("landing"));
+  app.get("/v1/landing", async () => swrFetch(landingCache, "landing", fetchLandingData));
 
-  app.get("/v1/vrm/dashboard", async () => dashboardCache.fetch("dashboard"));
+  app.get("/v1/vrm/dashboard", async () =>
+    swrFetch(dashboardCache, "dashboard", fetchVrmDashboardBundle),
+  );
 
   app.get<{ Params: { chain: string } }>("/v1/:chain/summary", async (request, reply) => {
     const chainId = parseChainId(request.params.chain);
     if (!chainId) {
       return reply.code(400).send({ error: "Invalid chain id" });
     }
-    return summaryCache.fetch(cacheKey(chainId, "summary"));
+    return swrFetch(summaryCache, cacheKey(chainId, "summary"), () =>
+      fetchChainSummary(chainId),
+    );
   });
 
   app.get<{ Params: { chain: string } }>("/v1/:chain/health", async (request, reply) => {

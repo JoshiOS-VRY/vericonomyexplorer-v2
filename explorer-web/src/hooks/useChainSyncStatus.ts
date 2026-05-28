@@ -36,6 +36,7 @@ export function useChainSyncStatus(
   const [latestBlockHeight, setLatestBlockHeight] = useState<number | null>(
     initialSeed?.latestBlockHeight ?? null,
   );
+  const [loading, setLoading] = useState(initialSeed == null);
 
   const refresh = useCallback(async () => {
     if (!visible) {
@@ -48,6 +49,8 @@ export function useChainSyncStatus(
       setLatestBlockHeight(summary.latestBlocks[0]?.height ?? null);
     } catch {
       // Keep the last known good snapshot (often SSR-seeded) on transient failures.
+    } finally {
+      setLoading(false);
     }
   }, [chainId, visible]);
 
@@ -70,9 +73,10 @@ export function useChainSyncStatus(
     health != null && isChainAtTip(health, latestBlockHeight, liveTipHeight);
   const height =
     liveTipHeight ?? (health ? getChainTipHeight(health) : null);
-  const label = health
-    ? getChainSyncLabel(health, latestBlockHeight, liveTipHeight)
-    : "Offline";
+  const label =
+    loading || health == null
+      ? null
+      : getChainSyncLabel(health, latestBlockHeight, liveTipHeight);
 
-  return { live, height, label };
+  return { live, height, label, loading };
 }

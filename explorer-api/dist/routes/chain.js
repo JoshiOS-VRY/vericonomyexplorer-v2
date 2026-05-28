@@ -1,4 +1,4 @@
-import { cacheKey, createSwrCache, } from "../cache/swrCache.js";
+import { cacheKey, createSwrCache, swrFetch, } from "../cache/swrCache.js";
 import { invalidateAllTipCaches, registerChainScopedCache, registerGlobalCache, } from "../cache/registry.js";
 import { fetchChainHealth, fetchChainActivityHistory, fetchChainSummary, fetchIndexerHealth, fetchLandingData, } from "../data/legacy.js";
 import { fetchVrmDashboardBundle } from "../data/vrmDashboard.js";
@@ -84,15 +84,15 @@ export async function registerChainRoutes(app) {
         ok: true,
         service: "explorer-api",
     }));
-    app.get("/v1/indexer/status", async () => healthCache.fetch("health"));
-    app.get("/v1/landing", async () => landingCache.fetch("landing"));
-    app.get("/v1/vrm/dashboard", async () => dashboardCache.fetch("dashboard"));
+    app.get("/v1/indexer/status", async () => swrFetch(healthCache, "health", fetchIndexerHealth));
+    app.get("/v1/landing", async () => swrFetch(landingCache, "landing", fetchLandingData));
+    app.get("/v1/vrm/dashboard", async () => swrFetch(dashboardCache, "dashboard", fetchVrmDashboardBundle));
     app.get("/v1/:chain/summary", async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });
         }
-        return summaryCache.fetch(cacheKey(chainId, "summary"));
+        return swrFetch(summaryCache, cacheKey(chainId, "summary"), () => fetchChainSummary(chainId));
     });
     app.get("/v1/:chain/health", async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
