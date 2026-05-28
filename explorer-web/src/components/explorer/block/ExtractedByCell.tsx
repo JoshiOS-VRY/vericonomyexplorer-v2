@@ -1,18 +1,21 @@
 import Link from "next/link";
 import type { IndexedBlock } from "@/lib/api/types";
+import { chainAddressPath, type ChainId } from "@/lib/chainDisplay";
 import { ellipsizeMiddle } from "@/lib/utils";
 
 export function ExtractedByCell({
   block,
+  chainId,
   className,
 }: {
   block: Pick<IndexedBlock, "extractedBy" | "extractedByAddress">;
+  chainId: ChainId;
   className?: string;
 }) {
   if (block.extractedByAddress) {
     return (
       <Link
-        href={`/vrm/address/${block.extractedByAddress}`}
+        href={chainAddressPath(chainId, block.extractedByAddress)}
         title={block.extractedByAddress}
         className={className ?? "text-sm font-medium text-accent hover:underline"}
       >

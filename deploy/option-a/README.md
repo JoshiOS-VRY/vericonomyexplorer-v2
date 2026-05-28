@@ -11,7 +11,8 @@ Stack:
 - `explorer-web` (Next.js UI)
 - `explorer-express` (legacy RPC/Pug routes, still public)
 - `explorer-fast-api` (`/v1/*` index-backed API for Next)
-- `vrm-indexer` (continuous index updates into SQLite)
+- `vrm-indexer` (continuous Verium index updates into SQLite)
+- `vrc-indexer` (continuous VeriCoin index updates into SQLite)
 
 ## 1) Server prerequisites
 
@@ -45,15 +46,53 @@ cp configs/chains.example.json configs/chains.json
 
 Edit `.env.production`:
 
-- set real RPC creds (`VCEXP_VRM_RPC_*` and `BTCEXP_BITCOIND_*`)
+- set real RPC creds for **both chains** (`VCEXP_VRM_RPC_*`, `VCEXP_VRC_RPC_*`, and `BTCEXP_BITCOIND_*`)
+- set `VCEXP_VRM_RPC_HOST` and `VCEXP_VRC_RPC_HOST` to the Docker bridge gateway (usually `172.18.0.1`)
 - set `ACME_EMAIL`
-- keep `PUBLIC_DOMAIN=explorer-vrm.vericonomy.com`
+- keep `PUBLIC_DOMAIN=explorer-vrm.vericonomy.com` (or your staging hostname)
 - optionally change `LEGACY_PUBLIC_DOMAIN`
 
 Edit `configs/chains.json`:
 
-- `vrm.rpc.host` should be reachable from containers (`127.0.0.1` if node runs on host with host networking bridge/proxy, or private IP/hostname)
-- `vrm.rpc.port` should be the RPC port (default `33987`)
+- copy from `configs/chains.production.example.json` for dual-chain production
+- RPC host/port are resolved from `hostEnv` + `.env.production` (`VCEXP_*_RPC_HOST`)
+- default ports: VRM `33987`, VRC `58683`
+
+## 2b) VeriCoin node on the same VPS (optional but required for VRC data)
+
+Install `vericoind` on the host (not in Docker). See `deploy/option-a/vericoin.conf.example`.
+
+Minimum host firewall rules for Docker → node RPC:
+
+```bash
+sudo ufw allow from 172.18.0.0/16 to any port 58683 proto tcp
+sudo ufw allow from 172.18.0.0/16 to any port 33987 proto tcp
+```
+
+VeriCoin 2.0 requires all settings under `[vericoin]` in `vericonomy.conf`. Use a bootstrap for faster sync:
+
+```bash
+systemctl stop vericoind
+curl -LO https://files.vericonomy.com/vrc/bootstrap/vericoin-bootstrap.zip
+sudo -u vericoin unzip -o vericoin-bootstrap.zip -d /home/vericoin/.vericonomy/
+chown -R vericoin:vericoin /home/vericoin/.vericonomy
+systemctl start vericoind
+```
+
+Wire explorer env (same `.env.production` file as VRM):
+
+```bash
+VCEXP_VRC_RPC_USER=explorer_vrc_rpc_user
+VCEXP_VRC_RPC_PASS=<same as vericonomy.conf>
+VCEXP_VRC_RPC_HOST=172.18.0.1
+VCEXP_VRC_ZMQ=tcp://172.18.0.1:28333
+```
+
+After deploy, validate VRC:
+
+```bash
+bash deploy/option-a/validate-vrc.sh
+```
 
 ## 3) DNS and certificates
 
@@ -84,7 +123,9 @@ Public endpoints:
 
 - `https://explorer-vrm.vericonomy.com/`
 - `https://explorer-vrm.vericonomy.com/vrm`
+- `https://explorer-vrm.vericonomy.com/vrc`
 - `https://explorer-vrm.vericonomy.com/v1/health`
+- `https://explorer-vrm.vericonomy.com/v1/vrc/summary`
 - `https://legacy-explorer-vrm.vericonomy.com/`
 
 Container health:
@@ -98,11 +139,13 @@ Indexer status:
 
 ```bash
 docker compose -f docker-compose.option-a.yml exec vrm-indexer npm run indexer:v2:status
+docker compose -f docker-compose.option-a.yml exec vrc-indexer npm run indexer:v2:status
+docker compose -f docker-compose.option-a.yml logs -f vrc-indexer
 ```
 
 ## 6) Security notes
 
-- Never expose Verium RPC directly to the internet.
+- Never expose Verium or VeriCoin RPC directly to the internet.
 - Keep `.env.production` and `configs/chains.json` out of git.
 - Keep `database/` and `cache/` volumes private.
 - Set `EXPLORER_ADMIN_TOKEN` in `.env.production` to gate `/admin/*`.

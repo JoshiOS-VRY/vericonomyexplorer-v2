@@ -48,6 +48,23 @@ export async function fetchLcwHistory24h(chainId) {
         return [];
     return data.filter((point) => typeof point.rate === "number" && Number.isFinite(point.rate));
 }
+export async function fetchLcwHistoryRange(chainId, currency, startMs, endMs) {
+    const data = await lcwPost("/coins/single/history", {
+        currency,
+        code: LCW_CHAIN_CODES[chainId],
+        start: startMs,
+        end: endMs,
+        meta: false,
+    });
+    if (!Array.isArray(data))
+        return [];
+    return data
+        .filter((point) => typeof point.rate === "number" && Number.isFinite(point.rate))
+        .map((point) => ({
+        time: Math.floor(point.date / 1000),
+        value: point.rate,
+    }));
+}
 export function mapLcwToMarket(usdData, btcData, history) {
     const usd = usdData?.rate ?? null;
     const btc = btcData?.rate ?? null;

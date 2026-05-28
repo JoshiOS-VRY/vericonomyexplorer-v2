@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useChainTipState, useTipStream } from "@/components/explorer/TipStreamProvider";
 import { fetchChainSummary } from "@/lib/api/client";
 import { usePageVisible } from "@/hooks/usePageVisible";
@@ -10,6 +10,8 @@ import {
   getChainTipHeight,
   isChainAtTip,
 } from "@/lib/chainDisplay";
+
+const SYNC_REFRESH_DEBOUNCE_MS = 2_000;
 
 export interface ChainSyncSeed {
   health: ChainHealth;
@@ -37,6 +39,7 @@ export function useChainSyncStatus(
     initialSeed?.latestBlockHeight ?? null,
   );
   const [loading, setLoading] = useState(initialSeed == null);
+  const refreshTimerRef = useRef<number | null>(null);
 
   const refresh = useCallback(async () => {
     if (!visible) {
@@ -54,6 +57,17 @@ export function useChainSyncStatus(
     }
   }, [chainId, visible]);
 
+  const scheduleRefresh = useCallback(() => {
+    if (refreshTimerRef.current) {
+      window.clearTimeout(refreshTimerRef.current);
+    }
+
+    refreshTimerRef.current = window.setTimeout(() => {
+      refreshTimerRef.current = null;
+      void refresh();
+    }, SYNC_REFRESH_DEBOUNCE_MS);
+  }, [refresh]);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
@@ -64,9 +78,18 @@ export function useChainSyncStatus(
     }
 
     return subscribe(chainId, () => {
-      void refresh();
+      scheduleRefresh();
     });
-  }, [chainId, refresh, subscribe, visible]);
+  }, [chainId, scheduleRefresh, subscribe, visible]);
+
+  useEffect(
+    () => () => {
+      if (refreshTimerRef.current) {
+        window.clearTimeout(refreshTimerRef.current);
+      }
+    },
+    [],
+  );
 
   const liveTipHeight = streamTipHeight ?? health?.heights.bestRpcHeight ?? null;
   const live =

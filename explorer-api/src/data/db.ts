@@ -5,6 +5,10 @@ import type Database from "better-sqlite3";
 import { repoRoot } from "../env.js";
 
 const requireRoot = createRequire(path.join(repoRoot, "package.json"));
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const dbModule = requireRoot("./app/indexerV2/db.js") as {
+  ensureDatabaseMigrations: (dbPath?: string) => void;
+};
 // Use the repo-root native module so explorer-api matches indexer/Express Node ABI.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const DatabaseConstructor = requireRoot("better-sqlite3") as typeof Database;
@@ -13,6 +17,7 @@ const statementCache = new Map<string, Database.Statement>();
 
 let dbInstance: Database.Database | null = null;
 let dbError: Error | null = null;
+let migrationsApplied = false;
 
 function getDatabasePath(): string {
   return (
@@ -31,6 +36,11 @@ export function getDb(): Database.Database {
     const dbDir = path.dirname(dbPath);
     if (!fs.existsSync(dbDir)) {
       fs.mkdirSync(dbDir, { recursive: true });
+    }
+
+    if (!migrationsApplied) {
+      dbModule.ensureDatabaseMigrations(dbPath);
+      migrationsApplied = true;
     }
 
     dbInstance = new DatabaseConstructor(dbPath, { readonly: true });
@@ -60,8 +70,9 @@ export function getSyncTipHeight(chainId: string): number | null {
       SELECT best_rpc_height AS height
       FROM sync_state
       WHERE chain_id = ?
-    `).get(chainId) as { height: number | null } | undefined;
-    return row?.height ?? null;
+    `).get(chainId) as { height: number | bigint | null } | undefined;
+    if (row?.height == null) return null;
+    return typeof row.height === "bigint" ? Number(row.height) : Number(row.height);
   } catch {
     return null;
   }

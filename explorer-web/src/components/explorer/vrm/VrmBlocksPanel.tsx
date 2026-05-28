@@ -54,6 +54,7 @@ export function VrmBlocksPanel({
                 <td className="min-w-[8rem] max-w-[14rem] truncate">
                   <ExtractedByCell
                     block={block}
+                    chainId="vrm"
                     className="block truncate text-sm font-medium text-accent hover:underline"
                   />
                 </td>

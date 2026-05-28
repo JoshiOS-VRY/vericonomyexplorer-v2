@@ -18,10 +18,12 @@
   --border-strong: rgb(51 65 85);
   --accent: rgb(65 139 202);
   --accent-fg: rgb(240 249 255);
-  --chain-vrm: rgb(65 139 202);
-  --chain-vrm-hover: rgb(50 119 179);
-  --chain-vrc: rgb(180 108 60);
-  --chain-vrc-hover: rgb(156 84 36);
+  /* Verium: primary #46505a, ternary #586a7a */
+  --chain-vrm: rgb(70 80 90);
+  --chain-vrm-hover: rgb(88 106 122);
+  /* Vericoin: primary #418bca, secondary #032c57 */
+  --chain-vrc: rgb(65 139 202);
+  --chain-vrc-hover: rgb(3 44 87);
   --chain-btn-fg: rgb(255 255 255);
   --success: rgb(53 155 55);
   --warning: rgb(245 158 11);
@@ -39,10 +41,10 @@
   --border-strong: rgb(198 205 218);
   --accent: rgb(0 102 204);
   --accent-fg: rgb(255 255 255);
-  --chain-vrm: rgb(65 139 202);
-  --chain-vrm-hover: rgb(50 119 179);
-  --chain-vrc: rgb(180 108 60);
-  --chain-vrc-hover: rgb(156 84 36);
+  --chain-vrm: rgb(70 80 90);
+  --chain-vrm-hover: rgb(88 106 122);
+  --chain-vrc: rgb(65 139 202);
+  --chain-vrc-hover: rgb(3 44 87);
   --chain-btn-fg: rgb(255 255 255);
   --success: rgb(22 132 41);
   --warning: rgb(217 119 6);
@@ -63,7 +65,9 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans:
+    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -96,7 +100,10 @@
   font-weight: 600;
   color: var(--chain-btn-fg);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
-  transition: background-color 0.15s ease, border-color 0.15s ease, filter 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    filter 0.15s ease;
 }
 
 .chain-explore-btn:hover {
@@ -244,7 +251,8 @@
 @keyframes live-block-flash {
   0% {
     background-color: color-mix(in srgb, var(--accent) 22%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--accent) 35%, transparent);
   }
   100% {
     background-color: transparent;
@@ -257,8 +265,8 @@
     transform: scale(1);
     color: var(--fg);
   }
-  35% {
-    transform: scale(1.025);
+  40% {
+    transform: scale(1.012);
     color: var(--accent);
   }
   100% {
@@ -297,11 +305,51 @@
 }
 
 .live-height-pulse {
-  animation: live-height-pulse 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: live-height-pulse 0.95s cubic-bezier(0.33, 1, 0.32, 1);
+}
+
+.animated-stat-digit-roll {
+  position: relative;
+  display: inline-block;
+  width: 1ch;
+  height: 1em;
+  overflow: hidden;
+  vertical-align: baseline;
+  line-height: 1;
+}
+
+.animated-stat-digit-roll__track {
+  display: flex;
+  flex-direction: column;
+}
+
+.animated-stat-digit-roll__digit {
+  display: flex;
+  height: 1em;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 .live-toast {
   animation: live-toast-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.live-toast__logo-badge {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.375rem;
+  background: rgb(255 255 255 / 1);
+}
+
+.live-toast__logo {
+  width: 1.25rem;
+  height: 1.25rem;
+  object-fit: contain;
 }
 
 .live-dot-breathe {
@@ -402,8 +450,8 @@
     border-color 0.2s ease;
 }
 
-.chain-summary-card-vrm:hover,
-.chain-summary-card-vrm:focus-visible {
+.chain-summary-card-vrm:not(.chain-hub-section):hover,
+.chain-summary-card-vrm:not(.chain-hub-section):focus-visible {
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--chain-vrm) 55%, var(--border));
   box-shadow:
@@ -411,8 +459,8 @@
     inset 3px 0 0 var(--chain-vrm);
 }
 
-.chain-summary-card-vrc:hover,
-.chain-summary-card-vrc:focus-visible {
+.chain-summary-card-vrc:not(.chain-hub-section):hover,
+.chain-summary-card-vrc:not(.chain-hub-section):focus-visible {
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--chain-vrc) 55%, var(--border));
   box-shadow:
@@ -426,11 +474,359 @@
 }
 
 .chain-summary-stat-grid .bc-stat {
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.chain-summary-card:hover .chain-summary-stat-grid .bc-stat {
+.chain-summary-card:not(.chain-hub-section):hover .chain-summary-stat-grid .bc-stat {
   background-color: color-mix(in srgb, var(--bg-subtle) 35%, var(--bg-panel));
+}
+
+/* Chain hub — compact metrics, aligned block strips */
+.chain-hub-section__identity {
+  min-height: 0;
+}
+
+.chain-hub-section__metrics {
+  flex: 0 0 auto;
+}
+
+.chain-hub-section__blocks {
+  margin-top: auto;
+  flex-shrink: 0;
+}
+
+.chain-hub-quick-stats {
+  gap: 0;
+  padding: 0;
+}
+
+.chain-hub-quick-stats .bc-stat {
+  padding: 0.375rem 0.625rem;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  border-right: 1px solid var(--border);
+}
+
+.chain-hub-quick-stats .bc-stat:last-child {
+  border-right: none;
+}
+
+.chain-hub-quick-stats .bc-stat > div:first-child {
+  font-size: 0.625rem;
+  line-height: 1.2;
+}
+
+.chain-hub-quick-stats .bc-stat > div:nth-child(2) {
+  margin-top: 0.125rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.chain-hub-section-head {
+  display: flex;
+  min-height: 1.625rem;
+  align-items: center;
+}
+
+.chain-hub-stat-cell {
+  min-height: 2.375rem;
+}
+
+.chain-hub-market,
+.chain-hub-network {
+  flex: 0 0 auto;
+}
+
+.chain-hub-market-grid,
+.chain-hub-network-grid {
+  flex: 0 0 auto;
+}
+
+/* VRM 3-col / VRC 4-col network — same row height for strip alignment */
+.chain-hub-network-grid {
+  min-height: 2.375rem;
+}
+
+.chain-hub-section .bc-table th,
+.chain-hub-section .bc-table td {
+  padding: 0.375rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.chain-hub-section .bc-table th {
+  font-size: 0.625rem;
+}
+
+/* Chain hub panels — white text on dark (Verium & VeriCoin) */
+html:not(.light) .chain-hub-section[data-chain="vrm"],
+html:not(.light) .chain-hub-section[data-chain="vrc"] {
+  --fg: rgb(255 255 255);
+  --fg-muted: rgb(255 255 255);
+  --fg-subtle: rgb(255 255 255);
+}
+
+html:not(.light) .chain-hub-section[data-chain="vrm"] .bc-table a,
+html:not(.light) .chain-hub-section[data-chain="vrc"] .bc-table a,
+html:not(.light) .chain-hub-section[data-chain="vrm"] .text-accent,
+html:not(.light) .chain-hub-section[data-chain="vrc"] .text-accent,
+html:not(.light) .chain-hub-section[data-chain="vrm"] a:not(.chain-explore-btn):not(.block-chain-strip__link),
+html:not(.light) .chain-hub-section[data-chain="vrc"] a:not(.chain-explore-btn):not(.block-chain-strip__link) {
+  color: rgb(255 255 255);
+}
+
+html:not(.light) .chain-hub-section[data-chain="vrm"] .bc-table a:hover,
+html:not(.light) .chain-hub-section[data-chain="vrc"] .bc-table a:hover,
+html:not(.light) .chain-hub-section[data-chain="vrm"] .text-accent:hover,
+html:not(.light) .chain-hub-section[data-chain="vrc"] .text-accent:hover,
+html:not(.light) .chain-hub-section[data-chain="vrm"] a:not(.chain-explore-btn):not(.block-chain-strip__link):hover,
+html:not(.light) .chain-hub-section[data-chain="vrc"] a:not(.chain-explore-btn):not(.block-chain-strip__link):hover {
+  color: rgb(255 255 255 / 0.88);
+}
+
+/* Latest blocks chain strip (blockchain.com-style diagram) */
+.block-chain-strip {
+  position: relative;
+  box-sizing: border-box;
+  height: 4.75rem;
+  padding: 0.625rem 0.5rem 0.5rem;
+  overflow: hidden;
+  contain: layout style;
+}
+
+@media (min-width: 640px) {
+  .block-chain-strip {
+    padding-inline: 1rem;
+  }
+}
+
+.block-chain-strip__track {
+  position: absolute;
+  left: 2.5%;
+  right: 2.5%;
+  top: calc(0.625rem + 1.125rem);
+  height: 2px;
+  background: color-mix(in srgb, var(--border) 10%, var(--fg-subtle));
+  border-radius: 1px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.block-chain-strip__nodes {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 0.25rem;
+  align-items: start;
+  overflow: hidden;
+}
+
+.block-chain-strip__cell {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.375rem;
+}
+
+.block-chain-strip__link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  outline-offset: 3px;
+  border-radius: 0.375rem;
+}
+
+.block-chain-strip__link:focus-visible {
+  outline: 2px solid var(--block-chain-accent, var(--accent));
+}
+
+.block-chain-strip__node-slot {
+  display: flex;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.block-chain-strip__node {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: 0.375rem;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--block-chain-accent) 45%, white) 0%,
+    var(--block-chain-accent) 55%,
+    color-mix(in srgb, var(--block-chain-accent) 88%, black) 100%
+  );
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.12),
+    inset 0 1px 0 rgb(255 255 255 / 0.2);
+  transform-origin: center center;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  will-change: transform, opacity;
+}
+
+.block-chain-strip__logo-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 1);
+  box-shadow: none;
+}
+
+.block-chain-strip__logo {
+  width: 1rem;
+  height: 1rem;
+  object-fit: contain;
+}
+
+.block-chain-strip__node--arrived {
+  animation: block-chain-node-arrive 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.block-chain-strip__node--tip.block-chain-strip__node--arrived {
+  animation-name: block-chain-node-arrive-tip;
+}
+
+.block-chain-strip__link:hover .block-chain-strip__node:not(.block-chain-strip__node--arrived),
+.block-chain-strip__node--tip:not(.block-chain-strip__node--arrived) {
+  transform: scale(1.08);
+  box-shadow:
+    0 2px 8px color-mix(in srgb, var(--block-chain-accent) 35%, transparent),
+    0 1px 2px rgb(0 0 0 / 0.15),
+    inset 0 1px 0 rgb(255 255 255 / 0.25);
+}
+
+@keyframes block-chain-node-arrive {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.88);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes block-chain-node-arrive-tip {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.88);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+.block-chain-table-row--new {
+  background-color: color-mix(
+    in srgb,
+    var(--block-chain-accent, var(--accent)) 10%,
+    transparent
+  );
+  animation: block-chain-row-highlight 2.2s ease-out forwards;
+}
+
+@keyframes block-chain-row-highlight {
+  0% {
+    background-color: color-mix(
+      in srgb,
+      var(--block-chain-accent, var(--accent)) 22%,
+      transparent
+    );
+    box-shadow: inset 3px 0 0 var(--block-chain-accent, var(--accent));
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 3px 0 0 transparent;
+  }
+}
+
+.block-chain-strip__label {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 0.75rem;
+  font-size: 0.55rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-subtle);
+  line-height: 1.2;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.block-chain-section[data-chain="vrm"] .block-chain-table a {
+  color: var(--chain-vrm);
+}
+
+.block-chain-section[data-chain="vrc"] .block-chain-table a {
+  color: var(--chain-vrc);
+}
+
+@media (max-width: 640px) {
+  .block-chain-strip {
+    height: 4.125rem;
+    padding-block: 0.5rem;
+  }
+
+  .block-chain-strip__node-slot {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .block-chain-strip__node {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .block-chain-strip__logo-badge {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+
+  .block-chain-strip__logo {
+    width: 0.8125rem;
+    height: 0.8125rem;
+  }
+
+  .block-chain-strip__track {
+    top: calc(0.5rem + 0.875rem);
+  }
+
+  .block-chain-strip__label {
+    font-size: 0.6rem;
+  }
 }
 
 .binary-chain-hero {
@@ -443,6 +839,12 @@
 
 .search-dropdown {
   animation: search-dropdown-enter 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.search-dropdown-section + .search-dropdown-section,
+.search-dropdown-section + li[role="presentation"],
+li[role="presentation"] + .search-dropdown-section {
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 }
 
 @keyframes search-dropdown-enter {
@@ -483,7 +885,134 @@
   .live-block-new,
   .live-height-pulse,
   .live-toast,
-  .live-dot-breathe {
+  .live-dot-breathe,
+  .block-chain-table-row--new,
+  .block-chain-strip__node--arrived {
     animation: none;
   }
+}
+
+/* ── Insights chart visuals ── */
+.insights-chart-frame {
+  --chart-accent: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-subtle) 55%, transparent) 0%, transparent 42%),
+    color-mix(in srgb, var(--bg-panel) 96%, var(--bg-subtle));
+}
+
+.insights-chart-frame-vrm {
+  --chart-accent: var(--chain-vrm);
+}
+
+.insights-chart-frame-vrc {
+  --chart-accent: var(--chain-vrc);
+}
+
+.insights-chart-frame-glow {
+  background: radial-gradient(
+    ellipse 90% 60% at 50% 110%,
+    color-mix(in srgb, var(--chart-accent) 14%, transparent),
+    transparent 72%
+  );
+}
+
+.insights-chart-panel-vrm > div:first-child,
+.insights-chart-panel-vrc > div:first-child {
+  border-bottom-color: color-mix(in srgb, var(--insights-accent, var(--border)) 18%, var(--border));
+}
+
+.insights-chart-panel-vrm {
+  --insights-accent: var(--chain-vrm);
+}
+
+.insights-chart-panel-vrc {
+  --insights-accent: var(--chain-vrc);
+}
+
+.insights-chart-panel > div:first-child h2 {
+  letter-spacing: -0.01em;
+}
+
+.insights-chart-panel > div:first-child {
+  position: relative;
+}
+
+.insights-chart-panel > div:first-child::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--insights-accent, var(--accent));
+  opacity: 0.85;
+}
+
+.insights-chart-tooltip {
+  box-shadow:
+    0 10px 30px color-mix(in srgb, var(--bg) 55%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.chart-control-group {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 6%, transparent);
+}
+
+.light .chart-control-group {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 65%, transparent);
+}
+
+.insights-kpi-tile {
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.insights-kpi-tile:hover {
+  border-color: color-mix(in srgb, var(--border-strong) 80%, transparent);
+  background: color-mix(in srgb, var(--bg-panel) 70%, var(--bg-subtle));
+}
+
+.insights-chart-grid .insights-chart-panel {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.insights-chart-grid .insights-chart-panel:hover {
+  box-shadow:
+    0 8px 24px color-mix(in srgb, var(--bg) 35%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--insights-accent, var(--border)) 12%, var(--border));
+}
+
+.recharts-default-legend .recharts-legend-item-text {
+  font-weight: 500 !important;
+}
+
+.recharts-cartesian-grid-horizontal line:last-child {
+  stroke-opacity: 0.2 !important;
+}
+
+/* Recharts axes/grid — address balance + insights charts */
+.address-balance-chart .recharts-cartesian-axis-tick-value,
+.insights-chart-canvas .recharts-cartesian-axis-tick-value {
+  fill: var(--fg-subtle) !important;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.address-balance-chart .recharts-cartesian-grid-horizontal line,
+.address-balance-chart .recharts-cartesian-grid-vertical line,
+.insights-chart-canvas .recharts-cartesian-grid-horizontal line,
+.insights-chart-canvas .recharts-cartesian-grid-vertical line {
+  stroke: var(--border);
+  stroke-opacity: 0.55;
+}
+
+.address-balance-chart .recharts-cartesian-axis-line,
+.insights-chart-canvas .recharts-cartesian-axis-line {
+  stroke: var(--border);
+}
+
+.address-balance-chart .recharts-wrapper,
+.insights-chart-canvas .recharts-wrapper {
+  overflow: visible;
 }

@@ -6,7 +6,6 @@ export function SearchForm({
   variant = "default",
   recentBlocks,
 }: {
-  action?: string;
   variant?: "default" | "blockchair";
   recentBlocks?: RecentBlocksByChain;
 }) {

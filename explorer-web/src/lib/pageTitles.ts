@@ -5,9 +5,11 @@ export function getPageTitle(pathname: string): string {
   if (path === "/vrm") return "Verium Explorer";
   if (path.startsWith("/vrm/richlist")) return "Richlist";
   if (path.startsWith("/vrm/leaderboard")) return "Leaderboard";
-  if (path.startsWith("/vrm/block/")) return "Block Detail";
-  if (path.startsWith("/vrm/tx/")) return "Transaction";
-  if (path.startsWith("/vrm/address/")) return "Address";
+  if (path.startsWith("/vrm/block/") || path.startsWith("/vrc/block/")) return "Block Detail";
+  if (path.startsWith("/vrm/tx/") || path.startsWith("/vrc/tx/")) return "Transaction";
+  if (path.startsWith("/vrm/address/") || path.startsWith("/vrc/address/")) return "Address";
+  if (path === "/vrc") return "VeriCoin Explorer";
+  if (path.startsWith("/insights")) return "Insights";
   if (path.startsWith("/blocks")) return "Blocks";
   if (path.startsWith("/api/docs")) return "API";
   if (path.startsWith("/search")) return "Search";

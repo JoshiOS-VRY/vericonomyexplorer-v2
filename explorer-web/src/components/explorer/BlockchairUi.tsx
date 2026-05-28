@@ -159,7 +159,7 @@ export function BcHashLink({
     <Link
       href={href}
       prefetch={prefetch}
-      className="bc-hash-link font-mono text-[13px] text-accent hover:underline"
+      className="bc-hash-link text-[13px] text-accent hover:underline"
     >
       {value}
     </Link>

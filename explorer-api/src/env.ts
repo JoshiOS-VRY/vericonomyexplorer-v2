@@ -23,6 +23,22 @@ export function getTipPollMs(): number {
   return Number(process.env.VCEXP_TIP_POLL_MS ?? 3000);
 }
 
+export function getLiveBlocksSkipGap(): number {
+  const configured = Number(process.env.VCEXP_SUMMARY_LIVE_BLOCKS_SKIP_GAP);
+  if (Number.isFinite(configured) && configured >= 0) {
+    return configured;
+  }
+  return 3;
+}
+
+export function getSummaryLiveBlockLimit(): number {
+  const configured = Number(process.env.VCEXP_SUMMARY_LIVE_BLOCK_LIMIT);
+  if (Number.isFinite(configured) && configured > 0) {
+    return Math.min(configured, 50);
+  }
+  return 10;
+}
+
 export function getZmqUrl(chainId: string): string | undefined {
   const key = chainId === "vrm" ? "VCEXP_VRM_ZMQ" : "VCEXP_VRC_ZMQ";
   return process.env[key] || undefined;

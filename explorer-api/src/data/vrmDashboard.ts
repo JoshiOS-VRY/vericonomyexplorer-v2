@@ -2,7 +2,7 @@ import { runIndexerQuery } from "../db/queryPool.js";
 import { enrichChainSummary } from "./liveEnrichment.js";
 
 async function fetchVrmDashboardIndexed() {
-  const skipOpts = { skipLiveBlocks: true, skipBlockEnrichment: true, skipLiveRpc: true };
+  const skipOpts = { skipLiveBlocks: true, skipLiveRpc: true };
 
   const [summary, richlist, leaderboard] = await Promise.all([
     runIndexerQuery<Record<string, unknown>>("getChainSummaryIndexed", ["vrm"], skipOpts),
@@ -21,7 +21,6 @@ export async function fetchVrmDashboardBundle() {
   const indexed = await fetchVrmDashboardIndexed();
   const summary = await enrichChainSummary(indexed.summary, "vrm", {
     skipLiveBlocks: true,
-    skipBlockEnrichment: true,
     skipLiveRpc: true,
   });
 

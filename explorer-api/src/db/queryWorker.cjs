@@ -11,6 +11,7 @@ const query = require(path.join(__dirname, "..", "..", "..", "app", "indexerV2",
 const health = require(path.join(__dirname, "..", "..", "..", "app", "indexerV2", "health.js"));
 
 let db = null;
+let migrationsApplied = false;
 
 function getWorkerDb() {
 	if (db) {
@@ -21,6 +22,11 @@ function getWorkerDb() {
 		process.env.VCEXP_INDEXER_SQLITE_PATH ??
 		process.env.BTCEXP_INDEXER_SQLITE_PATH ??
 		path.join(process.cwd(), "database", "vericonomy-index.sqlite");
+
+	if (!migrationsApplied) {
+		dbModule.ensureDatabaseMigrations(dbPath);
+		migrationsApplied = true;
+	}
 
 	db = new Database(dbPath, { readonly: true });
 	db.defaultSafeIntegers(true);
@@ -78,9 +84,11 @@ const handlers = {
 	getAddress: query.getAddress,
 	getAddressBalanceHistory: query.getAddressBalanceHistory,
 	getChainActivityHistory: query.getChainActivityHistory,
+	getNetworkMetricHistory: query.getNetworkMetricHistory,
 	getAddressUtxos: query.getAddressUtxos,
 	getTransaction: query.getTransaction,
 	getChainHealth: health.getChainHealth,
+	enrichBlockInterestRatesIndexed: query.enrichBlockInterestRates,
 };
 
 parentPort.on("message", (message) => {

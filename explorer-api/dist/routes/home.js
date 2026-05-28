@@ -1,7 +1,7 @@
-import { createSwrCache, safeCacheDelete, swrFetch } from "../cache/swrCache.js";
+import { createSwrCache, refreshCacheInBackground, swrFetch } from "../cache/swrCache.js";
 import { registerGlobalCache } from "../cache/registry.js";
+import { registerGlobalTipRefresh } from "../cache/tipRefresh.js";
 import { fetchHomeData, fetchHomeMarketOnly, fetchHomeNetwork, fetchHomeShell, } from "../data/home.js";
-import { onAnyTip } from "../live/brokers.js";
 const homeCache = createSwrCache({
     max: 4,
     ttlMs: 30_000,
@@ -46,10 +46,10 @@ registerGlobalCache(homeCache);
 registerGlobalCache(homeShellCache);
 registerGlobalCache(homeNetworkCache);
 registerGlobalCache(homeMarketCache);
+registerGlobalTipRefresh("home", () => refreshCacheInBackground(homeCache, "home"));
+registerGlobalTipRefresh("shell", () => refreshCacheInBackground(homeShellCache, "shell"));
 export function registerHomeCacheInvalidation() {
-    onAnyTip(() => {
-        safeCacheDelete(homeShellCache, "shell");
-    });
+    /* home/shell refresh is registered via registerGlobalTipRefresh above */
 }
 export async function registerHomeRoutes(app) {
     app.get("/v1/home", async () => swrFetch(homeCache, "home", fetchHomeData));

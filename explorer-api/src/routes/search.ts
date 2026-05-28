@@ -1,8 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import { createSwrCache } from "../cache/swrCache.js";
 import { registerChainScopedCache } from "../cache/registry.js";
-import { fetchAddress, fetchTransaction } from "../data/legacy.js";
+import { fetchAddress, fetchBlock, fetchTransaction } from "../data/legacy.js";
+import { searchQueryTimeoutMs } from "../db/queryPool.js";
 import { parseChainId } from "../types.js";
+
+const searchLookupOptions = { timeoutMs: searchQueryTimeoutMs };
 
 const searchCache = createSwrCache({
   max: 256,
@@ -18,13 +21,22 @@ registerChainScopedCache(searchCache);
 
 async function resolveSearchPath(chainId: string, query: string) {
   if (/^\d+$/.test(query)) {
-    return { path: `/${chainId}/block/${query}` };
+    const block = (await fetchBlock(chainId, query, {
+      limit: 1,
+      offset: 0,
+    })) as { found?: boolean };
+
+    if (block.found) {
+      return { path: `/${chainId}/block/${query}` };
+    }
+
+    return { path: null };
   }
 
   if (/^[a-fA-F0-9]{64}$/.test(query)) {
     const [tx, address] = await Promise.all([
-      fetchTransaction(chainId, query) as Promise<{ found?: boolean }>,
-      fetchAddress(chainId, query, { limit: 1, includeRank: false }) as Promise<{
+      fetchTransaction(chainId, query, searchLookupOptions) as Promise<{ found?: boolean }>,
+      fetchAddress(chainId, query, { limit: 1, includeRank: false }, searchLookupOptions) as Promise<{
         found?: boolean;
       }>,
     ]);
@@ -40,10 +52,12 @@ async function resolveSearchPath(chainId: string, query: string) {
     return { path: `/${chainId}/block/${query}` };
   }
 
-  const address = (await fetchAddress(chainId, query, {
-    limit: 1,
-    includeRank: false,
-  })) as { found?: boolean };
+  const address = (await fetchAddress(
+    chainId,
+    query,
+    { limit: 1, includeRank: false },
+    searchLookupOptions,
+  )) as { found?: boolean };
 
   if (address.found) {
     return { path: `/${chainId}/address/${query}` };

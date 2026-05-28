@@ -75,7 +75,6 @@ export function VrmChainDashboard({
       <VrmMetricStrip
         chainHeight={chainHeight}
         addressCount={addressCount}
-        health={summary.health}
         tipBlock={tipBlock}
         heightPulse={heightPulse}
       />

@@ -8,6 +8,7 @@
 			"consensus": "PoST",
 			"rpc": {
 				"host": "127.0.0.1",
+				"hostEnv": "VCEXP_VRC_RPC_HOST",
 				"port": 58683,
 				"usernameEnv": "VCEXP_VRC_RPC_USER",
 				"passwordEnv": "VCEXP_VRC_RPC_PASS",
@@ -33,6 +34,7 @@
 			"consensus": "PoWT",
 			"rpc": {
 				"host": "127.0.0.1",
+				"hostEnv": "VCEXP_VRM_RPC_HOST",
 				"port": 33987,
 				"usernameEnv": "VCEXP_VRM_RPC_USER",
 				"passwordEnv": "VCEXP_VRM_RPC_PASS",

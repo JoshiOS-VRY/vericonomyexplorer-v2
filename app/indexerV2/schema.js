@@ -1,6 +1,6 @@
 "use strict";
 
-const schemaVersion = 3;
+const schemaVersion = 5;
 
 const tables = [
 	`CREATE TABLE IF NOT EXISTS indexer_meta (
@@ -202,6 +202,23 @@ const tables = [
 		updated_at INTEGER NOT NULL,
 		PRIMARY KEY (chain_id, address, bucket_start),
 		FOREIGN KEY (chain_id) REFERENCES chains(id) ON DELETE CASCADE
+	);`,
+
+	`CREATE TABLE IF NOT EXISTS network_metric_buckets (
+		chain_id TEXT NOT NULL,
+		bucket_start INTEGER NOT NULL,
+		difficulty REAL,
+		block_height INTEGER,
+		supply REAL,
+		hashrate_kh_per_min REAL,
+		interest_rate_percent REAL,
+		net_stake_weight REAL,
+		percent_staked REAL,
+		expected_stake_time_seconds INTEGER,
+		address_count INTEGER,
+		updated_at INTEGER NOT NULL,
+		PRIMARY KEY (chain_id, bucket_start),
+		FOREIGN KEY (chain_id) REFERENCES chains(id) ON DELETE CASCADE
 	);`
 ];
 
@@ -228,7 +245,8 @@ const indexes = [
 	"CREATE INDEX IF NOT EXISTS idx_address_balances_chain_balance ON address_balances(chain_id, balance_sats DESC);",
 	"CREATE INDEX IF NOT EXISTS idx_period_stats_chain_period_net ON address_period_stats(chain_id, period, period_start, net_sats DESC);",
 	"CREATE INDEX IF NOT EXISTS idx_period_stats_chain_period_received ON address_period_stats(chain_id, period, period_start, received_sats DESC);",
-	"CREATE INDEX IF NOT EXISTS idx_address_balance_buckets_chain_address_start ON address_balance_buckets(chain_id, address, bucket_start ASC);"
+	"CREATE INDEX IF NOT EXISTS idx_address_balance_buckets_chain_address_start ON address_balance_buckets(chain_id, address, bucket_start ASC);",
+	"CREATE INDEX IF NOT EXISTS idx_network_metric_buckets_chain_start ON network_metric_buckets(chain_id, bucket_start ASC);"
 ];
 
 function getSchemaSql() {
@@ -277,6 +295,9 @@ function applyMigrations(db) {
 	// stamped schema v2 before these columns were actually added.
 	ensureColumn(db, "address_period_stats", "last_seen_height", "INTEGER");
 	ensureColumn(db, "address_period_stats", "last_seen_time", "INTEGER");
+	ensureColumn(db, "blocks", "output_count", "INTEGER");
+	ensureColumn(db, "blocks", "extracted_by", "TEXT");
+	ensureColumn(db, "blocks", "extracted_by_address", "TEXT");
 
 	const stored = getStoredSchemaVersion(db);
 	if (stored < schemaVersion) {

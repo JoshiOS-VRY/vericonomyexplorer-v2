@@ -13,10 +13,19 @@ interface BinaryChainActivityProps {
   vrcSummary: ChainSummary;
 }
 
-export function BinaryChainActivity({ vrmSummary, vrcSummary }: BinaryChainActivityProps) {
+export function BinaryChainActivity({
+  vrmSummary,
+  vrcSummary,
+}: BinaryChainActivityProps) {
   const combined = [
-    ...vrmSummary.recentTransactions.map((tx) => ({ tx, chainId: "vrm" as const })),
-    ...vrcSummary.recentTransactions.map((tx) => ({ tx, chainId: "vrc" as const })),
+    ...vrmSummary.recentTransactions.map((tx) => ({
+      tx,
+      chainId: "vrm" as const,
+    })),
+    ...vrcSummary.recentTransactions.map((tx) => ({
+      tx,
+      chainId: "vrc" as const,
+    })),
   ]
     .sort((a, b) => (b.tx.time ?? 0) - (a.tx.time ?? 0))
     .slice(0, 12);
@@ -24,7 +33,9 @@ export function BinaryChainActivity({ vrmSummary, vrcSummary }: BinaryChainActiv
   return (
     <BcPanel title="Recent activity" flush>
       {combined.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-fg-muted">No recent transactions.</p>
+        <p className="px-4 py-6 text-sm text-fg-muted">
+          No recent transactions.
+        </p>
       ) : (
         <div className="overflow-x-auto">
           <table className="bc-table">
@@ -39,7 +50,11 @@ export function BinaryChainActivity({ vrmSummary, vrcSummary }: BinaryChainActiv
             </thead>
             <tbody>
               {combined.map(({ tx, chainId }) => (
-                <ActivityRow key={`${chainId}-${tx.txid}`} tx={tx} chainId={chainId} />
+                <ActivityRow
+                  key={`${chainId}-${tx.txid}`}
+                  tx={tx}
+                  chainId={chainId}
+                />
               ))}
             </tbody>
           </table>
@@ -67,7 +82,7 @@ function ActivityRow({
           {config.ticker}
         </span>
       </td>
-      <td className="max-w-[12rem] truncate font-mono text-xs">
+      <td className="max-w-[12rem] truncate text-xs">
         {txHref ? (
           <Link href={txHref} prefetch className="text-accent hover:underline">
             {ellipsizeMiddle(tx.txid, 20)}
@@ -82,7 +97,9 @@ function ActivityRow({
             {formatHeight(tx.blockHeight)}
           </BcTableLink>
         ) : (
-          <span className="tabular-nums text-sm text-fg">{formatHeight(tx.blockHeight)}</span>
+          <span className="tabular-nums text-sm text-fg">
+            {formatHeight(tx.blockHeight)}
+          </span>
         )}
       </td>
       <td>

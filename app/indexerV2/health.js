@@ -89,6 +89,11 @@ function computeChainHealthLite(chainId, options = {}) {
 	const blocksBehind = bestRpcHeight === null || lastIndexedHeight === null
 		? null
 		: Math.max(0, bestRpcHeight - lastIndexedHeight);
+	const addressCount = toNumber(db.prepare(`
+		SELECT COUNT(*) AS count
+		FROM address_balances
+		WHERE chain_id = ?
+	`).get(chainId).count);
 
 	const checks = {
 		hasBlocks: indexedBlockCount > 0,
@@ -105,13 +110,13 @@ function computeChainHealthLite(chainId, options = {}) {
 			? {
 				status: "trusted",
 				trustLevel: "full",
-				message: "Index is up to date.",
+				message: "Up to date.",
 				reasons: []
 			}
 			: {
 				status: "syncing",
 				trustLevel: "historical",
-				message: "Historical index available; catching up to tip.",
+				message: "Historical data is available; recent blocks are still loading.",
 				reasons: ["Indexer is behind the RPC tip."]
 			})
 		: classify(checks, {
@@ -144,7 +149,7 @@ function computeChainHealthLite(chainId, options = {}) {
 			expectedBlockCount,
 			gapCount: 0,
 			unresolvedSpendCount: 0,
-			addressCount: 0
+			addressCount
 		},
 		syncState: {
 			status: chain ? chain.status : null,
@@ -311,7 +316,7 @@ function classify(checks, context) {
 		return {
 			status: "empty",
 			trustLevel: "none",
-			message: "No indexed blocks yet.",
+			message: "No blocks available yet.",
 			reasons: ["No blocks have been indexed for this chain."]
 		};
 	}
@@ -344,7 +349,7 @@ function classify(checks, context) {
 		return {
 			status: "trusted",
 			trustLevel: "full",
-			message: "Indexed from genesis, no gaps, no unresolved spends, and near tip.",
+			message: "Complete chain history is available.",
 			reasons
 		};
 	}
@@ -353,7 +358,7 @@ function classify(checks, context) {
 		return {
 			status: "syncing",
 			trustLevel: "historical",
-			message: "Historical balances are internally consistent, but the index is still catching up.",
+			message: "Historical balances look consistent, but recent blocks are still loading.",
 			reasons
 		};
 	}
@@ -362,7 +367,7 @@ function classify(checks, context) {
 		return {
 			status: "partial",
 			trustLevel: "historical",
-			message: "Indexed history is internally consistent, but tip status is not complete.",
+			message: "Historical data looks consistent, but the latest blocks are not fully loaded.",
 			reasons
 		};
 	}
@@ -438,15 +443,15 @@ function getExplorerStatus(blocksBehind) {
 	if (blocksBehind === null) {
 		return {
 			label: "Unknown",
-			message: "Chain tip unavailable.",
+			message: "Latest block height unavailable.",
 			syncing: false
 		};
 	}
 
 	if (blocksBehind > 0) {
 		return {
-			label: "Syncing",
-			message: `${blocksBehind.toLocaleString()} block${blocksBehind === 1 ? "" : "s"} behind chain tip.`,
+			label: "Updating",
+			message: `${blocksBehind.toLocaleString()} block${blocksBehind === 1 ? "" : "s"} behind the latest block.`,
 			syncing: true,
 			blocksBehind
 		};
@@ -454,7 +459,7 @@ function getExplorerStatus(blocksBehind) {
 
 	return {
 		label: "Live",
-		message: "Up to date with the chain tip.",
+		message: "Up to date.",
 		syncing: false,
 		blocksBehind: 0
 	};

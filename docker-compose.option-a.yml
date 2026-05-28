@@ -89,6 +89,8 @@ services:
       VCEXP_FAST_API_PORT: ${FAST_API_PORT:-3003}
       VCEXP_INDEXER_SQLITE_PATH: ${VCEXP_INDEXER_SQLITE_PATH:-/app/database/vericonomy-index.sqlite}
       VCEXP_CHAINS_CONFIG: ${VCEXP_CHAINS_CONFIG:-/app/configs/chains.json}
+      VCEXP_VRM_RPC_HOST: ${VCEXP_VRM_RPC_HOST:-172.18.0.1}
+      VCEXP_VRC_RPC_HOST: ${VCEXP_VRC_RPC_HOST:-172.18.0.1}
       VCEXP_API_DB_WORKER_TIMEOUT_MS: ${VCEXP_API_DB_WORKER_TIMEOUT_MS:-120000}
       VCEXP_API_DB_WORKERS: ${VCEXP_API_DB_WORKERS:-8}
       VCEXP_SQLITE_CACHE_MB: ${VCEXP_SQLITE_CACHE_MB:-256}
@@ -117,6 +119,27 @@ services:
     environment:
       VCEXP_INDEXER_SQLITE_PATH: ${VCEXP_INDEXER_SQLITE_PATH:-/app/database/vericonomy-index.sqlite}
       VCEXP_CHAINS_CONFIG: ${VCEXP_CHAINS_CONFIG:-/app/configs/chains.json}
+      VCEXP_VRM_RPC_HOST: ${VCEXP_VRM_RPC_HOST:-172.18.0.1}
+    volumes:
+      - vericonomy-database:/app/database
+      - ./configs/chains.json:/app/configs/chains.json:ro
+    networks:
+      - private
+
+  vrc-indexer:
+    container_name: vericonomy-vrc-indexer
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vericonomy-vrc-indexer:option-a
+    restart: unless-stopped
+    command: ["npm", "run", "indexer:vrc"]
+    env_file:
+      - ${ENV_FILE:-.env.production}
+    environment:
+      VCEXP_INDEXER_SQLITE_PATH: ${VCEXP_INDEXER_SQLITE_PATH:-/app/database/vericonomy-index.sqlite}
+      VCEXP_CHAINS_CONFIG: ${VCEXP_CHAINS_CONFIG:-/app/configs/chains.json}
+      VCEXP_VRC_RPC_HOST: ${VCEXP_VRC_RPC_HOST:-172.18.0.1}
     volumes:
       - vericonomy-database:/app/database
       - ./configs/chains.json:/app/configs/chains.json:ro

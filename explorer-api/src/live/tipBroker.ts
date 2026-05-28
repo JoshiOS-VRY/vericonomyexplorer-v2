@@ -53,9 +53,9 @@ export class TipBroker extends EventEmitter {
     if (height == null || height < 0) return;
     try {
       const hash = await this.rpc.call<string>("getblockhash", [height]);
-      this.current = { height, hash, time: Date.now() };
+      this.current = { height: Number(height), hash, time: Date.now() };
     } catch {
-      this.current = { height, hash: "", time: Date.now() };
+      this.current = { height: Number(height), hash: "", time: Date.now() };
     }
   }
 

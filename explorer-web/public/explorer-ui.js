@@ -98,6 +98,7 @@
   function markActiveNav() {
     var pathname = window.location.pathname.replace(/\/$/, "") || "/";
     var links = document.querySelectorAll("[data-nav-link]");
+    var dropdowns = document.querySelectorAll("[data-nav-dropdown]");
 
     for (var i = 0; i < links.length; i++) {
       var link = links[i];
@@ -111,6 +112,29 @@
         link.setAttribute("aria-current", "page");
       } else {
         link.removeAttribute("aria-current");
+      }
+    }
+
+    for (var j = 0; j < dropdowns.length; j++) {
+      var dropdown = dropdowns[j];
+      var menu = dropdown.parentElement && dropdown.parentElement.querySelector("[role='menu']");
+      var childLinks = menu ? menu.querySelectorAll("[data-nav-link]") : [];
+      var dropdownActive = false;
+
+      for (var k = 0; k < childLinks.length; k++) {
+        var childHref = childLinks[k].getAttribute("href") || "/";
+        var childPrefix = childLinks[k].getAttribute("data-nav-prefix") === "true";
+        if (isActiveNav(pathname, childHref, false, childPrefix)) {
+          dropdownActive = true;
+          break;
+        }
+      }
+
+      dropdown.classList.toggle("nav-link-active", dropdownActive);
+      if (dropdownActive) {
+        dropdown.setAttribute("aria-current", "page");
+      } else {
+        dropdown.removeAttribute("aria-current");
       }
     }
   }

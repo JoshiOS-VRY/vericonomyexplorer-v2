@@ -1,5 +1,6 @@
 import { SourceBadge, TimeCell } from "@/components/explorer/ExplorerUi";
 import type { BlockResult } from "@/lib/api/types";
+import { formatExplorerUserMessage } from "@/lib/explorerCopy";
 import { formatBlockConfirmationLabel, formatAmountPair, isTipBlock } from "@/lib/blockLabels";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +19,7 @@ export function BlockStatusBar({ result }: { result: BlockResult }) {
         <SourceBadge source={result.source} />
         {isTipBlock(block.nextHash) ? (
           <span className="rounded-md border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
-            Chain tip block
+            Latest block
           </span>
         ) : null}
         {result.trusted === false ? (
@@ -41,7 +42,7 @@ export function BlockStatusBar({ result }: { result: BlockResult }) {
 
       {result.trusted === false && result.source.message ? (
         <div className={cn("border-t border-warning/20 bg-warning/5 px-4 py-2.5 text-xs text-warning sm:px-5")}>
-          {result.source.message}
+          {formatExplorerUserMessage(result.source.message)}
         </div>
       ) : null}
     </section>

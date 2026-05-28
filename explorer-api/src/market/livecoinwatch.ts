@@ -1,5 +1,5 @@
 import type { ChainId } from "../types.js";
-import type { ChainMarket } from "../types/home.js";
+import type { ChainMarket, PriceHistoryPoint } from "../types/home.js";
 import { LCW_CHAIN_CODES } from "../types/home.js";
 
 const LCW_BASE = "https://api.livecoinwatch.com";
@@ -73,6 +73,29 @@ export async function fetchLcwHistory24h(chainId: ChainId): Promise<LcwHistoryPo
 
   if (!Array.isArray(data)) return [];
   return data.filter((point) => typeof point.rate === "number" && Number.isFinite(point.rate));
+}
+
+export async function fetchLcwHistoryRange(
+  chainId: ChainId,
+  currency: "USD" | "BTC",
+  startMs: number,
+  endMs: number,
+): Promise<PriceHistoryPoint[]> {
+  const data = await lcwPost<LcwHistoryPoint[]>("/coins/single/history", {
+    currency,
+    code: LCW_CHAIN_CODES[chainId],
+    start: startMs,
+    end: endMs,
+    meta: false,
+  });
+
+  if (!Array.isArray(data)) return [];
+  return data
+    .filter((point) => typeof point.rate === "number" && Number.isFinite(point.rate))
+    .map((point) => ({
+      time: Math.floor(point.date / 1000),
+      value: point.rate,
+    }));
 }
 
 export function mapLcwToMarket(

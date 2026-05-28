@@ -1,5 +1,6 @@
 "use strict";
 
+const utils = require("../utils.js");
 const dbModule = require("./db.js");
 const {
 	createPeriodStatStatements,
@@ -15,6 +16,26 @@ const {
 	isCoinstakeTx
 } = require("./valueUtils.js");
 
+function computeBlockEnrichment(block) {
+	const txs = Array.isArray(block.tx) ? block.tx : [];
+	let outputCount = 0;
+
+	for (const tx of txs) {
+		if (tx && Array.isArray(tx.vout)) {
+			outputCount += tx.vout.length;
+		}
+	}
+
+	const coinbaseTx = txs.length > 0 && typeof txs[0] === "object" ? txs[0] : null;
+	const miner = coinbaseTx ? utils.identifyMiner(coinbaseTx, Number(block.height)) : null;
+
+	return {
+		output_count: outputCount > 0 ? outputCount : null,
+		extracted_by: miner ? miner.name : null,
+		extracted_by_address: miner && miner.type === "address-only" ? miner.name : null
+	};
+}
+
 function createStatements(db) {
 	return {
 		findBlockByHeight: db.prepare(`
@@ -26,10 +47,12 @@ function createStatements(db) {
 		upsertBlock: db.prepare(`
 			INSERT INTO blocks (
 				chain_id, height, hash, previous_hash, next_hash, time, tx_count, size,
-				difficulty, chainwork_or_trust, flags, status, raw_json, indexed_at
+				difficulty, chainwork_or_trust, flags, status, raw_json, indexed_at,
+				output_count, extracted_by, extracted_by_address
 			) VALUES (
 				@chain_id, @height, @hash, @previous_hash, @next_hash, @time, @tx_count, @size,
-				@difficulty, @chainwork_or_trust, @flags, @status, @raw_json, @indexed_at
+				@difficulty, @chainwork_or_trust, @flags, @status, @raw_json, @indexed_at,
+				@output_count, @extracted_by, @extracted_by_address
 			)
 			ON CONFLICT(chain_id, height) DO UPDATE SET
 				hash = excluded.hash,
@@ -43,7 +66,10 @@ function createStatements(db) {
 				flags = excluded.flags,
 				status = excluded.status,
 				raw_json = excluded.raw_json,
-				indexed_at = excluded.indexed_at
+				indexed_at = excluded.indexed_at,
+				output_count = excluded.output_count,
+				extracted_by = excluded.extracted_by,
+				extracted_by_address = excluded.extracted_by_address
 		`),
 
 		upsertTransaction: db.prepare(`
@@ -198,6 +224,7 @@ function ingestBlock(chainId, block, options = {}) {
 
 	const run = db.transaction(() => {
 		const periodStatements = createPeriodStatStatements(db);
+		const enrichment = computeBlockEnrichment(block);
 
 		statements.upsertBlock.run({
 			chain_id: chainId,
@@ -213,7 +240,10 @@ function ingestBlock(chainId, block, options = {}) {
 			flags: block.flags || null,
 			status: "main",
 			raw_json: storeRawJson ? JSON.stringify(block) : null,
-			indexed_at: now
+			indexed_at: now,
+			output_count: enrichment.output_count,
+			extracted_by: enrichment.extracted_by,
+			extracted_by_address: enrichment.extracted_by_address
 		});
 
 		for (let txIndex = 0; txIndex < txs.length; txIndex++) {

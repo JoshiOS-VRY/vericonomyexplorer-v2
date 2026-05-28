@@ -3,6 +3,7 @@ import { registerAddressRoutes } from "./address.js";
 import { registerBlockRoutes } from "./block.js";
 import { registerChainRoutes } from "./chain.js";
 import { registerHomeRoutes } from "./home.js";
+import { registerInsightsRoutes } from "./insights.js";
 import { registerRichRoutes } from "./rich.js";
 import { registerSearchRoutes } from "./search.js";
 import { registerTipRoutes } from "./tip.js";
@@ -12,6 +13,7 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   await registerTipRoutes(app);
   await registerHomeRoutes(app);
   await registerChainRoutes(app);
+  await registerInsightsRoutes(app);
   await registerBlockRoutes(app);
   await registerTxRoutes(app);
   await registerAddressRoutes(app);

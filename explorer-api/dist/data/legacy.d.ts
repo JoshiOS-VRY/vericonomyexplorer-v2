@@ -3,15 +3,26 @@ export declare function fetchChainSummary(chainId: string, options?: Record<stri
     health?: Record<string, unknown> & {
         heights?: {
             maxIndexedHeight?: number | null;
+            blocksBehind?: number | null;
         };
     };
     latestBlocks?: unknown[];
 }>;
+export declare function fetchLatestBlocks(chainId: string, options?: Record<string, unknown>): Promise<(Record<string, unknown> & {
+    height?: number;
+    hash?: string;
+    time?: number | null;
+    extractedBy?: string | null;
+    extractedByAddress?: string | null;
+    outputCount?: number | null;
+    interestRatePercent?: number | null;
+})[]>;
 export declare function fetchLandingData(): Promise<{
     vrmSummary: Record<string, unknown> & {
         health?: Record<string, unknown> & {
             heights?: {
                 maxIndexedHeight?: number | null;
+                blocksBehind?: number | null;
             };
         };
         latestBlocks?: unknown[];
@@ -20,6 +31,7 @@ export declare function fetchLandingData(): Promise<{
         health?: Record<string, unknown> & {
             heights?: {
                 maxIndexedHeight?: number | null;
+                blocksBehind?: number | null;
             };
         };
         latestBlocks?: unknown[];
@@ -48,11 +60,6 @@ export declare function fetchLeaderboard(chainId: string, options?: {
     limit?: number;
     offset?: number;
 }): Promise<unknown>;
-export declare function fetchAddress(chainId: string, address: string, options?: {
-    limit?: number;
-    offset?: number;
-    includeRank?: boolean;
-}): Promise<unknown>;
 export declare function fetchAddressBalanceHistory(chainId: string, address: string, options?: {
     maxPoints?: number;
     since?: number;
@@ -61,7 +68,16 @@ export declare function fetchAddressUtxos(chainId: string, address: string, opti
     limit?: number;
     offset?: number;
 }): Promise<unknown>;
-export declare function fetchTransaction(chainId: string, txid: string): Promise<unknown>;
+export declare function fetchTransaction(chainId: string, txid: string, queryOptions?: {
+    timeoutMs?: number;
+}): Promise<unknown>;
+export declare function fetchAddress(chainId: string, address: string, options?: {
+    limit?: number;
+    offset?: number;
+    includeRank?: boolean;
+}, queryOptions?: {
+    timeoutMs?: number;
+}): Promise<unknown>;
 export declare function fetchBlock(chainId: string, hashOrHeight: string, options?: {
     limit?: number;
     offset?: number;

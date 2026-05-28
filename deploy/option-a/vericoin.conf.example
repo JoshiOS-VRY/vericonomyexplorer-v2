@@ -1,0 +1,20 @@
+# VeriCoin 2.0 node config for co-located explorer (Option A).
+# Install at: /home/vericoin/.vericonomy/vericonomy.conf
+# All chain-specific settings must live under [vericoin].
+
+[vericoin]
+server=1
+txindex=1
+rpcport=58683
+rpcbind=0.0.0.0
+rpcuser=explorer_vrc_rpc_user
+rpcpassword=replace-with-long-random-password
+rpcallowip=127.0.0.1
+rpcallowip=172.17.0.0/16
+rpcallowip=172.18.0.0/16
+port=58684
+listen=1
+dbcache=512
+maxconnections=32
+zmqpubrawblock=tcp://127.0.0.1:28333
+zmqpubrawtx=tcp://127.0.0.1:28333

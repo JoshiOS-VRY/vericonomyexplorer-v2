@@ -17,27 +17,97 @@ async function getTip(chainId, options = {}) {
 
 async function getRecentBlocks(chainId, count = 10, options = {}) {
 	const rpc = getClient(chainId, options);
-	const tipHeight = Number(await rpc.call("getblockcount"));
-	const limit = Math.max(1, Math.min(count, 50));
-	const startHeight = Math.max(0, tipHeight - limit + 1);
-	const heights = [];
+	const verbosity = options.blockVerbosity ?? 2;
+	const tipHeight = options.tipHeight != null
+		? Number(options.tipHeight)
+		: Number(await rpc.call("getblockcount"));
+	const maxCount = Math.max(1, Math.min(count, 50));
+	let startHeight;
 
-	for (let height = tipHeight; height >= startHeight; height--) {
+	if (options.fromHeight != null) {
+		startHeight = Math.max(0, Number(options.fromHeight));
+	} else {
+		startHeight = Math.max(0, tipHeight - maxCount + 1);
+	}
+
+	const heights = [];
+	for (let height = tipHeight; height >= startHeight && heights.length < maxCount; height--) {
 		heights.push(height);
+	}
+
+	if (heights.length === 0) {
+		return [];
+	}
+
+	if (typeof rpc.batch === "function") {
+		const hashResults = await rpc.batch(
+			heights.map((height) => ({ method: "getblockhash", params: [height] }))
+		);
+		const blockResults = await rpc.batch(
+			hashResults.map((hash) => ({ method: "getblock", params: [hash, verbosity] }))
+		);
+		return blockResults.map((block) => mapRpcBlock(block, verbosity));
 	}
 
 	const blocks = await Promise.all(heights.map(async (height) => {
 		const hash = await rpc.call("getblockhash", [height]);
-		const block = await rpc.call("getblock", [hash, 2]);
-		return mapRpcBlock(block);
+		const block = await rpc.call("getblock", [hash, verbosity]);
+		return mapRpcBlock(block, verbosity);
 	}));
 
 	return blocks;
 }
 
-function mapRpcBlock(block) {
+async function enrichBlockMiners(chainId, blocks, options = {}) {
+	if (!Array.isArray(blocks) || blocks.length === 0) {
+		return blocks;
+	}
+
+	const needsMiner = blocks.filter(
+		(block) => block && !block.extractedBy && !block.extractedByAddress
+	);
+	if (needsMiner.length === 0) {
+		return blocks;
+	}
+
+	const rpc = getClient(chainId, options);
+	const hashes = needsMiner.map((block) => block.hash);
+	let fullBlocks;
+
+	if (typeof rpc.batch === "function") {
+		fullBlocks = await rpc.batch(
+			hashes.map((hash) => ({ method: "getblock", params: [hash, 2] }))
+		);
+	} else {
+		fullBlocks = await Promise.all(
+			hashes.map((hash) => rpc.call("getblock", [hash, 2]))
+		);
+	}
+
+	const minerByHash = Object.fromEntries(
+		fullBlocks.map((block) => {
+			const mapped = mapRpcBlock(block, 2);
+			return [mapped.hash, mapped];
+		})
+	);
+
+	return blocks.map((block) => {
+		const enriched = minerByHash[block.hash];
+		if (!enriched) {
+			return block;
+		}
+
+		return Object.assign({}, block, {
+			outputCount: block.outputCount ?? enriched.outputCount ?? null,
+			extractedBy: block.extractedBy ?? enriched.extractedBy ?? null,
+			extractedByAddress: block.extractedByAddress ?? enriched.extractedByAddress ?? null
+		});
+	});
+}
+
+function mapRpcBlock(block, verbosity = 2) {
 	const txs = Array.isArray(block.tx) ? block.tx : [];
-	const coinbaseTx = txs.length > 0 && typeof txs[0] === "object" ? txs[0] : null;
+	const coinbaseTx = verbosity >= 2 && txs.length > 0 && typeof txs[0] === "object" ? txs[0] : null;
 	const miner = coinbaseTx ? utils.identifyMiner(coinbaseTx, Number(block.height)) : null;
 
 	return {
@@ -46,10 +116,10 @@ function mapRpcBlock(block) {
 		previousHash: block.previousblockhash || null,
 		nextHash: null,
 		time: Number(block.time),
-		txCount: txs.length,
+		txCount: block.nTx != null ? Number(block.nTx) : txs.length,
 		size: block.size == null ? null : Number(block.size),
 		difficulty: block.difficulty == null ? null : String(block.difficulty),
-		outputCount: countBlockOutputs(block),
+		outputCount: verbosity >= 2 ? countBlockOutputs(block) : null,
 		extractedBy: miner ? miner.name : null,
 		extractedByAddress: miner && miner.type === "address-only" ? miner.name : null
 	};
@@ -146,6 +216,7 @@ function mapRpcTransaction(tx, block, txIndex) {
 module.exports = {
 	getTip,
 	getRecentBlocks,
+	enrichBlockMiners,
 	getBlockFromRpc,
 	mapRpcBlock
 };

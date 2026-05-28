@@ -3,25 +3,50 @@ import { getTip } from "../live/brokers.js";
 import type { ChainId } from "../types.js";
 import {
   enrichChainSummary,
+  enrichLatestBlocksLive,
   enrichIndexerHealth,
   fetchBlockWithRpcFallback,
 } from "./liveEnrichment.js";
+
+const summaryQueryOptions = {
+  skipBlockEnrichment: true,
+};
 
 export async function fetchChainSummary(
   chainId: string,
   options: Record<string, unknown> = {},
 ) {
+  const queryOptions = { ...summaryQueryOptions, ...options };
   const summary = (await runIndexerQuery<Record<string, unknown>>(
     "getChainSummaryIndexed",
     [chainId],
-    options,
+    queryOptions,
   )) as Record<string, unknown>;
 
-  return enrichChainSummary(summary, chainId as ChainId, options);
+  return enrichChainSummary(summary, chainId as ChainId, queryOptions);
+}
+
+export async function fetchLatestBlocks(
+  chainId: string,
+  options: Record<string, unknown> = {},
+) {
+  const queryOptions = { ...summaryQueryOptions, ...options };
+  const summary = (await runIndexerQuery<Record<string, unknown>>(
+    "getChainSummaryIndexed",
+    [chainId],
+    queryOptions,
+  )) as Record<string, unknown>;
+
+  return enrichLatestBlocksLive(
+    summary.latestBlocks,
+    chainId as ChainId,
+    summary.health as Record<string, unknown>,
+    queryOptions,
+  );
 }
 
 export async function fetchLandingData() {
-  const skipOpts = { skipLiveBlocks: true, skipBlockEnrichment: true, skipLiveRpc: true };
+  const skipOpts = { skipLiveBlocks: true, skipLiveRpc: true };
 
   // Run indexed reads in parallel (one worker each) instead of one serial getLandingBundle call.
   const [vrmSummaryRaw, vrcSummaryRaw, vrmRichlist, vrcRichlist, vrmLeaderboard] =
@@ -90,14 +115,6 @@ export function fetchLeaderboard(
   return runIndexerQuery("getLeaderboard", [chainId], options);
 }
 
-export function fetchAddress(
-  chainId: string,
-  address: string,
-  options: { limit?: number; offset?: number; includeRank?: boolean } = {},
-) {
-  return runIndexerQuery("getAddress", [chainId, address], options);
-}
-
 export function fetchAddressBalanceHistory(
   chainId: string,
   address: string,
@@ -114,13 +131,21 @@ export function fetchAddressUtxos(
   return runIndexerQuery("getAddressUtxos", [chainId, address], options);
 }
 
-export function fetchTransaction(chainId: string, txid: string) {
-  return runIndexerQuery(
-    "getTransaction",
-    [chainId, txid],
-    {},
-    { timeoutMs: 15_000 },
-  );
+export function fetchTransaction(
+  chainId: string,
+  txid: string,
+  queryOptions: { timeoutMs?: number } = {},
+) {
+  return runIndexerQuery("getTransaction", [chainId, txid], {}, queryOptions);
+}
+
+export function fetchAddress(
+  chainId: string,
+  address: string,
+  options: { limit?: number; offset?: number; includeRank?: boolean } = {},
+  queryOptions: { timeoutMs?: number } = {},
+) {
+  return runIndexerQuery("getAddress", [chainId, address], options, queryOptions);
 }
 
 export async function fetchBlock(

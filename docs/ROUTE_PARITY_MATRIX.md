@@ -11,7 +11,11 @@ Migration reference: Express/Pug routes → Next.js App Router routes.
 | `GET /vrm/address/:address` | `/vrm/address/[address]` | `/api/indexer/vrm/address/:address` | Balance, history pagination |
 | `GET /vrm/tx/:txid` | `/vrm/tx/[txid]` | `/api/indexer/vrm/tx/:txid` | Inputs, outputs, deltas |
 | `GET /vrm/block/:hashOrHeight` | `/vrm/block/[hashOrHeight]` | `/api/indexer/vrm/block/:hashOrHeight` | Block metadata, tx list |
+| `GET /vrc/block/:hashOrHeight` | `/vrc/block/[hashOrHeight]` | `/api/indexer/vrc/block/:hashOrHeight` | VRC block metadata, tx list |
+| `GET /vrc/tx/:txid` | `/vrc/tx/[txid]` | `/api/indexer/vrc/tx/:txid` | VRC transaction detail |
+| `GET /vrc/address/:address` | `/vrc/address/[address]` | `/api/indexer/vrc/address/:address` | VRC address detail |
 | `POST /vrm/search` | `POST /vrm/search` (Server Action) | indexer address/tx lookup | Redirect to block/tx/address |
+| `POST /vrc/search` | `POST /vrc/search` (Server Action) | indexer address/tx lookup | Redirect to VRC block/tx/address |
 | `GET /blocks` | `/blocks` | `/api/blocks/tip`, internal-api | Block list |
 | `GET /block/:hash` | `/block/[hash]` | `/api/block/:hashOrHeight` | Block detail |
 | `GET /block-height/:h` | `/block-height/[height]` | `/api/block/:hashOrHeight` | Block by height |

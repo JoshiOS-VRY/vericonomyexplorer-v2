@@ -47,6 +47,13 @@ function NavIcon({ name }: { name: SidebarItemIcon }) {
           <path d="M16 18 22 12 16 6M8 6 2 12l6 6" />
         </svg>
       );
+    case "insights":
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+          <path d="M3 3v18h18" />
+          <path d="M7 14l4-4 3 3 5-6" />
+        </svg>
+      );
   }
 }
 

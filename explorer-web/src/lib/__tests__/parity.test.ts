@@ -39,6 +39,7 @@ describe("route parity matrix", () => {
       "utf8",
     );
     expect(matrix).toContain("/vrm/richlist");
+    expect(matrix).toContain("/vrc/block/");
     expect(matrix).toContain("/api/indexer/status");
     expect(matrix).toContain("/blocks");
   });

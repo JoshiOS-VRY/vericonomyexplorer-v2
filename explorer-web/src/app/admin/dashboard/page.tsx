@@ -14,17 +14,23 @@ export default async function AdminDashboardPage() {
       <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Indexer Health</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Indexer Health</CardTitle>
+          </CardHeader>
           <CardContent>
-            <pre className="overflow-x-auto rounded-lg border border-border bg-bg-subtle p-4 font-mono text-xs">
+            <pre className="overflow-x-auto rounded-lg border border-border bg-bg-subtle p-4 text-xs">
               {JSON.stringify(health.data ?? health.error, null, 2)}
             </pre>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle>API Version</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>API Version</CardTitle>
+          </CardHeader>
           <CardContent>
-            <p className="text-sm">{version.data ?? version.error ?? "unknown"}</p>
+            <p className="text-sm">
+              {version.data ?? version.error ?? "unknown"}
+            </p>
           </CardContent>
         </Card>
       </div>

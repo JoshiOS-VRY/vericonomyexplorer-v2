@@ -1,4 +1,4 @@
-import type { AddressUtxosResult, ChainSummary, HomeMarketPayload, HomeNetworkPayload } from "@/lib/api/types";
+import type { AddressUtxosResult, ChainSummary, HomeMarketPayload, HomeNetworkPayload, IndexedBlock } from "@/lib/api/types";
 import { getClientV1Url, getTipStreamUrl } from "@/lib/api/v1Urls";
 
 export class ClientApiError extends Error {
@@ -70,6 +70,10 @@ export async function fetchBlockHeight(chainId = "vrm"): Promise<number> {
 
 export async function fetchChainSummary(chainId: string): Promise<ChainSummary> {
   return clientApiFetch<ChainSummary>(`/${chainId}/summary`);
+}
+
+export async function fetchLatestBlocks(chainId: string): Promise<IndexedBlock[]> {
+  return clientApiFetch<IndexedBlock[]>(`/${chainId}/blocks/latest`);
 }
 
 export async function fetchHomeMarket(): Promise<HomeMarketPayload> {

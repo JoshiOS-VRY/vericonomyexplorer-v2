@@ -21,12 +21,12 @@ import type {
 } from "@/lib/api/types";
 import {
   CHAIN_EXPLORERS,
-  formatBlocksBehind,
   getChainStatusTone,
   getChainSyncLabel,
   getChainTipHeight,
   isChainAtTip,
 } from "@/lib/chainDisplay";
+import { formatExplorerUserMessage } from "@/lib/explorerCopy";
 import { cn, ellipsizeMiddle } from "@/lib/utils";
 
 interface ExplorerHomeDashboardProps {
@@ -49,7 +49,7 @@ export function ExplorerHomeDashboard({
       <PageHero
         eyebrow="VeriConomy Explorer"
         title="Binary-chain block explorer"
-        subtitle="Live chain stats, recent blocks, and balances for Verium (VRM) and VeriCoin (VRC). Search and deep explorer tools are available for Verium today; VeriCoin data is shown here as it becomes available."
+        subtitle="Live chain stats, recent blocks, and balances for Verium (VRM) and VeriCoin (VRC). Search by block height, hash, transaction ID, or address from the header on any page."
         actions={
           <>
             <Link
@@ -171,7 +171,6 @@ function ChainOverviewPanel({ summary }: { summary: ChainSummary }) {
             )
           }
         />
-        <BcStat label="Sync lag" value={formatBlocksBehind(health)} />
       </BcStatGrid>
 
       <div className="grid gap-px border-t border-border bg-border sm:grid-cols-3">
@@ -304,7 +303,9 @@ function ChainRichlistPanel({ richlist }: { richlist: RichlistResult }) {
   return (
     <BcPanel title={`Top ${config.ticker} balances`} action={action}>
       {!richlist.enabled && richlist.message ? (
-        <p className={cn("text-sm text-fg-muted")}>{richlist.message}</p>
+        <p className={cn("text-sm text-fg-muted")}>
+          {formatExplorerUserMessage(richlist.message)}
+        </p>
       ) : richlist.items.length === 0 ? (
         <p className="text-sm text-fg-muted">No ranked balances yet.</p>
       ) : config.exploreHref ? (
@@ -326,7 +327,7 @@ function ChainRichlistPanel({ richlist }: { richlist: RichlistResult }) {
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg-subtle text-xs font-semibold text-fg-subtle">
                 {item.rank}
               </span>
-              <strong className="flex-1 truncate font-mono text-xs text-fg">
+              <strong className="flex-1 truncate text-xs text-fg">
                 {ellipsizeMiddle(item.address, 18)}
               </strong>
               <em className="text-sm not-italic tabular-nums text-fg-muted">

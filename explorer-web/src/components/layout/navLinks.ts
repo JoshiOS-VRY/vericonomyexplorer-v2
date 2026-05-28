@@ -1,32 +1,59 @@
 export type SidebarItem = {
   href: string;
   label: string;
-  icon: "overview" | "explorer" | "richlist" | "leaderboard" | "blocks" | "api";
+  icon: "overview" | "explorer" | "richlist" | "leaderboard" | "blocks" | "api" | "insights";
   exact?: boolean;
   prefix?: boolean;
   section?: "explorer" | "data";
 };
 
-export type HeaderNavItem = {
+export type HeaderNavLinkItem = {
+  type: "link";
   href: string;
   label: string;
   exact?: boolean;
   prefix?: boolean;
 };
 
+export type HeaderNavDropdownItem = {
+  type: "dropdown";
+  label: string;
+  prefix?: boolean;
+  items: { href: string; label: string }[];
+};
+
+export type HeaderNavItem = HeaderNavLinkItem | HeaderNavDropdownItem;
+
 export const headerNav: HeaderNavItem[] = [
-  { href: "/", label: "Home", exact: true },
-  { href: "/vrm", label: "Verium", prefix: true },
-  { href: "/vrc", label: "Vericoin", prefix: true },
-  { href: "/vrm/richlist", label: "Richlist" },
-  { href: "/vrm/leaderboard", label: "Leaderboard", prefix: true },
-  { href: "/api/docs", label: "API", prefix: true },
+  { type: "link", href: "/", label: "Home", exact: true },
+  {
+    type: "dropdown",
+    label: "Verium",
+    prefix: true,
+    items: [
+      { href: "/vrm", label: "Explore" },
+      { href: "/vrm/richlist", label: "Richlist" },
+      { href: "/vrm/leaderboard", label: "Leaderboard" },
+    ],
+  },
+  {
+    type: "dropdown",
+    label: "Vericoin",
+    prefix: true,
+    items: [
+      { href: "/vrc", label: "Explore" },
+      { href: "/vrc/richlist", label: "Richlist" },
+    ],
+  },
+  { type: "link", href: "/insights", label: "Insights", prefix: true },
+  { type: "link", href: "/api/docs", label: "API", prefix: true },
 ];
 
 export const sidebarNav: SidebarItem[] = [
   { href: "/", label: "Home", icon: "overview", exact: true, section: "explorer" },
   { href: "/vrm", label: "Verium", icon: "explorer", prefix: true, section: "explorer" },
   { href: "/vrc", label: "Vericoin", icon: "explorer", prefix: true, section: "explorer" },
+  { href: "/insights", label: "Insights", icon: "insights", prefix: true, section: "explorer" },
   { href: "/vrm/richlist", label: "Richlist", icon: "richlist", section: "explorer" },
   { href: "/vrm/leaderboard", label: "Leaderboard", icon: "leaderboard", section: "explorer" },
   { href: "/blocks", label: "Block list", icon: "blocks", prefix: true, section: "data" },

@@ -167,6 +167,15 @@ function closeDatabase() {
 	db = null;
 }
 
+function ensureDatabaseMigrations(dbPath = getDatabasePath()) {
+	const migrationDb = new Database(dbPath);
+	migrationDb.defaultSafeIntegers(true);
+	migrationDb.pragma("foreign_keys = ON");
+	migrationDb.pragma("busy_timeout = 10000");
+	schema.applyMigrations(migrationDb);
+	migrationDb.close();
+}
+
 function getStatus() {
 	const health = require("./health.js");
 
@@ -180,6 +189,7 @@ module.exports = {
 	closeDatabase,
 	getDatabasePath,
 	applyReadPragmas,
+	ensureDatabaseMigrations,
 	getWalSizeMb,
 	maybeCheckpointWal,
 	getStatus

@@ -5,6 +5,7 @@ import { AddressUtxoPanel } from "@/components/explorer/address/AddressUtxoPanel
 import { AddressUtxoPanelSkeleton } from "@/components/explorer/address/AddressSectionSkeleton";
 import { fetchAddressUtxosClient } from "@/lib/api/client";
 import type { AddressUtxosResult } from "@/lib/api/types";
+import { ADDRESS_UTXOS_ENABLED } from "@/lib/featureFlags";
 
 export function AddressUtxoPanelClient({
   chainId,
@@ -23,6 +24,9 @@ export function AddressUtxoPanelClient({
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    if (!ADDRESS_UTXOS_ENABLED) {
+      return;
+    }
     let cancelled = false;
 
     void (async () => {
@@ -45,6 +49,10 @@ export function AddressUtxoPanelClient({
       cancelled = true;
     };
   }, [chainId, address, utxoLimit, utxoOffset]);
+
+  if (!ADDRESS_UTXOS_ENABLED) {
+    return null;
+  }
 
   if (failed) {
     return (

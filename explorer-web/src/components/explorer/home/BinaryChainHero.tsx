@@ -18,7 +18,7 @@ export function BinaryChainHero({ vrmLive, vrcLive }: BinaryChainHeroProps) {
       <div className="px-5 py-6 sm:px-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-4">
-            <div className="flex -space-x-2">
+            <div className="hidden shrink-0 -space-x-2 sm:flex">
               <Image
                 src={vrm.logo}
                 alt=""
@@ -40,7 +40,7 @@ export function BinaryChainHero({ vrmLive, vrcLive }: BinaryChainHeroProps) {
               </h5>
 
               <p className="mt-2 max-w-2xl text-sm text-fg-muted">
-                Live market data, network stats, and indexed activity for Verium
+                Live market data, network stats, and on-chain activity for Verium
                 (PoWT) and VeriCoin (PoST).
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-4">

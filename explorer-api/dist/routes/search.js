@@ -1,7 +1,9 @@
 import { createSwrCache } from "../cache/swrCache.js";
 import { registerChainScopedCache } from "../cache/registry.js";
-import { fetchAddress, fetchTransaction } from "../data/legacy.js";
+import { fetchAddress, fetchBlock, fetchTransaction } from "../data/legacy.js";
+import { searchQueryTimeoutMs } from "../db/queryPool.js";
 import { parseChainId } from "../types.js";
+const searchLookupOptions = { timeoutMs: searchQueryTimeoutMs };
 const searchCache = createSwrCache({
     max: 256,
     ttlMs: 15_000,
@@ -15,12 +17,19 @@ const searchCache = createSwrCache({
 registerChainScopedCache(searchCache);
 async function resolveSearchPath(chainId, query) {
     if (/^\d+$/.test(query)) {
-        return { path: `/${chainId}/block/${query}` };
+        const block = (await fetchBlock(chainId, query, {
+            limit: 1,
+            offset: 0,
+        }));
+        if (block.found) {
+            return { path: `/${chainId}/block/${query}` };
+        }
+        return { path: null };
     }
     if (/^[a-fA-F0-9]{64}$/.test(query)) {
         const [tx, address] = await Promise.all([
-            fetchTransaction(chainId, query),
-            fetchAddress(chainId, query, { limit: 1, includeRank: false }),
+            fetchTransaction(chainId, query, searchLookupOptions),
+            fetchAddress(chainId, query, { limit: 1, includeRank: false }, searchLookupOptions),
         ]);
         if (tx.found) {
             return { path: `/${chainId}/tx/${query}` };
@@ -30,10 +39,7 @@ async function resolveSearchPath(chainId, query) {
         }
         return { path: `/${chainId}/block/${query}` };
     }
-    const address = (await fetchAddress(chainId, query, {
-        limit: 1,
-        includeRank: false,
-    }));
+    const address = (await fetchAddress(chainId, query, { limit: 1, includeRank: false }, searchLookupOptions));
     if (address.found) {
         return { path: `/${chainId}/address/${query}` };
     }

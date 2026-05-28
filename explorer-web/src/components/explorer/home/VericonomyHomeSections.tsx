@@ -7,6 +7,7 @@ import {
 } from "@/components/explorer/ExplorerUi";
 import type { LeaderboardResult, RichlistResult } from "@/lib/api/types";
 import { CHAIN_EXPLORERS } from "@/lib/chainDisplay";
+import { formatExplorerUserMessage } from "@/lib/explorerCopy";
 import { cn, ellipsizeMiddle } from "@/lib/utils";
 
 export function VericonomyHomeStatic({
@@ -67,7 +68,9 @@ function ChainRichlistPanel({ richlist }: { richlist: RichlistResult }) {
   return (
     <BcPanel title={`Top ${config.ticker} balances`} action={action}>
       {!richlist.enabled && richlist.message ? (
-        <p className={cn("text-sm text-fg-muted")}>{richlist.message}</p>
+        <p className={cn("text-sm text-fg-muted")}>
+          {formatExplorerUserMessage(richlist.message)}
+        </p>
       ) : richlist.items.length === 0 ? (
         <p className="text-sm text-fg-muted">No ranked balances yet.</p>
       ) : config.exploreHref ? (
@@ -89,7 +92,7 @@ function ChainRichlistPanel({ richlist }: { richlist: RichlistResult }) {
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg-subtle text-xs font-semibold text-fg-subtle">
                 {item.rank}
               </span>
-              <strong className="flex-1 truncate font-mono text-xs text-fg">
+              <strong className="flex-1 truncate text-xs text-fg">
                 {ellipsizeMiddle(item.address, 18)}
               </strong>
               <em className="text-sm not-italic tabular-nums text-fg-muted">

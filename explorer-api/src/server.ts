@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { getHost, getPort, loadEnv } from "./env.js";
 import { mapErrorToResponse } from "./errors.js";
+import { jsonReplacer } from "./util/json.js";
 
 loadEnv();
 
@@ -31,6 +32,13 @@ app.addHook("onSend", async (request, reply) => {
   applyCacheHeaders(request, reply);
 });
 
+app.addHook("preSerialization", async (_request, _reply, payload) => {
+  if (payload == null || typeof payload !== "object") {
+    return payload;
+  }
+  return JSON.parse(JSON.stringify(payload, jsonReplacer));
+});
+
 app.setErrorHandler((error, request, reply) => {
   const mapped = mapErrorToResponse(error);
   request.log.error({ err: error, requestId: request.id }, mapped.error);
@@ -52,6 +60,8 @@ await registerRoutes(app);
 await initBrokers();
 registerCacheInvalidation();
 registerHomeCacheInvalidation();
+const { registerNetworkMetricSnapshots } = await import("./live/networkMetrics.js");
+registerNetworkMetricSnapshots();
 
 const host = getHost();
 const port = getPort();

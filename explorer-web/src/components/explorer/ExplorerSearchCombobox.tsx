@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { Box, Coins, Hash, Loader2, Wallet } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
@@ -13,12 +13,14 @@ import {
 } from "react";
 import { searchChainClient } from "@/lib/api/client";
 import type { IndexedBlock } from "@/lib/api/types";
+import { CHAIN_EXPLORERS, CHAIN_THEME } from "@/lib/chainDisplay";
 import {
   classifySearchQuery,
   fallbackSuggestions,
   heightSuggestions,
   mergeSearchResults,
   recentBlockSuggestions,
+  type SearchEntityType,
   type SearchSuggestion,
 } from "@/lib/searchSuggestions";
 import { cn } from "@/lib/utils";
@@ -36,6 +38,42 @@ interface ExplorerSearchComboboxProps {
   className?: string;
 }
 
+const entityIcons: Record<SearchEntityType, typeof Box> = {
+  block: Box,
+  tx: Hash,
+  address: Wallet,
+};
+
+function ChainBadge({ chainId }: { chainId: "vrm" | "vrc" }) {
+  const theme = CHAIN_THEME[chainId];
+  const chain = CHAIN_EXPLORERS[chainId];
+
+  return (
+    <span
+      className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
+      style={{
+        backgroundColor: theme.accentSoft,
+        color: theme.accent,
+      }}
+    >
+      <Coins className="h-3 w-3" aria-hidden />
+      {chain.ticker}
+    </span>
+  );
+}
+
+function SearchSkeletonRows() {
+  return (
+    <>
+      {Array.from({ length: 2 }).map((_, index) => (
+        <li key={index} className="px-4 py-2.5">
+          <div className="h-4 animate-pulse rounded bg-bg-subtle" />
+        </li>
+      ))}
+    </>
+  );
+}
+
 export function ExplorerSearchCombobox({
   variant = "default",
   recentBlocks,
@@ -49,6 +87,8 @@ export function ExplorerSearchCombobox({
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [lookupDone, setLookupDone] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [apiSuggestions, setApiSuggestions] = useState<SearchSuggestion[]>([]);
 
@@ -64,29 +104,32 @@ export function ExplorerSearchCombobox({
     ];
   }, [recentBlocks, trimmed]);
 
-  const instantSuggestions = useMemo(() => {
-    if (!trimmed) return recentSuggestions;
-    if (kind === "height") return heightSuggestions(trimmed);
-    return [];
-  }, [trimmed, kind, recentSuggestions]);
-
   const suggestions = useMemo(() => {
     if (!trimmed) return recentSuggestions;
-    if (kind === "height") return heightSuggestions(trimmed);
+    if (kind === "height") {
+      if (apiSuggestions.length > 0) return apiSuggestions;
+      if (loading || !lookupDone) return heightSuggestions(trimmed);
+      return [];
+    }
     if (apiSuggestions.length > 0) return apiSuggestions;
-    if (loading) return [];
+    if (loading || !lookupDone) return [];
     return fallbackSuggestions(trimmed, kind);
-  }, [trimmed, kind, recentSuggestions, apiSuggestions, loading]);
+  }, [trimmed, kind, recentSuggestions, apiSuggestions, loading, lookupDone]);
+
+  const showHeightHint = trimmed && kind === "height" && suggestions.length > 1;
 
   useEffect(() => {
-    if (!trimmed || kind === "height") {
+    if (!trimmed) {
       setApiSuggestions([]);
       setLoading(false);
+      setLookupDone(false);
       return;
     }
 
     let cancelled = false;
     setLoading(true);
+    setLookupDone(false);
+    setSubmitError(null);
 
     const timer = window.setTimeout(async () => {
       try {
@@ -98,10 +141,13 @@ export function ExplorerSearchCombobox({
         setApiSuggestions(mergeSearchResults(vrmPath, vrcPath, trimmed));
       } catch {
         if (!cancelled) {
-          setApiSuggestions(fallbackSuggestions(trimmed, kind));
+          setApiSuggestions([]);
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setLookupDone(true);
+        }
       }
     }, DEBOUNCE_MS);
 
@@ -129,41 +175,56 @@ export function ExplorerSearchCombobox({
     (path: string) => {
       setOpen(false);
       setQuery("");
+      setSubmitError(null);
       router.push(path);
     },
     [router],
   );
 
-  const submitQuery = useCallback(() => {
+  const resolveTarget = useCallback(async (): Promise<SearchSuggestion | null> => {
     if (suggestions.length > 0) {
-      const primary =
-        suggestions.find((item) => item.primary) ?? suggestions[activeIndex] ?? suggestions[0];
-      navigate(primary.path);
-      return;
+      return suggestions.find((item) => item.primary) ?? suggestions[activeIndex] ?? suggestions[0];
     }
 
-    if (!trimmed) return;
+    if (!trimmed) return null;
 
     if (kind === "height") {
-      navigate(`/vrm/block/${trimmed}`);
-      return;
+      return heightSuggestions(trimmed)[activeIndex] ?? heightSuggestions(trimmed)[0] ?? null;
     }
 
-    void (async () => {
-      setLoading(true);
-      try {
-        const [vrmPath, vrcPath] = await Promise.all([
-          searchChainClient("vrm", trimmed),
-          searchChainClient("vrc", trimmed),
-        ]);
-        const merged = mergeSearchResults(vrmPath, vrcPath, trimmed);
-        const target = merged.find((item) => item.primary) ?? merged[0];
-        if (target) navigate(target.path);
-      } finally {
-        setLoading(false);
+    setLoading(true);
+    setSubmitError(null);
+    try {
+      const [vrmPath, vrcPath] = await Promise.all([
+        searchChainClient("vrm", trimmed),
+        searchChainClient("vrc", trimmed),
+      ]);
+      const merged = mergeSearchResults(vrmPath, vrcPath, trimmed);
+      if (merged.length > 0) {
+        return merged.find((item) => item.primary) ?? merged[0];
       }
+      const fallbacks = fallbackSuggestions(trimmed, kind);
+      return fallbacks[0] ?? null;
+    } finally {
+      setLoading(false);
+      setLookupDone(true);
+    }
+  }, [activeIndex, kind, suggestions, trimmed]);
+
+  const submitQuery = useCallback(() => {
+    void (async () => {
+      const target = await resolveTarget();
+      if (target) {
+        navigate(target.path);
+        return;
+      }
+
+      setSubmitError(
+        "No block, transaction, or address found on Verium or VeriCoin. Check the query and try again.",
+      );
+      setOpen(true);
     })();
-  }, [activeIndex, kind, navigate, suggestions, trimmed]);
+  }, [navigate, resolveTarget]);
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "ArrowDown") {
@@ -185,11 +246,29 @@ export function ExplorerSearchCombobox({
     }
     if (event.key === "Escape") {
       setOpen(false);
+      setSubmitError(null);
       inputRef.current?.blur();
     }
   };
 
-  const showDropdown = open && (suggestions.length > 0 || loading || (trimmed && kind !== "height"));
+  const showDropdown = Boolean(
+    open &&
+      (suggestions.length > 0 ||
+        loading ||
+        submitError != null ||
+        (trimmed && kind !== "height" && lookupDone && suggestions.length === 0) ||
+        (trimmed && kind === "height")),
+  );
+
+  const showEmptyState =
+    trimmed &&
+    !loading &&
+    lookupDone &&
+    suggestions.length === 0 &&
+    kind !== "height";
+
+  const showRecentHeader = !trimmed && recentSuggestions.length > 0;
+  const showHeightHeader = trimmed && kind === "height" && suggestions.length > 0;
 
   return (
     <div ref={rootRef} className={cn("relative w-full", className)}>
@@ -217,11 +296,12 @@ export function ExplorerSearchCombobox({
             onChange={(event) => {
               setQuery(event.target.value);
               setOpen(true);
+              setSubmitError(null);
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={onKeyDown}
             role="combobox"
-            aria-expanded={showDropdown ? true : false}
+            aria-expanded={showDropdown}
             aria-controls={listboxId}
             aria-autocomplete="list"
             aria-activedescendant={
@@ -239,6 +319,7 @@ export function ExplorerSearchCombobox({
             className={cn(
               "w-full rounded-lg border border-border bg-bg-panel text-sm outline-none transition placeholder:text-fg-subtle focus:border-accent focus:ring-2 focus:ring-accent/20",
               isBlockchair ? "h-11 pl-12 pr-10 shadow-sm" : "h-9 rounded-md bg-bg-subtle pl-10 pr-9",
+              submitError && "border-danger/50 focus:border-danger focus:ring-danger/20",
             )}
           />
           {loading ? (
@@ -263,48 +344,90 @@ export function ExplorerSearchCombobox({
         </button>
       </div>
 
+      {showHeightHint ? (
+        <p className="mt-1.5 text-xs text-fg-muted">
+          Press ↑↓ to choose a chain, then Enter to open the block.
+        </p>
+      ) : null}
+
+      {submitError && !showDropdown ? (
+        <p className="mt-1.5 text-xs text-danger" role="alert">
+          {submitError}
+        </p>
+      ) : null}
+
       {showDropdown ? (
         <ul
           id={listboxId}
           role="listbox"
           className="search-dropdown absolute z-50 mt-2 max-h-72 w-full overflow-auto rounded-lg border border-border bg-bg-panel py-1 shadow-lg"
         >
-          {!loading && suggestions.length === 0 && trimmed ? (
-            <li className="px-4 py-3 text-sm text-fg-muted">No matches yet — try another query.</li>
+          {submitError ? (
+            <li className="search-dropdown-section border-b border-border/80 px-4 py-3 text-sm text-danger" role="alert">
+              {submitError}
+            </li>
           ) : null}
 
-          {!trimmed && recentSuggestions.length > 0 ? (
-            <li className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">
+          {loading && suggestions.length === 0 ? <SearchSkeletonRows /> : null}
+
+          {showEmptyState ? (
+            <li className="search-dropdown-section px-4 py-3 text-sm text-fg-muted">
+              <p>No matches on Verium or VeriCoin.</p>
+              <p className="mt-1 text-xs text-fg-subtle">
+                Examples: block height <span className="font-mono">12345</span>, 64-character hash, or
+                wallet address.
+              </p>
+            </li>
+          ) : null}
+
+          {showRecentHeader ? (
+            <li className="search-dropdown-section px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">
               Recent blocks
             </li>
           ) : null}
 
-          {instantSuggestions.length > 0 && trimmed && kind === "height" ? (
-            <li className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">
+          {showHeightHeader ? (
+            <li className="search-dropdown-section px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">
               Block height
             </li>
           ) : null}
 
-          {suggestions.map((item, index) => (
-            <li key={item.id} role="option" aria-selected={index === activeIndex}>
-              <button
-                id={`${listboxId}-${item.id}`}
-                type="button"
-                className={cn(
-                  "flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm transition-colors",
-                  index === activeIndex ? "bg-accent/10 text-fg" : "text-fg hover:bg-bg-subtle",
-                  item.primary && "font-semibold",
-                )}
-                onMouseEnter={() => setActiveIndex(index)}
-                onClick={() => navigate(item.path)}
-              >
-                <span className="truncate">{item.label}</span>
-                {item.sublabel ? (
-                  <span className="shrink-0 text-xs text-fg-muted">{item.sublabel}</span>
-                ) : null}
-              </button>
-            </li>
-          ))}
+          {suggestions.map((item, index) => {
+            const Icon = entityIcons[item.entityType];
+
+            return (
+              <li key={item.id} role="presentation">
+                <button
+                  id={`${listboxId}-${item.id}`}
+                  type="button"
+                  role="option"
+                  aria-selected={index === activeIndex}
+                  className={cn(
+                    "flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition-colors",
+                    index === activeIndex ? "bg-accent/10 text-fg" : "text-fg hover:bg-bg-subtle",
+                    item.primary && "font-semibold",
+                  )}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onClick={() => navigate(item.path)}
+                >
+                  <Icon
+                    className="h-4 w-4 shrink-0 text-fg-subtle"
+                    aria-hidden
+                  />
+                  <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    {item.tentative ? (
+                      <span className="text-[10px] text-fg-subtle">Try</span>
+                    ) : null}
+                    <ChainBadge chainId={item.chainId} />
+                    {item.sublabel && !item.tentative ? (
+                      <span className="hidden text-xs text-fg-muted sm:inline">{item.sublabel}</span>
+                    ) : null}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       ) : null}
     </div>

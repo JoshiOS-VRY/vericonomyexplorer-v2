@@ -13,7 +13,9 @@ export function AddressRichlistCard({
   if (!richlist.enabled) {
     return (
       <BcPanel title="Rich list">
-        <p className="text-sm text-fg-muted">Rich list is unavailable until blocks are available.</p>
+        <p className="text-sm text-fg-muted">
+          Rich list is unavailable until blocks are available.
+        </p>
       </BcPanel>
     );
   }
@@ -22,9 +24,13 @@ export function AddressRichlistCard({
     return (
       <BcPanel title="Rich list">
         <p className="text-sm text-fg-muted">
-          This address has no positive balance and is not ranked on the rich list.
+          This address has no positive balance and is not ranked on the rich
+          list.
         </p>
-        <Link href="/vrm/richlist" className="mt-3 inline-block text-sm font-medium text-accent hover:underline">
+        <Link
+          href="/vrm/richlist"
+          className="mt-3 inline-block text-sm font-medium text-accent hover:underline"
+        >
           Browse rich list
         </Link>
       </BcPanel>
@@ -55,7 +61,7 @@ export function AddressRichlistCard({
         >
           View on rich list
         </Link>
-        <p className="font-mono text-xs text-fg-subtle break-all">{address}</p>
+        <p className="text-xs text-fg-subtle break-all">{address}</p>
       </div>
     </BcPanel>
   );

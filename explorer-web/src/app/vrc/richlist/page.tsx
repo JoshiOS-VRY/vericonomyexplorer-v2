@@ -21,19 +21,33 @@ export default async function VrcRichlistPage({
   try {
     richlist = await getRichlist("vrc", { limit, offset });
   } catch {
-    return <AlertBanner title="Richlist Unavailable">Unable to load VRC richlist.</AlertBanner>;
+    return (
+      <AlertBanner title="Richlist Unavailable">
+        Unable to load VRC richlist.
+      </AlertBanner>
+    );
   }
 
   if (!richlist.enabled && richlist.message) {
     return (
       <div className="space-y-6">
-        <BcPageHeader title="Rich list" subtitle="Top VRC addresses by balance." />
-        <AlertBanner title="Richlist Unavailable">{formatExplorerUserMessage(richlist.message)}</AlertBanner>
+        <BcPageHeader
+          title="Rich list"
+          subtitle="Top VRC addresses by balance."
+        />
+        <AlertBanner title="Richlist Unavailable">
+          {formatExplorerUserMessage(richlist.message)}
+        </AlertBanner>
       </div>
     );
   }
 
-  const paging = richlist.paging ?? { limit, offset, total: richlist.items.length, hasMore: false };
+  const paging = richlist.paging ?? {
+    limit,
+    offset,
+    total: richlist.items.length,
+    hasMore: false,
+  };
   const from = paging.offset + 1;
   const to = Math.min(paging.offset + paging.limit, paging.total);
 
@@ -62,14 +76,20 @@ export default async function VrcRichlistPage({
                 <tr key={item.address}>
                   <td className="tabular-nums text-fg-subtle">{item.rank}</td>
                   <td>
-                    <span className="font-mono text-sm break-all">{item.address}</span>
+                    <span className="text-sm break-all">{item.address}</span>
                   </td>
                   <td className="text-right font-medium tabular-nums">
                     {item.balance.amount} {item.balance.ticker}
                   </td>
-                  <td className="text-right tabular-nums text-fg-muted">{item.totalReceived.amount}</td>
-                  <td className="text-right tabular-nums text-fg-muted">{item.totalSent.amount}</td>
-                  <td className="text-right tabular-nums text-fg-muted">{formatHeight(item.txCount)}</td>
+                  <td className="text-right tabular-nums text-fg-muted">
+                    {item.totalReceived.amount}
+                  </td>
+                  <td className="text-right tabular-nums text-fg-muted">
+                    {item.totalSent.amount}
+                  </td>
+                  <td className="text-right tabular-nums text-fg-muted">
+                    {formatHeight(item.txCount)}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -2,16 +2,26 @@
 
 import { useState } from "react";
 import { CopyButton } from "@/components/explorer/BlockDetail";
+import { CHAIN_EXPLORERS, chainBlockPath, type ChainId } from "@/lib/chainDisplay";
 
-export function BlockShareActions({ hash, height }: { hash: string; height: number }) {
+export function BlockShareActions({
+  chainId,
+  hash,
+  height,
+}: {
+  chainId: ChainId;
+  hash: string;
+  height: number;
+}) {
   const [shareLabel, setShareLabel] = useState("Share");
+  const chain = CHAIN_EXPLORERS[chainId];
 
   async function handleShare() {
-    const shareUrl = `${window.location.origin}/vrm/block/${height}`;
+    const shareUrl = `${window.location.origin}${chainBlockPath(chainId, height)}`;
 
     try {
       if (navigator.share) {
-        await navigator.share({ title: `Verium block ${height}`, url: shareUrl });
+        await navigator.share({ title: `${chain.name} block ${height}`, url: shareUrl });
         return;
       }
 

@@ -47,6 +47,17 @@ export function safeCacheDelete<T extends CacheValue>(
   }
 }
 
+export async function refreshCacheInBackground(
+  cache: LRUCache<string, CacheValue, unknown>,
+  key: string,
+): Promise<void> {
+  try {
+    await cache.fetch(key, { forceRefresh: true });
+  } catch {
+    /* background refresh must not throw */
+  }
+}
+
 export async function swrFetch<T>(
   cache: LRUCache<string, CacheValue, unknown>,
   key: string,

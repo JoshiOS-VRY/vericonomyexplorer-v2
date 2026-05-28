@@ -13,3 +13,18 @@ export function isNavLinkActive(
   if (prefix) return current === href || current.startsWith(`${href}/`);
   return current === href || current.startsWith(`${href}/`);
 }
+
+export function isNavDropdownActive(
+  pathname: string,
+  items: { href: string }[],
+  prefix?: boolean,
+): boolean {
+  return items.some((item) => isNavLinkActive(pathname, item.href, false, prefix));
+}
+
+export function getNavSearchString(pathname: string, search?: string): string {
+  if (!search) {
+    return pathname;
+  }
+  return `${pathname}${search.startsWith("?") ? search : `?${search}`}`;
+}

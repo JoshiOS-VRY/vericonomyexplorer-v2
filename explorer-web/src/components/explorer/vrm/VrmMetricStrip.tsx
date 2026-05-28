@@ -1,20 +1,17 @@
 import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
 import { BcStat, BcStatGrid } from "@/components/explorer/BlockchairUi";
 import { formatHeight } from "@/components/explorer/ExplorerUi";
-import type { ChainHealth, IndexedBlock } from "@/lib/api/types";
-import { formatBlocksBehind } from "@/lib/chainDisplay";
-import { formatDifficulty, formatNumber } from "@/lib/utils";
+import type { IndexedBlock } from "@/lib/api/types";
+import { formatDifficulty } from "@/lib/utils";
 
 export function VrmMetricStrip({
   chainHeight,
   addressCount,
-  health,
   tipBlock,
   heightPulse,
 }: {
   chainHeight: number | null;
   addressCount: number;
-  health: ChainHealth;
   tipBlock: IndexedBlock | undefined;
   heightPulse: boolean;
 }) {
@@ -28,11 +25,6 @@ export function VrmMetricStrip({
         pulse={heightPulse}
       />
       <BcStat label="Addresses" value={formatHeight(addressCount)} />
-      <BcStat label="Sync" value={formatBlocksBehind(health)} />
-      <BcStat
-        label="Indexed blocks"
-        value={formatNumber(health.counts.indexedBlockCount)}
-      />
       <BcStat
         label="Latest block"
         value={

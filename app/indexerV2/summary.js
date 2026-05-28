@@ -12,8 +12,18 @@ async function getChainSummary(chainId, options = {}) {
 		const tip = options.tip ?? await liveChain.getTip(chainId, options);
 		summary.health = health.enrichWithLiveRpc(summary.health, tip.height, options);
 		const indexedHeight = summary.health.heights.maxIndexedHeight;
+		const latestBlockHeight = summary.latestBlocks.length > 0
+			? Number(summary.latestBlocks[0].height)
+			: null;
 
-		if (!options.skipLiveBlocks && (indexedHeight === null || tip.height > indexedHeight)) {
+		if (
+			!options.skipLiveBlocks &&
+			(
+				indexedHeight === null ||
+				tip.height > indexedHeight ||
+				(latestBlockHeight !== null && tip.height > latestBlockHeight)
+			)
+		) {
 			summary.latestBlocks = await liveChain.getRecentBlocks(chainId, 10, options);
 		}
 	} catch (err) {

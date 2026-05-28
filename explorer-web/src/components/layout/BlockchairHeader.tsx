@@ -1,9 +1,18 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import { SearchForm } from "@/components/explorer/SearchForm";
+import { useSearchRecentBlocks } from "@/components/explorer/SearchRecentBlocksContext";
 import { SyncStatusPills } from "@/components/layout/SyncStatusPills";
-import { headerNav } from "@/components/layout/navLinks";
-import { isNavLinkActive } from "@/lib/navUtils";
+import {
+  headerNav,
+  type HeaderNavDropdownItem,
+  type HeaderNavItem,
+  type HeaderNavLinkItem,
+} from "@/components/layout/navLinks";
+import { isNavDropdownActive, isNavLinkActive } from "@/lib/navUtils";
 import type { ChainSummary } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
@@ -47,7 +56,7 @@ function HeaderNavLink({
   className,
 }: {
   pathname: string;
-  item: (typeof headerNav)[number];
+  item: HeaderNavLinkItem;
   className?: string;
 }) {
   const active = isNavLinkActive(pathname, item.href, item.exact, item.prefix);
@@ -60,11 +69,127 @@ function HeaderNavLink({
       data-nav-exact={item.exact ? "true" : undefined}
       data-nav-prefix={item.prefix ? "true" : undefined}
       aria-current={active ? "page" : undefined}
-      className={cn(className, active ? "bg-accent/10 text-accent" : "text-fg-muted hover:bg-bg-subtle hover:text-fg")}
+      className={cn(
+        className,
+        active ? "bg-accent/10 text-accent" : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
+      )}
     >
       {item.label}
     </Link>
   );
+}
+
+function HeaderNavDropdown({
+  pathname,
+  item,
+  className,
+}: {
+  pathname: string;
+  item: HeaderNavDropdownItem;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const active = isNavDropdownActive(pathname, item.items, item.prefix);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        data-nav-dropdown
+        data-nav-prefix={item.prefix ? "true" : undefined}
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-current={active ? "page" : undefined}
+        onClick={() => setOpen((value) => !value)}
+        className={cn(
+          className,
+          active ? "bg-accent/10 text-accent" : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
+        )}
+      >
+        <span>{item.label}</span>
+        <span aria-hidden className="ml-1 text-[10px] opacity-70">
+          ▾
+        </span>
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          className="absolute left-0 top-[calc(100%+4px)] z-50 min-w-[10rem] rounded-md border border-border bg-bg-panel py-1 shadow-lg"
+        >
+          {item.items.map((child) => {
+            const childActive = isNavLinkActive(pathname, child.href, false, item.prefix);
+            return (
+              <Link
+                key={child.href}
+                href={child.href}
+                prefetch
+                role="menuitem"
+                data-nav-link
+                data-nav-prefix={item.prefix ? "true" : undefined}
+                aria-current={childActive ? "page" : undefined}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "block px-3 py-2 text-sm transition-colors",
+                  childActive
+                    ? "bg-accent/10 text-accent"
+                    : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
+                )}
+              >
+                {child.label}
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function HeaderNavItemView({
+  pathname,
+  item,
+  className,
+}: {
+  pathname: string;
+  item: HeaderNavItem;
+  className?: string;
+}) {
+  if (item.type === "dropdown") {
+    return <HeaderNavDropdown pathname={pathname} item={item} className={className} />;
+  }
+
+  return <HeaderNavLink pathname={pathname} item={item} className={className} />;
+}
+
+function HeaderSearch() {
+  const recentBlocks = useSearchRecentBlocks();
+  return <SearchForm variant="blockchair" recentBlocks={recentBlocks ?? undefined} />;
 }
 
 export function BlockchairHeader({
@@ -95,8 +220,8 @@ export function BlockchairHeader({
 
         <nav className="hidden items-center gap-0.5 md:flex" aria-label="Main">
           {headerNav.map((item) => (
-            <HeaderNavLink
-              key={item.href}
+            <HeaderNavItemView
+              key={item.type === "dropdown" ? item.label : item.href}
               pathname={pathname}
               item={item}
               className="rounded px-3 py-1.5 text-sm font-medium transition-colors"
@@ -115,15 +240,15 @@ export function BlockchairHeader({
 
       <div className="border-t border-border/80 bg-bg-subtle/50 px-4 py-3 sm:px-6">
         <div className="mx-auto max-w-[1400px]">
-          <SearchForm variant="blockchair" />
+          <HeaderSearch />
         </div>
       </div>
 
       <div className="border-t border-border/60 px-4 py-2 md:hidden sm:px-6">
         <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto">
           {headerNav.map((item) => (
-            <HeaderNavLink
-              key={item.href}
+            <HeaderNavItemView
+              key={item.type === "dropdown" ? item.label : item.href}
               pathname={pathname}
               item={item}
               className="shrink-0 rounded px-2.5 py-1 text-xs font-medium"

@@ -3,6 +3,7 @@
 const dbModule = require("./db.js");
 const health = require("./health.js");
 const utils = require("../utils.js");
+const { hourBucketStart } = require("./periodStats.js");
 const { atomicUnitsToDecimal } = require("./valueUtils.js");
 
 const defaultLimit = 25;
@@ -111,15 +112,19 @@ function getChainSummary(chainId, options = {}) {
 	const chain = normalizeChainId(chainId);
 	const chainHealth = health.getChainHealth(chain, { db });
 	const latestBlocks = db.prepare(`
-		SELECT height, hash, previous_hash, time, tx_count, size, difficulty
+		SELECT height, hash, previous_hash, next_hash, time, tx_count, size, difficulty,
+			output_count, extracted_by, extracted_by_address
 		FROM blocks
 		WHERE chain_id = ? AND status = 'main'
 		ORDER BY height DESC
 		LIMIT 10
 	`).all(chain).map(block => mapBlock(block));
-	const enrichedLatestBlocks = options.skipBlockEnrichment === true
+	let enrichedLatestBlocks = options.skipBlockEnrichment === true
 		? latestBlocks
 		: enrichLatestBlocks(db, chain, latestBlocks);
+	if (chain === "vrc") {
+		enrichedLatestBlocks = enrichBlockInterestRates(chain, enrichedLatestBlocks, { db });
+	}
 	const recentTransactions = db.prepare(`
 		SELECT txid, block_height, block_hash, tx_index, time, is_coinbase, is_coinstake
 		FROM transactions
@@ -219,7 +224,7 @@ function getLeaderboard(chainId, options = {}) {
 			source: getSource(chainHealth, "leaderboards"),
 			period: periodBounds,
 			sort,
-			label: "Indexed transfer activity",
+			label: "Transfer activity",
 			paging: getPaging(limit, offset, statsCountRow.count),
 			items: rows.map((row, index) => ({
 				rank: offset + index + 1,
@@ -243,7 +248,7 @@ function getLeaderboard(chainId, options = {}) {
 		source: getSource(chainHealth, "leaderboards"),
 		period: periodBounds,
 		sort,
-		label: "Indexed transfer activity",
+		label: "Transfer activity",
 		backfillRequired: true,
 		paging: getPaging(limit, offset, 0),
 		items: []
@@ -461,6 +466,120 @@ function buildActivityBucketPlan(since, maxPoints, firstTime, lastTime) {
 			receivedAtomic: 0n,
 			spentAtomic: 0n
 		});
+	}
+
+	return buckets;
+}
+
+const INSIGHTS_GROUP_BY_SECONDS = {
+	day: 86_400,
+	week: 7 * 86_400
+};
+
+function normalizeInsightsGroupBy(value) {
+	const allowed = ["day", "week", "month", "year"];
+	return allowed.includes(value) ? value : "day";
+}
+
+function startOfUtcDay(timestamp) {
+	const date = new Date(timestamp * 1000);
+	return Math.floor(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) / 1000);
+}
+
+function startOfUtcWeek(timestamp) {
+	const dayStart = startOfUtcDay(timestamp);
+	const date = new Date(dayStart * 1000);
+	const dayOfWeek = date.getUTCDay();
+	const daysSinceMonday = (dayOfWeek + 6) % 7;
+	return dayStart - daysSinceMonday * 86_400;
+}
+
+function startOfUtcMonth(timestamp) {
+	const date = new Date(timestamp * 1000);
+	return Math.floor(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1) / 1000);
+}
+
+function startOfUtcYear(timestamp) {
+	const date = new Date(timestamp * 1000);
+	return Math.floor(Date.UTC(date.getUTCFullYear(), 0, 1) / 1000);
+}
+
+function getInsightsGroupStart(timestamp, groupBy) {
+	if (groupBy === "week") {
+		return startOfUtcWeek(timestamp);
+	}
+
+	if (groupBy === "month") {
+		return startOfUtcMonth(timestamp);
+	}
+
+	if (groupBy === "year") {
+		return startOfUtcYear(timestamp);
+	}
+
+	return startOfUtcDay(timestamp);
+}
+
+function advanceInsightsGroupStart(startTime, groupBy) {
+	const date = new Date(startTime * 1000);
+
+	if (groupBy === "week") {
+		return startTime + INSIGHTS_GROUP_BY_SECONDS.week;
+	}
+
+	if (groupBy === "month") {
+		return Math.floor(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1) / 1000);
+	}
+
+	if (groupBy === "year") {
+		return Math.floor(Date.UTC(date.getUTCFullYear() + 1, 0, 1) / 1000);
+	}
+
+	return startTime + INSIGHTS_GROUP_BY_SECONDS.day;
+}
+
+function endOfInsightsGroup(startTime, groupBy, rangeEnd) {
+	const nextStart = advanceInsightsGroupStart(startTime, groupBy);
+	return Math.min(nextStart - 1, rangeEnd);
+}
+
+function formatInsightsGroupLabel(startTime, groupBy) {
+	const start = new Date(startTime * 1000);
+
+	if (groupBy === "year") {
+		return start.toLocaleDateString("en-US", { year: "numeric" });
+	}
+
+	if (groupBy === "month") {
+		return start.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+	}
+
+	if (groupBy === "week") {
+		return start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+	}
+
+	return start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function buildCalendarBucketPlan(since, maxPoints, firstTime, lastTime, groupBy) {
+	const now = Math.floor(Date.now() / 1000);
+	const end = Math.max(lastTime || now, since || 0, firstTime || 0);
+	const start = since || firstTime || end;
+	let cursor = getInsightsGroupStart(start, groupBy);
+	const buckets = [];
+
+	while (cursor <= end) {
+		const bucketEnd = endOfInsightsGroup(cursor, groupBy, end);
+		buckets.push({
+			startTime: cursor,
+			endTime: bucketEnd,
+			label: formatInsightsGroupLabel(cursor, groupBy)
+		});
+		cursor = advanceInsightsGroupStart(cursor, groupBy);
+	}
+
+	if (buckets.length > maxPoints) {
+		return buckets.slice(buckets.length - maxPoints);
 	}
 
 	return buckets;
@@ -1004,7 +1123,7 @@ function disabledResponse(chainId, chainHealth, feature) {
 		enabled: false,
 		trusted: false,
 		source: getSource(chainHealth, feature),
-		message: `${feature} is unavailable until blocks have been indexed.`,
+		message: `${feature} is not available yet.`,
 		health: chainHealth
 	};
 }
@@ -1019,9 +1138,11 @@ function mapBlock(block) {
 		txCount: toNumber(block.tx_count),
 		size: toNullableNumber(block.size),
 		difficulty: block.difficulty === null || block.difficulty === undefined ? null : String(block.difficulty),
-		outputCount: block.outputCount == null ? null : toNumber(block.outputCount),
-		extractedBy: block.extractedBy || null,
-		extractedByAddress: block.extractedByAddress || null
+		outputCount: block.output_count == null
+			? (block.outputCount == null ? null : toNumber(block.outputCount))
+			: toNumber(block.output_count),
+		extractedBy: block.extracted_by || block.extractedBy || null,
+		extractedByAddress: block.extracted_by_address || block.extractedByAddress || null
 	};
 }
 
@@ -1035,6 +1156,39 @@ function enrichLatestBlocks(db, chain, blocks) {
 	}
 
 	return enrichBlocks(db, chain, blocks);
+}
+
+function enrichBlockInterestRates(chainId, blocks, options = {}) {
+	const db = options.db || dbModule.openDatabase();
+	const chain = normalizeChainId(chainId);
+
+	if (chain !== "vrc" || !Array.isArray(blocks) || !blocks.length) {
+		return blocks;
+	}
+
+	const lookup = prepare(db, `
+		SELECT interest_rate_percent
+		FROM network_metric_buckets
+		WHERE chain_id = ? AND bucket_start <= ? AND interest_rate_percent IS NOT NULL
+		ORDER BY bucket_start DESC
+		LIMIT 1
+	`);
+
+	return blocks.map(block => {
+		if (block.interestRatePercent != null || block.time == null) {
+			return block;
+		}
+
+		const bucketStart = hourBucketStart(toNumber(block.time));
+		const row = lookup.get(chain, bucketStart);
+		const interestRatePercent = row ? Number(row.interest_rate_percent) : null;
+
+		return Object.assign({}, block, {
+			interestRatePercent: Number.isFinite(interestRatePercent)
+				? interestRatePercent
+				: null
+		});
+	});
 }
 
 function enrichBlocks(db, chain, blocks) {
@@ -1640,6 +1794,99 @@ function toNullableNumber(value) {
 	return toNumber(value);
 }
 
+function mapNetworkMetricBucket(bucket) {
+	return {
+		startTime: bucket.startTime,
+		endTime: bucket.endTime,
+		label: bucket.label,
+		difficulty: bucket.difficulty,
+		blockHeight: bucket.blockHeight,
+		supply: bucket.supply,
+		hashrateKhPerMin: bucket.hashrateKhPerMin,
+		interestRatePercent: bucket.interestRatePercent,
+		netStakeWeight: bucket.netStakeWeight,
+		percentStaked: bucket.percentStaked,
+		expectedStakeTimeSeconds: bucket.expectedStakeTimeSeconds,
+		addressCount: bucket.addressCount
+	};
+}
+
+function getNetworkMetricHistory(chainId, options = {}) {
+	const db = options.db || dbModule.openDatabase();
+	const chain = normalizeChainId(chainId);
+	const maxPoints = normalizeBalanceHistoryPoints(options.maxPoints);
+	const since = normalizeSince(options.since);
+	const groupBy = options.groupBy ? normalizeInsightsGroupBy(options.groupBy) : null;
+	const chainHealth = health.getChainHealth(chain, { db });
+	const bucketBounds = since
+		? prepare(db, `
+			SELECT MIN(bucket_start) AS min_time, MAX(bucket_start) AS max_time
+			FROM network_metric_buckets
+			WHERE chain_id = ? AND bucket_start >= ?
+		`).get(chain, since)
+		: prepare(db, `
+			SELECT MIN(bucket_start) AS min_time, MAX(bucket_start) AS max_time
+			FROM network_metric_buckets
+			WHERE chain_id = ?
+		`).get(chain);
+	const resolvedFirst = toNullableNumber(bucketBounds.min_time) ?? since ?? null;
+	const resolvedLast = toNullableNumber(bucketBounds.max_time);
+	const bucketPlanSource = groupBy
+		? buildCalendarBucketPlan(since, maxPoints, resolvedFirst, resolvedLast, groupBy)
+		: buildActivityBucketPlan(since, maxPoints, resolvedFirst, resolvedLast);
+	const bucketPlan = bucketPlanSource.map(bucket => Object.assign({}, bucket, {
+		difficulty: null,
+		blockHeight: null,
+		supply: null,
+		hashrateKhPerMin: null,
+		interestRatePercent: null,
+		netStakeWeight: null,
+		percentStaked: null,
+		expectedStakeTimeSeconds: null,
+		addressCount: null
+	}));
+
+	const rangeStart = bucketPlan[0]?.startTime ?? since ?? resolvedFirst ?? 0;
+	const rangeEnd = bucketPlan[bucketPlan.length - 1]?.endTime ?? resolvedLast ?? rangeStart;
+	const bucketRows = prepare(db, `
+		SELECT bucket_start, difficulty, block_height, supply, hashrate_kh_per_min,
+			interest_rate_percent, net_stake_weight, percent_staked,
+			expected_stake_time_seconds, address_count
+		FROM network_metric_buckets
+		WHERE chain_id = ? AND bucket_start >= ? AND bucket_start <= ?
+		ORDER BY bucket_start ASC
+	`).all(chain, rangeStart, rangeEnd + 3600);
+
+	if (bucketRows.length > 0) {
+		for (const row of bucketRows) {
+			const bucketIndex = findActivityBucketIndex(bucketPlan, toNumber(row.bucket_start));
+			const bucket = bucketPlan[bucketIndex];
+			if (row.difficulty != null) bucket.difficulty = Number(row.difficulty);
+			if (row.block_height != null) bucket.blockHeight = toNumber(row.block_height);
+			if (row.supply != null) bucket.supply = Number(row.supply);
+			if (row.hashrate_kh_per_min != null) bucket.hashrateKhPerMin = Number(row.hashrate_kh_per_min);
+			if (row.interest_rate_percent != null) bucket.interestRatePercent = Number(row.interest_rate_percent);
+			if (row.net_stake_weight != null) bucket.netStakeWeight = Number(row.net_stake_weight);
+			if (row.percent_staked != null) bucket.percentStaked = Number(row.percent_staked);
+			if (row.expected_stake_time_seconds != null) {
+				bucket.expectedStakeTimeSeconds = toNumber(row.expected_stake_time_seconds);
+			}
+			if (row.address_count != null) bucket.addressCount = toNumber(row.address_count);
+		}
+	}
+
+	return {
+		chainId: chain,
+		trusted: bucketRows.length > 0 ? chainHealth.trusted : false,
+		source: getSource(chainHealth, "summary"),
+		since,
+		groupBy,
+		backfillRequired: bucketRows.length === 0,
+		availableSince: resolvedFirst,
+		buckets: bucketPlan.map(mapNetworkMetricBucket)
+	};
+}
+
 function toNumber(value) {
 	return typeof value === "bigint" ? Number(value) : Number(value);
 }
@@ -1651,7 +1898,9 @@ module.exports = {
 	getAddress,
 	getAddressBalanceHistory,
 	getChainActivityHistory,
+	getNetworkMetricHistory,
 	getAddressUtxos,
 	getTransaction,
-	getBlock
+	getBlock,
+	enrichBlockInterestRates
 };

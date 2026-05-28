@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import { CopyButton } from "@/components/explorer/BlockDetail";
+import { CHAIN_EXPLORERS, chainTxPath, type ChainId } from "@/lib/chainDisplay";
 
-export function TxShareActions({ txid }: { txid: string }) {
+export function TxShareActions({ chainId, txid }: { chainId: ChainId; txid: string }) {
   const [shareLabel, setShareLabel] = useState("Share");
+  const chain = CHAIN_EXPLORERS[chainId];
 
   async function handleShare() {
-    const shareUrl = `${window.location.origin}/vrm/tx/${txid}`;
+    const shareUrl = `${window.location.origin}${chainTxPath(chainId, txid)}`;
 
     try {
       if (navigator.share) {
-        await navigator.share({ title: "Verium transaction", url: shareUrl });
+        await navigator.share({ title: `${chain.name} transaction`, url: shareUrl });
         return;
       }
 

@@ -28,7 +28,7 @@ function baseHealth(overrides: Partial<ChainHealth> = {}): ChainHealth {
     sourceLabels: {},
     explorerStatus: {
       label: "Live",
-      message: "Up to date with the chain tip.",
+      message: "Up to date.",
       syncing: false,
       blocksBehind: 0,
     },
@@ -52,8 +52,8 @@ describe("isChainAtTip", () => {
         blocksBehind: 5,
       },
       explorerStatus: {
-        label: "Syncing",
-        message: "5 blocks behind chain tip.",
+        label: "Updating",
+        message: "5 blocks behind the latest block.",
         syncing: true,
         blocksBehind: 5,
       },

@@ -41,14 +41,23 @@ export default async function LeaderboardPage({
   try {
     leaderboard = await getLeaderboard("vrm", { period, sort, limit, offset });
   } catch {
-    return <AlertBanner title="Leaderboard Unavailable">Unable to load VRM leaderboard.</AlertBanner>;
+    return (
+      <AlertBanner title="Leaderboard Unavailable">
+        Unable to load VRM leaderboard.
+      </AlertBanner>
+    );
   }
 
   if (!leaderboard.enabled && leaderboard.message) {
     return (
       <div className="space-y-6">
-        <PageHero title="Verium Leaderboard" subtitle="Transfer activity by period." />
-        <AlertBanner title="Leaderboard Disabled">{formatExplorerUserMessage(leaderboard.message)}</AlertBanner>
+        <PageHero
+          title="Verium Leaderboard"
+          subtitle="Transfer activity by period."
+        />
+        <AlertBanner title="Leaderboard Disabled">
+          {formatExplorerUserMessage(leaderboard.message)}
+        </AlertBanner>
       </div>
     );
   }
@@ -61,7 +70,9 @@ export default async function LeaderboardPage({
       />
       <div className="flex flex-wrap gap-2">
         {filters.map((filter) => {
-          const active = leaderboard.period?.type === filter.period && leaderboard.sort === filter.sort;
+          const active =
+            leaderboard.period?.type === filter.period &&
+            leaderboard.sort === filter.sort;
           return (
             <Link
               key={filter.label}
@@ -75,25 +86,56 @@ export default async function LeaderboardPage({
         })}
       </div>
       <Card>
-        <CardHeader><CardTitle>Activity</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Activity</CardTitle>
+        </CardHeader>
         <CardContent>
           <DataTable
-            headers={["Rank", "Address", "Received", "Sent", "Net", "Tx", "Last Seen"]}
+            headers={[
+              "Rank",
+              "Address",
+              "Received",
+              "Sent",
+              "Net",
+              "Tx",
+              "Last Seen",
+            ]}
             rows={leaderboard.items.map((item) => [
               `#${item.rank}`,
-              <Link key="a" href={`/vrm/address/${item.address}`} className="font-mono text-xs text-accent hover:underline">{item.address}</Link>,
+              <Link
+                key="a"
+                href={`/vrm/address/${item.address}`}
+                className="text-xs text-accent hover:underline"
+              >
+                {item.address}
+              </Link>,
               `${item.received.amount} ${item.received.ticker}`,
               item.sent.amount,
-              <span key="net" className={item.netAtomic.startsWith("-") ? "text-danger" : "text-success"}>{item.net.amount}</span>,
+              <span
+                key="net"
+                className={
+                  item.netAtomic.startsWith("-")
+                    ? "text-danger"
+                    : "text-success"
+                }
+              >
+                {item.net.amount}
+              </span>,
               formatHeight(item.txCount),
               item.lastSeenHeight != null ? (
-                <Link key="ls" href={`/vrm/block/${item.lastSeenHeight}`}>{formatHeight(item.lastSeenHeight)}</Link>
-              ) : "N/A",
+                <Link key="ls" href={`/vrm/block/${item.lastSeenHeight}`}>
+                  {formatHeight(item.lastSeenHeight)}
+                </Link>
+              ) : (
+                "N/A"
+              ),
             ])}
           />
           <PaginationLinks
             basePath="/vrm/leaderboard"
-            paging={leaderboard.paging ?? { limit, offset, total: 0, hasMore: false }}
+            paging={
+              leaderboard.paging ?? { limit, offset, total: 0, hasMore: false }
+            }
             extraParams={{ period, sort }}
           />
         </CardContent>

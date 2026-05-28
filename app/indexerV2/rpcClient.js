@@ -22,6 +22,45 @@ function createRpcClient(credentials) {
 			params
 		});
 
+		return parseSingleResponse(await postJson(body), method);
+	}
+
+	async function batch(requests) {
+		if (!Array.isArray(requests) || requests.length === 0) {
+			return [];
+		}
+
+		requestId++;
+		const body = JSON.stringify(requests.map((entry, index) => ({
+			jsonrpc: "1.0",
+			id: `vericonomy-indexer-${requestId}-${index}`,
+			method: entry.method,
+			params: entry.params || []
+		})));
+
+		const response = await postJson(body);
+		if (!Array.isArray(response.parsed)) {
+			throw new Error("RPC batch returned invalid JSON");
+		}
+
+		const byId = Object.fromEntries(
+			response.parsed.map((entry) => [String(entry.id), entry])
+		);
+
+		return requests.map((entry, index) => {
+			const id = `vericonomy-indexer-${requestId}-${index}`;
+			const item = byId[id];
+			if (!item) {
+				throw new Error(`RPC batch missing response for ${entry.method}`);
+			}
+			if (item.error) {
+				throw new Error(`RPC ${entry.method} failed: ${JSON.stringify(item.error)}`);
+			}
+			return item.result;
+		});
+	}
+
+	async function postJson(body) {
 		const headers = {
 			"Content-Type": "application/json",
 			"Content-Length": Buffer.byteLength(body)
@@ -44,22 +83,26 @@ function createRpcClient(credentials) {
 		try {
 			parsed = JSON.parse(response.body);
 		} catch (err) {
-			throw new Error(`RPC ${method} returned invalid JSON: HTTP ${response.statusCode}`);
+			throw new Error(`RPC returned invalid JSON: HTTP ${response.statusCode}`);
 		}
 
 		if (response.statusCode < 200 || response.statusCode >= 300) {
-			const message = parsed.error ? JSON.stringify(parsed.error) : response.body;
-			throw new Error(`RPC ${method} failed: HTTP ${response.statusCode}: ${message}`);
+			const message = parsed && parsed.error ? JSON.stringify(parsed.error) : response.body;
+			throw new Error(`RPC failed: HTTP ${response.statusCode}: ${message}`);
 		}
 
+		return { parsed, statusCode: response.statusCode, body: response.body };
+	}
+
+	function parseSingleResponse(response, method) {
+		const parsed = response.parsed;
 		if (parsed.error) {
 			throw new Error(`RPC ${method} failed: ${JSON.stringify(parsed.error)}`);
 		}
-
 		return parsed.result;
 	}
 
-	return { call };
+	return { call, batch };
 }
 
 function httpRequest(options, body) {

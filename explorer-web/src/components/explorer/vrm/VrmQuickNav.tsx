@@ -17,9 +17,9 @@ export function VrmQuickNav({ tipBlockHref }: { tipBlockHref: string | null }) {
       />
       <FeatureTile
         title="Latest block"
-        description="Open the current chain tip block and its transactions."
+        description="Open the most recent block and its transactions."
         href={tipBlockHref ?? "/vrm"}
-        hrefLabel={tipBlockHref ? "Open tip block" : "Explorer home"}
+        hrefLabel={tipBlockHref ? "Open latest block" : "Explorer home"}
       />
       <FeatureTile
         title="API reference"

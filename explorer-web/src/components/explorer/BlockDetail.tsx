@@ -1,7 +1,18 @@
 import Link from "next/link";
-import { cn, formatBlockAge, formatDifficulty, formatUnixTime } from "@/lib/utils";
+import {
+  cn,
+  formatBlockAge,
+  formatDifficulty,
+  formatUnixTime,
+} from "@/lib/utils";
 
-export function CopyButton({ value, label = "Copy" }: { value: string; label?: string }) {
+export function CopyButton({
+  value,
+  label = "Copy",
+}: {
+  value: string;
+  label?: string;
+}) {
   return (
     <button
       type="button"
@@ -37,8 +48,12 @@ export function BlockChainNav({
           href={`${chainPrefix}/${previousHash}`}
           className="rounded-md border border-border bg-bg-panel/60 px-3 py-2 text-sm transition hover:bg-bg-panel"
         >
-          <span className="block text-[10px] uppercase tracking-wide text-fg-subtle">Previous</span>
-          <span className="font-mono text-xs text-fg-muted">#{prevHeight?.toLocaleString() ?? "…"}</span>
+          <span className="block text-[10px] uppercase tracking-wide text-fg-subtle">
+            Previous
+          </span>
+          <span className="text-xs text-fg-muted">
+            #{prevHeight?.toLocaleString() ?? "…"}
+          </span>
         </Link>
       ) : (
         <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-fg-subtle">
@@ -47,8 +62,10 @@ export function BlockChainNav({
       )}
 
       <div className="rounded-md border border-accent/30 bg-accent/10 px-3 py-2 text-center">
-        <span className="block text-[10px] uppercase tracking-wide text-accent">Current</span>
-        <span className="font-mono text-lg font-semibold tabular-nums text-fg">
+        <span className="block text-[10px] uppercase tracking-wide text-accent">
+          Current
+        </span>
+        <span className="text-lg font-semibold tabular-nums text-fg">
           #{height.toLocaleString()}
         </span>
       </div>
@@ -58,12 +75,16 @@ export function BlockChainNav({
           href={`${chainPrefix}/${nextHash}`}
           className="rounded-md border border-border bg-bg-panel/60 px-3 py-2 text-right text-sm transition hover:bg-bg-panel"
         >
-          <span className="block text-[10px] uppercase tracking-wide text-fg-subtle">Next</span>
-          <span className="font-mono text-xs text-fg-muted">#{(height + 1).toLocaleString()}</span>
+          <span className="block text-[10px] uppercase tracking-wide text-fg-subtle">
+            Next
+          </span>
+          <span className="text-xs text-fg-muted">
+            #{(height + 1).toLocaleString()}
+          </span>
         </Link>
       ) : (
         <div className="rounded-md border border-dashed border-border px-3 py-2 text-right text-xs text-fg-subtle">
-          Chain tip
+          Latest block
         </div>
       )}
     </nav>
@@ -106,12 +127,14 @@ export function BlockDetailHero({
 
       <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
         <div className="min-w-0">
-          <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">Block height</p>
-          <p className="mt-2 font-mono text-4xl font-semibold tabular-nums tracking-tight text-fg sm:text-[2.75rem] sm:leading-none">
+          <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
+            Block height
+          </p>
+          <p className="mt-2 text-4xl font-semibold tabular-nums tracking-tight text-fg sm:text-[2.75rem] sm:leading-none">
             {height.toLocaleString()}
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <code className="max-w-full truncate rounded-md border border-border/70 bg-bg-panel/50 px-2.5 py-1 font-mono text-xs text-fg-muted">
+            <code className="max-w-full truncate rounded-md border border-border/70 bg-bg-panel/50 px-2.5 py-1 text-xs text-fg-muted">
               {hash}
             </code>
             <CopyButton value={hash} />
@@ -121,7 +144,10 @@ export function BlockDetailHero({
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:min-w-[16rem]">
           {[
             { label: "Transactions", value: txCount.toLocaleString() },
-            { label: "Size", value: size == null ? "—" : `${size.toLocaleString()} B` },
+            {
+              label: "Size",
+              value: size == null ? "—" : `${size.toLocaleString()} B`,
+            },
             { label: "Difficulty", value: formatDifficulty(difficulty) },
           ].map((stat) => (
             <div
@@ -131,7 +157,9 @@ export function BlockDetailHero({
               <p className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
                 {stat.label}
               </p>
-              <p className="mt-1 text-sm font-semibold tabular-nums text-fg">{stat.value}</p>
+              <p className="mt-1 text-sm font-semibold tabular-nums text-fg">
+                {stat.value}
+              </p>
             </div>
           ))}
         </div>
@@ -160,9 +188,16 @@ export function DetailSection({
   flush?: boolean;
 }) {
   return (
-    <section className={cn("rounded-xl border border-border bg-bg-panel shadow-sm", className)}>
+    <section
+      className={cn(
+        "rounded-xl border border-border bg-bg-panel shadow-sm",
+        className,
+      )}
+    >
       <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted">{title}</h2>
+        <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted">
+          {title}
+        </h2>
         {action}
       </div>
       <div className={cn(flush ? "p-0" : "px-5 py-4")}>{children}</div>
@@ -192,13 +227,15 @@ export function EntityHero({
         {meta}
       </div>
       <div className="p-4 sm:p-5">
-        <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">{eyebrow}</p>
-        <h1 className="mt-2 font-mono text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
+        <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
+          {eyebrow}
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
           {title}
         </h1>
         {hash ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <code className="max-w-full break-all rounded-md border border-border/70 bg-bg-panel/50 px-2.5 py-1 font-mono text-xs text-fg-muted">
+            <code className="max-w-full break-all rounded-md border border-border/70 bg-bg-panel/50 px-2.5 py-1 text-xs text-fg-muted">
               {hash}
             </code>
             <CopyButton value={hash} />

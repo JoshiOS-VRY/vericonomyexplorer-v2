@@ -6,7 +6,10 @@ const CACHE_RULES = [
     { pattern: /^\/v1\/home\/network/, maxAge: 120, swr: 300 },
     { pattern: /^\/v1\/home\/market/, maxAge: 120, swr: 300 },
     { pattern: /^\/v1\/[^/]+\/address\//, maxAge: 30, swr: 60 },
-    { pattern: /^\/v1\/[^/]+\/summary/, maxAge: 5, swr: 15 },
+    { pattern: /^\/v1\/[^/]+\/summary/, maxAge: 15, swr: 60 },
+    { pattern: /^\/v1\/[^/]+\/blocks\/latest/, maxAge: 5, swr: 30 },
+    { pattern: /^\/v1\/[^/]+\/insights\//, maxAge: 60, swr: 300 },
+    { pattern: /^\/v1\/[^/]+\/activity-history/, maxAge: 60, swr: 300 },
 ];
 export function applyCacheHeaders(request, reply) {
     if (request.method !== "GET") {

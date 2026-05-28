@@ -1,10 +1,18 @@
 export type SearchQueryKind = "height" | "hash" | "address" | "unknown";
 
+export type SearchEntityType = "block" | "tx" | "address";
+
 export function classifySearchQuery(query: string): SearchQueryKind {
   const trimmed = query.trim();
   if (!trimmed) return "unknown";
   if (/^\d+$/.test(trimmed)) return "height";
   if (/^[a-fA-F0-9]{64}$/.test(trimmed)) return "hash";
+  return "address";
+}
+
+export function entityTypeFromPath(path: string): SearchEntityType {
+  if (path.includes("/tx/")) return "tx";
+  if (path.includes("/block/")) return "block";
   return "address";
 }
 
@@ -14,7 +22,9 @@ export type SearchSuggestion = {
   sublabel?: string;
   path: string;
   chainId: "vrm" | "vrc";
+  entityType: SearchEntityType;
   primary?: boolean;
+  tentative?: boolean;
 };
 
 export function heightSuggestions(height: string): SearchSuggestion[] {
@@ -24,6 +34,7 @@ export function heightSuggestions(height: string): SearchSuggestion[] {
     sublabel: chainId.toUpperCase(),
     path: `/${chainId}/block/${height}`,
     chainId,
+    entityType: "block" as const,
   }));
 }
 
@@ -39,9 +50,11 @@ export function fallbackSuggestions(
       return {
         id: `${chainId}-block-${trimmed}`,
         label: `Block #${trimmed}`,
-        sublabel: chainId.toUpperCase(),
+        sublabel: `${chainId.toUpperCase()} · try`,
         path: `/${chainId}/block/${trimmed}`,
         chainId,
+        entityType: "block" as const,
+        tentative: true,
       };
     }
     if (kind === "hash") {
@@ -51,14 +64,18 @@ export function fallbackSuggestions(
         sublabel: `${chainId.toUpperCase()} · tx or block`,
         path: `/${chainId}/tx/${trimmed}`,
         chainId,
+        entityType: "tx" as const,
+        tentative: true,
       };
     }
     return {
       id: `${chainId}-addr-${trimmed}`,
       label: trimmed.length > 20 ? `${trimmed.slice(0, 10)}…${trimmed.slice(-6)}` : trimmed,
-      sublabel: `${chainId.toUpperCase()} address`,
+      sublabel: `${chainId.toUpperCase()} address · try`,
       path: `/${chainId}/address/${encodeURIComponent(trimmed)}`,
       chainId,
+      entityType: "address" as const,
+      tentative: true,
     };
   });
 }
@@ -74,6 +91,7 @@ export function recentBlockSuggestions(
     sublabel: `${chainId.toUpperCase()} · recent`,
     path: `/${chainId}/block/${block.height}`,
     chainId,
+    entityType: "block" as const,
   }));
 }
 
@@ -92,6 +110,7 @@ export function mergeSearchResults(
       sublabel: "Verium",
       path: vrmPath,
       chainId: "vrm",
+      entityType: entityTypeFromPath(vrmPath),
       primary: vrcPath == null,
     });
   }
@@ -102,12 +121,13 @@ export function mergeSearchResults(
       sublabel: "VeriCoin",
       path: vrcPath,
       chainId: "vrc",
+      entityType: entityTypeFromPath(vrcPath),
       primary: vrmPath == null,
     });
   }
 
   if (hits.length === 0) {
-    return fallbackSuggestions(query, kind);
+    return [];
   }
 
   if (hits.length === 1) {

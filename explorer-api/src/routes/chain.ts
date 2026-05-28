@@ -2,20 +2,23 @@ import type { FastifyInstance } from "fastify";
 import {
   cacheKey,
   createSwrCache,
+  refreshCacheInBackground,
   swrFetch,
   type CacheValue,
 } from "../cache/swrCache.js";
+import { registerChainScopedCache, registerGlobalCache } from "../cache/registry.js";
 import {
-  invalidateAllTipCaches,
-  registerChainScopedCache,
-  registerGlobalCache,
-} from "../cache/registry.js";
+  registerChainTipRefresh,
+  registerGlobalTipRefresh,
+  refreshOnTip,
+} from "../cache/tipRefresh.js";
 import {
   fetchChainHealth,
   fetchChainActivityHistory,
   fetchChainSummary,
   fetchIndexerHealth,
   fetchLandingData,
+  fetchLatestBlocks,
 } from "../data/legacy.js";
 import { fetchVrmDashboardBundle } from "../data/vrmDashboard.js";
 import { onAnyTip } from "../live/brokers.js";
@@ -24,11 +27,22 @@ import { homeCache, homeShellCache } from "./home.js";
 
 const summaryCache = createSwrCache({
   max: 32,
-  ttlMs: 5_000,
+  ttlMs: 30_000,
   fetch: async (key, signal) => {
     const chainId = key.split(":")[0] as ChainId;
     if (signal.aborted) throw new Error("aborted");
     return (await fetchChainSummary(chainId)) as CacheValue;
+  },
+});
+
+const latestBlocksCache = createSwrCache({
+  max: 32,
+  ttlMs: 5_000,
+  fetch: async (key, signal) => {
+    const chainId = key.split(":")[0] as ChainId;
+    if (signal.aborted) throw new Error("aborted");
+    const blocks = await fetchLatestBlocks(chainId);
+    return { blocks } as CacheValue;
   },
 });
 
@@ -84,6 +98,7 @@ const activityHistoryCache = createSwrCache({
 });
 
 registerChainScopedCache(summaryCache);
+registerChainScopedCache(latestBlocksCache);
 registerChainScopedCache(activityHistoryCache);
 registerChainScopedCache(chainHealthCache);
 registerGlobalCache(landingCache);
@@ -92,9 +107,23 @@ registerGlobalCache(healthCache);
 registerGlobalCache(homeCache);
 registerGlobalCache(homeShellCache);
 
+registerChainTipRefresh(async (chainId) => {
+  await Promise.allSettled([
+    refreshCacheInBackground(summaryCache, cacheKey(chainId, "summary")),
+    refreshCacheInBackground(latestBlocksCache, cacheKey(chainId, "latest-blocks")),
+    refreshCacheInBackground(chainHealthCache, cacheKey(chainId, "health")),
+  ]);
+});
+
+registerGlobalTipRefresh("landing", () => refreshCacheInBackground(landingCache, "landing"));
+registerGlobalTipRefresh("dashboard", () =>
+  refreshCacheInBackground(dashboardCache, "dashboard"),
+);
+registerGlobalTipRefresh("health", () => refreshCacheInBackground(healthCache, "health"));
+
 export function registerCacheInvalidation(): void {
   onAnyTip((chainId) => {
-    invalidateAllTipCaches(chainId);
+    refreshOnTip(chainId);
   });
 }
 
@@ -152,7 +181,12 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
     if (!chainId) {
       return reply.code(400).send({ error: "Invalid chain id" });
     }
-    const summary = await summaryCache.fetch(cacheKey(chainId, "summary"));
-    return summary?.latestBlocks ?? [];
+
+    const cached = await swrFetch(
+      latestBlocksCache,
+      cacheKey(chainId, "latest-blocks"),
+      async () => ({ blocks: await fetchLatestBlocks(chainId) }),
+    );
+    return (cached as { blocks?: unknown[] }).blocks ?? [];
   });
 }

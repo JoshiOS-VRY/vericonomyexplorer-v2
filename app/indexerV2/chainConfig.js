@@ -38,14 +38,22 @@ function getChainConfig(chainId, configPath) {
 	return chain;
 }
 
+function resolveRpcHost(rpc) {
+	if (rpc.hostEnv && process.env[rpc.hostEnv]) {
+		return process.env[rpc.hostEnv];
+	}
+	return rpc.host || "127.0.0.1";
+}
+
 function getRpcCredentials(chain) {
 	const rpc = chain.rpc || {};
+	const host = resolveRpcHost(rpc);
 	const cookiePath = rpc.cookiePathEnv ? process.env[rpc.cookiePathEnv] : null;
 
 	if (cookiePath && fs.existsSync(cookiePath)) {
 		const cookie = fs.readFileSync(cookiePath, "utf8").trim().split(":", 2);
 		return {
-			host: rpc.host || "127.0.0.1",
+			host,
 			port: rpc.port,
 			username: cookie[0],
 			password: cookie[1],
@@ -54,7 +62,7 @@ function getRpcCredentials(chain) {
 	}
 
 	return {
-		host: rpc.host || "127.0.0.1",
+		host,
 		port: rpc.port,
 		username: rpc.usernameEnv ? process.env[rpc.usernameEnv] : rpc.username,
 		password: rpc.passwordEnv ? process.env[rpc.passwordEnv] : rpc.password,
@@ -66,6 +74,7 @@ module.exports = {
 	getConfigPath,
 	loadChainsConfig,
 	getChainConfig,
+	resolveRpcHost,
 	getRpcCredentials
 };
 

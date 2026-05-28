@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { SearchForm } from "@/components/explorer/SearchForm";
 import { StatusDot, formatHeight } from "@/components/explorer/ExplorerUi";
 import type { ChainHealth, IndexedBlock } from "@/lib/api/types";
 import { CHAIN_EXPLORERS, isChainLive } from "@/lib/chainDisplay";
@@ -75,7 +74,7 @@ export function ChainExplorerHero({
                 {chainHeight != null ? (
                   <span
                     className={cn(
-                      "font-mono text-sm font-semibold tabular-nums text-fg",
+                      "text-sm font-semibold tabular-nums text-fg",
                       heightPulse && "live-height-pulse",
                     )}
                   >

@@ -27,6 +27,14 @@ export function safeCacheDelete(cache, key) {
         /* entry may be mid-fetch (lru-cache throws "deleted") */
     }
 }
+export async function refreshCacheInBackground(cache, key) {
+    try {
+        await cache.fetch(key, { forceRefresh: true });
+    }
+    catch {
+        /* background refresh must not throw */
+    }
+}
 export async function swrFetch(cache, key, fallback) {
     try {
         const data = await cache.fetch(key);

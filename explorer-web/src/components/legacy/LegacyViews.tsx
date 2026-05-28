@@ -16,15 +16,19 @@ export function LegacyJsonView({
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">{title}</h1>
-        {subtitle ? <p className="mt-1 text-sm text-fg-muted">{subtitle}</p> : null}
+        {subtitle ? (
+          <p className="mt-1 text-sm text-fg-muted">{subtitle}</p>
+        ) : null}
       </div>
-      {error ? <AlertBanner title="Data Unavailable">{error}</AlertBanner> : null}
+      {error ? (
+        <AlertBanner title="Data Unavailable">{error}</AlertBanner>
+      ) : null}
       <Card>
         <CardHeader>
           <CardTitle>Response</CardTitle>
         </CardHeader>
         <CardContent>
-          <pre className="overflow-x-auto rounded-lg border border-border bg-bg-subtle p-4 font-mono text-xs">
+          <pre className="overflow-x-auto rounded-lg border border-border bg-bg-subtle p-4 text-xs">
             {JSON.stringify(data ?? {}, null, 2)}
           </pre>
         </CardContent>

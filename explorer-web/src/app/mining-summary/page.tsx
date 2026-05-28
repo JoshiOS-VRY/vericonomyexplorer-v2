@@ -12,22 +12,29 @@ export default async function MiningSummaryPage() {
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold">Mining Summary</h1>
         <Card>
-          <CardHeader><CardTitle>Network</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Network</CardTitle>
+          </CardHeader>
           <CardContent>
             <SummaryGrid
               items={Object.entries(summary)
                 .slice(0, 8)
                 .map(([key, value]) => ({
                   label: key,
-                  value: typeof value === "object" ? JSON.stringify(value) : String(value),
+                  value:
+                    typeof value === "object"
+                      ? JSON.stringify(value)
+                      : String(value),
                 }))}
             />
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle>Next Block Template</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Next Block Template</CardTitle>
+          </CardHeader>
           <CardContent>
-            <pre className="overflow-x-auto rounded-lg border border-border bg-bg-subtle p-4 font-mono text-xs">
+            <pre className="overflow-x-auto rounded-lg border border-border bg-bg-subtle p-4 text-xs">
               {JSON.stringify(nextBlock, null, 2)}
             </pre>
           </CardContent>
@@ -37,7 +44,9 @@ export default async function MiningSummaryPage() {
   } catch (error) {
     return (
       <AlertBanner title="Mining Summary Unavailable">
-        {error instanceof Error ? error.message : "Unable to load mining summary."}
+        {error instanceof Error
+          ? error.message
+          : "Unable to load mining summary."}
       </AlertBanner>
     );
   }

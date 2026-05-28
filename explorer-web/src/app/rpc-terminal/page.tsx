@@ -34,24 +34,26 @@ export default function RpcTerminalPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">RPC Terminal</h1>
       <Card>
-        <CardHeader><CardTitle>Execute RPC</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle>Execute RPC</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-4">
           <input
             value={method}
             onChange={(e) => setMethod(e.target.value)}
-            className="h-9 w-full rounded-md border border-border bg-bg-subtle px-3 font-mono text-sm"
+            className="h-9 w-full rounded-md border border-border bg-bg-subtle px-3 text-sm"
             placeholder="method"
           />
           <textarea
             value={params}
             onChange={(e) => setParams(e.target.value)}
-            className="min-h-24 w-full rounded-md border border-border bg-bg-subtle px-3 py-2 font-mono text-sm"
+            className="min-h-24 w-full rounded-md border border-border bg-bg-subtle px-3 py-2 text-sm"
             placeholder='["param"]'
           />
           <Button onClick={runRpc} disabled={loading}>
             {loading ? "Running..." : "Run"}
           </Button>
-          <pre className="overflow-x-auto rounded-lg border border-border bg-bg-subtle p-4 font-mono text-xs">
+          <pre className="overflow-x-auto rounded-lg border border-border bg-bg-subtle p-4 text-xs">
             {result || "No result yet."}
           </pre>
         </CardContent>

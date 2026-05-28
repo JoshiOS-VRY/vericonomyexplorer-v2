@@ -1,6 +1,12 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
-import { cn, ellipsizeMiddle, formatBlockAge, formatNumber, formatUnixTime } from "@/lib/utils";
+import {
+  cn,
+  ellipsizeMiddle,
+  formatBlockAge,
+  formatNumber,
+  formatUnixTime,
+} from "@/lib/utils";
 import type { SourceInfo } from "@/lib/api/types";
 import { formatExplorerSourceLabel } from "@/lib/explorerCopy";
 
@@ -26,9 +32,19 @@ export function StatusDot({
     neutral: "bg-fg-subtle",
   };
   return (
-    <span className={cn("relative inline-flex h-2 w-2 shrink-0 rounded-full", colors[tone])}>
+    <span
+      className={cn(
+        "relative inline-flex h-2 w-2 shrink-0 rounded-full",
+        colors[tone],
+      )}
+    >
       {pulse ? (
-        <span className={cn("absolute inset-0 animate-ping rounded-full opacity-60", colors[tone])} />
+        <span
+          className={cn(
+            "absolute inset-0 animate-ping rounded-full opacity-60",
+            colors[tone],
+          )}
+        />
       ) : null}
     </span>
   );
@@ -59,7 +75,12 @@ export function AlertBanner({
 export function MetricStrip({
   items,
 }: {
-  items: { label: string; value: React.ReactNode; hint?: string; className?: string }[];
+  items: {
+    label: string;
+    value: React.ReactNode;
+    hint?: string;
+    className?: string;
+  }[];
 }) {
   return (
     <div className="grid grid-cols-2 divide-y divide-border/70 border-t border-border/70 bg-bg-panel/30 sm:grid-cols-3 lg:grid-cols-6 lg:divide-y-0 lg:divide-x">
@@ -105,14 +126,21 @@ export function ChainCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logo} alt="" className="h-8 w-8 rounded-lg object-contain" />
+          <img
+            src={logo}
+            alt=""
+            className="h-8 w-8 rounded-lg object-contain"
+          />
           <div>
             <h3 className="text-sm font-semibold text-fg">{title}</h3>
             <div className="mt-1">{badge}</div>
           </div>
         </div>
         {href ? (
-          <Link href={href} className="explorer-link text-xs font-medium underline underline-offset-2">
+          <Link
+            href={href}
+            className="explorer-link text-xs font-medium underline underline-offset-2"
+          >
             Open
           </Link>
         ) : null}
@@ -143,7 +171,9 @@ export function FeatureTile({
         </h3>
         {badge}
       </div>
-      <p className="mt-3 text-sm leading-relaxed text-fg-muted">{description}</p>
+      <p className="mt-3 text-sm leading-relaxed text-fg-muted">
+        {description}
+      </p>
       <Link
         href={href}
         className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent underline-offset-2 hover:underline"
@@ -188,11 +218,16 @@ export function SummaryGrid({
   return (
     <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((item) => (
-        <div key={item.label} className="rounded-md border border-border bg-bg-subtle px-3 py-2.5">
+        <div
+          key={item.label}
+          className="rounded-md border border-border bg-bg-subtle px-3 py-2.5"
+        >
           <dt className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
             {item.label}
           </dt>
-          <dd className="mt-1 text-sm font-medium tabular-nums text-fg">{item.value}</dd>
+          <dd className="mt-1 text-sm font-medium tabular-nums text-fg">
+            {item.value}
+          </dd>
         </div>
       ))}
     </dl>
@@ -207,12 +242,24 @@ export function TxTypeBadge({
   isCoinstake?: boolean;
 }) {
   if (isCoinbase) {
-    return <Badge tone="accent" className="font-mono text-[10px] uppercase tracking-wide">coinbase</Badge>;
+    return (
+      <Badge tone="accent" className="text-[10px] uppercase tracking-wide">
+        coinbase
+      </Badge>
+    );
   }
   if (isCoinstake) {
-    return <Badge tone="success" className="font-mono text-[10px] uppercase tracking-wide">coinstake</Badge>;
+    return (
+      <Badge tone="success" className="text-[10px] uppercase tracking-wide">
+        coinstake
+      </Badge>
+    );
   }
-  return <Badge tone="neutral" className="font-mono text-[10px] uppercase tracking-wide">transfer</Badge>;
+  return (
+    <Badge tone="neutral" className="text-[10px] uppercase tracking-wide">
+      transfer
+    </Badge>
+  );
 }
 
 export function PaginationLinks({
@@ -334,7 +381,11 @@ export function TimeCell({
   if (!time) return <span className="text-xs text-fg-subtle">—</span>;
 
   return (
-    <span className="text-xs text-fg-muted" suppressHydrationWarning title={absolute ? formatUnixTime(time) : undefined}>
+    <span
+      className="text-xs text-fg-muted"
+      suppressHydrationWarning
+      title={absolute ? formatUnixTime(time) : undefined}
+    >
       {formatBlockAge(time)}
     </span>
   );
@@ -365,10 +416,12 @@ export function RankList({
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg-subtle text-xs font-semibold text-fg-subtle">
             {item.rank}
           </span>
-          <strong className="flex-1 truncate font-mono text-xs text-fg">
+          <strong className="flex-1 truncate text-xs text-fg">
             {item.label}
           </strong>
-          <em className="text-sm not-italic tabular-nums text-fg-muted">{item.value}</em>
+          <em className="text-sm not-italic tabular-nums text-fg-muted">
+            {item.value}
+          </em>
         </Link>
       ))}
     </div>
@@ -396,9 +449,13 @@ export function PageHero({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           {eyebrow ? (
-            <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">{eyebrow}</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
+              {eyebrow}
+            </p>
           ) : null}
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-fg">{title}</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-fg">
+            {title}
+          </h1>
           {subtitle ? (
             <p className="mt-2 max-w-2xl text-sm text-fg-muted">{subtitle}</p>
           ) : null}
@@ -439,9 +496,7 @@ export function WalletHero({
         </div>
         {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
       </div>
-      {metrics && metrics.length > 0 ? (
-        <MetricStrip items={metrics} />
-      ) : null}
+      {metrics && metrics.length > 0 ? <MetricStrip items={metrics} /> : null}
     </section>
   );
 }

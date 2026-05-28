@@ -1,4 +1,8 @@
 import type { ChainId } from "../types.js";
+export interface PriceHistoryPoint {
+    time: number;
+    value: number;
+}
 export interface ChainMarket {
     usd: number | null;
     btc: number | null;
@@ -8,10 +12,7 @@ export interface ChainMarket {
     circulatingSupply: number | null;
     source: "livecoinwatch" | "coingecko" | "computed" | "unavailable";
     updatedAt: string | null;
-    priceHistory24h: {
-        time: number;
-        value: number;
-    }[];
+    priceHistory24h: PriceHistoryPoint[];
 }
 export interface VrmNetworkStats {
     hashrateKhPerMin: number | null;

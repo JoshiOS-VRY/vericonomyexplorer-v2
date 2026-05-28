@@ -72,6 +72,7 @@ export interface IndexedBlock {
   outputCount?: number | null;
   extractedBy?: string | null;
   extractedByAddress?: string | null;
+  interestRatePercent?: number | null;
 }
 
 export interface IndexedTransaction {

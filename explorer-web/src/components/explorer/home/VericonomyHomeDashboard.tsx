@@ -30,6 +30,7 @@ import {
   getChainTipHeight,
   isChainLive,
 } from "@/lib/chainDisplay";
+import { formatExplorerUserMessage } from "@/lib/explorerCopy";
 import { cn, ellipsizeMiddle } from "@/lib/utils";
 
 interface VericonomyHomeDashboardProps {
@@ -108,16 +109,6 @@ export function VericonomyHomeDashboard({
           blocks={live.vrc.latestBlocks}
           newBlockHashes={live.vrc.newBlockHashes}
         />
-      </div>
-
-      <BinaryChainActivity
-        vrmSummary={live.vrm.summary}
-        vrcSummary={live.vrc.summary}
-      />
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <ChainRichlistPanel richlist={initialHome.vrm.richlist} />
-        <ChainRichlistPanel richlist={initialHome.vrc.richlist} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -246,7 +237,9 @@ function ChainRichlistPanel({ richlist }: { richlist: RichlistResult }) {
   return (
     <BcPanel title={`Top ${config.ticker} balances`} action={action}>
       {!richlist.enabled && richlist.message ? (
-        <p className={cn("text-sm text-fg-muted")}>{richlist.message}</p>
+        <p className={cn("text-sm text-fg-muted")}>
+          {formatExplorerUserMessage(richlist.message)}
+        </p>
       ) : richlist.items.length === 0 ? (
         <p className="text-sm text-fg-muted">No ranked balances yet.</p>
       ) : config.exploreHref ? (
@@ -268,7 +261,7 @@ function ChainRichlistPanel({ richlist }: { richlist: RichlistResult }) {
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg-subtle text-xs font-semibold text-fg-subtle">
                 {item.rank}
               </span>
-              <strong className="flex-1 truncate font-mono text-xs text-fg">
+              <strong className="flex-1 truncate text-xs text-fg">
                 {ellipsizeMiddle(item.address, 18)}
               </strong>
               <em className="text-sm not-italic tabular-nums text-fg-muted">

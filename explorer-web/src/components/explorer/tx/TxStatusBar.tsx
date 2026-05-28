@@ -1,14 +1,22 @@
 import Link from "next/link";
-import { SourceBadge, TimeCell, formatHeight } from "@/components/explorer/ExplorerUi";
+import {
+  SourceBadge,
+  TimeCell,
+  formatHeight,
+} from "@/components/explorer/ExplorerUi";
 import type { TransactionResult } from "@/lib/api/types";
+import { chainBlockPath, type ChainId } from "@/lib/chainDisplay";
+import { formatExplorerUserMessage } from "@/lib/explorerCopy";
 import { formatConfirmationLabel } from "@/lib/txLabels";
 import { cn } from "@/lib/utils";
 
 export function TxStatusBar({
   result,
+  chainId,
   shareActions,
 }: {
   result: TransactionResult;
+  chainId: ChainId;
   shareActions?: React.ReactNode;
 }) {
   const tx = result.transaction!;
@@ -35,12 +43,18 @@ export function TxStatusBar({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border/70 px-4 py-3 text-xs text-fg-muted sm:px-5">
         <span>
           Included in{" "}
-          <Link href={`/vrm/block/${tx.blockHeight}`} className="font-semibold text-accent hover:underline">
+          <Link
+            href={chainBlockPath(chainId, tx.blockHeight)}
+            className="font-semibold text-accent hover:underline"
+          >
             block {formatHeight(tx.blockHeight)}
           </Link>
         </span>
         <span>
-          Position <span className="font-mono tabular-nums text-fg">{formatHeight(tx.txIndex)}</span>
+          Position{" "}
+          <span className="tabular-nums text-fg">
+            {formatHeight(tx.txIndex)}
+          </span>
         </span>
         <span>
           <TimeCell time={tx.time} absolute />
@@ -48,8 +62,12 @@ export function TxStatusBar({
       </div>
 
       {result.trusted === false && result.source.message ? (
-        <div className={cn("border-t border-warning/20 bg-warning/5 px-4 py-2.5 text-xs text-warning sm:px-5")}>
-          {result.source.message}
+        <div
+          className={cn(
+            "border-t border-warning/20 bg-warning/5 px-4 py-2.5 text-xs text-warning sm:px-5",
+          )}
+        >
+          {formatExplorerUserMessage(result.source.message)}
         </div>
       ) : null}
     </section>
