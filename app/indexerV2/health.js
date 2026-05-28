@@ -6,6 +6,17 @@ const defaultOptions = {
 	tipThreshold: 10
 };
 
+const chainHealthCache = new Map();
+
+function getHealthCacheTtlMs() {
+	const configured = Number(process.env.VCEXP_CHAIN_HEALTH_CACHE_MS ?? 60_000);
+	return Number.isFinite(configured) && configured > 0 ? configured : 60_000;
+}
+
+function cloneChainHealth(value) {
+	return JSON.parse(JSON.stringify(value));
+}
+
 function getIndexerHealth(options = {}) {
 	const db = options.db || dbModule.openDatabase();
 	const chains = db.prepare(`
@@ -32,12 +43,126 @@ function getIndexerHealth(options = {}) {
 		chains: chains.map(chain => getChainHealth(chain.id, {
 			db,
 			chain,
-			tipThreshold: getTipThreshold(options)
+			tipThreshold: getTipThreshold(options),
+			fullHealth: true
 		}))
 	};
 }
 
 function getChainHealth(chainId, options = {}) {
+	const lite = options.fullHealth !== true;
+	const cacheKey = `${chainId}:${lite ? "lite" : "full"}`;
+	const bypassCache = options.bypassHealthCache === true;
+	const ttlMs = getHealthCacheTtlMs();
+
+	if (!bypassCache) {
+		const cached = chainHealthCache.get(cacheKey);
+		if (cached && Date.now() - cached.at < ttlMs) {
+			return cloneChainHealth(cached.value);
+		}
+	}
+
+	const value = lite
+		? computeChainHealthLite(chainId, options)
+		: computeChainHealth(chainId, options);
+
+	if (!bypassCache) {
+		chainHealthCache.set(cacheKey, { at: Date.now(), value });
+	}
+
+	return cloneChainHealth(value);
+}
+
+function computeChainHealthLite(chainId, options = {}) {
+	const db = options.db || dbModule.openDatabase();
+	const tipThreshold = getTipThreshold(options);
+	const chain = options.chain || getChainRow(db, chainId);
+	const syncStatus = chain ? chain.status : null;
+	const indexed = syncStatus === "indexed";
+
+	const bestRpcHeight = toNullableNumber(chain ? chain.best_rpc_height : null);
+	const lastIndexedHeight = toNullableNumber(chain ? chain.last_indexed_height : null);
+	const minIndexedHeight = lastIndexedHeight !== null ? 0 : null;
+	const maxIndexedHeight = lastIndexedHeight;
+	const indexedBlockCount = lastIndexedHeight !== null ? lastIndexedHeight + 1 : 0;
+	const expectedBlockCount = indexedBlockCount;
+	const blocksBehind = bestRpcHeight === null || lastIndexedHeight === null
+		? null
+		: Math.max(0, bestRpcHeight - lastIndexedHeight);
+
+	const checks = {
+		hasBlocks: indexedBlockCount > 0,
+		startsAtGenesis: indexed && minIndexedHeight === 0,
+		noHeightGaps: indexed,
+		noUnresolvedSpends: indexed,
+		hasRpcTip: bestRpcHeight !== null,
+		nearTip: blocksBehind !== null && blocksBehind <= tipThreshold,
+		consistentTip: indexed && (blocksBehind === null || blocksBehind === 0)
+	};
+
+	const classification = indexed
+		? (blocksBehind === null || blocksBehind <= tipThreshold
+			? {
+				status: "trusted",
+				trustLevel: "full",
+				message: "Index is up to date.",
+				reasons: []
+			}
+			: {
+				status: "syncing",
+				trustLevel: "historical",
+				message: "Historical index available; catching up to tip.",
+				reasons: ["Indexer is behind the RPC tip."]
+			})
+		: classify(checks, {
+			indexedBlockCount,
+			bestRpcHeight,
+			blocksBehind
+		});
+
+	return {
+		id: chainId,
+		ticker: chain ? chain.ticker : chainId.toUpperCase(),
+		name: chain ? chain.name : chainId,
+		consensus: chain ? chain.consensus : null,
+		status: classification.status,
+		trusted: classification.status === "trusted",
+		trustLevel: classification.trustLevel,
+		message: classification.message,
+		reasons: classification.reasons,
+		checks,
+		heights: {
+			bestRpcHeight,
+			minIndexedHeight,
+			maxIndexedHeight,
+			lastIndexedHeight,
+			blocksBehind,
+			tipThreshold
+		},
+		counts: {
+			indexedBlockCount,
+			expectedBlockCount,
+			gapCount: 0,
+			unresolvedSpendCount: 0,
+			addressCount: 0
+		},
+		syncState: {
+			status: chain ? chain.status : null,
+			statusMessage: chain ? chain.status_message : null,
+			updatedAt: toNullableNumber(chain ? chain.updated_at : null),
+			lastIndexedHash: chain ? chain.last_indexed_hash : null
+		},
+		sourceLabels: {
+			blocks: "rpc+index",
+			transactions: chainId === "vrm" ? "index-required" : "rpc-or-index",
+			addressBalances: "index",
+			richlist: "index",
+			leaderboards: "index"
+		}
+	};
+}
+
+function computeChainHealth(chainId, options = {}) {
 	const db = options.db || dbModule.openDatabase();
 	const tipThreshold = getTipThreshold(options);
 	const chain = options.chain || getChainRow(db, chainId);
@@ -144,19 +269,38 @@ function getChainRow(db, chainId) {
 }
 
 function getBlockStats(db, chainId) {
-	const row = db.prepare(`
-		SELECT
-			COUNT(*) AS block_count,
-			MIN(height) AS min_height,
-			MAX(height) AS max_height
+	const bounds = db.prepare(`
+		SELECT MIN(height) AS min_height, MAX(height) AS max_height
 		FROM blocks
 		WHERE chain_id = ? AND status = 'main'
 	`).get(chainId);
 
+	const minHeight = toNullableNumber(bounds.min_height);
+	const maxHeight = toNullableNumber(bounds.max_height);
+
+	if (minHeight === null || maxHeight === null) {
+		return {
+			blockCount: 0,
+			minHeight: null,
+			maxHeight: null
+		};
+	}
+
+	let blockCount;
+	if (minHeight === 0) {
+		blockCount = maxHeight + 1;
+	} else {
+		blockCount = toNumber(db.prepare(`
+			SELECT COUNT(*) AS block_count
+			FROM blocks
+			WHERE chain_id = ? AND status = 'main'
+		`).get(chainId).block_count);
+	}
+
 	return {
-		blockCount: toNumber(row.block_count),
-		minHeight: toNullableNumber(row.min_height),
-		maxHeight: toNullableNumber(row.max_height)
+		blockCount,
+		minHeight,
+		maxHeight
 	};
 }
 

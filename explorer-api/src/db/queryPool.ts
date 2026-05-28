@@ -35,7 +35,7 @@ function defaultWorkerCount(): number {
     return configured;
   }
 
-  return Math.min(Math.max(1, os.cpus().length), 4);
+  return Math.min(Math.max(2, os.cpus().length * 2), 8);
 }
 
 const workerCount = defaultWorkerCount();

@@ -78,7 +78,6 @@ export async function getVrmDashboard(): Promise<VrmDashboardPayload> {
     leaderboard: parseOrThrow(leaderboardSchema, data.leaderboard) as unknown as LeaderboardResult,
     network: data.network,
     market: data.market,
-    activityHistory: data.activityHistory as ChainActivityHistoryResult,
     fetchedAt: data.fetchedAt,
   };
 }
@@ -140,11 +139,14 @@ export async function getLeaderboard(
 export async function getAddress(
   chainId: string,
   address: string,
-  params: { limit?: number; offset?: number } = {},
+  params: { limit?: number; offset?: number; includeRank?: boolean } = {},
 ): Promise<AddressResult> {
   const search = new URLSearchParams();
   if (params.limit != null) search.set("limit", String(params.limit));
   if (params.offset != null) search.set("offset", String(params.offset));
+  if (params.includeRank != null) {
+    search.set("includeRank", params.includeRank ? "1" : "0");
+  }
   const qs = search.toString();
   return v1Fetch<AddressResult>(
     `/${chainId}/address/${encodeURIComponent(address)}${qs ? `?${qs}` : ""}`,

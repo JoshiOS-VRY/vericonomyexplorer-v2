@@ -19,6 +19,21 @@ function getDatabasePath() {
 	return process.env.VCEXP_INDEXER_SQLITE_PATH || process.env.BTCEXP_INDEXER_SQLITE_PATH || getDefaultPath();
 }
 
+function applyReadPragmas(targetDb) {
+	const cacheMb = Number(process.env.VCEXP_SQLITE_CACHE_MB ?? 256);
+	if (Number.isFinite(cacheMb) && cacheMb > 0) {
+		targetDb.pragma(`cache_size = -${Math.round(cacheMb * 1024)}`);
+	}
+
+	const mmapMb = Number(process.env.VCEXP_SQLITE_MMAP_MB ?? 256);
+	if (Number.isFinite(mmapMb) && mmapMb > 0) {
+		targetDb.pragma(`mmap_size = ${Math.round(mmapMb * 1024 * 1024)}`);
+	}
+
+	targetDb.pragma("temp_store = MEMORY");
+	targetDb.pragma("busy_timeout = 10000");
+}
+
 function openDatabase(dbPath = getDatabasePath()) {
 	if (db) {
 		return db;
@@ -164,6 +179,7 @@ module.exports = {
 	openDatabase,
 	closeDatabase,
 	getDatabasePath,
+	applyReadPragmas,
 	getWalSizeMb,
 	maybeCheckpointWal,
 	getStatus

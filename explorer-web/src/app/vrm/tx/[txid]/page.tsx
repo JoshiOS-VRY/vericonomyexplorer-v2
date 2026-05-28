@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import Link from "next/link";
 import {
   AlertBanner,
   formatHeight,
@@ -10,7 +10,7 @@ import { TxAdvancedPanel } from "@/components/explorer/tx/TxAdvancedPanel";
 import { TxBlockNav } from "@/components/explorer/tx/TxBlockNav";
 import { TxFlowDiagram } from "@/components/explorer/tx/TxFlowDiagram";
 import { TxMetricStrip } from "@/components/explorer/tx/TxMetricStrip";
-import { TxRelatedActivitySection } from "@/components/explorer/tx/TxRelatedActivitySection";
+import { TxRelatedActivityClient } from "@/components/explorer/tx/TxRelatedActivityClient";
 import { TxShareActions } from "@/components/explorer/tx/TxShareActions";
 import { TxStatusBar } from "@/components/explorer/tx/TxStatusBar";
 import { getTransaction } from "@/lib/api/indexer";
@@ -70,9 +70,7 @@ export default async function TransactionPage({
       <TxAddressStory events={result.addressEvents} />
       <TxBlockNav result={result} />
       <TxAdvancedPanel result={result} />
-      <Suspense fallback={null}>
-        <TxRelatedActivitySection chainId="vrm" txid={tx.txid} result={result} />
-      </Suspense>
+      <TxRelatedActivityClient chainId="vrm" txid={tx.txid} result={result} />
     </div>
   );
 }

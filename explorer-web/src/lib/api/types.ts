@@ -281,9 +281,9 @@ export interface VrmDashboardPayload {
   summary: ChainSummary;
   richlist: RichlistResult;
   leaderboard: LeaderboardResult;
-  network: VrmNetworkStats;
-  market: ChainMarket;
-  activityHistory: ChainActivityHistoryResult;
+  network?: VrmNetworkStats;
+  market?: ChainMarket;
+  activityHistory?: ChainActivityHistoryResult;
   fetchedAt?: string;
 }
 

@@ -217,6 +217,8 @@ const indexes = [
 	"CREATE INDEX IF NOT EXISTS idx_vout_addresses_chain_address ON vout_addresses(chain_id, address);",
 	"CREATE INDEX IF NOT EXISTS idx_vins_chain_prevout ON vins(chain_id, prev_txid, prev_vout);",
 	"CREATE INDEX IF NOT EXISTS idx_vins_chain_address ON vins(chain_id, address);",
+	"CREATE INDEX IF NOT EXISTS idx_vins_chain_unresolved ON vins(chain_id) WHERE resolved = 0 AND source != 'coinbase';",
+	"CREATE INDEX IF NOT EXISTS idx_address_events_chain_address_txid ON address_events(chain_id, address, txid);",
 	"CREATE INDEX IF NOT EXISTS idx_address_events_chain_address_height ON address_events(chain_id, address, block_height DESC);",
 	"CREATE INDEX IF NOT EXISTS idx_address_events_chain_height ON address_events(chain_id, block_height DESC);",
 	"CREATE INDEX IF NOT EXISTS idx_address_events_chain_address_time ON address_events(chain_id, address, time ASC);",

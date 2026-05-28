@@ -35,6 +35,8 @@ export function useHomeMarket(initial: HomeMarketPayload) {
       return;
     }
 
+    void refresh();
+
     const timer = window.setInterval(() => {
       void refresh();
     }, MARKET_POLL_MS);

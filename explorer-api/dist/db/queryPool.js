@@ -9,7 +9,7 @@ function defaultWorkerCount() {
     if (Number.isFinite(configured) && configured > 0) {
         return configured;
     }
-    return Math.min(Math.max(1, os.cpus().length), 4);
+    return Math.min(Math.max(2, os.cpus().length * 2), 8);
 }
 const workerCount = defaultWorkerCount();
 const defaultWorkerTimeoutMs = Number(process.env.VCEXP_API_DB_WORKER_TIMEOUT_MS ?? 120_000);

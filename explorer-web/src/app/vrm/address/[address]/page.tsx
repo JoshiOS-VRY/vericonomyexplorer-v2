@@ -1,12 +1,9 @@
 import Link from "next/link";
-import { Suspense } from "react";
-import { AddressBalanceChartSection } from "@/components/explorer/address/AddressBalanceChartSection";
-import { AddressChartSkeleton } from "@/components/explorer/address/AddressSectionSkeleton";
+import { AddressBalanceChartClient } from "@/components/explorer/address/AddressBalanceChartClient";
 import { AddressHero } from "@/components/explorer/address/AddressHero";
 import { AddressMetricStrip } from "@/components/explorer/address/AddressMetricStrip";
-import { AddressRichlistCard } from "@/components/explorer/address/AddressRichlistCard";
-import { AddressUtxoPanelServer } from "@/components/explorer/address/AddressUtxoPanelServer";
-import { AddressUtxoPanelSkeleton } from "@/components/explorer/address/AddressSectionSkeleton";
+import { AddressRichlistRankClient } from "@/components/explorer/address/AddressRichlistRankClient";
+import { AddressUtxoPanelClient } from "@/components/explorer/address/AddressUtxoPanelClient";
 import { BcPageHeader, BcPanel } from "@/components/explorer/BlockchairUi";
 import { Breadcrumb } from "@/components/explorer/Breadcrumb";
 import {
@@ -37,7 +34,7 @@ export default async function AddressPage({
   let result;
 
   try {
-    result = await getAddress("vrm", address, { limit, offset });
+    result = await getAddress("vrm", address, { limit, offset, includeRank: false });
   } catch {
     return <AlertBanner title="Address Lookup Failed">Unable to load address data.</AlertBanner>;
   }
@@ -71,24 +68,20 @@ export default async function AddressPage({
 
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
-              <Suspense fallback={<AddressChartSkeleton />}>
-                <AddressBalanceChartSection chainId="vrm" address={result.address} />
-              </Suspense>
+              <AddressBalanceChartClient chainId="vrm" address={result.address} />
             </div>
             <div>
-              <AddressRichlistCard richlist={result.richlist} address={result.address} />
+              <AddressRichlistRankClient chainId="vrm" address={result.address} />
             </div>
           </div>
 
-          <Suspense fallback={<AddressUtxoPanelSkeleton />}>
-            <AddressUtxoPanelServer
-              chainId="vrm"
-              address={result.address}
-              basePath={basePath}
-              utxoLimit={utxoLimit}
-              utxoOffset={utxoOffset}
-            />
-          </Suspense>
+          <AddressUtxoPanelClient
+            chainId="vrm"
+            address={result.address}
+            basePath={basePath}
+            utxoLimit={utxoLimit}
+            utxoOffset={utxoOffset}
+          />
 
           <BcPanel
             title="Transactions"

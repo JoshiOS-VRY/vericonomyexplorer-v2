@@ -33,15 +33,23 @@ export async function enrichChainSummary(
   options: Record<string, unknown> = {},
 ): Promise<SummaryPayload> {
   try {
+    const brokerTip = getTip(chainId);
+    const skipLiveRpc = options.skipLiveRpc === true || options.skipLiveBlocks === true;
     const tip =
-      getTip(chainId) ??
-      (await liveChain.getTip(chainId, options)) as { height: number; hash: string };
+      brokerTip ??
+      (skipLiveRpc
+        ? null
+        : ((await liveChain.getTip(chainId, options)) as { height: number; hash: string }));
 
-    summary.health = health.enrichWithLiveRpc(summary.health, tip.height, options);
+    if (tip) {
+      summary.health = health.enrichWithLiveRpc(summary.health, tip.height, options);
+    }
+
     const indexedHeight = summary.health?.heights?.maxIndexedHeight ?? null;
 
     if (
       !options.skipLiveBlocks &&
+      tip &&
       (indexedHeight === null || tip.height > indexedHeight)
     ) {
       summary.latestBlocks = await liveChain.getRecentBlocks(chainId, 10, options);

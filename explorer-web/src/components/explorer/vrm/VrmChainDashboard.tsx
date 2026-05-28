@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ChainMarketCard } from "@/components/explorer/home/ChainMarketCard";
 import { ChainNetworkCard } from "@/components/explorer/home/ChainNetworkCard";
 import { useLiveChainSummary } from "@/hooks/useLiveChainSummary";
-import type { VrmDashboardPayload } from "@/lib/api/types";
+import type { ChainMarket, VrmDashboardPayload, VrmNetworkStats } from "@/lib/api/types";
+import { fetchHomeMarket, fetchHomeNetwork } from "@/lib/api/client";
+import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
 import { VrmBlocksPanel } from "@/components/explorer/vrm/VrmBlocksPanel";
 import { LazyVrmChainActivityChart } from "@/components/explorer/vrm/LazyVrmChainActivityChart";
 import { VrmChainHero } from "@/components/explorer/vrm/VrmChainHero";
@@ -18,10 +21,9 @@ export function VrmChainDashboard({
   summary: initialSummary,
   richlist: initialRichlist,
   leaderboard: initialLeaderboard,
-  network: initialNetwork,
-  market: initialMarket,
-  activityHistory: initialActivityHistory,
 }: VrmDashboardPayload) {
+  const [market, setMarket] = useState<ChainMarket>(emptyMarketPayload().vrm);
+  const [network, setNetwork] = useState<VrmNetworkStats>(emptyNetworkPayload().vrm);
   const live = useLiveChainSummary("vrm", initialSummary);
   const {
     summary,
@@ -32,6 +34,29 @@ export function VrmChainDashboard({
     toastBlock,
     heightPulse,
   } = live;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const [marketPayload, networkPayload] = await Promise.all([
+          fetchHomeMarket(),
+          fetchHomeNetwork(),
+        ]);
+        if (!cancelled) {
+          setMarket(marketPayload.vrm);
+          setNetwork(networkPayload.vrm);
+        }
+      } catch {
+        /* keep empty defaults */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const tipBlock = latestBlocks[0];
   const tipBlockHref = tipBlock ? `/vrm/block/${tipBlock.height}` : null;
@@ -56,11 +81,11 @@ export function VrmChainDashboard({
       />
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <ChainMarketCard chainId="vrm" market={initialMarket} />
-        <ChainNetworkCard chainId="vrm" network={initialNetwork} />
+        <ChainMarketCard chainId="vrm" market={market} />
+        <ChainNetworkCard chainId="vrm" network={network} />
       </div>
 
-      <LazyVrmChainActivityChart initialHistory={initialActivityHistory} />
+      <LazyVrmChainActivityChart />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <VrmBlocksPanel blocks={latestBlocks} newBlockHashes={newBlockHashes} />

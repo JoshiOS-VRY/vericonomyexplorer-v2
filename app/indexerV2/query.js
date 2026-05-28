@@ -13,6 +13,24 @@ const maxBalanceHistoryEvents = 50000;
 
 const stmtCache = new Map();
 
+const fundedAddressTotals = new Map();
+
+function getFundedAddressTotal(db, chain) {
+	const ttlMs = Number(process.env.VCEXP_FUNDED_ADDRESS_CACHE_MS ?? 60_000);
+	const cached = fundedAddressTotals.get(chain);
+	if (cached && Date.now() - cached.at < ttlMs) {
+		return cached.total;
+	}
+
+	const total = toNumber(db.prepare(`
+		SELECT COUNT(*) AS count
+		FROM address_balances
+		WHERE chain_id = ? AND balance_sats > 0
+	`).get(chain).count);
+	fundedAddressTotals.set(chain, { at: Date.now(), total });
+	return total;
+}
+
 function prepare(db, sql) {
 	if (!stmtCache.has(sql)) {
 		stmtCache.set(sql, db.prepare(sql));
@@ -99,7 +117,9 @@ function getChainSummary(chainId, options = {}) {
 		ORDER BY height DESC
 		LIMIT 10
 	`).all(chain).map(block => mapBlock(block));
-	const enrichedLatestBlocks = enrichLatestBlocks(db, chain, latestBlocks);
+	const enrichedLatestBlocks = options.skipBlockEnrichment === true
+		? latestBlocks
+		: enrichLatestBlocks(db, chain, latestBlocks);
 	const recentTransactions = db.prepare(`
 		SELECT txid, block_height, block_hash, tx_index, time, is_coinbase, is_coinstake
 		FROM transactions
@@ -135,17 +155,13 @@ function getRichlist(chainId, options = {}) {
 		ORDER BY balance_sats DESC, address ASC
 		LIMIT ? OFFSET ?
 	`).all(chain, limit, offset);
-	const countRow = db.prepare(`
-		SELECT COUNT(*) AS count
-		FROM address_balances
-		WHERE chain_id = ? AND balance_sats > 0
-	`).get(chain);
+	const totalFunded = getFundedAddressTotal(db, chain);
 
 	return {
 		chainId: chain,
 		trusted: chainHealth.trusted,
 		source: getSource(chainHealth, "richlist"),
-		paging: getPaging(limit, offset, countRow.count),
+		paging: getPaging(limit, offset, totalFunded),
 		items: rows.map((row, index) => Object.assign({
 			rank: offset + index + 1
 		}, mapAddressBalanceCore(chain, row)))
@@ -255,32 +271,28 @@ function getAddress(chainId, address, options = {}) {
 			transactions.tx_index,
 			transactions.is_coinbase,
 			transactions.is_coinstake,
-			SUM(address_events.delta_sats) AS net_delta_sats
+			(
+				SELECT COALESCE(SUM(delta_sats), 0)
+				FROM address_events
+				WHERE chain_id = address_transactions.chain_id
+					AND address = address_transactions.address
+					AND txid = address_transactions.txid
+			) AS net_delta_sats
 		FROM address_transactions
-		JOIN transactions
+		INNER JOIN transactions
 			ON transactions.chain_id = address_transactions.chain_id
 			AND transactions.txid = address_transactions.txid
-		LEFT JOIN address_events
-			ON address_events.chain_id = address_transactions.chain_id
-			AND address_events.address = address_transactions.address
-			AND address_events.txid = address_transactions.txid
 		WHERE address_transactions.chain_id = ? AND address_transactions.address = ?
-		GROUP BY
-			address_transactions.txid,
-			address_transactions.first_seen_height,
-			address_transactions.first_seen_time,
-			transactions.block_hash,
-			transactions.tx_index,
-			transactions.is_coinbase,
-			transactions.is_coinstake
 		ORDER BY address_transactions.first_seen_height DESC, transactions.tx_index DESC
 		LIMIT ? OFFSET ?
 	`).all(chain, cleanAddress, limit, offset);
-	const countRow = prepare(db, `
-		SELECT COUNT(*) AS count
-		FROM address_transactions
-		WHERE chain_id = ? AND address = ?
-	`).get(chain, cleanAddress);
+	const txTotal = balanceRow
+		? toNumber(balanceRow.tx_count)
+		: toNumber(prepare(db, `
+			SELECT COUNT(*) AS count
+			FROM address_transactions
+			WHERE chain_id = ? AND address = ?
+		`).get(chain, cleanAddress).count);
 	const firstSeenRow = prepare(db, `
 		SELECT MIN(first_seen_height) AS first_seen_height, MIN(first_seen_time) AS first_seen_time
 		FROM address_transactions
@@ -297,16 +309,16 @@ function getAddress(chainId, address, options = {}) {
 		trusted: chainHealth.trusted,
 		source: getSource(chainHealth, "address"),
 		balance,
-		richlist: options.includeRank === false
-			? {
+		richlist: options.includeRank === true
+			? getAddressRichlist(db, chain, chainHealth, balanceRow)
+			: {
 				enabled: chainHealth.checks.hasBlocks,
 				eligible: null,
 				rank: null,
 				total: null,
 				percentile: null
-			}
-			: getAddressRichlist(db, chain, chainHealth, balanceRow),
-		paging: getPaging(limit, offset, countRow.count),
+			},
+		paging: getPaging(limit, offset, txTotal),
 		transactions: txRows.map(row => mapAddressTransaction(chain, row))
 	};
 }
@@ -322,11 +334,7 @@ function getAddressRichlist(db, chain, chainHealth, balanceRow) {
 		};
 	}
 
-	const total = toNumber(db.prepare(`
-		SELECT COUNT(*) AS count
-		FROM address_balances
-		WHERE chain_id = ? AND balance_sats > 0
-	`).get(chain).count);
+	const total = getFundedAddressTotal(db, chain);
 
 	if (!balanceRow || toBigInt(balanceRow.balance_sats) <= 0n) {
 		return {
@@ -781,26 +789,19 @@ function getChainActivityHistory(chainId, options = {}) {
 	const maxPoints = normalizeBalanceHistoryPoints(options.maxPoints);
 	const since = normalizeSince(options.since);
 	const chainHealth = health.getChainHealth(chain, { db });
-	const txBounds = prepare(db, `
-		SELECT MIN(time) AS min_time, MAX(time) AS max_time
-		FROM transactions
-		WHERE chain_id = ? AND time IS NOT NULL
-	`).get(chain);
-	const blockBounds = prepare(db, `
-		SELECT MIN(time) AS min_time, MAX(time) AS max_time
-		FROM blocks
-		WHERE chain_id = ? AND status = 'main' AND time IS NOT NULL
-	`).get(chain);
-	const minCandidates = [
-		toNullableNumber(txBounds.min_time),
-		toNullableNumber(blockBounds.min_time)
-	].filter(value => value != null);
-	const maxCandidates = [
-		toNullableNumber(txBounds.max_time),
-		toNullableNumber(blockBounds.max_time)
-	].filter(value => value != null);
-	const resolvedFirst = minCandidates.length ? Math.min(...minCandidates) : null;
-	const resolvedLast = maxCandidates.length ? Math.max(...maxCandidates) : null;
+	const bucketBounds = since
+		? prepare(db, `
+			SELECT MIN(bucket_start) AS min_time, MAX(bucket_start) AS max_time
+			FROM chain_activity_buckets
+			WHERE chain_id = ? AND bucket_start >= ?
+		`).get(chain, since)
+		: prepare(db, `
+			SELECT MIN(bucket_start) AS min_time, MAX(bucket_start) AS max_time
+			FROM chain_activity_buckets
+			WHERE chain_id = ?
+		`).get(chain);
+	const resolvedFirst = since ?? toNullableNumber(bucketBounds.min_time);
+	const resolvedLast = toNullableNumber(bucketBounds.max_time);
 	const bucketPlan = buildActivityBucketPlan(since, maxPoints, resolvedFirst, resolvedLast).map(bucket => Object.assign({}, bucket, {
 		minedCount: 0,
 		stakedCount: 0,
@@ -993,7 +994,7 @@ function getBlock(chainId, hashOrHeight, options = {}) {
 		transactions,
 		confirmations: computeConfirmations(chainHealth, mappedBlock.height),
 		coinbase: getCoinbaseSummary(db, chain, mappedBlock.height),
-		totals: computeBlockTotals(db, chain, mappedBlock.height)
+		totals: computeBlockTotals(db, chain, mappedBlock.height, block.tx_count)
 	};
 }
 
@@ -1519,7 +1520,7 @@ function getCoinbaseSummary(db, chainId, blockHeight) {
 	};
 }
 
-function computeBlockTotals(db, chainId, blockHeight) {
+function computeBlockTotals(db, chainId, blockHeight, txCount = 0) {
 	const outputRow = db.prepare(`
 		SELECT COALESCE(SUM(v.value_sats), 0) AS total
 		FROM vouts v
@@ -1528,6 +1529,16 @@ function computeBlockTotals(db, chainId, blockHeight) {
 	`).get(chainId, blockHeight);
 
 	const outputValueAtomic = toBigInt(outputRow.total);
+	const maxFeeTxCount = Number(process.env.VCEXP_BLOCK_FEE_TX_CAP ?? 100);
+	if (toNumber(txCount) > maxFeeTxCount) {
+		return {
+			feeAtomic: null,
+			fee: null,
+			outputValueAtomic: stringifyInteger(outputValueAtomic),
+			outputValue: formatAtomic(chainId, outputValueAtomic)
+		};
+	}
+
 	const nonCoinbaseTxs = db.prepare(`
 		SELECT txid
 		FROM transactions

@@ -6,6 +6,7 @@ const path = require("node:path");
 require(path.join(__dirname, "..", "..", "..", "app", "indexerV2", "loadEnv.js"));
 
 const Database = require("better-sqlite3");
+const dbModule = require(path.join(__dirname, "..", "..", "..", "app", "indexerV2", "db.js"));
 const query = require(path.join(__dirname, "..", "..", "..", "app", "indexerV2", "query.js"));
 const health = require(path.join(__dirname, "..", "..", "..", "app", "indexerV2", "health.js"));
 
@@ -24,7 +25,7 @@ function getWorkerDb() {
 	db = new Database(dbPath, { readonly: true });
 	db.defaultSafeIntegers(true);
 	db.pragma("foreign_keys = ON");
-	db.pragma("busy_timeout = 10000");
+	dbModule.applyReadPragmas(db);
 
 	return db;
 }

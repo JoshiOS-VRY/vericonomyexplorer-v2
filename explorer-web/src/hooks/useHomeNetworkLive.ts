@@ -37,6 +37,8 @@ export function useHomeNetworkLive(initialNetwork: HomeNetworkPayload) {
   useEffect(() => {
     if (!visible) return;
 
+    void refresh();
+
     const unsubVrm = subscribe("vrm", () => {
       void refresh();
     });

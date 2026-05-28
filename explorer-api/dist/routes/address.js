@@ -1,9 +1,12 @@
-import { createSwrCache } from "../cache/swrCache.js";
+import { createSwrCache, swrFetch } from "../cache/swrCache.js";
 import { fetchAddress, fetchAddressBalanceHistory, fetchAddressUtxos, } from "../data/legacy.js";
 import { parseChainId } from "../types.js";
+function parseIncludeRank(value) {
+    return value === "1" || value === "true";
+}
 const addressCache = createSwrCache({
     max: 256,
-    ttlMs: 30_000,
+    ttlMs: 60_000,
     fetch: async (key, signal) => {
         if (signal.aborted)
             throw new Error("aborted");
@@ -12,7 +15,8 @@ const addressCache = createSwrCache({
         const address = parts[1];
         const limit = parts[2] ? Number(parts[2]) : undefined;
         const offset = parts[3] ? Number(parts[3]) : undefined;
-        return fetchAddress(chainId, address, { limit, offset });
+        const includeRank = parts[4] === "1";
+        return fetchAddress(chainId, address, { limit, offset, includeRank });
     },
 });
 const balanceHistoryCache = createSwrCache({
@@ -51,8 +55,9 @@ export async function registerAddressRoutes(app) {
         }
         const limit = request.query.limit ? Number(request.query.limit) : undefined;
         const offset = request.query.offset ? Number(request.query.offset) : undefined;
-        const key = `${chainId}:${request.params.address}:${limit ?? ""}:${offset ?? ""}`;
-        return addressCache.fetch(key);
+        const includeRank = parseIncludeRank(request.query.includeRank);
+        const key = `${chainId}:${request.params.address}:${limit ?? ""}:${offset ?? ""}:${includeRank ? "1" : "0"}`;
+        return swrFetch(addressCache, key, () => fetchAddress(chainId, request.params.address, { limit, offset, includeRank }));
     });
     app.get("/v1/:chain/address/:address/balance-history", async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
@@ -62,7 +67,7 @@ export async function registerAddressRoutes(app) {
         const maxPoints = request.query.maxPoints ? Number(request.query.maxPoints) : undefined;
         const since = request.query.since ? Number(request.query.since) : undefined;
         const key = `${chainId}:${request.params.address}:${maxPoints ?? ""}:${since ?? ""}`;
-        return balanceHistoryCache.fetch(key);
+        return swrFetch(balanceHistoryCache, key, () => fetchAddressBalanceHistory(chainId, request.params.address, { maxPoints, since }));
     });
     app.get("/v1/:chain/address/:address/utxos", async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
@@ -72,6 +77,6 @@ export async function registerAddressRoutes(app) {
         const limit = request.query.limit ? Number(request.query.limit) : undefined;
         const offset = request.query.offset ? Number(request.query.offset) : undefined;
         const key = `${chainId}:${request.params.address}:${limit ?? ""}:${offset ?? ""}`;
-        return utxosCache.fetch(key);
+        return swrFetch(utxosCache, key, () => fetchAddressUtxos(chainId, request.params.address, { limit, offset }));
     });
 }

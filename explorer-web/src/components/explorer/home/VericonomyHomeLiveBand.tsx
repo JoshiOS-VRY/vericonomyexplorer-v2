@@ -8,34 +8,34 @@ import {
   NewBlockToast,
 } from "@/components/explorer/home/LiveBlocksFeed";
 import { useDualChainLive } from "@/hooks/useDualChainLive";
+import { useHomeMarket } from "@/hooks/useHomeMarket";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useHomeNetworkLive } from "@/hooks/useHomeNetworkLive";
-import type { HomeMarketPayload, HomeNetworkPayload, HomeShellPayload } from "@/lib/api/types";
+import type { HomeShellPayload } from "@/lib/api/types";
 import { isChainLive } from "@/lib/chainDisplay";
 import { enrichHomeNetworkPayload } from "@/lib/enrichNetwork";
+import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
 
 interface VericonomyHomeLiveBandProps {
   initialShell: HomeShellPayload;
-  market: HomeMarketPayload;
-  network: HomeNetworkPayload;
 }
 
 export function VericonomyHomeLiveBand({
   initialShell,
-  market,
-  network: initialNetwork,
 }: VericonomyHomeLiveBandProps) {
   const hydrated = useHydrated();
+  const { vrmMarket, vrcMarket } = useHomeMarket(emptyMarketPayload());
   const live = useDualChainLive(
     initialShell.vrm.summary,
     initialShell.vrc.summary,
   );
-  const { network: liveNetwork } = useHomeNetworkLive(initialNetwork);
+  const { network: liveNetwork } = useHomeNetworkLive(emptyNetworkPayload());
   const network = enrichHomeNetworkPayload(
     liveNetwork,
     live.vrm.summary,
     live.vrc.summary,
   );
+  const market = { vrm: vrmMarket, vrc: vrcMarket };
 
   const vrmSummary = hydrated ? live.vrm.summary : initialShell.vrm.summary;
   const vrcSummary = hydrated ? live.vrc.summary : initialShell.vrc.summary;

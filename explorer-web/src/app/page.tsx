@@ -2,12 +2,9 @@ import { AlertBanner } from "@/components/explorer/ExplorerUi";
 import { UserMessageBanner } from "@/components/explorer/UserMessageBanner";
 import { VericonomyHomeLiveBand } from "@/components/explorer/home/VericonomyHomeLiveBand";
 import { VericonomyHomeStatic } from "@/components/explorer/home/VericonomyHomeSections";
-import { getHomeMarket, getHomeNetwork, getHomeShell } from "@/lib/api/indexer";
-import { enrichHomeNetworkPayload } from "@/lib/enrichNetwork";
+import { getHomeShell } from "@/lib/api/indexer";
 import type {
   ChainSummary,
-  HomeMarketPayload,
-  HomeNetworkPayload,
   HomeShellPayload,
   LeaderboardResult,
   RichlistResult,
@@ -15,15 +12,9 @@ import type {
 
 export default async function HomePage() {
   let shell: HomeShellPayload;
-  let market: HomeMarketPayload;
-  let network: HomeNetworkPayload;
 
   try {
-    [shell, market, network] = await Promise.all([
-      getHomeShell(),
-      getHomeMarket().catch(() => emptyMarketPayload()),
-      getHomeNetwork().catch(() => emptyNetworkPayload()),
-    ]);
+    shell = await getHomeShell();
   } catch {
     return (
       <AlertBanner title="Explorer Unavailable">
@@ -41,20 +32,11 @@ export default async function HomePage() {
   }
 
   const normalized = normalizeShell(shell);
-  const networkPayload = enrichHomeNetworkPayload(
-    network,
-    normalized.vrm.summary,
-    normalized.vrc.summary,
-  );
 
   return (
     <div className="space-y-8">
       <UserMessageBanner />
-      <VericonomyHomeLiveBand
-        initialShell={normalized}
-        market={market}
-        network={networkPayload}
-      />
+      <VericonomyHomeLiveBand initialShell={normalized} />
 
       <VericonomyHomeStatic
         vrmRichlist={normalized.vrm.richlist}
@@ -133,49 +115,5 @@ function emptyLeaderboard(): LeaderboardResult {
     enabled: false,
     source: { label: "unavailable" },
     items: [],
-  };
-}
-
-function emptyMarketPayload(): HomeMarketPayload {
-  const empty = {
-    usd: null,
-    btc: null,
-    marketCap: null,
-    volume24h: null,
-    change24h: null,
-    circulatingSupply: null,
-    source: "unavailable" as const,
-    updatedAt: null,
-    priceHistory24h: [],
-  };
-
-  return {
-    vrm: empty,
-    vrc: empty,
-    fetchedAt: new Date().toISOString(),
-  };
-}
-
-function emptyNetworkPayload(): HomeNetworkPayload {
-  return {
-    vrm: {
-      hashrateKhPerMin: null,
-      hashrate7dKhPerMin: null,
-      difficulty: null,
-      blocks: null,
-      supply: null,
-      maxSupply: null,
-    },
-    vrc: {
-      difficulty: null,
-      blocks: null,
-      supply: null,
-      maxSupply: null,
-      interestRatePercent: null,
-      netStakeWeight: null,
-      percentStaked: null,
-      expectedStakeTimeSeconds: null,
-    },
-    fetchedAt: new Date().toISOString(),
   };
 }

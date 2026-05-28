@@ -21,13 +21,13 @@ export async function fetchChainSummary(
 }
 
 export async function fetchLandingData() {
-  const skipLiveBlocks = { skipLiveBlocks: true };
+  const skipOpts = { skipLiveBlocks: true, skipBlockEnrichment: true, skipLiveRpc: true };
 
   // Run indexed reads in parallel (one worker each) instead of one serial getLandingBundle call.
   const [vrmSummaryRaw, vrcSummaryRaw, vrmRichlist, vrcRichlist, vrmLeaderboard] =
     await Promise.all([
-      runIndexerQuery<Record<string, unknown>>("getChainSummaryIndexed", ["vrm"], skipLiveBlocks),
-      runIndexerQuery<Record<string, unknown>>("getChainSummaryIndexed", ["vrc"], skipLiveBlocks),
+      runIndexerQuery<Record<string, unknown>>("getChainSummaryIndexed", ["vrm"], skipOpts),
+      runIndexerQuery<Record<string, unknown>>("getChainSummaryIndexed", ["vrc"], skipOpts),
       runIndexerQuery<Record<string, unknown>>("getRichlist", ["vrm"], { limit: 5 }),
       runIndexerQuery<Record<string, unknown>>("getRichlist", ["vrc"], { limit: 5 }),
       runIndexerQuery<Record<string, unknown>>("getLeaderboard", ["vrm"], {
@@ -38,8 +38,8 @@ export async function fetchLandingData() {
     ]);
 
   const [vrmSummary, vrcSummary] = await Promise.all([
-    enrichChainSummary(vrmSummaryRaw, "vrm", skipLiveBlocks),
-    enrichChainSummary(vrcSummaryRaw, "vrc", skipLiveBlocks),
+    enrichChainSummary(vrmSummaryRaw, "vrm", skipOpts),
+    enrichChainSummary(vrcSummaryRaw, "vrc", skipOpts),
   ]);
 
   return {
@@ -138,7 +138,7 @@ export async function fetchBlock(
 }
 
 export function fetchChainHealth(chainId: string) {
-  return runIndexerQuery("getChainHealth", [chainId], {});
+  return runIndexerQuery("getChainHealth", [chainId], { fullHealth: true });
 }
 
 export function getCachedTip(chainId: ChainId) {

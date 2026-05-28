@@ -8,7 +8,7 @@ const { default: cors } = await import("@fastify/cors");
 const { default: Fastify } = await import("fastify");
 const { applyCacheHeaders } = await import("./cache/httpCache.js");
 const { closeDb } = await import("./data/db.js");
-const { queryPool } = await import("./db/queryPool.js");
+const { queryPool, runIndexerQuery } = await import("./db/queryPool.js");
 const { initBrokers, stopBrokers } = await import("./live/brokers.js");
 const { closeAllRpcClients } = await import("./rpc/index.js");
 const { registerCacheInvalidation } = await import("./routes/chain.js");
@@ -59,6 +59,20 @@ const port = getPort();
 await app.listen({ host, port });
 
 app.log.info(`explorer-api listening on http://${host}:${port}`);
+
+void (async () => {
+  const { fetchLandingData } = await import("./data/legacy.js");
+  const { fetchVrmDashboardBundle } = await import("./data/vrmDashboard.js");
+
+  await Promise.all([
+    runIndexerQuery("getChainHealth", ["vrm"], {}, { coalesce: false, timeoutMs: 30_000 }),
+    fetchLandingData().catch(() => null),
+    fetchVrmDashboardBundle().catch(() => null),
+  ]);
+  app.log.info("query worker pool and read caches warmed");
+})().catch((error: unknown) => {
+  app.log.warn({ err: error }, "query worker warmup failed");
+});
 
 async function shutdown(): Promise<void> {
   app.log.info("shutting down explorer-api");

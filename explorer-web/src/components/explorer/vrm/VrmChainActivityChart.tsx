@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -175,17 +175,14 @@ function CountChartTooltip({
   );
 }
 
-export function VrmChainActivityChart({
-  initialHistory,
-}: {
-  initialHistory: ChainActivityHistoryResult;
-}) {
+export function VrmChainActivityChart() {
   const colors = useChartTheme();
   const [view, setView] = useState<ChainActivityChartView>("activity");
   const [period, setPeriod] = useState<AddressBalanceHistoryPeriodId>("30d");
-  const [history, setHistory] = useState<ChainActivityHistoryResult>(initialHistory);
-  const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState<ChainActivityHistoryResult | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const defaultHistoryRef = useRef<ChainActivityHistoryResult | null>(null);
 
   const loadPeriod = useCallback(async (nextPeriod: AddressBalanceHistoryPeriodId) => {
     setLoading(true);
@@ -193,6 +190,9 @@ export function VrmChainActivityChart({
 
     try {
       const nextHistory = await fetchChainActivityHistoryClient("vrm", nextPeriod);
+      if (nextPeriod === "30d") {
+        defaultHistoryRef.current = nextHistory;
+      }
       setHistory(nextHistory);
       setPeriod(nextPeriod);
     } catch {
@@ -202,13 +202,17 @@ export function VrmChainActivityChart({
     }
   }, []);
 
+  useEffect(() => {
+    void loadPeriod("30d");
+  }, [loadPeriod]);
+
   const handlePeriodChange = (next: AddressBalanceHistoryPeriodId) => {
     if (next === period || loading) {
       return;
     }
 
-    if (next === "30d") {
-      setHistory(initialHistory);
+    if (next === "30d" && defaultHistoryRef.current) {
+      setHistory(defaultHistoryRef.current);
       setPeriod("30d");
       setError(null);
       return;
@@ -216,6 +220,10 @@ export function VrmChainActivityChart({
 
     void loadPeriod(next);
   };
+
+  if (!history) {
+    return <AddressChartSkeleton />;
+  }
 
   const periodMeta = CHAIN_ACTIVITY_HISTORY_PERIODS.find((item) => item.id === period);
   const panelTitle = view === "blocks" ? "Block production" : "Chain activity";
