@@ -38,6 +38,7 @@ services:
       - ${ENV_FILE:-.env.production}
     environment:
       PORT: ${WEB_PORT:-3000}
+      HOSTNAME: 0.0.0.0
       EXPLORER_API_URL: ${EXPLORER_API_URL:-http://explorer-express:3002}
       EXPLORER_FAST_API_URL: ${EXPLORER_FAST_API_URL:-http://explorer-fast-api:3003}
       VCEXP_FAST_API_HOST: explorer-fast-api
