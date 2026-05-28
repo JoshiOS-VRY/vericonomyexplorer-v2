@@ -11,16 +11,80 @@ const COINS = {
     vrc: vericoinCoin,
 };
 const NETWORK = "main";
-export async function fetchOnChainSupply(chainId, rpcCall, blocks) {
+export function parseRpcNumber(value) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+        return value;
+    }
+    if (typeof value === "string" && value.trim() !== "") {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+}
+export function supplyFromBlockchainInfo(blockchainInfo) {
+    if (!blockchainInfo || typeof blockchainInfo !== "object") {
+        return null;
+    }
+    return parseRpcNumber(blockchainInfo.totalsupply);
+}
+export function parseVrcMiningInfo(miningInfo) {
+    if (!miningInfo || typeof miningInfo !== "object") {
+        return {
+            interestRatePercent: null,
+            netStakeWeight: null,
+            expectedStakeTimeSeconds: null,
+            difficulty: null,
+        };
+    }
+    const info = miningInfo;
+    const interestRatePercent = parseRpcNumber(info.stakeinterest);
+    const netStakeWeight = parseRpcNumber(info.netstakeweight) ?? parseRpcNumber(info.networkstakeweight);
+    let difficulty = null;
+    const difficultyValue = info.difficulty;
+    if (difficultyValue && typeof difficultyValue === "object") {
+        const difficultyObj = difficultyValue;
+        difficulty =
+            parseRpcNumber(difficultyObj["proof-of-work"]) ??
+                parseRpcNumber(difficultyObj["proof-of-stake"]);
+    }
+    else {
+        difficulty = parseRpcNumber(difficultyValue);
+    }
+    let expectedStakeTimeSeconds = null;
+    const walletWeight = info.stakeweight && typeof info.stakeweight === "object"
+        ? parseRpcNumber(info.stakeweight.combined)
+        : null;
+    if (walletWeight != null &&
+        walletWeight > 0 &&
+        netStakeWeight != null &&
+        netStakeWeight > 0) {
+        expectedStakeTimeSeconds = Math.round((netStakeWeight / walletWeight) * getTargetBlockTimeSeconds("vrc"));
+    }
+    return {
+        interestRatePercent,
+        netStakeWeight,
+        expectedStakeTimeSeconds,
+        difficulty,
+    };
+}
+function utxoSetTimeoutMs(chainId) {
+    if (chainId === "vrc") {
+        return Number(process.env.VCEXP_VRC_UTXO_SET_TIMEOUT_MS ?? 120_000);
+    }
+    return Number(process.env.VCEXP_UTXO_SET_TIMEOUT_MS ?? 30_000);
+}
+export async function fetchOnChainSupply(chainId, rpcCall, blocks, blockchainInfo) {
+    const fromChain = supplyFromBlockchainInfo(blockchainInfo);
+    if (fromChain != null) {
+        return fromChain;
+    }
     try {
-        const utxo = await Promise.race([
-            rpcCall("gettxoutsetinfo"),
-            new Promise((resolve) => setTimeout(() => resolve(null), 8_000)),
-        ]);
+        const utxo = await rpcCall("gettxoutsetinfo", [], utxoSetTimeoutMs(chainId));
         if (utxo && typeof utxo === "object" && "total_amount" in utxo) {
-            const supply = Number(utxo.total_amount);
-            if (Number.isFinite(supply))
+            const supply = parseRpcNumber(utxo.total_amount);
+            if (supply != null) {
                 return supply;
+            }
         }
     }
     catch {
@@ -113,16 +177,19 @@ export async function fetchVrmHashrate(rpcCall, chainId = "vrm") {
     if ((!currentHashPerSec || currentHashPerSec <= 0) && hashrate7dHashPerSec && hashrate7dHashPerSec > 0) {
         currentHashPerSec = hashrate7dHashPerSec;
     }
+    if ((hashrate7dHashPerSec == null || hashrate7dHashPerSec <= 0) &&
+        currentHashPerSec != null &&
+        currentHashPerSec > 0) {
+        hashrate7dHashPerSec = currentHashPerSec;
+    }
     return { currentHashPerSec, hashrate7dHashPerSec };
 }
 async function safeNetworkHashrate(rpcCall, blockCount) {
     try {
-        const hashrate = (await Promise.race([
-            rpcCall("getnetworkhashps", [blockCount]),
-            new Promise((resolve) => setTimeout(() => resolve(null), 8_000)),
-        ]));
-        if (typeof hashrate === "number" && hashrate > 0)
+        const hashrate = await rpcCall("getnetworkhashps", [blockCount], 15_000);
+        if (typeof hashrate === "number" && hashrate > 0) {
             return hashrate;
+        }
     }
     catch {
         /* method may not exist on Verium */

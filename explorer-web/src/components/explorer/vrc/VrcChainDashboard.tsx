@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { BcPanel } from "@/components/explorer/BlockchairUi";
 import { FeatureTile } from "@/components/explorer/ExplorerUi";
-import {
-  LiveBlocksFeed,
-  NewBlockToast,
-} from "@/components/explorer/home/LiveBlocksFeed";
+import { LiveBlocksFeed } from "@/components/explorer/home/LiveBlocksFeed";
 import { ChainExplorerHero } from "@/components/explorer/vrm/VrmChainHero";
 import { useLiveChainSummary } from "@/hooks/useLiveChainSummary";
 import type { ChainSummary, RichlistResult } from "@/lib/api/types";
@@ -27,7 +24,6 @@ export function VrcChainDashboard({
     chainHeight,
     latestBlocks,
     newBlockHashes,
-    toastBlock,
     heightPulse,
   } = live;
 
@@ -35,8 +31,6 @@ export function VrcChainDashboard({
 
   return (
     <div className="space-y-6">
-      {toastBlock ? <NewBlockToast block={toastBlock} chainId="vrc" /> : null}
-
       <ChainExplorerHero
         chainId="vrc"
         health={summary.health}

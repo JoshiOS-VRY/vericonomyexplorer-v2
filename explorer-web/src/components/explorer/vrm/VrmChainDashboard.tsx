@@ -12,7 +12,6 @@ import { LazyVrmChainActivityChart } from "@/components/explorer/vrm/LazyVrmChai
 import { VrmChainHero } from "@/components/explorer/vrm/VrmChainHero";
 import { VrmLeaderboardPreview } from "@/components/explorer/vrm/VrmLeaderboardPreview";
 import { VrmMetricStrip } from "@/components/explorer/vrm/VrmMetricStrip";
-import { VrmNewBlockToast } from "@/components/explorer/vrm/VrmNewBlockToast";
 import { VrmQuickNav } from "@/components/explorer/vrm/VrmQuickNav";
 import { VrmRichlistPreview } from "@/components/explorer/vrm/VrmRichlistPreview";
 import { VrmTransactionsPanel } from "@/components/explorer/vrm/VrmTransactionsPanel";
@@ -31,7 +30,6 @@ export function VrmChainDashboard({
     addressCount,
     latestBlocks,
     newBlockHashes,
-    toastBlock,
     heightPulse,
   } = live;
 
@@ -63,8 +61,6 @@ export function VrmChainDashboard({
 
   return (
     <div className="space-y-6">
-      {toastBlock ? <VrmNewBlockToast block={toastBlock} /> : null}
-
       <VrmChainHero
         health={summary.health}
         chainHeight={chainHeight}

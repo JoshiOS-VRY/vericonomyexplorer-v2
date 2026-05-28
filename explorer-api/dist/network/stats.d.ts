@@ -1,9 +1,18 @@
 import type { ChainId } from "../types.js";
-export declare function fetchOnChainSupply(chainId: ChainId, rpcCall: (method: string, params?: unknown[]) => Promise<unknown>, blocks: number): Promise<number | null>;
+export type RpcCall = (method: string, params?: unknown[], timeoutMs?: number) => Promise<unknown>;
+export declare function parseRpcNumber(value: unknown): number | null;
+export declare function supplyFromBlockchainInfo(blockchainInfo: unknown): number | null;
+export declare function parseVrcMiningInfo(miningInfo: unknown): {
+    interestRatePercent: number | null;
+    netStakeWeight: number | null;
+    expectedStakeTimeSeconds: number | null;
+    difficulty: number | null;
+};
+export declare function fetchOnChainSupply(chainId: ChainId, rpcCall: RpcCall, blocks: number, blockchainInfo?: unknown): Promise<number | null>;
 export declare function getMaxSupply(chainId: ChainId): number | null;
 export declare function getTargetBlockTimeSeconds(chainId: ChainId): number;
 export declare function hashPerSecToKhPerMin(hashPerSec: number): number;
-export declare function fetchVrmHashrate(rpcCall: (method: string, params?: unknown[]) => Promise<unknown>, chainId?: ChainId): Promise<{
+export declare function fetchVrmHashrate(rpcCall: RpcCall, chainId?: ChainId): Promise<{
     currentHashPerSec: number | null;
     hashrate7dHashPerSec: number | null;
 }>;

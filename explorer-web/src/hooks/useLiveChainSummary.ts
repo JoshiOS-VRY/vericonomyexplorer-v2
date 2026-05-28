@@ -7,7 +7,6 @@ import { usePageVisible } from "@/hooks/usePageVisible";
 import type { ChainSummary, IndexedBlock } from "@/lib/api/types";
 
 const HIGHLIGHT_MS = 5_000;
-const TOAST_MS = 10_000;
 const SUMMARY_REFRESH_DEBOUNCE_MS = 2_000;
 
 function mergeLatestBlocks(
@@ -39,7 +38,6 @@ export interface LiveChainState {
   addressCount: number;
   latestBlocks: IndexedBlock[];
   newBlockHashes: Set<string>;
-  toastBlock: IndexedBlock | null;
   heightPulse: boolean;
   lastUpdated: number;
   isRefreshing: boolean;
@@ -65,7 +63,6 @@ export function useLiveChainSummary(
 
   const [summary, setSummary] = useState(initialSummary);
   const [newBlockHashes, setNewBlockHashes] = useState<Set<string>>(new Set());
-  const [toastBlock, setToastBlock] = useState<IndexedBlock | null>(null);
   const [heightPulse, setHeightPulse] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(Date.now());
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -115,15 +112,10 @@ export function useLiveChainSummary(
       if (incomingNew.length > 0) {
         incomingNew.forEach((block) => knownHashesRef.current.add(block.hash));
         setNewBlockHashes(new Set(incomingNew.map((block) => block.hash)));
-        setToastBlock(incomingNew[0]);
 
         window.setTimeout(() => {
           setNewBlockHashes(new Set());
         }, HIGHLIGHT_MS);
-
-        window.setTimeout(() => {
-          setToastBlock(null);
-        }, TOAST_MS);
       }
 
       merged.latestBlocks.forEach((block) =>
@@ -160,15 +152,10 @@ export function useLiveChainSummary(
       if (incomingNew.length > 0) {
         incomingNew.forEach((block) => knownHashesRef.current.add(block.hash));
         setNewBlockHashes(new Set(incomingNew.map((block) => block.hash)));
-        setToastBlock(incomingNew[0]);
 
         window.setTimeout(() => {
           setNewBlockHashes(new Set());
         }, HIGHLIGHT_MS);
-
-        window.setTimeout(() => {
-          setToastBlock(null);
-        }, TOAST_MS);
       }
 
       mergedBlocks.forEach((block) => knownHashesRef.current.add(block.hash));
@@ -269,15 +256,10 @@ export function useLiveChainSummary(
         if (!knownHashesRef.current.has(tip.hash)) {
           knownHashesRef.current.add(tip.hash);
           setNewBlockHashes(new Set([tip.hash]));
-          setToastBlock(optimisticBlock);
 
           window.setTimeout(() => {
             setNewBlockHashes(new Set());
           }, HIGHLIGHT_MS);
-
-          window.setTimeout(() => {
-            setToastBlock(null);
-          }, TOAST_MS);
         }
 
         if (tipRef.current != null && tip.height > tipRef.current) {
@@ -357,7 +339,6 @@ export function useLiveChainSummary(
     addressCount: summary.health.counts.addressCount,
     latestBlocks: summary.latestBlocks,
     newBlockHashes,
-    toastBlock,
     heightPulse,
     lastUpdated,
     isRefreshing,

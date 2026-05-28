@@ -6,24 +6,48 @@ import {
   fetchVrmHashrate,
   getMaxSupply,
   hashPerSecToKhPerMin,
+  parseRpcNumber,
+  parseVrcMiningInfo,
+  type RpcCall,
 } from "./stats.js";
 
-function rpcCall(chainId: ChainId) {
+function rpcCall(chainId: ChainId): RpcCall {
   const client = rpc(chainId);
-  return (method: string, params: unknown[] = []) => client.call(method, params);
+  return (method, params = [], timeoutMs) => client.call(method, params, timeoutMs);
 }
 
-function parseRpcNumber(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
+function parseLegacyInterestRate(interestRate: unknown): number | null {
+  if (typeof interestRate === "number" && Number.isFinite(interestRate)) {
+    return interestRate;
   }
 
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
+  if (interestRate && typeof interestRate === "object") {
+    const rate =
+      (interestRate as { interest?: number; rate?: number }).interest ??
+      (interestRate as { rate?: number }).rate;
+    if (typeof rate === "number" && Number.isFinite(rate)) {
+      return rate;
+    }
   }
 
   return null;
+}
+
+function parseLegacyStakingInfo(stakingInfo: unknown): {
+  netStakeWeight: number | null;
+  expectedStakeTimeSeconds: number | null;
+} {
+  const staking = stakingInfo as {
+    netstakeweight?: number;
+    expectedtime?: number;
+  } | null;
+
+  return {
+    netStakeWeight:
+      typeof staking?.netstakeweight === "number" ? staking.netstakeweight : null,
+    expectedStakeTimeSeconds:
+      typeof staking?.expectedtime === "number" ? staking.expectedtime : null,
+  };
 }
 
 export async function fetchVrmNetworkStats(): Promise<VrmNetworkStats> {
@@ -33,6 +57,7 @@ export async function fetchVrmNetworkStats(): Promise<VrmNetworkStats> {
     const blockchainInfo = (await call("getblockchaininfo").catch(() => null)) as {
       blocks?: unknown;
       difficulty?: unknown;
+      totalsupply?: unknown;
     } | null;
 
     const blocks = parseRpcNumber(blockchainInfo?.blocks);
@@ -40,7 +65,9 @@ export async function fetchVrmNetworkStats(): Promise<VrmNetworkStats> {
 
     const [hashrates, supply] = await Promise.all([
       fetchVrmHashrate(call, "vrm"),
-      blocks != null ? fetchOnChainSupply("vrm", call, blocks) : Promise.resolve(null),
+      blocks != null
+        ? fetchOnChainSupply("vrm", call, blocks, blockchainInfo)
+        : Promise.resolve(null),
     ]);
 
     return {
@@ -79,36 +106,53 @@ export async function fetchVrcNetworkStats(): Promise<VrcNetworkStats> {
     } | null;
 
     const blocks = parseRpcNumber(blockchainInfo?.blocks);
-    const difficulty = parseRpcNumber(blockchainInfo?.difficulty);
+    let difficulty = parseRpcNumber(blockchainInfo?.difficulty);
 
-    const [supply, stakingInfo, interestRate] = await Promise.all([
-      blocks != null ? fetchOnChainSupply("vrc", call, blocks) : Promise.resolve(null),
-      call("getstakinginfo").catch(() => null),
-      call("getinterestrate").catch(() => call("getinterest").catch(() => null)),
+    const [supply, miningInfo] = await Promise.all([
+      blocks != null
+        ? fetchOnChainSupply("vrc", call, blocks, blockchainInfo)
+        : Promise.resolve(null),
+      call("getmininginfo").catch(() => null),
     ]);
 
-    const staking = stakingInfo as {
-      netstakeweight?: number;
-      weight?: number;
-      expectedtime?: number;
-    } | null;
-
-    let interestRatePercent: number | null = null;
-    if (typeof interestRate === "number" && Number.isFinite(interestRate)) {
-      interestRatePercent = interestRate;
-    } else if (interestRate && typeof interestRate === "object") {
-      const rate = (interestRate as { interest?: number; rate?: number }).interest ??
-        (interestRate as { rate?: number }).rate;
-      if (typeof rate === "number" && Number.isFinite(rate)) {
-        interestRatePercent = rate;
-      }
+    const miningMetrics = parseVrcMiningInfo(miningInfo);
+    if (difficulty == null) {
+      difficulty = miningMetrics.difficulty;
     }
 
-    const netStakeWeight =
-      typeof staking?.netstakeweight === "number" ? staking.netstakeweight : null;
-    const weight = typeof staking?.weight === "number" ? staking.weight : null;
-    const expectedStakeTimeSeconds =
-      typeof staking?.expectedtime === "number" ? staking.expectedtime : null;
+    let interestRatePercent = miningMetrics.interestRatePercent;
+    let netStakeWeight = miningMetrics.netStakeWeight;
+    let expectedStakeTimeSeconds = miningMetrics.expectedStakeTimeSeconds;
+
+    if (
+      interestRatePercent == null ||
+      netStakeWeight == null ||
+      expectedStakeTimeSeconds == null
+    ) {
+      const [stakingInfo, interestRate] = await Promise.all([
+        netStakeWeight == null || expectedStakeTimeSeconds == null
+          ? call("getstakinginfo").catch(() => null)
+          : Promise.resolve(null),
+        interestRatePercent == null
+          ? call("getinterestrate")
+              .catch(() => call("getinterest").catch(() => null))
+          : Promise.resolve(null),
+      ]);
+
+      if (interestRatePercent == null) {
+        interestRatePercent = parseLegacyInterestRate(interestRate);
+      }
+
+      if (netStakeWeight == null || expectedStakeTimeSeconds == null) {
+        const legacyStaking = parseLegacyStakingInfo(stakingInfo);
+        if (netStakeWeight == null) {
+          netStakeWeight = legacyStaking.netStakeWeight;
+        }
+        if (expectedStakeTimeSeconds == null) {
+          expectedStakeTimeSeconds = legacyStaking.expectedStakeTimeSeconds;
+        }
+      }
+    }
 
     let percentStaked: number | null = null;
     if (netStakeWeight != null && supply != null && supply > 0) {

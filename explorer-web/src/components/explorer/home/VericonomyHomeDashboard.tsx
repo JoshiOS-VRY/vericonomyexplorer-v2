@@ -18,10 +18,7 @@ import { BinaryChainActivity } from "@/components/explorer/home/BinaryChainActiv
 import { BinaryChainHero } from "@/components/explorer/home/BinaryChainHero";
 import { ChainMarketCard } from "@/components/explorer/home/ChainMarketCard";
 import { ChainNetworkCard } from "@/components/explorer/home/ChainNetworkCard";
-import {
-  LiveBlocksFeed,
-  NewBlockToast,
-} from "@/components/explorer/home/LiveBlocksFeed";
+import { LiveBlocksFeed } from "@/components/explorer/home/LiveBlocksFeed";
 import { useDualChainLive } from "@/hooks/useDualChainLive";
 import { useHomeMarket } from "@/hooks/useHomeMarket";
 import type { HomePayload, RichlistResult } from "@/lib/api/types";
@@ -59,18 +56,8 @@ export function VericonomyHomeDashboard({
     live.vrc.summary.latestBlocks[0]?.height,
   );
 
-  const toastChainId: "vrm" | "vrc" | null = live.vrm.toastBlock
-    ? "vrm"
-    : live.vrc.toastBlock
-      ? "vrc"
-      : null;
-
   return (
     <div className="space-y-8">
-      {live.toastBlock && toastChainId ? (
-        <NewBlockToast block={live.toastBlock} chainId={toastChainId} />
-      ) : null}
-
       <BinaryChainHero vrmLive={vrmLive} vrcLive={vrcLive} />
 
       <div className="grid gap-4 xl:grid-cols-2">

@@ -1,12 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
 import { BcPanel, BcTableLink } from "@/components/explorer/BlockchairUi";
 import { formatHeight } from "@/components/explorer/ExplorerUi";
 import type { IndexedBlock } from "@/lib/api/types";
-import { CHAIN_EXPLORERS, CHAIN_THEME } from "@/lib/chainDisplay";
+import { CHAIN_EXPLORERS } from "@/lib/chainDisplay";
 import { cn } from "@/lib/utils";
 
 interface LiveBlocksFeedProps {
@@ -90,48 +89,5 @@ export function LiveBlocksFeed({
         </div>
       )}
     </BcPanel>
-  );
-}
-
-export function NewBlockToast({
-  block,
-  chainId,
-}: {
-  block: IndexedBlock;
-  chainId: "vrm" | "vrc";
-}) {
-  const config = CHAIN_EXPLORERS[chainId];
-  const theme = CHAIN_THEME[chainId];
-
-  return (
-    <div
-      className="live-toast pointer-events-none fixed bottom-5 right-5 z-50 flex max-w-sm items-center gap-3 rounded-lg border bg-bg-panel px-4 py-3 shadow-lg"
-      data-chain={chainId}
-      style={
-        {
-          "--block-chain-accent": theme.accent,
-          borderColor:
-            "color-mix(in srgb, var(--block-chain-accent) 25%, transparent)",
-        } as React.CSSProperties
-      }
-    >
-      <span className="live-toast__logo-badge" aria-hidden>
-        <Image
-          src={config.logo}
-          alt=""
-          width={24}
-          height={24}
-          className="live-toast__logo"
-        />
-      </span>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-fg-muted">
-          New {config.ticker} block
-        </p>
-        <p className="text-sm font-bold tabular-nums text-fg">
-          #{formatHeight(block.height)}
-        </p>
-      </div>
-    </div>
   );
 }

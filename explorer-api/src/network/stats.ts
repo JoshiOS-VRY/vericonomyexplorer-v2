@@ -18,19 +18,117 @@ const COINS: Record<ChainId, typeof veriumCoin> = {
 
 const NETWORK = "main";
 
+export type RpcCall = (
+  method: string,
+  params?: unknown[],
+  timeoutMs?: number,
+) => Promise<unknown>;
+
+export function parseRpcNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+export function supplyFromBlockchainInfo(blockchainInfo: unknown): number | null {
+  if (!blockchainInfo || typeof blockchainInfo !== "object") {
+    return null;
+  }
+
+  return parseRpcNumber((blockchainInfo as Record<string, unknown>).totalsupply);
+}
+
+export function parseVrcMiningInfo(miningInfo: unknown): {
+  interestRatePercent: number | null;
+  netStakeWeight: number | null;
+  expectedStakeTimeSeconds: number | null;
+  difficulty: number | null;
+} {
+  if (!miningInfo || typeof miningInfo !== "object") {
+    return {
+      interestRatePercent: null,
+      netStakeWeight: null,
+      expectedStakeTimeSeconds: null,
+      difficulty: null,
+    };
+  }
+
+  const info = miningInfo as Record<string, unknown>;
+  const interestRatePercent = parseRpcNumber(info.stakeinterest);
+  const netStakeWeight =
+    parseRpcNumber(info.netstakeweight) ?? parseRpcNumber(info.networkstakeweight);
+
+  let difficulty: number | null = null;
+  const difficultyValue = info.difficulty;
+  if (difficultyValue && typeof difficultyValue === "object") {
+    const difficultyObj = difficultyValue as Record<string, unknown>;
+    difficulty =
+      parseRpcNumber(difficultyObj["proof-of-work"]) ??
+      parseRpcNumber(difficultyObj["proof-of-stake"]);
+  } else {
+    difficulty = parseRpcNumber(difficultyValue);
+  }
+
+  let expectedStakeTimeSeconds: number | null = null;
+  const walletWeight =
+    info.stakeweight && typeof info.stakeweight === "object"
+      ? parseRpcNumber((info.stakeweight as Record<string, unknown>).combined)
+      : null;
+
+  if (
+    walletWeight != null &&
+    walletWeight > 0 &&
+    netStakeWeight != null &&
+    netStakeWeight > 0
+  ) {
+    expectedStakeTimeSeconds = Math.round(
+      (netStakeWeight / walletWeight) * getTargetBlockTimeSeconds("vrc"),
+    );
+  }
+
+  return {
+    interestRatePercent,
+    netStakeWeight,
+    expectedStakeTimeSeconds,
+    difficulty,
+  };
+}
+
+function utxoSetTimeoutMs(chainId: ChainId): number {
+  if (chainId === "vrc") {
+    return Number(process.env.VCEXP_VRC_UTXO_SET_TIMEOUT_MS ?? 120_000);
+  }
+
+  return Number(process.env.VCEXP_UTXO_SET_TIMEOUT_MS ?? 30_000);
+}
+
 export async function fetchOnChainSupply(
   chainId: ChainId,
-  rpcCall: (method: string, params?: unknown[]) => Promise<unknown>,
+  rpcCall: RpcCall,
   blocks: number,
+  blockchainInfo?: unknown,
 ): Promise<number | null> {
+  const fromChain = supplyFromBlockchainInfo(blockchainInfo);
+  if (fromChain != null) {
+    return fromChain;
+  }
+
   try {
-    const utxo = await Promise.race([
-      rpcCall("gettxoutsetinfo"),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 8_000)),
-    ]);
+    const utxo = await rpcCall("gettxoutsetinfo", [], utxoSetTimeoutMs(chainId));
     if (utxo && typeof utxo === "object" && "total_amount" in utxo) {
-      const supply = Number((utxo as { total_amount?: number | string }).total_amount);
-      if (Number.isFinite(supply)) return supply;
+      const supply = parseRpcNumber(
+        (utxo as { total_amount?: number | string }).total_amount,
+      );
+      if (supply != null) {
+        return supply;
+      }
     }
   } catch {
     /* fall through */
@@ -99,7 +197,7 @@ export function hashPerSecToKhPerMin(hashPerSec: number): number {
 }
 
 export async function fetchVrmHashrate(
-  rpcCall: (method: string, params?: unknown[]) => Promise<unknown>,
+  rpcCall: RpcCall,
   chainId: ChainId = "vrm",
 ): Promise<{ currentHashPerSec: number | null; hashrate7dHashPerSec: number | null }> {
   const targetBlockTimeSeconds = getTargetBlockTimeSeconds(chainId);
@@ -146,19 +244,26 @@ export async function fetchVrmHashrate(
     currentHashPerSec = hashrate7dHashPerSec;
   }
 
+  if (
+    (hashrate7dHashPerSec == null || hashrate7dHashPerSec <= 0) &&
+    currentHashPerSec != null &&
+    currentHashPerSec > 0
+  ) {
+    hashrate7dHashPerSec = currentHashPerSec;
+  }
+
   return { currentHashPerSec, hashrate7dHashPerSec };
 }
 
 async function safeNetworkHashrate(
-  rpcCall: (method: string, params?: unknown[]) => Promise<unknown>,
+  rpcCall: RpcCall,
   blockCount: number,
 ): Promise<number | null> {
   try {
-    const hashrate = (await Promise.race([
-      rpcCall("getnetworkhashps", [blockCount]),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), 8_000)),
-    ])) as number | null;
-    if (typeof hashrate === "number" && hashrate > 0) return hashrate;
+    const hashrate = await rpcCall("getnetworkhashps", [blockCount], 15_000);
+    if (typeof hashrate === "number" && hashrate > 0) {
+      return hashrate;
+    }
   } catch {
     /* method may not exist on Verium */
   }
