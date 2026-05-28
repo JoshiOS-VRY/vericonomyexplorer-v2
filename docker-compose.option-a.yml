@@ -30,8 +30,8 @@ services:
   explorer-web:
     container_name: vericonomy-explorer-web
     build:
-      context: ./explorer-web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: explorer-web/Dockerfile
     image: vericonomy-explorer-web:option-a
     restart: unless-stopped
     env_file:
