@@ -13,11 +13,11 @@
     Referrer-Policy "strict-origin-when-cross-origin"
   }
 
-  reverse_proxy explorer-web:3000
+  reverse_proxy vericonomy-explorer-web:3000
 }
 
 # Keep legacy Express routes public on a dedicated hostname.
 {$LEGACY_PUBLIC_DOMAIN} {
   encode zstd gzip
-  reverse_proxy explorer-express:3002
+  reverse_proxy vericonomy-explorer-express:3002
 }
