@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTipStream } from "@/components/explorer/TipStreamProvider";
 import { fetchChainSummary, fetchLatestBlocks } from "@/lib/api/client";
+import { getChainTipHeight } from "@/lib/chainDisplay";
 import { usePageVisible } from "@/hooks/usePageVisible";
 import type { ChainSummary, IndexedBlock } from "@/lib/api/types";
 
-const HIGHLIGHT_MS = 5_000;
 const SUMMARY_REFRESH_DEBOUNCE_MS = 2_000;
+const SUMMARY_POLL_MS = 30_000;
 
 function mergeLatestBlocks(
   prevBlocks: IndexedBlock[],
@@ -37,7 +38,6 @@ export interface LiveChainState {
   chainHeight: number | null;
   addressCount: number;
   latestBlocks: IndexedBlock[];
-  newBlockHashes: Set<string>;
   heightPulse: boolean;
   lastUpdated: number;
   isRefreshing: boolean;
@@ -62,7 +62,6 @@ export function useLiveChainSummary(
   );
 
   const [summary, setSummary] = useState(initialSummary);
-  const [newBlockHashes, setNewBlockHashes] = useState<Set<string>>(new Set());
   const [heightPulse, setHeightPulse] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(Date.now());
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -111,11 +110,6 @@ export function useLiveChainSummary(
 
       if (incomingNew.length > 0) {
         incomingNew.forEach((block) => knownHashesRef.current.add(block.hash));
-        setNewBlockHashes(new Set(incomingNew.map((block) => block.hash)));
-
-        window.setTimeout(() => {
-          setNewBlockHashes(new Set());
-        }, HIGHLIGHT_MS);
       }
 
       merged.latestBlocks.forEach((block) =>
@@ -151,11 +145,6 @@ export function useLiveChainSummary(
 
       if (incomingNew.length > 0) {
         incomingNew.forEach((block) => knownHashesRef.current.add(block.hash));
-        setNewBlockHashes(new Set(incomingNew.map((block) => block.hash)));
-
-        window.setTimeout(() => {
-          setNewBlockHashes(new Set());
-        }, HIGHLIGHT_MS);
       }
 
       mergedBlocks.forEach((block) => knownHashesRef.current.add(block.hash));
@@ -255,11 +244,6 @@ export function useLiveChainSummary(
 
         if (!knownHashesRef.current.has(tip.hash)) {
           knownHashesRef.current.add(tip.hash);
-          setNewBlockHashes(new Set([tip.hash]));
-
-          window.setTimeout(() => {
-            setNewBlockHashes(new Set());
-          }, HIGHLIGHT_MS);
         }
 
         if (tipRef.current != null && tip.height > tipRef.current) {
@@ -331,6 +315,40 @@ export function useLiveChainSummary(
     visible,
   ]);
 
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      void refresh();
+      void refreshLatestBlocks();
+    }, SUMMARY_POLL_MS);
+
+    return () => window.clearInterval(interval);
+  }, [refresh, refreshLatestBlocks, visible]);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    const maxIndexed = summary.health.heights.maxIndexedHeight;
+    const blockTop = summary.latestBlocks[0]?.height;
+    if (
+      maxIndexed != null &&
+      blockTop != null &&
+      maxIndexed > blockTop
+    ) {
+      void refreshLatestBlocks();
+    }
+  }, [
+    refreshLatestBlocks,
+    summary.health.heights.maxIndexedHeight,
+    summary.latestBlocks,
+    visible,
+  ]);
+
   useEffect(
     () => () => {
       if (summaryRefreshTimerRef.current) {
@@ -340,16 +358,13 @@ export function useLiveChainSummary(
     [],
   );
 
-  const chainHeight =
-    summary.health.heights.bestRpcHeight ??
-    summary.health.heights.maxIndexedHeight;
+  const chainHeight = getChainTipHeight(summary.health);
 
   return {
     summary,
     chainHeight,
     addressCount: summary.health.counts.addressCount,
     latestBlocks: summary.latestBlocks,
-    newBlockHashes,
     heightPulse,
     lastUpdated,
     isRefreshing,

@@ -91,12 +91,10 @@ export function VericonomyHomeDashboard({
         <LiveBlocksFeed
           chainId="vrm"
           blocks={live.vrm.latestBlocks}
-          newBlockHashes={live.vrm.newBlockHashes}
         />
         <LiveBlocksFeed
           chainId="vrc"
           blocks={live.vrc.latestBlocks}
-          newBlockHashes={live.vrc.newBlockHashes}
         />
       </div>
 

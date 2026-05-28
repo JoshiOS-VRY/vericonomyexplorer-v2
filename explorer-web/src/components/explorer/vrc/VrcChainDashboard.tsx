@@ -23,7 +23,6 @@ export function VrcChainDashboard({
     summary,
     chainHeight,
     latestBlocks,
-    newBlockHashes,
     heightPulse,
   } = live;
 
@@ -40,11 +39,7 @@ export function VrcChainDashboard({
       />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <LiveBlocksFeed
-          chainId="vrc"
-          blocks={latestBlocks}
-          newBlockHashes={newBlockHashes}
-        />
+        <LiveBlocksFeed chainId="vrc" blocks={latestBlocks} />
         <VrcRichlistPreview richlist={initialRichlist} />
       </div>
 

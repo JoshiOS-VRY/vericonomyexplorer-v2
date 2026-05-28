@@ -59,7 +59,6 @@ export function VericonomyHomeLiveBand({
           market={market.vrm}
           network={network.vrm}
           blocks={live.vrm.latestBlocks}
-          newBlockHashes={live.vrm.newBlockHashes}
         />
         <ChainHubSection
           chainId="vrc"
@@ -69,7 +68,6 @@ export function VericonomyHomeLiveBand({
           market={market.vrc}
           network={network.vrc}
           blocks={live.vrc.latestBlocks}
-          newBlockHashes={live.vrc.newBlockHashes}
         />
       </div>
     </div>

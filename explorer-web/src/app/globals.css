@@ -222,44 +222,6 @@
   background-color: transparent;
 }
 
-@keyframes toast-enter {
-  from {
-    opacity: 0;
-    transform: translateX(1rem);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.toast-enter {
-  animation: toast-enter 0.25s ease-out;
-}
-
-@keyframes live-block-enter {
-  from {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes live-block-flash {
-  0% {
-    background-color: color-mix(in srgb, var(--accent) 22%, transparent);
-    box-shadow: inset 0 0 0 1px
-      color-mix(in srgb, var(--accent) 35%, transparent);
-  }
-  100% {
-    background-color: transparent;
-    box-shadow: inset 0 0 0 1px transparent;
-  }
-}
-
 @keyframes live-height-pulse {
   0% {
     transform: scale(1);
@@ -285,12 +247,6 @@
     opacity: 0.65;
     transform: scale(1.35);
   }
-}
-
-.live-block-new {
-  animation:
-    live-block-enter 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-    live-block-flash 2s ease-out;
 }
 
 .live-height-pulse {
@@ -370,12 +326,6 @@
 
 .bc-table tbody tr:last-child td {
   border-bottom: none;
-}
-
-.bc-table tbody tr.live-block-new {
-  animation:
-    live-block-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1),
-    live-block-flash 2s ease-out;
 }
 
 .bc-hash-link {
@@ -667,75 +617,13 @@ html:not(.light) .chain-hub-section[data-chain="vrc"] a:not(.chain-explore-btn):
   object-fit: contain;
 }
 
-.block-chain-strip__node--arrived {
-  animation: block-chain-node-arrive 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.block-chain-strip__node--tip.block-chain-strip__node--arrived {
-  animation-name: block-chain-node-arrive-tip;
-}
-
-.block-chain-strip__link:hover .block-chain-strip__node:not(.block-chain-strip__node--arrived),
-.block-chain-strip__node--tip:not(.block-chain-strip__node--arrived) {
+.block-chain-strip__link:hover .block-chain-strip__node,
+.block-chain-strip__node--tip {
   transform: scale(1.08);
   box-shadow:
     0 2px 8px color-mix(in srgb, var(--block-chain-accent) 35%, transparent),
     0 1px 2px rgb(0 0 0 / 0.15),
     inset 0 1px 0 rgb(255 255 255 / 0.25);
-}
-
-@keyframes block-chain-node-arrive {
-  0% {
-    opacity: 0.45;
-    transform: scale(0.88);
-  }
-  55% {
-    opacity: 1;
-    transform: scale(1.06);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes block-chain-node-arrive-tip {
-  0% {
-    opacity: 0.45;
-    transform: scale(0.88);
-  }
-  55% {
-    opacity: 1;
-    transform: scale(1.1);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1.08);
-  }
-}
-
-.block-chain-table-row--new {
-  background-color: color-mix(
-    in srgb,
-    var(--block-chain-accent, var(--accent)) 10%,
-    transparent
-  );
-  animation: block-chain-row-highlight 2.2s ease-out forwards;
-}
-
-@keyframes block-chain-row-highlight {
-  0% {
-    background-color: color-mix(
-      in srgb,
-      var(--block-chain-accent, var(--accent)) 22%,
-      transparent
-    );
-    box-shadow: inset 3px 0 0 var(--block-chain-accent, var(--accent));
-  }
-  100% {
-    background-color: transparent;
-    box-shadow: inset 3px 0 0 transparent;
-  }
 }
 
 .block-chain-strip__label {
@@ -846,15 +734,8 @@ li[role="presentation"] + .search-dropdown-section {
     animation: none;
   }
 
-  .toast-enter {
-    animation: none;
-  }
-
-  .live-block-new,
   .live-height-pulse,
-  .live-dot-breathe,
-  .block-chain-table-row--new,
-  .block-chain-strip__node--arrived {
+  .live-dot-breathe {
     animation: none;
   }
 }

@@ -6,19 +6,13 @@ import { BcPanel, BcTableLink } from "@/components/explorer/BlockchairUi";
 import { formatHeight } from "@/components/explorer/ExplorerUi";
 import type { IndexedBlock } from "@/lib/api/types";
 import { CHAIN_EXPLORERS } from "@/lib/chainDisplay";
-import { cn } from "@/lib/utils";
 
 interface LiveBlocksFeedProps {
   chainId: "vrm" | "vrc";
   blocks: IndexedBlock[];
-  newBlockHashes: Set<string>;
 }
 
-export function LiveBlocksFeed({
-  chainId,
-  blocks,
-  newBlockHashes,
-}: LiveBlocksFeedProps) {
+export function LiveBlocksFeed({ chainId, blocks }: LiveBlocksFeedProps) {
   const config = CHAIN_EXPLORERS[chainId];
   const rows = blocks.slice(0, 8);
   const action =
@@ -51,10 +45,7 @@ export function LiveBlocksFeed({
                 return (
                   <tr
                     key={block.hash}
-                    className={cn(
-                      "live-block-row transition-colors hover:bg-bg-subtle/80",
-                      newBlockHashes.has(block.hash) && "live-block-new",
-                    )}
+                    className="live-block-row transition-colors hover:bg-bg-subtle/80"
                   >
                     <td>
                       {blockHref ? (

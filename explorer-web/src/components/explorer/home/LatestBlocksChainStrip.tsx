@@ -1,6 +1,5 @@
 "use client";
 
-import { useReducedMotion } from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
@@ -44,7 +43,6 @@ export interface ChainHubSectionProps {
   market: ChainMarket;
   network: VrmNetworkStats | VrcNetworkStats;
   blocks: IndexedBlock[];
-  newBlockHashes: Set<string>;
 }
 
 /** Chain overview, market, network, live block strip, and recent blocks table. */
@@ -56,7 +54,6 @@ export function ChainHubSection({
   market,
   network,
   blocks,
-  newBlockHashes,
 }: ChainHubSectionProps) {
   const config = CHAIN_EXPLORERS[chainId];
   const theme = CHAIN_THEME[chainId];
@@ -67,7 +64,6 @@ export function ChainHubSection({
   const displayHeight = chainHeight ?? getChainTipHeight(health);
   const stripBlocks = [...blocks.slice(0, STRIP_BLOCK_COUNT)].reverse();
   const tableRows = blocks.slice(0, HUB_TABLE_ROW_COUNT);
-  const reducedMotion = useReducedMotion();
   const producerColumnLabel = chainId === "vrm" ? "Extracted by" : "Interest";
 
   return (
@@ -215,7 +211,6 @@ export function ChainHubSection({
                     chainLogo={config.logo}
                     blockHref={config.blockHref?.(block.height)}
                     isTip={index === stripBlocks.length - 1}
-                    isNew={newBlockHashes.has(block.hash) && !reducedMotion}
                   />
                 ))}
               </div>
@@ -241,7 +236,6 @@ export function ChainHubSection({
                       block={block}
                       chainId={chainId}
                       blockHref={config.blockHref?.(block.height)}
-                      isNew={newBlockHashes.has(block.hash) && !reducedMotion}
                     />
                   ))}
                 </tbody>
@@ -259,13 +253,11 @@ function BlockChainStripCell({
   chainLogo,
   blockHref,
   isTip,
-  isNew,
 }: {
   block: IndexedBlock;
   chainLogo: string;
   blockHref?: string;
   isTip: boolean;
-  isNew: boolean;
 }) {
   const nodeSlot = (
     <span className="block-chain-strip__node-slot">
@@ -273,7 +265,6 @@ function BlockChainStripCell({
         className={cn(
           "block-chain-strip__node",
           isTip && "block-chain-strip__node--tip",
-          isNew && "block-chain-strip__node--arrived",
         )}
         title={`Block #${formatHeight(block.height)}`}
       >
@@ -310,22 +301,15 @@ function BlockChainTableRow({
   block,
   chainId,
   blockHref,
-  isNew,
 }: {
   block: IndexedBlock;
   chainId: ChainId;
   blockHref?: string;
-  isNew: boolean;
 }) {
   const hashShort = formatBlockHashShort(block.hash);
 
   return (
-    <tr
-      className={cn(
-        "transition-colors hover:bg-bg-subtle/80",
-        isNew && "block-chain-table-row--new",
-      )}
-    >
+    <tr className="transition-colors hover:bg-bg-subtle/80">
       <td>
         {blockHref ? (
           <BcTableLink href={blockHref} className="tabular-nums" prefetch>

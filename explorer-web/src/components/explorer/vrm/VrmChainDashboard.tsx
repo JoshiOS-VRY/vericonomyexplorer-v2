@@ -29,7 +29,6 @@ export function VrmChainDashboard({
     chainHeight,
     addressCount,
     latestBlocks,
-    newBlockHashes,
     heightPulse,
   } = live;
 
@@ -83,7 +82,7 @@ export function VrmChainDashboard({
       <LazyVrmChainActivityChart />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <VrmBlocksPanel blocks={latestBlocks} newBlockHashes={newBlockHashes} />
+        <VrmBlocksPanel blocks={latestBlocks} />
         <div className="flex flex-col gap-6">
           <VrmRichlistPreview richlist={initialRichlist} />
           <VrmLeaderboardPreview leaderboard={initialLeaderboard} />

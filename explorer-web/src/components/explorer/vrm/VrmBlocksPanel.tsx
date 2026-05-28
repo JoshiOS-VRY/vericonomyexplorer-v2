@@ -4,15 +4,9 @@ import { BcPanel, BcTableLink } from "@/components/explorer/BlockchairUi";
 import { ExtractedByCell } from "@/components/explorer/block/ExtractedByCell";
 import { formatHeight } from "@/components/explorer/ExplorerUi";
 import type { IndexedBlock } from "@/lib/api/types";
-import { cn, formatDifficulty } from "@/lib/utils";
+import { formatDifficulty } from "@/lib/utils";
 
-export function VrmBlocksPanel({
-  blocks,
-  newBlockHashes,
-}: {
-  blocks: IndexedBlock[];
-  newBlockHashes: Set<string>;
-}) {
+export function VrmBlocksPanel({ blocks }: { blocks: IndexedBlock[] }) {
   return (
     <BcPanel title="Blocks" flush>
       <div className="overflow-x-auto">
@@ -30,7 +24,7 @@ export function VrmBlocksPanel({
           </thead>
           <tbody>
             {blocks.map((block) => (
-              <tr key={block.hash} className={cn(newBlockHashes.has(block.hash) && "live-block-new")}>
+              <tr key={block.hash}>
                 <td>
                   <BcTableLink href={`/vrm/block/${block.height}`} className="tabular-nums">
                     {formatHeight(block.height)}

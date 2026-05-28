@@ -2,10 +2,13 @@ import type { ChainHealth, ChainSummary } from "@/lib/api/types";
 import { formatNumber } from "@/lib/utils";
 
 export function getChainTipHeight(health: ChainHealth): number | null {
-  const { bestRpcHeight, maxIndexedHeight } = health.heights;
-  if (bestRpcHeight != null) return bestRpcHeight;
-  if (maxIndexedHeight != null) return maxIndexedHeight;
-  return null;
+  const { bestRpcHeight, maxIndexedHeight, lastIndexedHeight } = health.heights;
+  const tip = Math.max(
+    bestRpcHeight ?? Number.NEGATIVE_INFINITY,
+    maxIndexedHeight ?? Number.NEGATIVE_INFINITY,
+    lastIndexedHeight ?? Number.NEGATIVE_INFINITY,
+  );
+  return tip > Number.NEGATIVE_INFINITY ? tip : null;
 }
 
 export function getChainStatusLabel(health: ChainHealth): string {
@@ -17,9 +20,27 @@ export function getLatestIndexedHeight(
   health: ChainHealth,
   latestBlockHeight?: number | null,
 ): number | null {
-  if (latestBlockHeight != null) return latestBlockHeight;
   const { lastIndexedHeight, maxIndexedHeight } = health.heights;
-  return lastIndexedHeight ?? maxIndexedHeight;
+  const fromHealth = Math.max(
+    lastIndexedHeight ?? Number.NEGATIVE_INFINITY,
+    maxIndexedHeight ?? Number.NEGATIVE_INFINITY,
+  );
+  const healthHeight =
+    fromHealth > Number.NEGATIVE_INFINITY ? fromHealth : null;
+
+  if (healthHeight != null && latestBlockHeight != null) {
+    return Math.max(healthHeight, latestBlockHeight);
+  }
+
+  if (latestBlockHeight != null) {
+    return latestBlockHeight;
+  }
+
+  return healthHeight;
+}
+
+function isNearTip(health: ChainHealth): boolean {
+  return health.checks?.nearTip === true;
 }
 
 /** True when the indexed tip matches the live chain tip height. */
@@ -28,6 +49,10 @@ export function isChainAtTip(
   latestBlockHeight?: number | null,
   liveTipHeight?: number | null,
 ): boolean {
+  if (isNearTip(health)) {
+    return true;
+  }
+
   const tipHeight =
     health.heights.bestRpcHeight ?? liveTipHeight ?? getChainTipHeight(health);
   const indexedHeight = getLatestIndexedHeight(health, latestBlockHeight);
@@ -37,7 +62,9 @@ export function isChainAtTip(
   }
 
   const { blocksBehind } = health.heights;
-  if (blocksBehind != null) return blocksBehind === 0;
+  if (blocksBehind != null) {
+    return blocksBehind === 0;
+  }
 
   return false;
 }

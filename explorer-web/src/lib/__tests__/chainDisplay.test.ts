@@ -42,6 +42,27 @@ describe("isChainAtTip", () => {
     expect(getChainSyncLabel(baseHealth(), 100)).toBe("Live");
   });
 
+  it("is offline when blocksBehind exceeds the tip threshold", () => {
+    const health = baseHealth({
+      heights: {
+        bestRpcHeight: 120,
+        minIndexedHeight: 0,
+        maxIndexedHeight: 100,
+        lastIndexedHeight: 100,
+        blocksBehind: 20,
+      },
+      explorerStatus: {
+        label: "Updating",
+        message: "20 blocks behind the latest block.",
+        syncing: true,
+        blocksBehind: 20,
+      },
+    });
+
+    expect(isChainAtTip(health, 100)).toBe(false);
+    expect(getChainSyncLabel(health, 100)).toBe("Offline");
+  });
+
   it("is offline when blocksBehind is positive and indexed tip is behind", () => {
     const health = baseHealth({
       heights: {
@@ -76,6 +97,37 @@ describe("isChainAtTip", () => {
 
     expect(isChainAtTip(health, 105)).toBe(true);
     expect(getChainSyncLabel(health, 105)).toBe("Live");
+  });
+
+  it("is live when health indexed height is ahead of a stale latest block list", () => {
+    const health = baseHealth({
+      heights: {
+        bestRpcHeight: 1098850,
+        minIndexedHeight: 0,
+        maxIndexedHeight: 1098850,
+        lastIndexedHeight: 1098850,
+        blocksBehind: 0,
+      },
+    });
+
+    expect(isChainAtTip(health, 1098846)).toBe(true);
+    expect(getChainSyncLabel(health, 1098846)).toBe("Live");
+  });
+
+  it("is live when within the default tip threshold even if block list lags", () => {
+    const health = baseHealth({
+      heights: {
+        bestRpcHeight: 105,
+        minIndexedHeight: 0,
+        maxIndexedHeight: 100,
+        lastIndexedHeight: 100,
+        blocksBehind: 5,
+      },
+      checks: { nearTip: true },
+    });
+
+    expect(isChainAtTip(health, 100)).toBe(true);
+    expect(getChainSyncLabel(health, 100)).toBe("Live");
   });
 
   it("is offline when latest indexed block height differs from rpc tip", () => {
