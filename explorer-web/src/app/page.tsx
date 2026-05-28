@@ -10,6 +10,8 @@ import type {
   RichlistResult,
 } from "@/lib/api/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   let shell: HomeShellPayload;
 

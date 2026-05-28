@@ -61,9 +61,9 @@ export function ChainHubSection({
   const config = CHAIN_EXPLORERS[chainId];
   const theme = CHAIN_THEME[chainId];
   const health = summary.health;
-  const tipBlock = summary.latestBlocks[0];
-  const atTip = isChainAtTip(health, tipBlock?.height);
-  const statusTone = getChainStatusTone(health, tipBlock?.height);
+  const tipBlock = blocks[0] ?? summary.latestBlocks[0];
+  const atTip = isChainAtTip(health, tipBlock?.height, chainHeight);
+  const statusTone = getChainStatusTone(health, tipBlock?.height, chainHeight);
   const displayHeight = chainHeight ?? getChainTipHeight(health);
   const stripBlocks = [...blocks.slice(0, STRIP_BLOCK_COUNT)].reverse();
   const tableRows = blocks.slice(0, HUB_TABLE_ROW_COUNT);
@@ -104,7 +104,7 @@ export function ChainHubSection({
             </div>
             <div className="mt-0.5 flex items-center gap-1.5 text-xs text-fg-muted">
               <StatusDot tone={statusTone} pulse={atTip} />
-              <span>{getChainSyncLabel(health, tipBlock?.height)}</span>
+              <span>{getChainSyncLabel(health, tipBlock?.height, chainHeight)}</span>
             </div>
           </div>
         </div>

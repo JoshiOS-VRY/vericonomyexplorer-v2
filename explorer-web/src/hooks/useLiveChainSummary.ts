@@ -301,6 +301,17 @@ export function useLiveChainSummary(
     }
   }, [initialSummary, scheduleSummaryRefresh, visible]);
 
+  // Refetch when the home band mounts or the tab becomes visible again (client
+  // navigations can reuse stale RSC shell data until we pull fresh summaries).
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    void refresh();
+    void refreshLatestBlocks();
+  }, [refresh, refreshLatestBlocks, visible]);
+
   useEffect(() => {
     if (!visible) {
       return;

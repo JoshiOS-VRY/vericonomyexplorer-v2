@@ -50,10 +50,12 @@ export function VericonomyHomeDashboard({
   const vrmLive = isChainLive(
     live.vrm.summary.health,
     live.vrm.summary.latestBlocks[0]?.height,
+    live.vrm.chainHeight,
   );
   const vrcLive = isChainLive(
     live.vrc.summary.health,
     live.vrc.summary.latestBlocks[0]?.height,
+    live.vrc.chainHeight,
   );
 
   return (
@@ -136,7 +138,7 @@ function ChainOverviewPanel({
   const config = CHAIN_EXPLORERS[chainId];
   const health = summary.health;
   const tipBlock = summary.latestBlocks[0];
-  const live = isChainLive(health, tipBlock?.height);
+  const live = isChainLive(health, tipBlock?.height, chainHeight);
   const exploreReady = config.exploreHref != null;
 
   return (

@@ -38,10 +38,12 @@ export function VericonomyHomeLiveBand({
   const vrmLive = isChainLive(
     vrmSummary.health,
     vrmSummary.latestBlocks[0]?.height,
+    live.vrm.chainHeight,
   );
   const vrcLive = isChainLive(
     vrcSummary.health,
     vrcSummary.latestBlocks[0]?.height,
+    live.vrc.chainHeight,
   );
 
   return (
