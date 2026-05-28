@@ -2,8 +2,13 @@
 
 const HOUR_SECONDS = 3600;
 
+function toSafeInteger(value) {
+	const parsed = typeof value === "bigint" ? Number(value) : Number(value);
+	return Number.isFinite(parsed) ? Math.trunc(parsed) : 0;
+}
+
 function hourBucketStart(time) {
-	const normalized = Number(time || 0);
+	const normalized = toSafeInteger(time);
 	if (!normalized) {
 		return 0;
 	}
@@ -12,7 +17,8 @@ function hourBucketStart(time) {
 }
 
 function getPeriodBoundsForTime(period, timeSeconds) {
-	const now = new Date(timeSeconds * 1000);
+	const seconds = toSafeInteger(timeSeconds);
+	const now = new Date(seconds * 1000);
 	const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
 	if (period === "month") {
@@ -105,8 +111,8 @@ function recordAddressPeriodEvent(statements, chainId, address, deltaSats, block
 			sent,
 			delta,
 			txCountIncrement ? 1 : 0,
-			blockHeight,
-			blockTime,
+			toSafeInteger(blockHeight),
+			toSafeInteger(blockTime),
 			now
 		);
 	}
@@ -187,5 +193,6 @@ module.exports = {
 	recordTransactionActivity,
 	recordBlockActivity,
 	hourBucketStart,
-	getPeriodBoundsForTime
+	getPeriodBoundsForTime,
+	toSafeInteger
 };
