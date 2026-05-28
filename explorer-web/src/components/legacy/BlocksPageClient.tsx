@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { BlocksTable, PaginationBar, type RpcBlockRow } from "@/components/legacy/LegacyShared";
 import { AlertBanner } from "@/components/explorer/ExplorerUi";
 import { Button } from "@/components/ui/Button";
-import { getBlockTip, getInternalApi } from "@/lib/api/legacy";
+import { fetchLegacyBlockTip, fetchLegacyBlocksByHeight } from "@/lib/api/client";
 
 const DEFAULT_LIMIT = 25;
 
@@ -27,7 +27,7 @@ export function BlocksPageClient({
 
     void (async () => {
       try {
-        const tip = await getBlockTip();
+        const tip = await fetchLegacyBlockTip();
         const count = tip.height;
         const heights: number[] = [];
 
@@ -42,7 +42,7 @@ export function BlocksPageClient({
         }
 
         const rows = heights.length
-          ? await getInternalApi<RpcBlockRow[]>(`/blocks-by-height/${heights.join(",")}`)
+          ? await fetchLegacyBlocksByHeight<RpcBlockRow[]>(heights)
           : [];
 
         if (!cancelled) {

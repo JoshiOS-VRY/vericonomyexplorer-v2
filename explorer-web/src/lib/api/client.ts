@@ -93,4 +93,25 @@ export async function searchChainClient(
   return result.path;
 }
 
+async function browserJsonFetch<T>(url: string): Promise<T> {
+  const response = await fetch(url, {
+    cache: "no-store",
+    headers: { Accept: "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new ClientApiError(`Request failed: ${response.status}`, response.status);
+  }
+
+  return response.json() as Promise<T>;
+}
+
+export async function fetchLegacyBlockTip(): Promise<{ height: number; hash: string }> {
+  return browserJsonFetch("/api/proxy/blocks/tip");
+}
+
+export async function fetchLegacyBlocksByHeight<T>(heights: number[]): Promise<T> {
+  return browserJsonFetch(`/api/internal/blocks-by-height/${heights.join(",")}`);
+}
+
 export { getTipStreamUrl };
