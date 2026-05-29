@@ -219,7 +219,11 @@ export async function enrichChainSummary(
     if (tip) {
       summary.health = health.enrichWithLiveRpc(summary.health, tip.height, options);
     }
+  } catch {
+    /* keep indexed health when live tip lookup fails */
+  }
 
+  try {
     summary.latestBlocks = await enrichLatestBlocksLive(
       summary.latestBlocks,
       chainId,
@@ -227,10 +231,7 @@ export async function enrichChainSummary(
       options,
     );
   } catch {
-    summary.health = {
-      ...summary.health,
-      explorerStatus: offlineStatus,
-    };
+    /* block enrichment failure should not mark the chain offline */
   }
 
   return summary;

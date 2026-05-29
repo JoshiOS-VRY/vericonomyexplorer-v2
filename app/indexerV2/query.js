@@ -160,6 +160,8 @@ function getChainSummaryLite(chainId, options = {}) {
 
 const defaultLatestBlocksLimit = 10;
 const maxLatestBlocksLimit = 25;
+const defaultBlocksPageLimit = 20;
+const maxBlocksPageLimit = 100;
 
 function normalizeLatestBlocksLimit(value) {
 	const parsed = Number(value || defaultLatestBlocksLimit);
@@ -169,6 +171,16 @@ function normalizeLatestBlocksLimit(value) {
 	}
 
 	return Math.min(Math.floor(parsed), maxLatestBlocksLimit);
+}
+
+function normalizeBlocksPageLimit(value) {
+	const parsed = Number(value || defaultBlocksPageLimit);
+
+	if (!Number.isFinite(parsed) || parsed < 1) {
+		return defaultBlocksPageLimit;
+	}
+
+	return Math.min(Math.floor(parsed), maxBlocksPageLimit);
 }
 
 function getLatestBlocks(chainId, options = {}) {
@@ -197,6 +209,55 @@ function getLatestBlocks(chainId, options = {}) {
 		health: chainHealth,
 		latestBlocks: enrichedLatestBlocks,
 		source: getSource(chainHealth, "summary")
+	};
+}
+
+function getBlocksPage(chainId, options = {}) {
+	const db = options.db || dbModule.openDatabase();
+	const chain = normalizeChainId(chainId);
+	const limit = normalizeBlocksPageLimit(options.limit);
+	const offset = normalizeOffset(options.offset);
+	const chainHealth = resolveChainHealth(chain, options);
+
+	if (!chainHealth.checks.hasBlocks) {
+		return {
+			chainId: chain,
+			enabled: false,
+			health: chainHealth,
+			source: getSource(chainHealth, "blocks"),
+			items: [],
+			paging: getPaging(limit, offset, 0)
+		};
+	}
+
+	const countRow = db.prepare(`
+		SELECT COUNT(*) AS count
+		FROM blocks
+		WHERE chain_id = ? AND status = 'main'
+	`).get(chain);
+	const rows = db.prepare(`
+		SELECT height, hash, previous_hash, next_hash, time, tx_count, size, difficulty,
+			output_count, extracted_by, extracted_by_address
+		FROM blocks
+		WHERE chain_id = ? AND status = 'main'
+		ORDER BY height DESC
+		LIMIT ? OFFSET ?
+	`).all(chain, limit, offset).map(block => mapBlock(block));
+	let items = options.skipBlockEnrichment === true
+		? rows
+		: enrichLatestBlocks(db, chain, rows);
+
+	if (chain === "vrc") {
+		items = enrichBlockInterestRates(chain, items, { db });
+	}
+
+	return {
+		chainId: chain,
+		enabled: true,
+		health: chainHealth,
+		source: getSource(chainHealth, "blocks"),
+		items,
+		paging: getPaging(limit, offset, countRow.count)
 	};
 }
 
@@ -1454,7 +1515,12 @@ function enrichLatestBlocks(db, chain, blocks) {
 		return blocks;
 	}
 
-	if (blocks.every(block => block.outputCount != null)) {
+	const fullyEnriched = blocks.every(block =>
+		block.outputCount != null
+		&& (chain !== "vrm" || block.extractedByAddress || block.extractedBy)
+	);
+
+	if (fullyEnriched) {
 		return blocks;
 	}
 
@@ -2303,6 +2369,7 @@ module.exports = {
 	getChainSummary,
 	getChainSummaryLite,
 	getLatestBlocks,
+	getBlocksPage,
 	computeBlockTotalsRaw,
 	getRichlist,
 	getLeaderboard,

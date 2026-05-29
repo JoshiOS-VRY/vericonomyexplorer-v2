@@ -19,7 +19,7 @@ export function ChainExplorerHero({
   tipBlock: IndexedBlock | undefined;
 }) {
   const config = CHAIN_EXPLORERS[chainId];
-  const live = isChainLive(health, tipBlock?.height);
+  const live = isChainLive(health, tipBlock?.height, chainHeight);
   const tipHref =
     tipBlock && config.blockHref ? config.blockHref(tipBlock.height) : null;
   const chainLabel =

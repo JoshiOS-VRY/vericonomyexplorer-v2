@@ -1,6 +1,6 @@
 import { fetchChainSummary } from "@/lib/api/client";
 import type { ChainSummary, IndexedBlock } from "@/lib/api/types";
-import { getChainTipHeight } from "@/lib/chainDisplay";
+import { getChainTipHeight, mergeChainHealth } from "@/lib/chainDisplay";
 import {
   enrichBlocksFromPrevious,
   shouldApplyOptimisticTip,
@@ -135,32 +135,21 @@ function mergeSummary(chainId: ChainId, next: ChainSummary): ChainLiveSnapshot {
     prevTopHeight != null &&
     (nextTopHeight == null || prevTopHeight > nextTopHeight);
 
-  const mergedSummary: ChainSummary = usePrevBlocks
-    ? {
-        ...next,
-        latestBlocks: enrichBlocksFromPrevious(
-          prev.summary.latestBlocks,
-          next.latestBlocks,
-        ),
-        health: {
-          ...next.health,
-          heights: {
-            ...next.health.heights,
-            bestRpcHeight: Math.max(
-              next.health.heights.bestRpcHeight ?? 0,
-              prev.summary.health.heights.bestRpcHeight ?? 0,
-              prevTopHeight,
-            ),
-          },
-        },
-      }
-    : {
-        ...next,
-        latestBlocks: enrichBlocksFromPrevious(
-          prev.summary.latestBlocks,
-          next.latestBlocks,
-        ),
-      };
+  const mergedBlocks = usePrevBlocks
+    ? prev.summary.latestBlocks
+    : enrichBlocksFromPrevious(prev.summary.latestBlocks, next.latestBlocks);
+  const latestBlockHeight =
+    mergedBlocks[0]?.height ?? nextTopHeight ?? prevTopHeight ?? null;
+
+  const mergedSummary: ChainSummary = {
+    ...next,
+    latestBlocks: mergedBlocks,
+    health: mergeChainHealth(
+      prev.summary.health,
+      next.health,
+      latestBlockHeight,
+    ),
+  };
 
   const nextHeight =
     mergedSummary.health.heights.bestRpcHeight ??
@@ -268,9 +257,29 @@ function applyOptimisticTip(chainId: ChainId, tip: TipEvent): void {
       latestBlocks: nextBlocks,
       health: {
         ...current.summary.health,
+        checks: {
+          ...current.summary.health.checks,
+          nearTip: true,
+          hasRpcTip: true,
+        },
         heights: {
           ...current.summary.health.heights,
           bestRpcHeight: tip.height,
+          lastIndexedHeight: Math.max(
+            current.summary.health.heights.lastIndexedHeight ?? 0,
+            tip.height,
+          ),
+          maxIndexedHeight: Math.max(
+            current.summary.health.heights.maxIndexedHeight ?? 0,
+            tip.height,
+          ),
+          blocksBehind: 0,
+        },
+        explorerStatus: {
+          label: "Live",
+          message: "Up to date.",
+          syncing: false,
+          blocksBehind: 0,
         },
       },
     },

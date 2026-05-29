@@ -115,6 +115,13 @@ export interface Paging {
   hasMore: boolean;
 }
 
+export interface BlocksPageResult {
+  chainId: string;
+  enabled?: boolean;
+  items: IndexedBlock[];
+  paging: Paging;
+}
+
 export interface ChainSummary {
   chainId: string;
   health: ChainHealth;

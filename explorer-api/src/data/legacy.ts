@@ -59,6 +59,30 @@ export async function fetchLatestBlocks(
   );
 }
 
+export async function fetchBlocksPage(
+  chainId: string,
+  options: Record<string, unknown> = {},
+) {
+  const queryOptions = { skipBlockEnrichment: false, ...options };
+  const indexed = (await runIndexerQuery<Record<string, unknown>>(
+    "getBlocksPageIndexed",
+    [chainId],
+    queryOptions,
+  )) as Record<string, unknown>;
+
+  const items = await enrichLatestBlocksLive(
+    indexed.items,
+    chainId as ChainId,
+    indexed.health as Record<string, unknown>,
+    { ...queryOptions, skipLiveBlocks: true },
+  );
+
+  return {
+    ...indexed,
+    items,
+  };
+}
+
 export async function fetchLandingData() {
   const skipOpts = { skipLiveBlocks: true, skipLiveRpc: true };
   const bundle = (await runIndexerQuery<{

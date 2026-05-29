@@ -1,6 +1,15 @@
 import type { ChainHealth, ChainSummary } from "@/lib/api/types";
 import { formatNumber } from "@/lib/utils";
 
+function maxHeight(
+  ...values: Array<number | null | undefined>
+): number | null {
+  const nums = values.filter(
+    (value): value is number => value != null && Number.isFinite(value),
+  );
+  return nums.length > 0 ? Math.max(...nums) : null;
+}
+
 export function getChainTipHeight(health: ChainHealth): number | null {
   const { bestRpcHeight, maxIndexedHeight, lastIndexedHeight } = health.heights;
   const tip = Math.max(
@@ -39,8 +48,89 @@ export function getLatestIndexedHeight(
   return healthHeight;
 }
 
-function isNearTip(health: ChainHealth): boolean {
-  return health.checks?.nearTip === true;
+function getTipThreshold(health: ChainHealth): number {
+  return health.heights.tipThreshold ?? 10;
+}
+
+function isWithinTipThreshold(
+  health: ChainHealth,
+  blocksBehind: number | null,
+): boolean {
+  return blocksBehind != null && blocksBehind >= 0 && blocksBehind <= getTipThreshold(health);
+}
+
+/** Preserve live sync signals when poll responses regress between block events. */
+export function mergeChainHealth(
+  prev: ChainHealth,
+  next: ChainHealth,
+  latestBlockHeight?: number | null,
+): ChainHealth {
+  const threshold = getTipThreshold(next);
+  const bestRpcHeight = maxHeight(
+    prev.heights.bestRpcHeight,
+    next.heights.bestRpcHeight,
+    latestBlockHeight,
+  );
+  const lastIndexedHeight = maxHeight(
+    prev.heights.lastIndexedHeight,
+    next.heights.lastIndexedHeight,
+    latestBlockHeight,
+  );
+  const maxIndexedHeight = maxHeight(
+    prev.heights.maxIndexedHeight,
+    next.heights.maxIndexedHeight,
+    latestBlockHeight,
+  );
+  const blocksBehind =
+    bestRpcHeight != null && lastIndexedHeight != null
+      ? Math.max(0, bestRpcHeight - lastIndexedHeight)
+      : next.heights.blocksBehind ?? prev.heights.blocksBehind ?? null;
+  const nearTip =
+    next.checks?.nearTip === true ||
+    prev.checks?.nearTip === true ||
+    isWithinTipThreshold(next, blocksBehind);
+  const hasRpcTip =
+    next.checks?.hasRpcTip === true ||
+    prev.checks?.hasRpcTip === true ||
+    bestRpcHeight != null;
+
+  let explorerStatus = next.explorerStatus ?? prev.explorerStatus;
+  if (nearTip && explorerStatus?.label === "Offline") {
+    if (blocksBehind === 0) {
+      explorerStatus = {
+        label: "Live",
+        message: "Up to date.",
+        syncing: false,
+        blocksBehind: 0,
+      };
+    } else if (blocksBehind != null && blocksBehind > 0) {
+      explorerStatus = {
+        label: "Updating",
+        message: `${blocksBehind.toLocaleString()} block${blocksBehind === 1 ? "" : "s"} behind the latest block.`,
+        syncing: true,
+        blocksBehind,
+      };
+    }
+  }
+
+  return {
+    ...next,
+    checks: {
+      ...prev.checks,
+      ...next.checks,
+      nearTip,
+      hasRpcTip,
+    },
+    heights: {
+      ...next.heights,
+      bestRpcHeight,
+      lastIndexedHeight,
+      maxIndexedHeight,
+      blocksBehind,
+      tipThreshold: threshold,
+    },
+    explorerStatus,
+  };
 }
 
 /** True when the indexed tip matches the live chain tip height. */
@@ -49,21 +139,36 @@ export function isChainAtTip(
   latestBlockHeight?: number | null,
   liveTipHeight?: number | null,
 ): boolean {
-  if (isNearTip(health)) {
+  if (health.checks?.nearTip === true) {
     return true;
   }
 
-  const tipHeight =
-    health.heights.bestRpcHeight ?? liveTipHeight ?? getChainTipHeight(health);
-  const indexedHeight = getLatestIndexedHeight(health, latestBlockHeight);
-
-  if (tipHeight != null && indexedHeight != null) {
-    return indexedHeight >= tipHeight;
+  if (isWithinTipThreshold(health, health.heights.blocksBehind)) {
+    return true;
   }
 
-  const { blocksBehind } = health.heights;
-  if (blocksBehind != null) {
-    return blocksBehind === 0;
+  const indexedHeight = getLatestIndexedHeight(health, latestBlockHeight);
+  const candidateTips = [
+    liveTipHeight,
+    indexedHeight,
+    health.heights.bestRpcHeight,
+    getChainTipHeight(health),
+  ].filter((height): height is number => height != null && Number.isFinite(height));
+
+  if (indexedHeight != null && candidateTips.length > 0) {
+    const effectiveTip = Math.max(...candidateTips);
+    if (indexedHeight >= effectiveTip) {
+      return true;
+    }
+
+    const behind = effectiveTip - indexedHeight;
+    if (isWithinTipThreshold(health, behind)) {
+      return true;
+    }
+  }
+
+  if (health.heights.blocksBehind != null) {
+    return health.heights.blocksBehind === 0;
   }
 
   return false;

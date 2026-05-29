@@ -86,8 +86,12 @@ export function VrcChainDashboard({
 
       <LazyChainActivityChart chainId="vrc" />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <ChainBlocksPanel chainId="vrc" blocks={latestBlocks} />
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] xl:items-stretch">
+        <ChainBlocksPanel
+          chainId="vrc"
+          liveBlocks={latestBlocks}
+          chainHeight={chainHeight}
+        />
         <ChainRichlistPreview
           chainId="vrc"
           richlist={initialRichlist}

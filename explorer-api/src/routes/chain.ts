@@ -46,6 +46,8 @@ import {
 
   fetchLatestBlocks,
 
+  fetchBlocksPage,
+
 } from "../data/legacy.js";
 
 import { fetchVrmDashboardBundle } from "../data/vrmDashboard.js";
@@ -474,6 +476,24 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
 
     return (cached as { blocks?: unknown[] }).blocks ?? [];
 
+  });
+
+  app.get<{
+    Params: { chain: string };
+    Querystring: { limit?: string; offset?: string };
+  }>("/v1/:chain/blocks", async (request, reply) => {
+    const chainId = parseChainId(request.params.chain);
+    if (!chainId) {
+      return reply.code(400).send({ error: "Invalid chain id" });
+    }
+
+    const limit = request.query.limit;
+    const offset = request.query.offset;
+
+    return fetchBlocksPage(chainId, {
+      limit,
+      offset,
+    });
   });
 
 }

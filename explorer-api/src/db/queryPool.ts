@@ -53,6 +53,7 @@ const METHOD_PRIORITY: Record<string, number> = {
   getChainSummaryLiteIndexed: 1,
   getChainActivityHistory: 1,
   getLatestBlocksIndexed: 2,
+  getBlocksPageIndexed: 1,
   getLandingBundle: 2,
   getVrmDashboardBundle: 2,
   getIndexerHealthIndexed: 2,

@@ -98,12 +98,14 @@ export function BcPanel({
   children,
   className,
   flush,
+  bodyClassName,
 }: {
   title: string;
   action?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
   flush?: boolean;
+  bodyClassName?: string;
 }) {
   return (
     <section
@@ -116,7 +118,9 @@ export function BcPanel({
         <h2 className="text-base font-bold text-fg">{title}</h2>
         {action}
       </div>
-      <div className={flush ? undefined : "p-4 sm:p-5"}>{children}</div>
+      <div className={cn(flush ? bodyClassName : "p-4 sm:p-5", !flush && bodyClassName)}>
+        {children}
+      </div>
     </section>
   );
 }

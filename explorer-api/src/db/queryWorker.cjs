@@ -81,6 +81,7 @@ const handlers = {
 	getChainSummaryIndexed: query.getChainSummary,
 	getChainSummaryLiteIndexed: query.getChainSummaryLite,
 	getLatestBlocksIndexed: query.getLatestBlocks,
+	getBlocksPageIndexed: query.getBlocksPage,
 	getBlockIndexed: query.getBlock,
 	getIndexerHealthIndexed: health.getIndexerHealth,
 	getLandingBundle,

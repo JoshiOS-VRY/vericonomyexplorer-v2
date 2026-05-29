@@ -7,40 +7,49 @@ const indexerQuery = require("./query.js");
 
 async function getChainSummary(chainId, options = {}) {
   const summary = indexerQuery.getChainSummary(chainId, options);
+  let tip = options.tip ?? null;
 
-  try {
-    const tip = options.tip ?? (await liveChain.getTip(chainId, options));
-    summary.health = health.enrichWithLiveRpc(
-      summary.health,
-      tip.height,
-      options,
-    );
-    const indexedHeight = summary.health.heights.maxIndexedHeight;
-    const latestBlockHeight =
-      summary.latestBlocks.length > 0
-        ? Number(summary.latestBlocks[0].height)
-        : null;
+  if (!tip) {
+    try {
+      tip = await liveChain.getTip(chainId, options);
+    } catch (err) {
+      /* keep indexed health when live tip lookup fails */
+    }
+  }
 
-    if (
-      !options.skipLiveBlocks &&
-      (indexedHeight === null ||
-        tip.height > indexedHeight ||
-        (latestBlockHeight !== null && tip.height > latestBlockHeight))
-    ) {
-      summary.latestBlocks = await liveChain.getRecentBlocks(
-        chainId,
-        5,
+  if (tip) {
+    try {
+      summary.health = health.enrichWithLiveRpc(
+        summary.health,
+        tip.height,
         options,
       );
+    } catch (err) {
+      /* keep indexed health when live enrichment fails */
     }
-  } catch (err) {
-    summary.health = Object.assign({}, summary.health, {
-      explorerStatus: {
-        label: "Offline",
-        message: "Unable to reach the chain node.",
-        syncing: false,
-      },
-    });
+
+    try {
+      const indexedHeight = summary.health.heights.maxIndexedHeight;
+      const latestBlockHeight =
+        summary.latestBlocks.length > 0
+          ? Number(summary.latestBlocks[0].height)
+          : null;
+
+      if (
+        !options.skipLiveBlocks &&
+        (indexedHeight === null ||
+          tip.height > indexedHeight ||
+          (latestBlockHeight !== null && tip.height > latestBlockHeight))
+      ) {
+        summary.latestBlocks = await liveChain.getRecentBlocks(
+          chainId,
+          5,
+          options,
+        );
+      }
+    } catch (err) {
+      /* block list enrichment is best-effort */
+    }
   }
 
   return summary;
