@@ -77,9 +77,6 @@ export function ChainHubSection({
         {
           "--block-chain-accent": theme.accent,
           "--block-chain-accent-soft": theme.accentSoft,
-          "--block-chain-accent-bright":
-            chainId === "vrm" ? "rgb(132 180 221)" : "rgb(147 197 253)",
-          "--block-chain-accent-deep": theme.accentHover,
         } as React.CSSProperties
       }
     >

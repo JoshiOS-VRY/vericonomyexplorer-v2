@@ -814,7 +814,7 @@ html:not(.light)
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition: filter 0.2s ease;
+  transition: color 0.2s ease;
   padding-top: 0.375rem;
 }
 
@@ -823,88 +823,11 @@ html:not(.light)
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
+  color: var(--fg-muted);
 }
 
-/* Light mode — chain accent → deep slate (reversed flow for pale panel) */
-.light .block-chain-strip__label-height {
-  background-image: linear-gradient(
-    345deg,
-    rgb(30 41 59) 0%,
-    color-mix(
-        in srgb,
-        var(--block-chain-accent-bright, var(--block-chain-accent)) 62%,
-        rgb(30 41 59)
-      )
-      100%
-  );
-}
-
-.light .block-chain-section[data-chain="vrm"] .block-chain-strip__label-height {
-  background-image: linear-gradient(
-    345deg,
-    rgb(30 41 59) 0%,
-    var(--block-chain-accent-deep, rgb(88 106 122)) 100%
-  );
-}
-
-.light .block-chain-section[data-chain="vrc"] .block-chain-strip__label-height {
-  background-image: linear-gradient(
-    345deg,
-    rgb(30 41 59) 0%,
-    var(--block-chain-accent, rgb(65 139 202)) 100%
-  );
-}
-
-.light .block-chain-strip__label--tip .block-chain-strip__label-height {
-  font-weight: 700;
-}
-
-.light .block-chain-section[data-chain="vrm"]
-  .block-chain-strip__label--tip
-  .block-chain-strip__label-height {
-  background-image: linear-gradient(
-    345deg,
-    rgb(15 23 42) 0%,
-    var(--block-chain-accent, rgb(70 80 90)) 45%,
-    var(--block-chain-accent-bright, rgb(132 180 221)) 100%
-  );
-}
-
-.light .block-chain-section[data-chain="vrc"]
-  .block-chain-strip__label--tip
-  .block-chain-strip__label-height {
-  background-image: linear-gradient(
-    345deg,
-    rgb(15 23 42) 0%,
-    var(--block-chain-accent, rgb(65 139 202)) 50%,
-    var(--block-chain-accent-deep, rgb(3 44 87)) 100%
-  );
-}
-
-/* Dark mode — white → bright accent */
-html:not(.light) .block-chain-strip__label-height {
-  background-image: linear-gradient(
-    165deg,
-    rgb(248 250 252) 0%,
-    color-mix(
-        in srgb,
-        var(--block-chain-accent-bright, var(--block-chain-accent)) 55%,
-        rgb(226 232 240)
-      )
-      100%
-  );
-}
-
-html:not(.light) .block-chain-strip__label--tip .block-chain-strip__label-height {
-  background-image: linear-gradient(
-    165deg,
-    rgb(255 255 255) 0%,
-    var(--block-chain-accent-bright, var(--block-chain-accent)) 100%
-  );
+.block-chain-strip__label--tip .block-chain-strip__label-height {
+  color: var(--fg);
 }
 
 .block-chain-strip__label--tip {
@@ -957,11 +880,7 @@ html:not(.light) .block-chain-strip__label--tip .block-chain-strip__label-height
 }
 
 .block-chain-strip__link:hover .block-chain-strip__label-height {
-  filter: brightness(1.08);
-}
-
-.light .block-chain-strip__link:hover .block-chain-strip__label-height {
-  filter: brightness(0.94) saturate(1.12);
+  color: var(--block-chain-accent, var(--fg));
 }
 
 .block-chain-section[data-chain="vrm"] .block-chain-table a {
