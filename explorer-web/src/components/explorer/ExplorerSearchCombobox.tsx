@@ -116,6 +116,14 @@ export function ExplorerSearchCombobox({
     return fallbackSuggestions(trimmed, kind);
   }, [trimmed, kind, recentSuggestions, apiSuggestions, loading, lookupDone]);
 
+  const suggestionsKey = useMemo(
+    () =>
+      suggestions
+        .map((item) => `${item.chainId}:${item.path}:${item.primary ? 1 : 0}`)
+        .join("|"),
+    [suggestions],
+  );
+
   const showHeightHint = trimmed && kind === "height" && suggestions.length > 1;
 
   useEffect(() => {
@@ -159,7 +167,7 @@ export function ExplorerSearchCombobox({
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [suggestions]);
+  }, [suggestionsKey]);
 
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
