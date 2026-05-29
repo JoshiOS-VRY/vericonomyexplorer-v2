@@ -1,6 +1,6 @@
 "use strict";
 
-const schemaVersion = 5;
+const schemaVersion = 7;
 
 const tables = [
 	`CREATE TABLE IF NOT EXISTS indexer_meta (
@@ -223,7 +223,6 @@ const tables = [
 ];
 
 const indexes = [
-	"CREATE INDEX IF NOT EXISTS idx_blocks_chain_hash ON blocks(chain_id, hash);",
 	"CREATE INDEX IF NOT EXISTS idx_blocks_chain_time ON blocks(chain_id, time DESC);",
 	"CREATE INDEX IF NOT EXISTS idx_blocks_chain_status_height ON blocks(chain_id, status, height DESC);",
 	"CREATE INDEX IF NOT EXISTS idx_transactions_chain_block ON transactions(chain_id, block_height, tx_index);",
@@ -236,6 +235,7 @@ const indexes = [
 	"CREATE INDEX IF NOT EXISTS idx_vins_chain_address ON vins(chain_id, address);",
 	"CREATE INDEX IF NOT EXISTS idx_vins_chain_unresolved ON vins(chain_id) WHERE resolved = 0 AND source != 'coinbase';",
 	"CREATE INDEX IF NOT EXISTS idx_address_events_chain_address_txid ON address_events(chain_id, address, txid);",
+	"CREATE INDEX IF NOT EXISTS idx_address_events_chain_txid ON address_events(chain_id, txid);",
 	"CREATE INDEX IF NOT EXISTS idx_address_events_chain_address_height ON address_events(chain_id, address, block_height DESC);",
 	"CREATE INDEX IF NOT EXISTS idx_address_events_chain_height ON address_events(chain_id, block_height DESC);",
 	"CREATE INDEX IF NOT EXISTS idx_address_events_chain_address_time ON address_events(chain_id, address, time ASC);",
@@ -243,10 +243,14 @@ const indexes = [
 	"CREATE INDEX IF NOT EXISTS idx_chain_activity_buckets_chain_start ON chain_activity_buckets(chain_id, bucket_start ASC);",
 	"CREATE INDEX IF NOT EXISTS idx_address_transactions_chain_address_height ON address_transactions(chain_id, address, first_seen_height DESC);",
 	"CREATE INDEX IF NOT EXISTS idx_address_balances_chain_balance ON address_balances(chain_id, balance_sats DESC);",
+	"CREATE INDEX IF NOT EXISTS idx_address_balances_chain_funded_balance ON address_balances(chain_id, balance_sats DESC, address ASC) WHERE balance_sats > 0;",
 	"CREATE INDEX IF NOT EXISTS idx_period_stats_chain_period_net ON address_period_stats(chain_id, period, period_start, net_sats DESC);",
 	"CREATE INDEX IF NOT EXISTS idx_period_stats_chain_period_received ON address_period_stats(chain_id, period, period_start, received_sats DESC);",
+	"CREATE INDEX IF NOT EXISTS idx_period_stats_chain_period_activity ON address_period_stats(chain_id, period, period_start, tx_count DESC, address ASC);",
+	"CREATE INDEX IF NOT EXISTS idx_transactions_chain_block_coinbase ON transactions(chain_id, block_height, is_coinbase) WHERE is_coinbase = 1;",
 	"CREATE INDEX IF NOT EXISTS idx_address_balance_buckets_chain_address_start ON address_balance_buckets(chain_id, address, bucket_start ASC);",
-	"CREATE INDEX IF NOT EXISTS idx_network_metric_buckets_chain_start ON network_metric_buckets(chain_id, bucket_start ASC);"
+	"CREATE INDEX IF NOT EXISTS idx_network_metric_buckets_chain_start ON network_metric_buckets(chain_id, bucket_start ASC);",
+	"CREATE INDEX IF NOT EXISTS idx_network_metric_buckets_chain_start_desc ON network_metric_buckets(chain_id, bucket_start DESC);"
 ];
 
 function getSchemaSql() {
@@ -290,6 +294,66 @@ function setStoredSchemaVersion(db, version) {
 	`).run(String(version), now);
 }
 
+function runSchemaV6Backfills(db) {
+	if (tableHasColumn(db, "address_transactions", "net_delta_sats")) {
+		db.exec(`
+			UPDATE address_transactions
+			SET net_delta_sats = (
+				SELECT COALESCE(SUM(delta_sats), 0)
+				FROM address_events e
+				WHERE e.chain_id = address_transactions.chain_id
+					AND e.address = address_transactions.address
+					AND e.txid = address_transactions.txid
+			)
+			WHERE net_delta_sats IS NULL
+		`);
+	}
+
+	if (tableHasColumn(db, "address_balances", "first_seen_height")) {
+		db.exec(`
+			UPDATE address_balances
+			SET
+				first_seen_height = (
+					SELECT MIN(first_seen_height)
+					FROM address_transactions at
+					WHERE at.chain_id = address_balances.chain_id
+						AND at.address = address_balances.address
+				),
+				first_seen_time = (
+					SELECT MIN(first_seen_time)
+					FROM address_transactions at
+					WHERE at.chain_id = address_balances.chain_id
+						AND at.address = address_balances.address
+				)
+			WHERE first_seen_height IS NULL
+		`);
+	}
+
+	if (tableHasColumn(db, "blocks", "output_count")) {
+		db.exec(`
+			UPDATE blocks
+			SET output_count = (
+				SELECT COUNT(*)
+				FROM vouts v
+				INNER JOIN transactions t
+					ON t.chain_id = v.chain_id AND t.txid = v.txid
+				WHERE v.chain_id = blocks.chain_id
+					AND t.block_height = blocks.height
+			)
+			WHERE output_count IS NULL
+		`);
+	}
+}
+
+function analyzeDatabase(db) {
+	db.exec("ANALYZE");
+	try {
+		db.pragma("optimize");
+	} catch (err) {
+		// PRAGMA optimize requires SQLite 3.18+; ignore on older builds.
+	}
+}
+
 function applyMigrations(db) {
 	// Always repair known legacy column gaps (idempotent). Some databases were
 	// stamped schema v2 before these columns were actually added.
@@ -298,10 +362,65 @@ function applyMigrations(db) {
 	ensureColumn(db, "blocks", "output_count", "INTEGER");
 	ensureColumn(db, "blocks", "extracted_by", "TEXT");
 	ensureColumn(db, "blocks", "extracted_by_address", "TEXT");
+	ensureColumn(db, "address_transactions", "net_delta_sats", "INTEGER");
+	ensureColumn(db, "address_balances", "first_seen_height", "INTEGER");
+	ensureColumn(db, "address_balances", "first_seen_time", "INTEGER");
+	ensureColumn(db, "blocks", "fee_sats", "INTEGER");
+	ensureColumn(db, "blocks", "total_output_sats", "INTEGER");
 
 	const stored = getStoredSchemaVersion(db);
+
+	if (stored < 6) {
+		for (const indexSql of indexes) {
+			db.exec(indexSql);
+		}
+
+		runSchemaV6Backfills(db);
+		analyzeDatabase(db);
+	}
+
+	if (stored < 7) {
+		db.exec("DROP INDEX IF EXISTS idx_blocks_chain_hash;");
+		runSchemaV7Backfills(db);
+		analyzeDatabase(db);
+	}
+
 	if (stored < schemaVersion) {
 		setStoredSchemaVersion(db, schemaVersion);
+	}
+}
+
+function runSchemaV7Backfills(db) {
+	if (!tableHasColumn(db, "blocks", "fee_sats")) {
+		return;
+	}
+
+	const { computeBlockTotalsRaw } = require("./blockTotals.js");
+	const rows = db.prepare(`
+		SELECT chain_id, height, tx_count
+		FROM blocks
+		WHERE status = 'main' AND fee_sats IS NULL
+	`).all();
+	const updateTotals = db.prepare(`
+		UPDATE blocks
+		SET fee_sats = ?, total_output_sats = ?
+		WHERE chain_id = ? AND height = ?
+	`);
+
+	for (const row of rows) {
+		const totals = computeBlockTotalsRaw(
+			db,
+			row.chain_id,
+			Number(row.height),
+			Number(row.tx_count)
+		);
+
+		updateTotals.run(
+			totals.feeSats === null ? null : totals.feeSats,
+			totals.totalOutputSats,
+			row.chain_id,
+			row.height
+		);
 	}
 }
 
@@ -318,6 +437,9 @@ module.exports = {
 	getSchemaSql,
 	applySchema,
 	applyMigrations,
+	runSchemaV6Backfills,
+	runSchemaV7Backfills,
+	analyzeDatabase,
 	ensureColumn,
 	tableHasColumn,
 	getStoredSchemaVersion

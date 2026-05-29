@@ -75,6 +75,9 @@ async function enrichVrcBlockInterestRates(blocks, chainId, options) {
     if (chainId !== "vrc" || blocks.length === 0) {
         return blocks;
     }
+    if (blocks.every((block) => block.interestRatePercent != null)) {
+        return blocks;
+    }
     try {
         return (await runIndexerQuery("enrichBlockInterestRatesIndexed", [chainId, blocks], options));
     }

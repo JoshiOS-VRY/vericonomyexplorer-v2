@@ -16,24 +16,39 @@ export function getClientApiUrl(path: string): string {
   return getClientV1Url(normalized);
 }
 
-export async function clientApiFetch<T>(path: string): Promise<T> {
-  const response = await fetch(getClientV1Url(path), {
-    cache: "no-store",
-    headers: { Accept: "application/json" },
-  });
+const inFlightClientRequests = new Map<string, Promise<unknown>>();
 
-  if (!response.ok) {
-    let message = `Request failed: ${response.status}`;
-    try {
-      const body = (await response.json()) as { error?: string };
-      if (body.error) message = body.error;
-    } catch {
-      /* ignore */
-    }
-    throw new ClientApiError(message, response.status);
+export async function clientApiFetch<T>(path: string): Promise<T> {
+  const url = getClientV1Url(path);
+  const existing = inFlightClientRequests.get(url);
+  if (existing) {
+    return existing as Promise<T>;
   }
 
-  return response.json() as Promise<T>;
+  const promise = (async () => {
+    const response = await fetch(url, {
+      cache: "no-store",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!response.ok) {
+      let message = `Request failed: ${response.status}`;
+      try {
+        const body = (await response.json()) as { error?: string };
+        if (body.error) message = body.error;
+      } catch {
+        /* ignore */
+      }
+      throw new ClientApiError(message, response.status);
+    }
+
+    return response.json() as Promise<T>;
+  })().finally(() => {
+    inFlightClientRequests.delete(url);
+  });
+
+  inFlightClientRequests.set(url, promise);
+  return promise as Promise<T>;
 }
 
 export async function fetchAddressUtxosClient(
@@ -69,7 +84,7 @@ export async function fetchBlockHeight(chainId = "vrm"): Promise<number> {
 }
 
 export async function fetchChainSummary(chainId: string): Promise<ChainSummary> {
-  return clientApiFetch<ChainSummary>(`/${chainId}/summary`);
+  return clientApiFetch<ChainSummary>(`/${chainId}/summary/lite`);
 }
 
 export async function fetchLatestBlocks(chainId: string): Promise<IndexedBlock[]> {

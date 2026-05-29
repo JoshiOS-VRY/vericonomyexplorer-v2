@@ -1,55 +1,23 @@
 import Link from "next/link";
 import { TimeCell } from "@/components/explorer/ExplorerUi";
-import { getAddress } from "@/lib/api/indexer";
+import { getTransactionRelatedAddresses } from "@/lib/api/indexer";
 import {
   chainAddressPath,
   chainTxPath,
   type ChainId,
 } from "@/lib/chainDisplay";
-import { uniqueRelatedAddresses } from "@/lib/txLabels";
-import type { TransactionResult } from "@/lib/api/types";
+import { mapTransactionRelatedGroups } from "@/lib/txRelatedActivity";
 import { ellipsizeMiddle } from "@/lib/utils";
 
 export async function TxRelatedActivitySection({
   chainId,
   txid,
-  result,
 }: {
   chainId: ChainId;
   txid: string;
-  result: TransactionResult;
 }) {
-  const addresses = uniqueRelatedAddresses(
-    result.addressEvents,
-    result.changeOutputs ?? [],
-    result.outputs,
-  );
-
-  if (addresses.length === 0) {
-    return null;
-  }
-
-  const groups = (
-    await Promise.allSettled(
-      addresses.map(async (address) => {
-        const data = await getAddress(chainId, address, { limit: 6 });
-        if (!data.found) {
-          return null;
-        }
-
-        return {
-          address,
-          transactions: data.transactions
-            .filter((tx) => tx.txid !== txid)
-            .slice(0, 5),
-        };
-      }),
-    )
-  )
-    .flatMap((entry) =>
-      entry.status === "fulfilled" && entry.value ? [entry.value] : [],
-    )
-    .filter((group) => group.transactions.length > 0);
+  const related = await getTransactionRelatedAddresses(chainId, txid, { limit: 6 });
+  const groups = mapTransactionRelatedGroups(txid, related);
 
   if (groups.length === 0) {
     return (

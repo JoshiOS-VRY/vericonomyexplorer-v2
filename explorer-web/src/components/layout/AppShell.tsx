@@ -1,4 +1,5 @@
 import { SearchRecentBlocksProvider } from "@/components/explorer/SearchRecentBlocksContext";
+import { ChainLiveBootstrap } from "@/lib/chainLive/ChainLiveBootstrap";
 import { ClientProviders } from "@/components/layout/ClientProviders";
 import { BlockchairHeader } from "@/components/layout/BlockchairHeader";
 import type { ChainSummary } from "@/lib/api/types";
@@ -16,6 +17,10 @@ export function AppShell({
 }) {
   return (
     <ClientProviders>
+      <ChainLiveBootstrap
+        initialVrmSummary={initialVrmSummary}
+        initialVrcSummary={initialVrcSummary}
+      />
       <div className="flex min-h-screen flex-col bg-bg text-fg">
         <SearchRecentBlocksProvider
           initialVrmSummary={initialVrmSummary}

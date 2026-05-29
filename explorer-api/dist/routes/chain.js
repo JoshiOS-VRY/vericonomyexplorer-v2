@@ -1,12 +1,13 @@
 import { cacheKey, createSwrCache, refreshCacheInBackground, swrFetch, } from "../cache/swrCache.js";
 import { registerChainScopedCache, registerGlobalCache } from "../cache/registry.js";
 import { registerChainTipRefresh, registerGlobalTipRefresh, refreshOnTip, } from "../cache/tipRefresh.js";
-import { fetchChainHealth, fetchChainActivityHistory, fetchChainSummary, fetchIndexerHealth, fetchLandingData, fetchLatestBlocks, } from "../data/legacy.js";
+import { refreshChainCachesOnTip } from "../data/chainCacheRefresh.js";
+import { fetchChainHealth, fetchChainActivityHistory, fetchChainSummary, fetchChainSummaryLite, fetchIndexerHealth, fetchLandingData, fetchLatestBlocks, } from "../data/legacy.js";
 import { fetchVrmDashboardBundle } from "../data/vrmDashboard.js";
 import { onAnyTip } from "../live/brokers.js";
 import { parseChainId } from "../types.js";
 import { homeCache, homeShellCache } from "./home.js";
-const summaryCache = createSwrCache({
+export const summaryCache = createSwrCache({
     max: 32,
     ttlMs: 30_000,
     fetch: async (key, signal) => {
@@ -16,13 +17,28 @@ const summaryCache = createSwrCache({
         return (await fetchChainSummary(chainId));
     },
 });
-const latestBlocksCache = createSwrCache({
+export const summaryLiteCache = createSwrCache({
+    max: 32,
+    ttlMs: 30_000,
+    fetch: async (key, signal) => {
+        const chainId = key.split(":")[0];
+        if (signal.aborted)
+            throw new Error("aborted");
+        return (await fetchChainSummaryLite(chainId));
+    },
+});
+export const latestBlocksCache = createSwrCache({
     max: 32,
     ttlMs: 5_000,
     fetch: async (key, signal) => {
         const chainId = key.split(":")[0];
         if (signal.aborted)
             throw new Error("aborted");
+        const summaryKey = cacheKey(chainId, "summary");
+        const warmSummary = summaryCache.peek(summaryKey);
+        if (warmSummary?.latestBlocks?.length) {
+            return { blocks: warmSummary.latestBlocks };
+        }
         const blocks = await fetchLatestBlocks(chainId);
         return { blocks };
     },
@@ -54,7 +70,7 @@ const healthCache = createSwrCache({
         return (await fetchIndexerHealth());
     },
 });
-const chainHealthCache = createSwrCache({
+export const chainHealthCache = createSwrCache({
     max: 8,
     ttlMs: 10_000,
     fetch: async (key, signal) => {
@@ -64,21 +80,24 @@ const chainHealthCache = createSwrCache({
         return (await fetchChainHealth(chainId));
     },
 });
-const activityHistoryCache = createSwrCache({
+export const activityHistoryCache = createSwrCache({
     max: 32,
     ttlMs: 60_000,
     fetch: async (key, signal) => {
         if (signal.aborted)
             throw new Error("aborted");
         const [chainId, maxPoints, since] = key.split(":");
+        const chainHealth = (await chainHealthCache.fetch(cacheKey(chainId, "health")));
         const result = await fetchChainActivityHistory(chainId, {
             maxPoints: maxPoints ? Number(maxPoints) : undefined,
             since: since ? Number(since) : undefined,
+            chainHealth,
         });
         return result;
     },
 });
 registerChainScopedCache(summaryCache);
+registerChainScopedCache(summaryLiteCache);
 registerChainScopedCache(latestBlocksCache);
 registerChainScopedCache(activityHistoryCache);
 registerChainScopedCache(chainHealthCache);
@@ -88,11 +107,12 @@ registerGlobalCache(healthCache);
 registerGlobalCache(homeCache);
 registerGlobalCache(homeShellCache);
 registerChainTipRefresh(async (chainId) => {
-    await Promise.allSettled([
-        refreshCacheInBackground(summaryCache, cacheKey(chainId, "summary")),
-        refreshCacheInBackground(latestBlocksCache, cacheKey(chainId, "latest-blocks")),
-        refreshCacheInBackground(chainHealthCache, cacheKey(chainId, "health")),
-    ]);
+    await refreshChainCachesOnTip(chainId, {
+        summary: summaryCache,
+        summaryLite: summaryLiteCache,
+        latestBlocks: latestBlocksCache,
+    });
+    await refreshCacheInBackground(chainHealthCache, cacheKey(chainId, "health"));
 });
 registerGlobalTipRefresh("landing", () => refreshCacheInBackground(landingCache, "landing"));
 registerGlobalTipRefresh("dashboard", () => refreshCacheInBackground(dashboardCache, "dashboard"));
@@ -117,6 +137,13 @@ export async function registerChainRoutes(app) {
         }
         return swrFetch(summaryCache, cacheKey(chainId, "summary"), () => fetchChainSummary(chainId));
     });
+    app.get("/v1/:chain/summary/lite", async (request, reply) => {
+        const chainId = parseChainId(request.params.chain);
+        if (!chainId) {
+            return reply.code(400).send({ error: "Invalid chain id" });
+        }
+        return swrFetch(summaryLiteCache, cacheKey(chainId, "summary-lite"), () => fetchChainSummaryLite(chainId));
+    });
     app.get("/v1/:chain/health", async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
         if (!chainId) {
@@ -139,7 +166,13 @@ export async function registerChainRoutes(app) {
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });
         }
-        const cached = await swrFetch(latestBlocksCache, cacheKey(chainId, "latest-blocks"), async () => ({ blocks: await fetchLatestBlocks(chainId) }));
+        const cached = await swrFetch(latestBlocksCache, cacheKey(chainId, "latest-blocks"), async () => {
+            const warmSummary = summaryCache.peek(cacheKey(chainId, "summary"));
+            if (warmSummary?.latestBlocks?.length) {
+                return { blocks: warmSummary.latestBlocks };
+            }
+            return { blocks: await fetchLatestBlocks(chainId) };
+        });
         return cached.blocks ?? [];
     });
 }

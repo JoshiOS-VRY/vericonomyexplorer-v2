@@ -5,76 +5,42 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { TimeCell } from "@/components/explorer/ExplorerUi";
 import { clientApiFetch } from "@/lib/api/client";
+import type { TransactionRelatedAddressesResult } from "@/lib/api/types";
 import {
   chainAddressPath,
   chainTxPath,
   type ChainId,
 } from "@/lib/chainDisplay";
-import { uniqueRelatedAddresses } from "@/lib/txLabels";
-import type { AddressResult, TransactionResult } from "@/lib/api/types";
+import {
+  mapTransactionRelatedGroups,
+  type TxRelatedActivityGroup,
+} from "@/lib/txRelatedActivity";
 import { ellipsizeMiddle } from "@/lib/utils";
-
-type RelatedGroup = {
-  address: string;
-  transactions: AddressResult["transactions"];
-};
 
 export function TxRelatedActivityClient({
   chainId,
   txid,
-  result,
 }: {
   chainId: ChainId;
   txid: string;
-  result: TransactionResult;
 }) {
-  const [groups, setGroups] = useState<RelatedGroup[] | null>(null);
+  const [groups, setGroups] = useState<TxRelatedActivityGroup[] | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    const addresses = uniqueRelatedAddresses(
-      result.addressEvents,
-      result.changeOutputs ?? [],
-      result.outputs,
-    );
-
-    if (addresses.length === 0) {
-      setGroups([]);
-      return;
-    }
 
     void (async () => {
       try {
-        const settled = await Promise.allSettled(
-          addresses.map(async (address) => {
-            const data = await clientApiFetch<AddressResult>(
-              `/${chainId}/address/${encodeURIComponent(address)}?limit=6&includeRank=0`,
-            );
-            if (!data.found) {
-              return null;
-            }
-
-            return {
-              address,
-              transactions: data.transactions
-                .filter((tx) => tx.txid !== txid)
-                .slice(0, 5),
-            };
-          }),
+        const related = await clientApiFetch<TransactionRelatedAddressesResult>(
+          `/${chainId}/tx/${encodeURIComponent(txid)}/related-addresses?limit=6`,
         );
 
         if (cancelled) {
           return;
         }
 
-        setGroups(
-          settled
-            .flatMap((entry) =>
-              entry.status === "fulfilled" && entry.value ? [entry.value] : [],
-            )
-            .filter((group) => group.transactions.length > 0),
-        );
+        setGroups(mapTransactionRelatedGroups(txid, related));
       } catch {
         if (!cancelled) {
           setFailed(true);
@@ -85,13 +51,7 @@ export function TxRelatedActivityClient({
     return () => {
       cancelled = true;
     };
-  }, [
-    chainId,
-    result.addressEvents,
-    result.changeOutputs,
-    result.outputs,
-    txid,
-  ]);
+  }, [chainId, txid]);
 
   if (failed) {
     return (

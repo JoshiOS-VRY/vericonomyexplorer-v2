@@ -89,7 +89,9 @@ function computeChainHealthLite(chainId, options = {}) {
 	const blocksBehind = bestRpcHeight === null || lastIndexedHeight === null
 		? null
 		: Math.max(0, bestRpcHeight - lastIndexedHeight);
-	const addressCount = toNumber(db.prepare(`
+	const addressCount = options.skipAddressCount === true
+		? null
+		: toNumber(db.prepare(`
 		SELECT COUNT(*) AS count
 		FROM address_balances
 		WHERE chain_id = ?

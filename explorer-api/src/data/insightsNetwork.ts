@@ -1,8 +1,23 @@
 import { runIndexerQuery } from "../db/queryPool.js";
 
-export function fetchNetworkMetricHistory(
+export async function fetchNetworkMetricHistory(
   chainId: string,
-  options: { maxPoints?: number; since?: number; groupBy?: string } = {},
+  options: {
+    maxPoints?: number;
+    since?: number;
+    groupBy?: string;
+    chainHealth?: Record<string, unknown>;
+  } = {},
 ) {
-  return runIndexerQuery("getNetworkMetricHistory", [chainId], options);
+  const chainHealth =
+    options.chainHealth ??
+    ((await runIndexerQuery<Record<string, unknown>>("getChainHealth", [chainId], {})) as Record<
+      string,
+      unknown
+    >);
+
+  return runIndexerQuery("getNetworkMetricHistory", [chainId], {
+    ...options,
+    chainHealth,
+  });
 }

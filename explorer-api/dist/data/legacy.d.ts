@@ -8,6 +8,15 @@ export declare function fetchChainSummary(chainId: string, options?: Record<stri
     };
     latestBlocks?: unknown[];
 }>;
+export declare function fetchChainSummaryLite(chainId: string, options?: Record<string, unknown>): Promise<Record<string, unknown> & {
+    health?: Record<string, unknown> & {
+        heights?: {
+            maxIndexedHeight?: number | null;
+            blocksBehind?: number | null;
+        };
+    };
+    latestBlocks?: unknown[];
+}>;
 export declare function fetchLatestBlocks(chainId: string, options?: Record<string, unknown>): Promise<(Record<string, unknown> & {
     height?: number;
     hash?: string;
@@ -44,6 +53,7 @@ export declare function fetchVrmDashboardIndexed(): Promise<unknown>;
 export declare function fetchChainActivityHistory(chainId: string, options?: {
     maxPoints?: number;
     since?: number;
+    chainHealth?: Record<string, unknown>;
 }): Promise<unknown>;
 export declare function fetchIndexerHealth(): Promise<Record<string, unknown> & {
     chains?: Array<Record<string, unknown> & {
@@ -70,6 +80,10 @@ export declare function fetchAddressUtxos(chainId: string, address: string, opti
 }): Promise<unknown>;
 export declare function fetchTransaction(chainId: string, txid: string, queryOptions?: {
     timeoutMs?: number;
+    priority?: number;
+}): Promise<unknown>;
+export declare function fetchTransactionRelatedAddresses(chainId: string, txid: string, options?: {
+    limit?: number;
 }): Promise<unknown>;
 export declare function fetchAddress(chainId: string, address: string, options?: {
     limit?: number;

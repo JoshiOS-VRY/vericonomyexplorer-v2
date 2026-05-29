@@ -2,13 +2,19 @@ import { runIndexerQuery } from "../db/queryPool.js";
 import { enrichChainSummary } from "./liveEnrichment.js";
 async function fetchVrmDashboardIndexed() {
     const skipOpts = { skipLiveBlocks: true, skipLiveRpc: true };
+    const vrmHealth = await runIndexerQuery("getChainHealth", ["vrm"], {});
+    const queryOpts = { ...skipOpts, chainHealth: vrmHealth };
     const [summary, richlist, leaderboard] = await Promise.all([
-        runIndexerQuery("getChainSummaryIndexed", ["vrm"], skipOpts),
-        runIndexerQuery("getRichlist", ["vrm"], { limit: 5 }),
+        runIndexerQuery("getChainSummaryIndexed", ["vrm"], queryOpts),
+        runIndexerQuery("getRichlist", ["vrm"], {
+            limit: 5,
+            chainHealth: vrmHealth,
+        }),
         runIndexerQuery("getLeaderboard", ["vrm"], {
             period: "month",
             sort: "activity",
             limit: 5,
+            chainHealth: vrmHealth,
         }),
     ]);
     return { summary, richlist, leaderboard };

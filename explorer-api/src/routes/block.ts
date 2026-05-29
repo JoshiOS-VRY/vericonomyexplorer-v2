@@ -1,9 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { createSwrCache, swrFetch } from "../cache/swrCache.js";
+import { registerChainScopedCache } from "../cache/registry.js";
 import { fetchBlock } from "../data/legacy.js";
 import { parseChainId } from "../types.js";
 
-const blockCache = createSwrCache({
+export const blockCache = createSwrCache({
   max: 128,
   ttlMs: 60_000,
   fetch: async (key, signal) => {
@@ -16,6 +17,8 @@ const blockCache = createSwrCache({
     return fetchBlock(chainId, hashOrHeight, { limit, offset });
   },
 });
+
+registerChainScopedCache(blockCache);
 
 export async function registerBlockRoutes(app: FastifyInstance): Promise<void> {
   app.get<{

@@ -9,6 +9,7 @@
     "build": "tsc",
     "bench": "node bench/tip.mjs",
     "bench:hotpaths": "node bench/hotpaths.mjs",
+    "bench:explain": "node bench/explain-hotpaths.mjs",
     "postinstall": "node -e \"console.log('explorer-api uses better-sqlite3 from repo root; run npm rebuild better-sqlite3 at repo root if native module errors appear.')\""
   },
   "dependencies": {

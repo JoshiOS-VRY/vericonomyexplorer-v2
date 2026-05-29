@@ -3,57 +3,43 @@
 import {
   createContext,
   useContext,
-  useEffect,
-  useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import type { RecentBlocksByChain } from "@/components/explorer/ExplorerSearchCombobox";
-import { fetchLatestBlocks } from "@/lib/api/client";
+import { chainLiveStore } from "@/lib/chainLive/store";
 import type { ChainSummary } from "@/lib/api/types";
 
 const SearchRecentBlocksContext = createContext<RecentBlocksByChain | null>(null);
 
+function subscribeRecentBlocks(listener: () => void): () => void {
+  const unsubs = (["vrm", "vrc"] as const).map((chainId) =>
+    chainLiveStore.subscribe(chainId, listener),
+  );
+  return () => {
+    unsubs.forEach((unsub) => unsub());
+  };
+}
+
+function getRecentBlocksSnapshot(): RecentBlocksByChain {
+  return {
+    vrm: chainLiveStore.getSnapshot("vrm").latestBlocks,
+    vrc: chainLiveStore.getSnapshot("vrc").latestBlocks,
+  };
+}
+
 export function SearchRecentBlocksProvider({
-  initialVrmSummary,
-  initialVrcSummary,
   children,
 }: {
   initialVrmSummary?: ChainSummary | null;
   initialVrcSummary?: ChainSummary | null;
   children: ReactNode;
 }) {
-  const [recentBlocks, setRecentBlocks] = useState<RecentBlocksByChain>(() => ({
-    vrm: initialVrmSummary?.latestBlocks ?? [],
-    vrc: initialVrcSummary?.latestBlocks ?? [],
-  }));
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const [vrmBlocks, vrcBlocks] = await Promise.all([
-          initialVrmSummary
-            ? Promise.resolve(initialVrmSummary.latestBlocks ?? [])
-            : fetchLatestBlocks("vrm"),
-          initialVrcSummary
-            ? Promise.resolve(initialVrcSummary.latestBlocks ?? [])
-            : fetchLatestBlocks("vrc"),
-        ]);
-        if (cancelled) return;
-        setRecentBlocks({
-          vrm: vrmBlocks,
-          vrc: vrcBlocks,
-        });
-      } catch {
-        // Keep seeded or empty lists on failure.
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [initialVrmSummary, initialVrcSummary]);
+  const recentBlocks = useSyncExternalStore(
+    subscribeRecentBlocks,
+    getRecentBlocksSnapshot,
+    getRecentBlocksSnapshot,
+  );
 
   return (
     <SearchRecentBlocksContext.Provider value={recentBlocks}>

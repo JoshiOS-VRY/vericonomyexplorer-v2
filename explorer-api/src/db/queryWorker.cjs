@@ -39,13 +39,17 @@ function getWorkerDb() {
 function getLandingBundle(options = {}) {
 	const workerDb = getWorkerDb();
 	const shared = Object.assign({}, options, { db: workerDb, skipLiveBlocks: true });
+	const vrmHealth = health.getChainHealth("vrm", shared);
+	const vrcHealth = health.getChainHealth("vrc", shared);
+	const vrmOpts = Object.assign({}, shared, { chainHealth: vrmHealth });
+	const vrcOpts = Object.assign({}, shared, { chainHealth: vrcHealth });
 
 	return {
-		vrmSummary: query.getChainSummary("vrm", shared),
-		vrcSummary: query.getChainSummary("vrc", shared),
-		vrmRichlist: query.getRichlist("vrm", Object.assign({}, shared, { limit: 5 })),
-		vrcRichlist: query.getRichlist("vrc", Object.assign({}, shared, { limit: 5 })),
-		vrmLeaderboard: query.getLeaderboard("vrm", Object.assign({}, shared, {
+		vrmSummary: query.getChainSummary("vrm", vrmOpts),
+		vrcSummary: query.getChainSummary("vrc", vrcOpts),
+		vrmRichlist: query.getRichlist("vrm", Object.assign({}, vrmOpts, { limit: 5 })),
+		vrcRichlist: query.getRichlist("vrc", Object.assign({}, vrcOpts, { limit: 5 })),
+		vrmLeaderboard: query.getLeaderboard("vrm", Object.assign({}, vrmOpts, {
 			period: "month",
 			sort: "activity",
 			limit: 5
@@ -56,17 +60,19 @@ function getLandingBundle(options = {}) {
 function getVrmDashboardBundle(options = {}) {
 	const workerDb = getWorkerDb();
 	const shared = Object.assign({}, options, { db: workerDb, skipLiveBlocks: true });
+	const vrmHealth = health.getChainHealth("vrm", shared);
+	const vrmOpts = Object.assign({}, shared, { chainHealth: vrmHealth });
 	const since30d = Math.floor(Date.now() / 1000) - 30 * 86_400;
 
 	return {
-		summary: query.getChainSummary("vrm", shared),
-		richlist: query.getRichlist("vrm", Object.assign({}, shared, { limit: 5 })),
-		leaderboard: query.getLeaderboard("vrm", Object.assign({}, shared, {
+		summary: query.getChainSummary("vrm", vrmOpts),
+		richlist: query.getRichlist("vrm", Object.assign({}, vrmOpts, { limit: 5 })),
+		leaderboard: query.getLeaderboard("vrm", Object.assign({}, vrmOpts, {
 			period: "month",
 			sort: "activity",
 			limit: 5
 		})),
-		activityHistory: query.getChainActivityHistory("vrm", Object.assign({}, shared, {
+		activityHistory: query.getChainActivityHistory("vrm", Object.assign({}, vrmOpts, {
 			since: since30d,
 			maxPoints: 100
 		}))
@@ -75,6 +81,8 @@ function getVrmDashboardBundle(options = {}) {
 
 const handlers = {
 	getChainSummaryIndexed: query.getChainSummary,
+	getChainSummaryLiteIndexed: query.getChainSummaryLite,
+	getLatestBlocksIndexed: query.getLatestBlocks,
 	getBlockIndexed: query.getBlock,
 	getIndexerHealthIndexed: health.getIndexerHealth,
 	getLandingBundle,
@@ -87,6 +95,7 @@ const handlers = {
 	getNetworkMetricHistory: query.getNetworkMetricHistory,
 	getAddressUtxos: query.getAddressUtxos,
 	getTransaction: query.getTransaction,
+	getTransactionRelatedAddresses: query.getTransactionRelatedAddresses,
 	getChainHealth: health.getChainHealth,
 	enrichBlockInterestRatesIndexed: query.enrichBlockInterestRates,
 };

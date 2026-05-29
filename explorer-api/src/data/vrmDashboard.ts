@@ -3,14 +3,20 @@ import { enrichChainSummary } from "./liveEnrichment.js";
 
 async function fetchVrmDashboardIndexed() {
   const skipOpts = { skipLiveBlocks: true, skipLiveRpc: true };
+  const vrmHealth = await runIndexerQuery<Record<string, unknown>>("getChainHealth", ["vrm"], {});
+  const queryOpts = { ...skipOpts, chainHealth: vrmHealth };
 
   const [summary, richlist, leaderboard] = await Promise.all([
-    runIndexerQuery<Record<string, unknown>>("getChainSummaryIndexed", ["vrm"], skipOpts),
-    runIndexerQuery<Record<string, unknown>>("getRichlist", ["vrm"], { limit: 5 }),
+    runIndexerQuery<Record<string, unknown>>("getChainSummaryIndexed", ["vrm"], queryOpts),
+    runIndexerQuery<Record<string, unknown>>("getRichlist", ["vrm"], {
+      limit: 5,
+      chainHealth: vrmHealth,
+    }),
     runIndexerQuery<Record<string, unknown>>("getLeaderboard", ["vrm"], {
       period: "month",
       sort: "activity",
       limit: 5,
+      chainHealth: vrmHealth,
     }),
   ]);
 

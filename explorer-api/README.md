@@ -45,11 +45,16 @@ SQLite reads run in a worker pool (default **4** workers, capped by CPU count) s
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `VCEXP_API_DB_WORKERS` | `min(cpus, 4)` | Worker-thread pool size for SQLite reads |
-| `VCEXP_API_DB_WORKER_TIMEOUT_MS` | `60000` | Worker query timeout (504 on expiry) |
+| `VCEXP_API_DB_WORKERS` | `min(cpus*2, 8)` | Worker-thread pool size for SQLite reads |
+| `VCEXP_API_DB_FAST_WORKERS` | `2` | Dedicated workers for tx/block/related-address lookups |
+| `VCEXP_API_DB_WORKER_TIMEOUT_MS` | `120000` | Worker query timeout (504 on expiry) |
 | `VCEXP_API_SEARCH_TIMEOUT_MS` | `15000` | Search query worker timeout |
 | `VCEXP_API_CACHE_TTL_MS` | per-route | Override all in-memory SWR cache TTLs |
 | `VCEXP_MARKET_CACHE_TTL_MS` | `120000` | Market data cache TTL |
+| `VCEXP_SQLITE_CACHE_MB` | `256` | SQLite page cache per read worker (indexer + API) |
+| `VCEXP_SQLITE_MMAP_MB` | `256` | SQLite memory-mapped I/O size |
+| `VCEXP_CHAIN_HEALTH_CACHE_MS` | `60000` | In-process chain health cache TTL |
+| `VCEXP_FUNDED_ADDRESS_CACHE_MS` | `60000` | Richlist funded-address count cache |
 | `VCEXP_WAL_CHECKPOINT_MB` | `512` | WAL checkpoint threshold (indexer) |
 
 For local development, `VCEXP_API_CACHE_TTL_MS=300000` (5 minutes) reduces repeated cold-query latency.
@@ -64,6 +69,17 @@ npm run bench:hotpaths
 ```
 
 Optional env: `BENCH_URL`, `BENCH_DURATION`, `BENCH_CONNECTIONS`, `BENCH_CHAIN`, `BENCH_ADDRESS`, `BENCH_BLOCK`, `BENCH_TX`.
+
+Explain query plans against the indexer database (requires `BENCH_ADDRESS` / `BENCH_TX` for address/tx plans):
+
+```bash
+cd explorer-api
+npm run bench:explain
+```
+
+Schema v6+ adds partial indexes and denormalized address fields; v7 stores block `fee_sats` / `total_output_sats` and drops redundant `idx_blocks_chain_hash` (block-by-hash uses the `UNIQUE (chain_id, hash)` constraint). After upgrading, run migrations via indexer startup or open the DB with indexer V2, then backfill stats if needed.
+
+Live polling uses `GET /v1/:chain/summary/lite` (blocks + health only). On each new block tip, the API refreshes the full summary once and seeds the latest-blocks cache from that result.
 
 ### Indexer stats backfill
 

@@ -2,6 +2,7 @@
 
 const dbModule = require("./db.js");
 const health = require("./health.js");
+const { computeBlockTotalsRaw } = require("./blockTotals.js");
 const utils = require("../utils.js");
 const { hourBucketStart } = require("./periodStats.js");
 const { atomicUnitsToDecimal } = require("./valueUtils.js");
@@ -75,16 +76,9 @@ const ADDRESS_UTXO_UNSPENT_SQL = `
 		AND (vouts.address IS NULL OR vouts.address != ?)
 `;
 
-const ADDRESS_UTXO_QUERY_SQL = `
+const ADDRESS_UTXO_LIST_SQL = `
 	WITH unspent AS (${ADDRESS_UTXO_UNSPENT_SQL})
-	SELECT
-		txid,
-		n,
-		value_sats,
-		block_height,
-		time,
-		COUNT(*) OVER() AS total_count,
-		COALESCE(SUM(value_sats) OVER(), 0) AS total_sats
+	SELECT txid, n, value_sats, block_height, time
 	FROM unspent
 	ORDER BY value_sats DESC, txid ASC, n ASC
 	LIMIT ? OFFSET ?
@@ -107,10 +101,18 @@ const chainUnits = {
 	}
 };
 
+function resolveChainHealth(chain, options = {}) {
+	if (options.chainHealth) {
+		return options.chainHealth;
+	}
+
+	return health.getChainHealth(chain, { db: options.db, ...options });
+}
+
 function getChainSummary(chainId, options = {}) {
 	const db = options.db || dbModule.openDatabase();
 	const chain = normalizeChainId(chainId);
-	const chainHealth = health.getChainHealth(chain, { db });
+	const chainHealth = resolveChainHealth(chain, options);
 	const latestBlocks = db.prepare(`
 		SELECT height, hash, previous_hash, next_hash, time, tx_count, size, difficulty,
 			output_count, extracted_by, extracted_by_address
@@ -142,12 +144,62 @@ function getChainSummary(chainId, options = {}) {
 	};
 }
 
+function getChainSummaryLite(chainId, options = {}) {
+	const summary = getLatestBlocks(chainId, options);
+
+	return Object.assign({}, summary, {
+		recentTransactions: []
+	});
+}
+
+const defaultLatestBlocksLimit = 10;
+const maxLatestBlocksLimit = 25;
+
+function normalizeLatestBlocksLimit(value) {
+	const parsed = Number(value || defaultLatestBlocksLimit);
+
+	if (!Number.isFinite(parsed) || parsed < 1) {
+		return defaultLatestBlocksLimit;
+	}
+
+	return Math.min(Math.floor(parsed), maxLatestBlocksLimit);
+}
+
+function getLatestBlocks(chainId, options = {}) {
+	const db = options.db || dbModule.openDatabase();
+	const chain = normalizeChainId(chainId);
+	const limit = normalizeLatestBlocksLimit(options.limit);
+	const chainHealth = resolveChainHealth(chain, options);
+	const latestBlocks = db.prepare(`
+		SELECT height, hash, previous_hash, next_hash, time, tx_count, size, difficulty,
+			output_count, extracted_by, extracted_by_address
+		FROM blocks
+		WHERE chain_id = ? AND status = 'main'
+		ORDER BY height DESC
+		LIMIT ?
+	`).all(chain, limit).map(block => mapBlock(block));
+	let enrichedLatestBlocks = options.skipBlockEnrichment === true
+		? latestBlocks
+		: enrichLatestBlocks(db, chain, latestBlocks);
+
+	if (chain === "vrc") {
+		enrichedLatestBlocks = enrichBlockInterestRates(chain, enrichedLatestBlocks, { db });
+	}
+
+	return {
+		chainId: chain,
+		health: chainHealth,
+		latestBlocks: enrichedLatestBlocks,
+		source: getSource(chainHealth, "summary")
+	};
+}
+
 function getRichlist(chainId, options = {}) {
 	const db = options.db || dbModule.openDatabase();
 	const chain = normalizeChainId(chainId);
 	const limit = normalizeLimit(options.limit);
 	const offset = normalizeOffset(options.offset);
-	const chainHealth = health.getChainHealth(chain, { db });
+	const chainHealth = resolveChainHealth(chain, options);
 
 	if (!chainHealth.checks.hasBlocks) {
 		return disabledResponse(chain, chainHealth, "richlist");
@@ -180,7 +232,7 @@ function getLeaderboard(chainId, options = {}) {
 	const offset = normalizeOffset(options.offset);
 	const period = normalizePeriod(options.period);
 	const sort = normalizeLeaderboardSort(options.sort);
-	const chainHealth = health.getChainHealth(chain, { db });
+	const chainHealth = resolveChainHealth(chain, options);
 
 	if (!chainHealth.checks.hasBlocks) {
 		return disabledResponse(chain, chainHealth, "leaderboards");
@@ -261,9 +313,10 @@ function getAddress(chainId, address, options = {}) {
 	const cleanAddress = normalizeAddress(address);
 	const limit = normalizeLimit(options.limit);
 	const offset = normalizeOffset(options.offset);
-	const chainHealth = health.getChainHealth(chain, { db });
+	const chainHealth = resolveChainHealth(chain, options);
 	const balanceRow = prepare(db, `
-		SELECT address, balance_sats, total_received_sats, total_sent_sats, tx_count, last_seen_height
+		SELECT address, balance_sats, total_received_sats, total_sent_sats, tx_count, last_seen_height,
+			first_seen_height, first_seen_time
 		FROM address_balances
 		WHERE chain_id = ? AND address = ?
 	`).get(chain, cleanAddress);
@@ -272,17 +325,11 @@ function getAddress(chainId, address, options = {}) {
 			address_transactions.txid,
 			address_transactions.first_seen_height,
 			address_transactions.first_seen_time,
+			COALESCE(address_transactions.net_delta_sats, 0) AS net_delta_sats,
 			transactions.block_hash,
 			transactions.tx_index,
 			transactions.is_coinbase,
-			transactions.is_coinstake,
-			(
-				SELECT COALESCE(SUM(delta_sats), 0)
-				FROM address_events
-				WHERE chain_id = address_transactions.chain_id
-					AND address = address_transactions.address
-					AND txid = address_transactions.txid
-			) AS net_delta_sats
+			transactions.is_coinstake
 		FROM address_transactions
 		INNER JOIN transactions
 			ON transactions.chain_id = address_transactions.chain_id
@@ -298,11 +345,16 @@ function getAddress(chainId, address, options = {}) {
 			FROM address_transactions
 			WHERE chain_id = ? AND address = ?
 		`).get(chain, cleanAddress).count);
-	const firstSeenRow = prepare(db, `
-		SELECT MIN(first_seen_height) AS first_seen_height, MIN(first_seen_time) AS first_seen_time
-		FROM address_transactions
-		WHERE chain_id = ? AND address = ?
-	`).get(chain, cleanAddress);
+	const firstSeenRow = balanceRow && balanceRow.first_seen_height != null
+		? {
+			first_seen_height: balanceRow.first_seen_height,
+			first_seen_time: balanceRow.first_seen_time
+		}
+		: prepare(db, `
+			SELECT MIN(first_seen_height) AS first_seen_height, MIN(first_seen_time) AS first_seen_time
+			FROM address_transactions
+			WHERE chain_id = ? AND address = ?
+		`).get(chain, cleanAddress);
 	const balance = balanceRow
 		? mapAddressBalance(chain, balanceRow, firstSeenRow)
 		: emptyAddressBalance(chain, cleanAddress, firstSeenRow);
@@ -755,7 +807,7 @@ function getAddressBalanceHistory(chainId, address, options = {}) {
 	const cleanAddress = normalizeAddress(address);
 	const maxPoints = normalizeBalanceHistoryPoints(options.maxPoints);
 	const since = normalizeSince(options.since);
-	const chainHealth = health.getChainHealth(chain, { db });
+	const chainHealth = resolveChainHealth(chain, options);
 	const balanceRow = prepare(db, `
 		SELECT balance_sats
 		FROM address_balances
@@ -907,7 +959,7 @@ function getChainActivityHistory(chainId, options = {}) {
 	const chain = normalizeChainId(chainId);
 	const maxPoints = normalizeBalanceHistoryPoints(options.maxPoints);
 	const since = normalizeSince(options.since);
-	const chainHealth = health.getChainHealth(chain, { db });
+	const chainHealth = resolveChainHealth(chain, options);
 	const bucketBounds = since
 		? prepare(db, `
 			SELECT MIN(bucket_start) AS min_time, MAX(bucket_start) AS max_time
@@ -965,12 +1017,10 @@ function getAddressUtxos(chainId, address, options = {}) {
 	const cleanAddress = normalizeAddress(address);
 	const limit = normalizeLimit(options.limit);
 	const offset = normalizeOffset(options.offset);
-	const chainHealth = health.getChainHealth(chain, { db });
+	const chainHealth = resolveChainHealth(chain, options);
 	const utxoParams = [chain, cleanAddress, chain, cleanAddress, cleanAddress];
-	const rows = prepare(db, ADDRESS_UTXO_QUERY_SQL).all(...utxoParams, limit, offset);
-	const summaryRow = rows.length
-		? { count: rows[0].total_count, total_sats: rows[0].total_sats }
-		: prepare(db, ADDRESS_UTXO_SUMMARY_ONLY_SQL).get(...utxoParams);
+	const summaryRow = prepare(db, ADDRESS_UTXO_SUMMARY_ONLY_SQL).get(...utxoParams);
+	const rows = prepare(db, ADDRESS_UTXO_LIST_SQL).all(...utxoParams, limit, offset);
 
 	return {
 		chainId: chain,
@@ -998,7 +1048,7 @@ function getTransaction(chainId, txid, options = {}) {
 	const db = options.db || dbModule.openDatabase();
 	const chain = normalizeChainId(chainId);
 	const cleanTxid = normalizeHash(txid);
-	const chainHealth = health.getChainHealth(chain, { db });
+	const chainHealth = resolveChainHealth(chain, { ...options, skipAddressCount: true });
 	const tx = prepare(db, `
 		SELECT txid, block_height, block_hash, tx_index, time, is_coinbase, is_coinstake, raw_available, source
 		FROM transactions
@@ -1060,19 +1110,109 @@ function getTransaction(chainId, txid, options = {}) {
 	};
 }
 
+function getTransactionRelatedAddresses(chainId, txid, options = {}) {
+	const db = options.db || dbModule.openDatabase();
+	const chain = normalizeChainId(chainId);
+	const cleanTxid = normalizeHash(txid);
+	const limit = normalizeLimit(options.limit ?? 6);
+	const chainHealth = resolveChainHealth(chain, { ...options, skipAddressCount: true });
+	const rows = prepare(db, `
+		WITH related_addresses AS (
+			SELECT DISTINCT address
+			FROM address_events
+			WHERE chain_id = ? AND txid = ?
+			UNION
+			SELECT DISTINCT address
+			FROM vouts
+			WHERE chain_id = ? AND txid = ? AND address IS NOT NULL
+			UNION
+			SELECT DISTINCT vout_addresses.address
+			FROM vout_addresses
+			WHERE vout_addresses.chain_id = ? AND vout_addresses.txid = ?
+			UNION
+			SELECT DISTINCT address
+			FROM vins
+			WHERE chain_id = ? AND txid = ? AND address IS NOT NULL
+		),
+		ranked_transactions AS (
+			SELECT
+				address_transactions.address,
+				address_transactions.txid,
+				address_transactions.first_seen_height,
+				address_transactions.first_seen_time,
+				COALESCE(address_transactions.net_delta_sats, 0) AS net_delta_sats,
+				transactions.block_hash,
+				transactions.tx_index,
+				transactions.is_coinbase,
+				transactions.is_coinstake,
+				ROW_NUMBER() OVER (
+					PARTITION BY address_transactions.address
+					ORDER BY address_transactions.first_seen_height DESC, transactions.tx_index DESC
+				) AS row_num
+			FROM address_transactions
+			INNER JOIN transactions
+				ON transactions.chain_id = address_transactions.chain_id
+				AND transactions.txid = address_transactions.txid
+			INNER JOIN related_addresses
+				ON related_addresses.address = address_transactions.address
+			WHERE address_transactions.chain_id = ?
+		)
+		SELECT
+			address,
+			txid,
+			first_seen_height,
+			first_seen_time,
+			net_delta_sats,
+			block_hash,
+			tx_index,
+			is_coinbase,
+			is_coinstake
+		FROM ranked_transactions
+		WHERE row_num <= ?
+		ORDER BY address ASC, first_seen_height DESC, tx_index DESC
+	`).all(chain, cleanTxid, chain, cleanTxid, chain, cleanTxid, chain, cleanTxid, chain, limit);
+
+	const itemsByAddress = new Map();
+
+	for (const row of rows) {
+		if (!itemsByAddress.has(row.address)) {
+			itemsByAddress.set(row.address, {
+				address: row.address,
+				transactions: []
+			});
+		}
+
+		itemsByAddress.get(row.address).transactions.push(
+			mapAddressTransaction(chain, row)
+		);
+	}
+
+	return {
+		chainId: chain,
+		txid: cleanTxid,
+		found: itemsByAddress.size > 0,
+		trusted: chainHealth.trusted,
+		source: getSource(chainHealth, "address"),
+		limit,
+		items: [...itemsByAddress.values()]
+	};
+}
+
 function getBlock(chainId, hashOrHeight, options = {}) {
 	const db = options.db || dbModule.openDatabase();
 	const chain = normalizeChainId(chainId);
 	const value = String(hashOrHeight || "").trim();
-	const chainHealth = health.getChainHealth(chain, { db });
+	const chainHealth = resolveChainHealth(chain, options);
 	const block = /^\d+$/.test(value)
 		? db.prepare(`
-			SELECT height, hash, previous_hash, next_hash, time, tx_count, size, difficulty
+			SELECT height, hash, previous_hash, next_hash, time, tx_count, size, difficulty,
+				output_count, extracted_by, extracted_by_address, fee_sats, total_output_sats
 			FROM blocks
 			WHERE chain_id = ? AND height = ?
 		`).get(chain, Number(value))
 		: db.prepare(`
-			SELECT height, hash, previous_hash, next_hash, time, tx_count, size, difficulty
+			SELECT height, hash, previous_hash, next_hash, time, tx_count, size, difficulty,
+				output_count, extracted_by, extracted_by_address, fee_sats, total_output_sats
 			FROM blocks
 			WHERE chain_id = ? AND hash = ?
 		`).get(chain, normalizeHash(value));
@@ -1096,7 +1236,7 @@ function getBlock(chainId, hashOrHeight, options = {}) {
 		ORDER BY tx_index ASC
 		LIMIT ? OFFSET ?
 	`).all(chain, block.height, limit, offset);
-	const mappedBlock = enrichBlocks(db, chain, [mapBlock(block)])[0];
+	const mappedBlock = enrichLatestBlocks(db, chain, [mapBlock(block)])[0];
 	const transactions = attachTransactionSummaries(
 		db,
 		chain,
@@ -1113,8 +1253,26 @@ function getBlock(chainId, hashOrHeight, options = {}) {
 		transactions,
 		confirmations: computeConfirmations(chainHealth, mappedBlock.height),
 		coinbase: getCoinbaseSummary(db, chain, mappedBlock.height),
-		totals: computeBlockTotals(db, chain, mappedBlock.height, block.tx_count)
+		totals: formatBlockTotals(db, chain, block)
 	};
+}
+
+function formatBlockTotals(db, chainId, blockRow) {
+	if (blockRow.total_output_sats != null) {
+		const outputValueAtomic = toBigInt(blockRow.total_output_sats);
+		const feeAtomic = blockRow.fee_sats === null || blockRow.fee_sats === undefined
+			? null
+			: toBigInt(blockRow.fee_sats);
+
+		return {
+			feeAtomic: feeAtomic === null ? null : stringifyInteger(feeAtomic),
+			fee: feeAtomic === null ? null : formatAtomic(chainId, feeAtomic),
+			outputValueAtomic: stringifyInteger(outputValueAtomic),
+			outputValue: formatAtomic(chainId, outputValueAtomic)
+		};
+	}
+
+	return computeBlockTotals(db, chainId, blockRow.height, blockRow.tx_count);
 }
 
 function disabledResponse(chainId, chainHealth, feature) {
@@ -1166,13 +1324,42 @@ function enrichBlockInterestRates(chainId, blocks, options = {}) {
 		return blocks;
 	}
 
-	const lookup = prepare(db, `
-		SELECT interest_rate_percent
+	const blocksNeedingRate = blocks.filter(block =>
+		block.interestRatePercent == null && block.time != null
+	);
+
+	if (!blocksNeedingRate.length) {
+		return blocks;
+	}
+
+	const bucketStarts = [...new Set(blocksNeedingRate.map(block => hourBucketStart(toNumber(block.time))))];
+	const minBucket = Math.min(...bucketStarts);
+	const maxBucket = Math.max(...bucketStarts);
+	const metricRows = prepare(db, `
+		SELECT bucket_start, interest_rate_percent
 		FROM network_metric_buckets
-		WHERE chain_id = ? AND bucket_start <= ? AND interest_rate_percent IS NOT NULL
-		ORDER BY bucket_start DESC
-		LIMIT 1
-	`);
+		WHERE chain_id = ?
+			AND bucket_start <= ?
+			AND bucket_start >= ?
+			AND interest_rate_percent IS NOT NULL
+		ORDER BY bucket_start ASC
+	`).all(chain, maxBucket, minBucket);
+
+	const rateByBucket = new Map();
+	let metricIndex = 0;
+	let latestRate = null;
+
+	for (const bucketStart of bucketStarts.sort((a, b) => a - b)) {
+		while (
+			metricIndex < metricRows.length
+			&& toNumber(metricRows[metricIndex].bucket_start) <= bucketStart
+		) {
+			latestRate = Number(metricRows[metricIndex].interest_rate_percent);
+			metricIndex += 1;
+		}
+
+		rateByBucket.set(bucketStart, latestRate);
+	}
 
 	return blocks.map(block => {
 		if (block.interestRatePercent != null || block.time == null) {
@@ -1180,8 +1367,7 @@ function enrichBlockInterestRates(chainId, blocks, options = {}) {
 		}
 
 		const bucketStart = hourBucketStart(toNumber(block.time));
-		const row = lookup.get(chain, bucketStart);
-		const interestRatePercent = row ? Number(row.interest_rate_percent) : null;
+		const interestRatePercent = rateByBucket.get(bucketStart) ?? null;
 
 		return Object.assign({}, block, {
 			interestRatePercent: Number.isFinite(interestRatePercent)
@@ -1609,24 +1795,37 @@ function computeConfirmations(chainHealth, blockHeight) {
 }
 
 function getTransactionSiblings(db, chainId, blockHeight, txIndex) {
-	const lookup = (index) => {
-		if (index < 0) {
-			return null;
+	const currentIndex = toNumber(txIndex);
+	const prevIndex = currentIndex - 1;
+	const nextIndex = currentIndex + 1;
+	const siblings = {
+		prevTxid: null,
+		nextTxid: null
+	};
+
+	const indices = [];
+	if (prevIndex >= 0) {
+		indices.push(prevIndex);
+	}
+
+	indices.push(nextIndex);
+
+	const placeholders = indices.map(() => "?").join(",");
+	const rows = prepare(db, `
+		SELECT tx_index, txid
+		FROM transactions
+		WHERE chain_id = ? AND block_height = ? AND tx_index IN (${placeholders})
+	`).all(chainId, blockHeight, ...indices);
+
+	for (const row of rows) {
+		if (toNumber(row.tx_index) === prevIndex) {
+			siblings.prevTxid = row.txid;
+		} else if (toNumber(row.tx_index) === nextIndex) {
+			siblings.nextTxid = row.txid;
 		}
+	}
 
-		const row = db.prepare(`
-			SELECT txid
-			FROM transactions
-			WHERE chain_id = ? AND block_height = ? AND tx_index = ?
-		`).get(chainId, blockHeight, index);
-
-		return row ? row.txid : null;
-	};
-
-	return {
-		prevTxid: lookup(toNumber(txIndex) - 1),
-		nextTxid: lookup(toNumber(txIndex) + 1)
-	};
+	return siblings;
 }
 
 function detectChangeOutputIndices(vins, vouts, isCoinbase) {
@@ -1644,47 +1843,40 @@ function detectChangeOutputIndices(vins, vouts, isCoinbase) {
 }
 
 function getCoinbaseSummary(db, chainId, blockHeight) {
-	const coinbaseTx = db.prepare(`
-		SELECT txid
+	const row = prepare(db, `
+		SELECT
+			transactions.txid,
+			COALESCE(SUM(vouts.value_sats), 0) AS reward_sats
 		FROM transactions
-		WHERE chain_id = ? AND block_height = ? AND is_coinbase = 1
-		ORDER BY tx_index ASC
+		LEFT JOIN vouts
+			ON vouts.chain_id = transactions.chain_id
+			AND vouts.txid = transactions.txid
+		WHERE transactions.chain_id = ?
+			AND transactions.block_height = ?
+			AND transactions.is_coinbase = 1
+		GROUP BY transactions.txid
+		ORDER BY transactions.tx_index ASC
 		LIMIT 1
 	`).get(chainId, blockHeight);
 
-	if (!coinbaseTx) {
+	if (!row) {
 		return null;
 	}
 
-	const vouts = db.prepare(`
-		SELECT value_sats
-		FROM vouts
-		WHERE chain_id = ? AND txid = ?
-	`).all(chainId, coinbaseTx.txid);
-
-	let rewardAtomic = 0n;
-	for (const row of vouts) {
-		rewardAtomic += toBigInt(row.value_sats);
-	}
+	const rewardAtomic = toBigInt(row.reward_sats);
 
 	return {
-		txid: coinbaseTx.txid,
+		txid: row.txid,
 		rewardAtomic: stringifyInteger(rewardAtomic),
 		reward: formatAtomic(chainId, rewardAtomic)
 	};
 }
 
 function computeBlockTotals(db, chainId, blockHeight, txCount = 0) {
-	const outputRow = db.prepare(`
-		SELECT COALESCE(SUM(v.value_sats), 0) AS total
-		FROM vouts v
-		INNER JOIN transactions t ON t.chain_id = v.chain_id AND t.txid = v.txid
-		WHERE v.chain_id = ? AND t.block_height = ?
-	`).get(chainId, blockHeight);
+	const totals = computeBlockTotalsRaw(db, chainId, blockHeight, txCount);
+	const outputValueAtomic = totals.totalOutputSats;
 
-	const outputValueAtomic = toBigInt(outputRow.total);
-	const maxFeeTxCount = Number(process.env.VCEXP_BLOCK_FEE_TX_CAP ?? 100);
-	if (toNumber(txCount) > maxFeeTxCount) {
+	if (totals.feeSats === null) {
 		return {
 			feeAtomic: null,
 			fee: null,
@@ -1693,43 +1885,9 @@ function computeBlockTotals(db, chainId, blockHeight, txCount = 0) {
 		};
 	}
 
-	const nonCoinbaseTxs = db.prepare(`
-		SELECT txid
-		FROM transactions
-		WHERE chain_id = ? AND block_height = ? AND is_coinbase = 0
-	`).all(chainId, blockHeight);
-
-	let feeAtomic = 0n;
-	if (nonCoinbaseTxs.length > 0) {
-		const txids = nonCoinbaseTxs.map(tx => tx.txid);
-		const placeholders = txids.map(() => "?").join(",");
-		const inputStats = db.prepare(`
-			SELECT txid, COALESCE(SUM(value_sats), 0) AS total
-			FROM vins
-			WHERE chain_id = ? AND txid IN (${placeholders}) AND resolved = 1
-			GROUP BY txid
-		`).all(chainId, ...txids);
-		const outputStats = db.prepare(`
-			SELECT txid, COALESCE(SUM(value_sats), 0) AS total
-			FROM vouts
-			WHERE chain_id = ? AND txid IN (${placeholders})
-			GROUP BY txid
-		`).all(chainId, ...txids);
-		const inputByTxid = Object.fromEntries(inputStats.map(row => [row.txid, row.total]));
-		const outputByTxid = Object.fromEntries(outputStats.map(row => [row.txid, row.total]));
-
-		for (const tx of nonCoinbaseTxs) {
-			const inputAtomic = toBigInt(inputByTxid[tx.txid] || 0);
-			const txOutputAtomic = toBigInt(outputByTxid[tx.txid] || 0);
-			if (inputAtomic >= txOutputAtomic) {
-				feeAtomic += inputAtomic - txOutputAtomic;
-			}
-		}
-	}
-
 	return {
-		feeAtomic: stringifyInteger(feeAtomic),
-		fee: formatAtomic(chainId, feeAtomic),
+		feeAtomic: stringifyInteger(totals.feeSats),
+		fee: formatAtomic(chainId, totals.feeSats),
 		outputValueAtomic: stringifyInteger(outputValueAtomic),
 		outputValue: formatAtomic(chainId, outputValueAtomic)
 	};
@@ -1817,7 +1975,7 @@ function getNetworkMetricHistory(chainId, options = {}) {
 	const maxPoints = normalizeBalanceHistoryPoints(options.maxPoints);
 	const since = normalizeSince(options.since);
 	const groupBy = options.groupBy ? normalizeInsightsGroupBy(options.groupBy) : null;
-	const chainHealth = health.getChainHealth(chain, { db });
+	const chainHealth = resolveChainHealth(chain, options);
 	const bucketBounds = since
 		? prepare(db, `
 			SELECT MIN(bucket_start) AS min_time, MAX(bucket_start) AS max_time
@@ -1893,6 +2051,9 @@ function toNumber(value) {
 
 module.exports = {
 	getChainSummary,
+	getChainSummaryLite,
+	getLatestBlocks,
+	computeBlockTotalsRaw,
 	getRichlist,
 	getLeaderboard,
 	getAddress,
@@ -1901,6 +2062,8 @@ module.exports = {
 	getNetworkMetricHistory,
 	getAddressUtxos,
 	getTransaction,
+	getTransactionRelatedAddresses,
 	getBlock,
-	enrichBlockInterestRates
+	enrichBlockInterestRates,
+	resolveChainHealth
 };

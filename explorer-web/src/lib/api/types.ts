@@ -384,6 +384,21 @@ export interface TransactionResult {
   source: SourceInfo;
 }
 
+export interface TransactionRelatedAddressGroup {
+  address: string;
+  transactions: AddressTransaction[];
+}
+
+export interface TransactionRelatedAddressesResult {
+  found: boolean;
+  chainId?: string;
+  txid?: string;
+  trusted?: boolean;
+  limit?: number;
+  items: TransactionRelatedAddressGroup[];
+  source: SourceInfo;
+}
+
 export interface BlockResult {
   found: boolean;
   chainId?: string;

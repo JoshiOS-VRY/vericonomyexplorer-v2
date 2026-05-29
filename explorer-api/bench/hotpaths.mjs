@@ -30,12 +30,20 @@ if (sampleAddress) {
     name: "balance-history",
     url: `${base}/v1/${chain}/address/${encodeURIComponent(sampleAddress)}/balance-history?maxPoints=120`,
   });
+  paths.push({
+    name: "address utxos",
+    url: `${base}/v1/${chain}/address/${encodeURIComponent(sampleAddress)}/utxos?limit=25`,
+  });
 }
 
 if (sampleTx) {
   paths.push({
     name: "search tx",
     url: `${base}/v1/${chain}/search?q=${sampleTx}`,
+  });
+  paths.push({
+    name: "tx related addresses",
+    url: `${base}/v1/${chain}/tx/${sampleTx}/related-addresses?limit=6`,
   });
 }
 

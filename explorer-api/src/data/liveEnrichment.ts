@@ -145,6 +145,10 @@ async function enrichVrcBlockInterestRates(
     return blocks;
   }
 
+  if (blocks.every((block) => block.interestRatePercent != null)) {
+    return blocks;
+  }
+
   try {
     return (await runIndexerQuery<BlockRecord[]>(
       "enrichBlockInterestRatesIndexed",

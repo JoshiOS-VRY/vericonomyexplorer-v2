@@ -27,7 +27,36 @@ interface QueuedRequest {
   reject: (error: Error) => void;
   timer: NodeJS.Timeout;
   timeoutMs: number;
+  priority: number;
 }
+
+/** Entity lookups that must stay fast even when summary/dashboard queries saturate workers. */
+const FAST_QUERY_METHODS = new Set([
+  "getTransaction",
+  "getBlockIndexed",
+  "getTransactionRelatedAddresses",
+]);
+
+const METHOD_PRIORITY: Record<string, number> = {
+  getTransaction: 0,
+  getBlockIndexed: 0,
+  getTransactionRelatedAddresses: 0,
+  getAddress: 1,
+  getRichlist: 1,
+  getLeaderboard: 1,
+  getChainHealth: 1,
+  getAddressBalanceHistory: 1,
+  getAddressUtxos: 1,
+  enrichBlockInterestRatesIndexed: 1,
+  getChainSummaryIndexed: 2,
+  getChainSummaryLiteIndexed: 1,
+  getLatestBlocksIndexed: 2,
+  getLandingBundle: 2,
+  getVrmDashboardBundle: 2,
+  getIndexerHealthIndexed: 2,
+  getChainActivityHistory: 2,
+  getNetworkMetricHistory: 2,
+};
 
 function defaultWorkerCount(): number {
   const configured = Number(process.env.VCEXP_API_DB_WORKERS);
@@ -38,9 +67,31 @@ function defaultWorkerCount(): number {
   return Math.min(Math.max(2, os.cpus().length * 2), 8);
 }
 
-const workerCount = defaultWorkerCount();
+function defaultFastWorkerCount(totalWorkers: number): number {
+  const configured = Number(process.env.VCEXP_API_DB_FAST_WORKERS);
+  if (Number.isFinite(configured) && configured >= 0) {
+    return Math.min(configured, Math.max(0, totalWorkers - 2));
+  }
+
+  return Math.min(2, Math.max(0, totalWorkers - 2));
+}
+
+const totalWorkerCount = defaultWorkerCount();
+const fastWorkerCount = defaultFastWorkerCount(totalWorkerCount);
+const mainWorkerCount = Math.max(2, totalWorkerCount - fastWorkerCount);
 const defaultWorkerTimeoutMs = Number(process.env.VCEXP_API_DB_WORKER_TIMEOUT_MS ?? 120_000);
 const workerFile = path.join(repoRoot, "explorer-api", "src", "db", "queryWorker.cjs");
+
+export function resolveQueryPriority(
+  method: string,
+  queryOptions: { priority?: number } = {},
+): number {
+  if (typeof queryOptions.priority === "number") {
+    return queryOptions.priority;
+  }
+
+  return METHOD_PRIORITY[method] ?? 1;
+}
 
 class QueryWorkerSlot {
   private worker: Worker;
@@ -50,6 +101,7 @@ class QueryWorkerSlot {
   private pending = new Map<number, PendingRequest>();
   private nextId = 1;
   private terminated = false;
+  private respawning = false;
 
   constructor(private readonly onFatalError: () => void) {
     this.worker = this.createWorker();
@@ -63,6 +115,7 @@ class QueryWorkerSlot {
     worker.on("message", (message: WorkerResponse & { ready?: boolean }) => {
       if (message.ready) {
         this.ready = true;
+        this.respawning = false;
         this.pump();
         return;
       }
@@ -94,7 +147,7 @@ class QueryWorkerSlot {
     });
 
     worker.on("exit", (code) => {
-      if (code !== 0 && !this.terminated) {
+      if (code !== 0 && !this.terminated && !this.respawning) {
         this.failPending(new Error(`Query worker exited with code ${code}`));
         this.onFatalError();
         this.respawn();
@@ -121,7 +174,21 @@ class QueryWorkerSlot {
 
   private respawn(): void {
     this.ready = false;
+    this.respawning = true;
     this.worker = this.createWorker();
+  }
+
+  private async recycleWorkerAfterTimeout(): Promise<void> {
+    this.respawning = true;
+    this.ready = false;
+    try {
+      await this.worker.terminate();
+    } catch {
+      /* worker may already be gone */
+    }
+    if (!this.terminated) {
+      this.respawn();
+    }
   }
 
   getQueueDepth(): number {
@@ -133,6 +200,7 @@ class QueryWorkerSlot {
     args: unknown[],
     options: Record<string, unknown>,
     timeoutMs = defaultWorkerTimeoutMs,
+    priority = 1,
   ): Promise<unknown> {
     return new Promise((resolve, reject) => {
       const id = this.nextId++;
@@ -140,12 +208,37 @@ class QueryWorkerSlot {
         this.pending.delete(id);
         this.busy = false;
         reject(new WorkerTimeoutError(`Query worker timed out after ${timeoutMs}ms (${method})`));
-        this.pump();
+        void this.recycleWorkerAfterTimeout();
       }, timeoutMs);
 
-      this.queue.push({ id, method, args, options, resolve, reject, timer, timeoutMs });
+      this.queue.push({
+        id,
+        method,
+        args,
+        options,
+        resolve,
+        reject,
+        timer,
+        timeoutMs,
+        priority,
+      });
       this.pump();
     });
+  }
+
+  private dequeueNext(): QueuedRequest | undefined {
+    if (this.queue.length === 0) {
+      return undefined;
+    }
+
+    let bestIdx = 0;
+    for (let index = 1; index < this.queue.length; index += 1) {
+      if (this.queue[index].priority < this.queue[bestIdx].priority) {
+        bestIdx = index;
+      }
+    }
+
+    return this.queue.splice(bestIdx, 1)[0];
   }
 
   private pump(): void {
@@ -153,7 +246,7 @@ class QueryWorkerSlot {
       return;
     }
 
-    const next = this.queue.shift();
+    const next = this.dequeueNext();
     if (!next) {
       return;
     }
@@ -197,6 +290,7 @@ class QueryPool {
     args: unknown[],
     options: Record<string, unknown> = {},
     timeoutMs = defaultWorkerTimeoutMs,
+    priority = 1,
   ): Promise<unknown> {
     if (this.slots.length === 0) {
       return Promise.reject(new Error("Query worker pool is not initialized"));
@@ -213,7 +307,7 @@ class QueryPool {
       }
     }
 
-    return slot.run(method, args, options, timeoutMs);
+    return slot.run(method, args, options, timeoutMs, priority);
   }
 
   async terminate(): Promise<void> {
@@ -222,14 +316,30 @@ class QueryPool {
   }
 }
 
-let queryPoolInstance: QueryPool | null = null;
+let fastQueryPoolInstance: QueryPool | null = null;
+let mainQueryPoolInstance: QueryPool | null = null;
 const inFlight = new Map<string, Promise<unknown>>();
 
-function getQueryPool(): QueryPool {
-  if (!queryPoolInstance) {
-    queryPoolInstance = new QueryPool(workerCount);
+function getFastQueryPool(): QueryPool {
+  if (!fastQueryPoolInstance) {
+    fastQueryPoolInstance = new QueryPool(fastWorkerCount);
   }
-  return queryPoolInstance;
+  return fastQueryPoolInstance;
+}
+
+function getMainQueryPool(): QueryPool {
+  if (!mainQueryPoolInstance) {
+    mainQueryPoolInstance = new QueryPool(mainWorkerCount);
+  }
+  return mainQueryPoolInstance;
+}
+
+function getQueryPoolForMethod(method: string): QueryPool {
+  if (FAST_QUERY_METHODS.has(method) && fastWorkerCount > 0) {
+    return getFastQueryPool();
+  }
+
+  return getMainQueryPool();
 }
 
 function buildCoalesceKey(
@@ -246,14 +356,17 @@ export const queryPool = {
     args: unknown[],
     options: Record<string, unknown> = {},
     timeoutMs = defaultWorkerTimeoutMs,
+    priority = 1,
   ): Promise<unknown> {
-    return getQueryPool().run(method, args, options, timeoutMs);
+    return getQueryPoolForMethod(method).run(method, args, options, timeoutMs, priority);
   },
-  terminate(): Promise<void> {
-    if (!queryPoolInstance) {
-      return Promise.resolve();
-    }
-    return queryPoolInstance.terminate();
+  async terminate(): Promise<void> {
+    await Promise.all([
+      fastQueryPoolInstance?.terminate(),
+      mainQueryPoolInstance?.terminate(),
+    ]);
+    fastQueryPoolInstance = null;
+    mainQueryPoolInstance = null;
   },
 };
 
@@ -261,10 +374,16 @@ export async function runIndexerQuery<T>(
   method: string,
   args: unknown[],
   options: Record<string, unknown> = {},
-  queryOptions: { coalesce?: boolean; timeoutMs?: number; retryOnWorkerError?: boolean } = {},
+  queryOptions: {
+    coalesce?: boolean;
+    timeoutMs?: number;
+    retryOnWorkerError?: boolean;
+    priority?: number;
+  } = {},
 ): Promise<T> {
   const coalesce = queryOptions.coalesce !== false;
   const timeoutMs = queryOptions.timeoutMs ?? defaultWorkerTimeoutMs;
+  const priority = resolveQueryPriority(method, queryOptions);
   const key = buildCoalesceKey(method, args, options);
 
   if (coalesce) {
@@ -276,14 +395,14 @@ export async function runIndexerQuery<T>(
 
   const execute = async (): Promise<T> => {
     try {
-      return (await queryPool.run(method, args, options, timeoutMs)) as T;
+      return (await queryPool.run(method, args, options, timeoutMs, priority)) as T;
     } catch (error) {
       if (queryOptions.retryOnWorkerError !== false && error instanceof Error) {
         const retriable =
           error.message.includes("Query worker exited") ||
           error.message.includes("Unknown query worker method");
         if (retriable) {
-          return (await queryPool.run(method, args, options, timeoutMs)) as T;
+          return (await queryPool.run(method, args, options, timeoutMs, priority)) as T;
         }
       }
       throw error;
@@ -305,4 +424,8 @@ export async function runIndexerQuery<T>(
 
 export const searchQueryTimeoutMs = Number(
   process.env.VCEXP_API_SEARCH_TIMEOUT_MS ?? 15_000,
+);
+
+export const txLookupTimeoutMs = Number(
+  process.env.VCEXP_API_TX_LOOKUP_TIMEOUT_MS ?? 30_000,
 );

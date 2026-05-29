@@ -17,6 +17,7 @@ export default async function ApiDocsPage() {
           "/v1/vrm/dashboard",
           "/v1/:chain/tip/stream",
           "/v1/:chain/summary",
+          "/v1/:chain/summary/lite",
           "/v1/:chain/richlist",
           "/v1/:chain/leaderboard",
           "/v1/:chain/address/:address",
@@ -24,6 +25,7 @@ export default async function ApiDocsPage() {
           "/v1/:chain/address/:address/utxos",
           "/v1/:chain/activity-history",
           "/v1/:chain/tx/:txid",
+          "/v1/:chain/tx/:txid/related-addresses",
           "/v1/:chain/block/:hashOrHeight",
         ],
       }}

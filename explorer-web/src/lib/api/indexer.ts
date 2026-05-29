@@ -14,6 +14,7 @@ import type {
   IndexerHealth,
   LeaderboardResult,
   RichlistResult,
+  TransactionRelatedAddressesResult,
   TransactionResult,
   VrmDashboardPayload,
 } from "@/lib/api/types";
@@ -194,6 +195,20 @@ export async function getTransaction(
     revalidate: BLOCK_TX_REVALIDATE_SECONDS,
   });
   return parseOrThrow(transactionResultSchema, data) as unknown as TransactionResult;
+}
+
+export async function getTransactionRelatedAddresses(
+  chainId: string,
+  txid: string,
+  params: { limit?: number } = {},
+): Promise<TransactionRelatedAddressesResult> {
+  const search = new URLSearchParams();
+  if (params.limit != null) search.set("limit", String(params.limit));
+  const qs = search.toString();
+  return v1Fetch<TransactionRelatedAddressesResult>(
+    `/${chainId}/tx/${encodeURIComponent(txid)}/related-addresses${qs ? `?${qs}` : ""}`,
+    { revalidate: SUMMARY_REVALIDATE_SECONDS },
+  );
 }
 
 export async function getBlock(

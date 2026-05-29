@@ -81,7 +81,7 @@ export async function TransactionDetailPage({
       <TxAddressStory events={result.addressEvents} chainId={chainId} />
       <TxBlockNav result={result} chainId={chainId} />
       <TxAdvancedPanel result={result} chainId={chainId} />
-      <TxRelatedActivityClient chainId={chainId} txid={tx.txid} result={result} />
+      <TxRelatedActivityClient chainId={chainId} txid={tx.txid} />
     </div>
   );
 }

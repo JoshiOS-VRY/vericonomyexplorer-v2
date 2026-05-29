@@ -50,20 +50,28 @@ function createStatements(db) {
 
 		insertAddressTransaction: db.prepare(`
 			INSERT OR IGNORE INTO address_transactions (
-				chain_id, address, txid, first_seen_height, first_seen_time, created_at
-			) VALUES (?, ?, ?, ?, ?, ?)
+				chain_id, address, txid, first_seen_height, first_seen_time, created_at, net_delta_sats
+			) VALUES (?, ?, ?, ?, ?, ?, 0)
+		`),
+
+		addAddressTransactionDelta: db.prepare(`
+			UPDATE address_transactions
+			SET net_delta_sats = COALESCE(net_delta_sats, 0) + ?
+			WHERE chain_id = ? AND address = ? AND txid = ?
 		`),
 
 		upsertSpendBalance: db.prepare(`
 			INSERT INTO address_balances (
 				chain_id, address, balance_sats, total_received_sats, total_sent_sats,
-				tx_count, last_seen_height, updated_at
-			) VALUES (?, ?, ?, 0, ?, ?, ?, ?)
+				tx_count, last_seen_height, first_seen_height, first_seen_time, updated_at
+			) VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT(chain_id, address) DO UPDATE SET
 				balance_sats = balance_sats + excluded.balance_sats,
 				total_sent_sats = total_sent_sats + excluded.total_sent_sats,
 				tx_count = tx_count + excluded.tx_count,
 				last_seen_height = excluded.last_seen_height,
+				first_seen_height = COALESCE(address_balances.first_seen_height, excluded.first_seen_height),
+				first_seen_time = COALESCE(address_balances.first_seen_time, excluded.first_seen_time),
 				updated_at = excluded.updated_at
 		`)
 	};
@@ -109,12 +117,22 @@ function repairUnresolvedInputs(chainId, options = {}) {
 			const delta = -valueSats;
 			const blockHeight = Number(vin.block_height);
 			const time = Number(vin.time || 0);
-			const txCountIncrement = recordAddressTransaction(statements, chainId, previous.address, vin.txid, blockHeight, time, now);
+			const txCountIncrement = recordAddressTransaction(statements, chainId, previous.address, vin.txid, blockHeight, time, now, delta);
 
 			statements.updateVinResolved.run(previous.address, valueSats, chainId, vin.txid, vin.n);
 			statements.markVoutSpent.run(vin.txid, vin.n, blockHeight, chainId, vin.prev_txid, vin.prev_vout);
 			statements.insertAddressEvent.run(chainId, previous.address, vin.txid, blockHeight, time, delta, now);
-			statements.upsertSpendBalance.run(chainId, previous.address, delta, valueSats, txCountIncrement, blockHeight, now);
+			statements.upsertSpendBalance.run(
+				chainId,
+				previous.address,
+				delta,
+				valueSats,
+				txCountIncrement,
+				blockHeight,
+				blockHeight,
+				time,
+				now
+			);
 			summary.repaired++;
 		}
 	});
@@ -124,8 +142,8 @@ function repairUnresolvedInputs(chainId, options = {}) {
 	return summary;
 }
 
-function recordAddressTransaction(statements, chainId, address, txid, blockHeight, time, now) {
-	const result = statements.insertAddressTransaction.run(
+function recordAddressTransaction(statements, chainId, address, txid, blockHeight, time, now, deltaSats) {
+	const insertResult = statements.insertAddressTransaction.run(
 		chainId,
 		address,
 		txid,
@@ -133,8 +151,9 @@ function recordAddressTransaction(statements, chainId, address, txid, blockHeigh
 		time,
 		now
 	);
+	statements.addAddressTransactionDelta.run(deltaSats, chainId, address, txid);
 
-	return result.changes > 0 ? 1 : 0;
+	return insertResult.changes > 0 ? 1 : 0;
 }
 
 module.exports = {

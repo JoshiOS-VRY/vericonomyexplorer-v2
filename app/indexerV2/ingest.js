@@ -2,6 +2,7 @@
 
 const utils = require("../utils.js");
 const dbModule = require("./db.js");
+const { computeBlockTotalsRaw } = require("./blockTotals.js");
 const {
 	createPeriodStatStatements,
 	recordAddressPeriodEvent,
@@ -70,6 +71,12 @@ function createStatements(db) {
 				output_count = excluded.output_count,
 				extracted_by = excluded.extracted_by,
 				extracted_by_address = excluded.extracted_by_address
+		`),
+
+		updateBlockTotals: db.prepare(`
+			UPDATE blocks
+			SET fee_sats = ?, total_output_sats = ?
+			WHERE chain_id = ? AND height = ?
 		`),
 
 		upsertTransaction: db.prepare(`
@@ -149,33 +156,43 @@ function createStatements(db) {
 
 		insertAddressTransaction: db.prepare(`
 			INSERT OR IGNORE INTO address_transactions (
-				chain_id, address, txid, first_seen_height, first_seen_time, created_at
-			) VALUES (?, ?, ?, ?, ?, ?)
+				chain_id, address, txid, first_seen_height, first_seen_time, created_at, net_delta_sats
+			) VALUES (?, ?, ?, ?, ?, ?, 0)
+		`),
+
+		addAddressTransactionDelta: db.prepare(`
+			UPDATE address_transactions
+			SET net_delta_sats = COALESCE(net_delta_sats, 0) + ?
+			WHERE chain_id = ? AND address = ? AND txid = ?
 		`),
 
 		upsertReceiveBalance: db.prepare(`
 			INSERT INTO address_balances (
 				chain_id, address, balance_sats, total_received_sats, total_sent_sats,
-				tx_count, last_seen_height, updated_at
-			) VALUES (?, ?, ?, ?, 0, ?, ?, ?)
+				tx_count, last_seen_height, first_seen_height, first_seen_time, updated_at
+			) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
 			ON CONFLICT(chain_id, address) DO UPDATE SET
 				balance_sats = balance_sats + excluded.balance_sats,
 				total_received_sats = total_received_sats + excluded.total_received_sats,
 				tx_count = tx_count + excluded.tx_count,
 				last_seen_height = excluded.last_seen_height,
+				first_seen_height = COALESCE(address_balances.first_seen_height, excluded.first_seen_height),
+				first_seen_time = COALESCE(address_balances.first_seen_time, excluded.first_seen_time),
 				updated_at = excluded.updated_at
 		`),
 
 		upsertSpendBalance: db.prepare(`
 			INSERT INTO address_balances (
 				chain_id, address, balance_sats, total_received_sats, total_sent_sats,
-				tx_count, last_seen_height, updated_at
-			) VALUES (?, ?, ?, 0, ?, ?, ?, ?)
+				tx_count, last_seen_height, first_seen_height, first_seen_time, updated_at
+			) VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT(chain_id, address) DO UPDATE SET
 				balance_sats = balance_sats + excluded.balance_sats,
 				total_sent_sats = total_sent_sats + excluded.total_sent_sats,
 				tx_count = tx_count + excluded.tx_count,
 				last_seen_height = excluded.last_seen_height,
+				first_seen_height = COALESCE(address_balances.first_seen_height, excluded.first_seen_height),
+				first_seen_time = COALESCE(address_balances.first_seen_time, excluded.first_seen_time),
 				updated_at = excluded.updated_at
 		`),
 
@@ -251,6 +268,14 @@ function ingestBlock(chainId, block, options = {}) {
 				storeRawJson
 			});
 		}
+
+		const blockTotals = computeBlockTotalsRaw(db, chainId, block.height, txs.length);
+		statements.updateBlockTotals.run(
+			blockTotals.feeSats === null ? null : blockTotals.feeSats,
+			blockTotals.totalOutputSats,
+			chainId,
+			block.height
+		);
 
 		recordBlockActivity(periodStatements, chainId, block.time || block.blocktime || 0, now);
 
@@ -355,9 +380,19 @@ function processInputs(statements, periodStatements, chainId, block, tx, txid, c
 		if (previous && address && Number(previous.is_spent) === 0) {
 			statements.markVoutSpent.run(txid, vinIndex, block.height, chainId, vin.txid, vin.vout);
 			const delta = -valueSats;
-			const txCountIncrement = recordAddressTransaction(statements, chainId, address, txid, block, now);
+			const txCountIncrement = recordAddressTransaction(statements, chainId, address, txid, block, now, delta);
 			statements.insertAddressEvent.run(chainId, address, txid, block.height, block.time || 0, delta, "spend", now);
-			statements.upsertSpendBalance.run(chainId, address, delta, valueSats, txCountIncrement, block.height, now);
+			statements.upsertSpendBalance.run(
+				chainId,
+				address,
+				delta,
+				valueSats,
+				txCountIncrement,
+				block.height,
+				block.height,
+				block.time || block.blocktime || 0,
+				now
+			);
 			recordAddressPeriodEvent(
 				periodStatements,
 				chainId,
@@ -406,9 +441,19 @@ function processOutputs(statements, periodStatements, chainId, block, tx, txid, 
 		}
 
 		if (primaryAddress && valueSats > 0n) {
-			const txCountIncrement = recordAddressTransaction(statements, chainId, primaryAddress, txid, block, now);
+			const txCountIncrement = recordAddressTransaction(statements, chainId, primaryAddress, txid, block, now, valueSats);
 			statements.insertAddressEvent.run(chainId, primaryAddress, txid, block.height, block.time || 0, valueSats, "receive", now);
-			statements.upsertReceiveBalance.run(chainId, primaryAddress, valueSats, valueSats, txCountIncrement, block.height, now);
+			statements.upsertReceiveBalance.run(
+				chainId,
+				primaryAddress,
+				valueSats,
+				valueSats,
+				txCountIncrement,
+				block.height,
+				block.height,
+				block.time || block.blocktime || 0,
+				now
+			);
 			const category = coinstake ? "staked" : coinbase ? "mined" : "received";
 			recordAddressPeriodEvent(
 				periodStatements,
@@ -433,17 +478,19 @@ function processOutputs(statements, periodStatements, chainId, block, tx, txid, 
 	}
 }
 
-function recordAddressTransaction(statements, chainId, address, txid, block, now) {
-	const result = statements.insertAddressTransaction.run(
+function recordAddressTransaction(statements, chainId, address, txid, block, now, deltaSats) {
+	const firstSeenTime = block.time || block.blocktime || 0;
+	const insertResult = statements.insertAddressTransaction.run(
 		chainId,
 		address,
 		txid,
 		block.height,
-		block.time || block.blocktime || 0,
+		firstSeenTime,
 		now
 	);
+	statements.addAddressTransactionDelta.run(deltaSats, chainId, address, txid);
 
-	return result.changes > 0 ? 1 : 0;
+	return insertResult.changes > 0 ? 1 : 0;
 }
 
 module.exports = {
