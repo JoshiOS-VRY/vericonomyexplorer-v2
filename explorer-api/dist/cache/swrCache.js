@@ -1,4 +1,5 @@
 import { LRUCache } from "lru-cache";
+import { isSqliteBusyError } from "../errors.js";
 export function getApiCacheTtlMs(defaultTtlMs) {
     const configured = Number(process.env.VCEXP_API_CACHE_TTL_MS);
     if (Number.isFinite(configured) && configured > 0) {
@@ -43,6 +44,12 @@ export async function swrFetch(cache, key, fallback) {
     catch (err) {
         if (err instanceof Error && err.message === "deleted") {
             return fallback();
+        }
+        if (isSqliteBusyError(err)) {
+            const stale = cache.get(key, { allowStale: true });
+            if (stale) {
+                return stale;
+            }
         }
         throw err;
     }

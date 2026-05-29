@@ -27,6 +27,21 @@ function getDatabasePath(): string {
   );
 }
 
+export function ensureReadDbReady(): void {
+  if (migrationsApplied) {
+    return;
+  }
+
+  const dbPath = getDatabasePath();
+  const dbDir = path.dirname(dbPath);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+
+  dbModule.ensureDatabaseMigrations(dbPath);
+  migrationsApplied = true;
+}
+
 export function getDb(): Database.Database {
   if (dbInstance) return dbInstance;
   if (dbError) throw dbError;
@@ -39,8 +54,7 @@ export function getDb(): Database.Database {
     }
 
     if (!migrationsApplied) {
-      dbModule.ensureDatabaseMigrations(dbPath);
-      migrationsApplied = true;
+      ensureReadDbReady();
     }
 
     dbInstance = new DatabaseConstructor(dbPath, { readonly: true });

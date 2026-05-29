@@ -167,13 +167,102 @@ function closeDatabase() {
 	db = null;
 }
 
+function sleepMs(ms) {
+	const end = Date.now() + ms;
+	while (Date.now() < end) {
+		/* busy-wait for short migration lock delays */
+	}
+}
+
+function isSchemaCurrent(dbPath) {
+	if (!fs.existsSync(dbPath)) {
+		return false;
+	}
+
+	let checkDb = null;
+	try {
+		checkDb = new Database(dbPath, { readonly: true });
+		checkDb.pragma("busy_timeout = 5000");
+		const stored = schema.getStoredSchemaVersion(checkDb);
+		return stored >= schema.schemaVersion;
+	} catch {
+		return false;
+	} finally {
+		if (checkDb) {
+			checkDb.close();
+		}
+	}
+}
+
+function acquireMigrationLock(lockPath, maxWaitMs = 600_000) {
+	const start = Date.now();
+
+	while (Date.now() - start < maxWaitMs) {
+		try {
+			return fs.openSync(lockPath, "wx");
+		} catch (err) {
+			if (err && err.code !== "EEXIST") {
+				throw err;
+			}
+
+			if (isSchemaCurrent(getDatabasePath())) {
+				return null;
+			}
+
+			sleepMs(2000);
+		}
+	}
+
+	throw new Error(`Timed out waiting for migration lock: ${lockPath}`);
+}
+
+function releaseMigrationLock(lockPath, lockFd) {
+	if (lockFd == null) {
+		return;
+	}
+
+	fs.closeSync(lockFd);
+	try {
+		fs.unlinkSync(lockPath);
+	} catch {
+		/* ignore stale lock cleanup failures */
+	}
+}
+
 function ensureDatabaseMigrations(dbPath = getDatabasePath()) {
-	const migrationDb = new Database(dbPath);
-	migrationDb.defaultSafeIntegers(true);
-	migrationDb.pragma("foreign_keys = ON");
-	migrationDb.pragma("busy_timeout = 10000");
-	schema.applyMigrations(migrationDb);
-	migrationDb.close();
+	if (isSchemaCurrent(dbPath)) {
+		return {
+			ran: false,
+			reason: "already-current",
+		};
+	}
+
+	const lockPath = `${dbPath}.migrate.lock`;
+	const lockFd = acquireMigrationLock(lockPath);
+
+	try {
+		if (isSchemaCurrent(dbPath)) {
+			return {
+				ran: false,
+				reason: "already-current",
+			};
+		}
+
+		const migrationDb = new Database(dbPath);
+		migrationDb.defaultSafeIntegers(true);
+		migrationDb.pragma("foreign_keys = ON");
+		migrationDb.pragma("busy_timeout = 60000");
+		schema.applyMigrations(migrationDb);
+		migrationDb.close();
+
+		debugLog(`Indexer V2 migrations applied: ${dbPath}`);
+
+		return {
+			ran: true,
+		};
+	} finally {
+		releaseMigrationLock(lockPath, lockFd);
+	}
 }
 
 function getStatus() {

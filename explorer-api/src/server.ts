@@ -5,6 +5,9 @@ import { jsonReplacer } from "./util/json.js";
 
 loadEnv();
 
+const { ensureReadDbReady } = await import("./data/db.js");
+ensureReadDbReady();
+
 const { default: cors } = await import("@fastify/cors");
 const { default: Fastify } = await import("fastify");
 const { applyCacheHeaders } = await import("./cache/httpCache.js");

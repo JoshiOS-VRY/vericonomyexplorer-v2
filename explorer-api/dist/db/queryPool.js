@@ -2,7 +2,7 @@ import os from "node:os";
 import { Worker } from "node:worker_threads";
 import path from "node:path";
 import { loadEnv, repoRoot } from "../env.js";
-import { WorkerTimeoutError } from "../errors.js";
+import { isSqliteBusyError, WorkerTimeoutError } from "../errors.js";
 loadEnv();
 /** Entity lookups that must stay fast even when summary/dashboard queries saturate workers. */
 const FAST_QUERY_METHODS = new Set([
@@ -48,7 +48,14 @@ const totalWorkerCount = defaultWorkerCount();
 const fastWorkerCount = defaultFastWorkerCount(totalWorkerCount);
 const mainWorkerCount = Math.max(2, totalWorkerCount - fastWorkerCount);
 const defaultWorkerTimeoutMs = Number(process.env.VCEXP_API_DB_WORKER_TIMEOUT_MS ?? 120_000);
+const sqliteBusyRetryAttempts = Number(process.env.VCEXP_SQLITE_BUSY_RETRY_ATTEMPTS ?? 4);
+const sqliteBusyRetryDelayMs = Number(process.env.VCEXP_SQLITE_BUSY_RETRY_DELAY_MS ?? 75);
 const workerFile = path.join(repoRoot, "explorer-api", "src", "db", "queryWorker.cjs");
+function sleep(ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+}
 export function resolveQueryPriority(method, queryOptions = {}) {
     if (typeof queryOptions.priority === "number") {
         return queryOptions.priority;
@@ -284,19 +291,27 @@ export async function runIndexerQuery(method, args, options = {}, queryOptions =
         }
     }
     const execute = async () => {
-        try {
-            return (await queryPool.run(method, args, options, timeoutMs, priority));
-        }
-        catch (error) {
-            if (queryOptions.retryOnWorkerError !== false && error instanceof Error) {
-                const retriable = error.message.includes("Query worker exited") ||
-                    error.message.includes("Unknown query worker method");
-                if (retriable) {
-                    return (await queryPool.run(method, args, options, timeoutMs, priority));
-                }
+        const maxAttempts = Math.max(1, sqliteBusyRetryAttempts);
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+            try {
+                return (await queryPool.run(method, args, options, timeoutMs, priority));
             }
-            throw error;
+            catch (error) {
+                if (isSqliteBusyError(error) && attempt < maxAttempts) {
+                    await sleep(sqliteBusyRetryDelayMs * attempt);
+                    continue;
+                }
+                if (queryOptions.retryOnWorkerError !== false && error instanceof Error) {
+                    const retriable = error.message.includes("Query worker exited") ||
+                        error.message.includes("Unknown query worker method");
+                    if (retriable) {
+                        return (await queryPool.run(method, args, options, timeoutMs, priority));
+                    }
+                }
+                throw error;
+            }
         }
+        throw new Error(`Query failed after ${maxAttempts} attempts (${method})`);
     };
     const promise = execute().finally(() => {
         if (coalesce) {

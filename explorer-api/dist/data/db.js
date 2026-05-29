@@ -17,6 +17,18 @@ function getDatabasePath() {
         process.env.BTCEXP_INDEXER_SQLITE_PATH ??
         path.join(repoRoot, "database", "vericonomy-index.sqlite"));
 }
+export function ensureReadDbReady() {
+    if (migrationsApplied) {
+        return;
+    }
+    const dbPath = getDatabasePath();
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+    }
+    dbModule.ensureDatabaseMigrations(dbPath);
+    migrationsApplied = true;
+}
 export function getDb() {
     if (dbInstance)
         return dbInstance;
@@ -29,8 +41,7 @@ export function getDb() {
             fs.mkdirSync(dbDir, { recursive: true });
         }
         if (!migrationsApplied) {
-            dbModule.ensureDatabaseMigrations(dbPath);
-            migrationsApplied = true;
+            ensureReadDbReady();
         }
         dbInstance = new DatabaseConstructor(dbPath, { readonly: true });
         dbInstance.defaultSafeIntegers(true);

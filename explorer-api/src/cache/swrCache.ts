@@ -1,4 +1,5 @@
 import { LRUCache } from "lru-cache";
+import { isSqliteBusyError } from "../errors.js";
 import type { ChainId } from "../types.js";
 
 export type CacheValue = Record<string, unknown>;
@@ -70,6 +71,14 @@ export async function swrFetch<T>(
     if (err instanceof Error && err.message === "deleted") {
       return fallback();
     }
+
+    if (isSqliteBusyError(err)) {
+      const stale = cache.get(key, { allowStale: true }) as T | undefined;
+      if (stale) {
+        return stale;
+      }
+    }
+
     throw err;
   }
 }

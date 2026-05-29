@@ -12,6 +12,13 @@ export class WorkerTimeoutError extends ApiError {
         this.name = "WorkerTimeoutError";
     }
 }
+export function isSqliteBusyError(error) {
+    if (!(error instanceof Error)) {
+        return false;
+    }
+    const message = error.message.toLowerCase();
+    return message.includes("database is locked") || message.includes("sqlite_busy");
+}
 export function mapErrorToResponse(error) {
     if (error instanceof ApiError) {
         return { statusCode: error.statusCode, error: error.message };
