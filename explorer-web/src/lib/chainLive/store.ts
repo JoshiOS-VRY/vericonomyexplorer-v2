@@ -375,7 +375,11 @@ function ensureChain(chainId: ChainId, initialSummary?: ChainSummary | null): vo
 export const chainLiveStore = {
   ensureChain,
   getSnapshot(chainId: ChainId): ChainLiveSnapshot {
-    return snapshots.get(chainId) ?? createSnapshot(emptySummary(chainId));
+    if (!snapshots.has(chainId)) {
+      ensureChain(chainId);
+    }
+
+    return snapshots.get(chainId)!;
   },
   subscribe(chainId: ChainId, listener: () => void): () => void {
     if (!listeners.has(chainId)) {

@@ -22,7 +22,9 @@ export function ChainLiveBootstrap({
       initialVrc: initialVrcSummary,
       visible,
     });
-  }, [initialVrcSummary, initialVrmSummary, visible]);
+    // Bootstrap only needs to run once; live updates flow through the shared store.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   useEffect(() => {
     chainLiveStore.setPageVisible(visible);

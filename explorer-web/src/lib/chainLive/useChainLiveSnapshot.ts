@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import {
   chainLiveStore,
   type ChainId,
@@ -12,9 +12,8 @@ export function useChainLiveSnapshot(
   chainId: ChainId,
   initialSummary?: ChainSummary | null,
 ): ChainLiveSnapshot {
-  useEffect(() => {
-    chainLiveStore.ensureChain(chainId, initialSummary);
-  }, [chainId, initialSummary]);
+  // Seed synchronously so getSnapshot returns a stable reference before subscribe.
+  chainLiveStore.ensureChain(chainId, initialSummary);
 
   return useSyncExternalStore(
     (listener) => chainLiveStore.subscribe(chainId, listener),
