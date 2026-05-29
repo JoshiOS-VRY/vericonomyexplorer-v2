@@ -3,31 +3,16 @@ import path from "node:path";
 import { createRequire } from "node:module";
 import { repoRoot } from "../env.js";
 const requireRoot = createRequire(path.join(repoRoot, "package.json"));
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const dbModule = requireRoot("./app/indexerV2/db.js");
 // Use the repo-root native module so explorer-api matches indexer/Express Node ABI.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const DatabaseConstructor = requireRoot("better-sqlite3");
 const statementCache = new Map();
 let dbInstance = null;
 let dbError = null;
-let migrationsApplied = false;
 function getDatabasePath() {
     return (process.env.VCEXP_INDEXER_SQLITE_PATH ??
         process.env.BTCEXP_INDEXER_SQLITE_PATH ??
         path.join(repoRoot, "database", "vericonomy-index.sqlite"));
-}
-export function ensureReadDbReady() {
-    if (migrationsApplied) {
-        return;
-    }
-    const dbPath = getDatabasePath();
-    const dbDir = path.dirname(dbPath);
-    if (!fs.existsSync(dbDir)) {
-        fs.mkdirSync(dbDir, { recursive: true });
-    }
-    dbModule.ensureDatabaseMigrations(dbPath);
-    migrationsApplied = true;
 }
 export function getDb() {
     if (dbInstance)
@@ -39,9 +24,6 @@ export function getDb() {
         const dbDir = path.dirname(dbPath);
         if (!fs.existsSync(dbDir)) {
             fs.mkdirSync(dbDir, { recursive: true });
-        }
-        if (!migrationsApplied) {
-            ensureReadDbReady();
         }
         dbInstance = new DatabaseConstructor(dbPath, { readonly: true });
         dbInstance.defaultSafeIntegers(true);

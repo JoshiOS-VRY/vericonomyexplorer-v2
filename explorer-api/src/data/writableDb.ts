@@ -6,14 +6,9 @@ import { repoRoot } from "../env.js";
 
 const requireRoot = createRequire(path.join(repoRoot, "package.json"));
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const dbModule = requireRoot("./app/indexerV2/db.js") as {
-  ensureDatabaseMigrations: (dbPath?: string) => void;
-};
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const DatabaseConstructor = requireRoot("better-sqlite3") as typeof Database;
 
 let writableDb: Database.Database | null = null;
-let migrationsApplied = false;
 
 function getDatabasePath(): string {
   return (
@@ -32,11 +27,6 @@ export function getWritableDb(): Database.Database {
   const dbDir = path.dirname(dbPath);
   if (!fs.existsSync(dbDir)) {
     fs.mkdirSync(dbDir, { recursive: true });
-  }
-
-  if (!migrationsApplied) {
-    dbModule.ensureDatabaseMigrations(dbPath);
-    migrationsApplied = true;
   }
 
   writableDb = new DatabaseConstructor(dbPath);

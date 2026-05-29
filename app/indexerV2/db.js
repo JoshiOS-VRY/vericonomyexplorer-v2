@@ -194,6 +194,15 @@ function isSchemaCurrent(dbPath) {
 	}
 }
 
+function isStaleMigrationLock(lockPath, maxAgeMs = 2 * 60 * 1000) {
+	try {
+		const stat = fs.statSync(lockPath);
+		return Date.now() - stat.mtimeMs > maxAgeMs;
+	} catch {
+		return false;
+	}
+}
+
 function acquireMigrationLock(lockPath, maxWaitMs = 600_000) {
 	const start = Date.now();
 
@@ -207,6 +216,15 @@ function acquireMigrationLock(lockPath, maxWaitMs = 600_000) {
 
 			if (isSchemaCurrent(getDatabasePath())) {
 				return null;
+			}
+
+			if (isStaleMigrationLock(lockPath)) {
+				try {
+					fs.unlinkSync(lockPath);
+				} catch {
+					/* ignore stale lock cleanup failures */
+				}
+				continue;
 			}
 
 			sleepMs(2000);
