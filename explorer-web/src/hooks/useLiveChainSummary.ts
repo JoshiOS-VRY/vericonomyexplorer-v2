@@ -4,34 +4,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTipStream } from "@/components/explorer/TipStreamProvider";
 import { fetchChainSummary, fetchLatestBlocks } from "@/lib/api/client";
 import { getChainTipHeight } from "@/lib/chainDisplay";
+import {
+  enrichBlocksFromPrevious,
+  shouldApplyFetchedBlocks,
+  shouldApplyOptimisticTip,
+} from "@/lib/liveBlocksMerge";
 import { usePageVisible } from "@/hooks/usePageVisible";
 import type { ChainSummary, IndexedBlock } from "@/lib/api/types";
 
 const SUMMARY_REFRESH_DEBOUNCE_MS = 2_000;
+const BLOCKS_REFRESH_DEBOUNCE_MS = 400;
 const SUMMARY_POLL_MS = 30_000;
-
-function mergeLatestBlocks(
-  prevBlocks: IndexedBlock[],
-  nextBlocks: IndexedBlock[],
-): IndexedBlock[] {
-  const prevByHash = new Map(prevBlocks.map((block) => [block.hash, block]));
-
-  return nextBlocks.map((block) => {
-    const prev = prevByHash.get(block.hash);
-    if (!prev) {
-      return block;
-    }
-
-    return {
-      ...block,
-      extractedBy: block.extractedBy ?? prev.extractedBy ?? null,
-      extractedByAddress:
-        block.extractedByAddress ?? prev.extractedByAddress ?? null,
-      difficulty: block.difficulty ?? prev.difficulty,
-      size: block.size ?? prev.size,
-    };
-  });
-}
+const MAX_LATEST_BLOCKS = 10;
 
 export interface LiveChainState {
   summary: ChainSummary;
@@ -60,6 +44,11 @@ export function useLiveChainSummary(
   const summaryRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const blocksRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const summaryFetchGenRef = useRef(0);
+  const blocksFetchGenRef = useRef(0);
 
   const [summary, setSummary] = useState(initialSummary);
   const [heightPulse, setHeightPulse] = useState(false);
@@ -77,7 +66,7 @@ export function useLiveChainSummary(
       const merged: ChainSummary = usePrevBlocks
         ? {
             ...next,
-            latestBlocks: mergeLatestBlocks(
+            latestBlocks: enrichBlocksFromPrevious(
               prev.latestBlocks,
               next.latestBlocks,
             ),
@@ -95,7 +84,7 @@ export function useLiveChainSummary(
           }
         : {
             ...next,
-            latestBlocks: mergeLatestBlocks(
+            latestBlocks: enrichBlocksFromPrevious(
               prev.latestBlocks,
               next.latestBlocks,
             ),
@@ -137,7 +126,16 @@ export function useLiveChainSummary(
 
   const applyLatestBlocks = useCallback((blocks: IndexedBlock[]) => {
     setSummary((prev) => {
-      const mergedBlocks = mergeLatestBlocks(prev.latestBlocks, blocks);
+      const fetchedTop =
+        blocks.length > 0
+          ? Math.max(...blocks.map((block) => block.height))
+          : null;
+      const prevTop = prev.latestBlocks[0]?.height ?? null;
+      if (!shouldApplyFetchedBlocks(fetchedTop, prevTop)) {
+        return prev;
+      }
+
+      const mergedBlocks = enrichBlocksFromPrevious(prev.latestBlocks, blocks);
       const topHeight = mergedBlocks[0]?.height ?? null;
       const incomingNew = mergedBlocks.filter(
         (block) => !knownHashesRef.current.has(block.hash),
@@ -189,14 +187,23 @@ export function useLiveChainSummary(
       return;
     }
 
+    const fetchGen = ++summaryFetchGenRef.current;
     setIsRefreshing(true);
     try {
       const next = await fetchChainSummary(chainId);
+      if (fetchGen !== summaryFetchGenRef.current) {
+        return;
+      }
       applySummary(next);
     } catch (err) {
+      if (fetchGen !== summaryFetchGenRef.current) {
+        return;
+      }
       setError(err instanceof Error ? err.message : "Failed to refresh");
     } finally {
-      setIsRefreshing(false);
+      if (fetchGen === summaryFetchGenRef.current) {
+        setIsRefreshing(false);
+      }
     }
   }, [applySummary, chainId, visible]);
 
@@ -205,10 +212,17 @@ export function useLiveChainSummary(
       return;
     }
 
+    const fetchGen = ++blocksFetchGenRef.current;
     try {
       const blocks = await fetchLatestBlocks(chainId);
+      if (fetchGen !== blocksFetchGenRef.current) {
+        return;
+      }
       applyLatestBlocks(blocks);
     } catch (err) {
+      if (fetchGen !== blocksFetchGenRef.current) {
+        return;
+      }
       setError(err instanceof Error ? err.message : "Failed to refresh blocks");
     }
   }, [applyLatestBlocks, chainId, visible]);
@@ -224,6 +238,17 @@ export function useLiveChainSummary(
     }, SUMMARY_REFRESH_DEBOUNCE_MS) as unknown as ReturnType<typeof setTimeout>;
   }, [refresh]);
 
+  const scheduleBlocksRefresh = useCallback(() => {
+    if (blocksRefreshTimerRef.current) {
+      window.clearTimeout(blocksRefreshTimerRef.current);
+    }
+
+    blocksRefreshTimerRef.current = window.setTimeout(() => {
+      blocksRefreshTimerRef.current = null;
+      void refreshLatestBlocks();
+    }, BLOCKS_REFRESH_DEBOUNCE_MS) as unknown as ReturnType<typeof setTimeout>;
+  }, [refreshLatestBlocks]);
+
   const applyOptimisticTip = useCallback(
     (tip: { height: number; hash: string; time: number }) => {
       setSummary((prev) => {
@@ -235,12 +260,17 @@ export function useLiveChainSummary(
           return prev;
         }
 
-        const optimisticBlock: IndexedBlock = {
-          height: tip.height,
-          hash: tip.hash,
-          time: tip.time,
-          txCount: 0,
-        };
+        const nextBlocks = shouldApplyOptimisticTip(tip.height, top?.height ?? null)
+          ? [
+              {
+                height: tip.height,
+                hash: tip.hash,
+                time: tip.time,
+                txCount: 0,
+              } satisfies IndexedBlock,
+              ...prev.latestBlocks,
+            ].slice(0, MAX_LATEST_BLOCKS)
+          : prev.latestBlocks;
 
         if (!knownHashesRef.current.has(tip.hash)) {
           knownHashesRef.current.add(tip.hash);
@@ -254,7 +284,7 @@ export function useLiveChainSummary(
 
         return {
           ...prev,
-          latestBlocks: [optimisticBlock, ...prev.latestBlocks].slice(0, 10),
+          latestBlocks: nextBlocks,
           health: {
             ...prev.health,
             heights: {
@@ -303,13 +333,13 @@ export function useLiveChainSummary(
 
     return subscribe(chainId, (tip) => {
       applyOptimisticTip(tip);
-      void refreshLatestBlocks();
+      scheduleBlocksRefresh();
       scheduleSummaryRefresh();
     });
   }, [
     applyOptimisticTip,
     chainId,
-    refreshLatestBlocks,
+    scheduleBlocksRefresh,
     scheduleSummaryRefresh,
     subscribe,
     visible,
@@ -353,6 +383,9 @@ export function useLiveChainSummary(
     () => () => {
       if (summaryRefreshTimerRef.current) {
         window.clearTimeout(summaryRefreshTimerRef.current);
+      }
+      if (blocksRefreshTimerRef.current) {
+        window.clearTimeout(blocksRefreshTimerRef.current);
       }
     },
     [],
