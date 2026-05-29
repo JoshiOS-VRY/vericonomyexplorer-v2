@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { heavyRateLimitRouteConfig } from "../env.js";
 import { createSwrCache } from "../cache/swrCache.js";
 import { registerChainScopedCache } from "../cache/registry.js";
 import { fetchAddress, fetchBlock, fetchTransaction } from "../data/legacy.js";
@@ -69,6 +70,7 @@ async function resolveSearchPath(chainId: string, query: string) {
 export async function registerSearchRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { chain: string }; Querystring: { q?: string } }>(
     "/v1/:chain/search",
+    { ...heavyRateLimitRouteConfig },
     async (request, reply) => {
       const chainId = parseChainId(request.params.chain);
       if (!chainId) {

@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { heavyRateLimitRouteConfig } from "../env.js";
 import { createSwrCache } from "../cache/swrCache.js";
 import { fetchLeaderboard, fetchMinedLeaderboard, fetchRichlist } from "../data/legacy.js";
 import { parseChainId } from "../types.js";
@@ -49,7 +50,7 @@ export async function registerRichRoutes(app: FastifyInstance): Promise<void> {
   app.get<{
     Params: { chain: string };
     Querystring: { limit?: string; offset?: string };
-  }>("/v1/:chain/richlist", async (request, reply) => {
+  }>("/v1/:chain/richlist", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
     const chainId = parseChainId(request.params.chain);
     if (!chainId) {
       return reply.code(400).send({ error: "Invalid chain id" });
@@ -61,7 +62,7 @@ export async function registerRichRoutes(app: FastifyInstance): Promise<void> {
   app.get<{
     Params: { chain: string };
     Querystring: { period?: string; sort?: string; limit?: string; offset?: string };
-  }>("/v1/:chain/leaderboard", async (request, reply) => {
+  }>("/v1/:chain/leaderboard", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
     const chainId = parseChainId(request.params.chain);
     if (!chainId) {
       return reply.code(400).send({ error: "Invalid chain id" });
@@ -73,7 +74,7 @@ export async function registerRichRoutes(app: FastifyInstance): Promise<void> {
   app.get<{
     Params: { chain: string };
     Querystring: { period?: string; limit?: string; offset?: string };
-  }>("/v1/:chain/miners", async (request, reply) => {
+  }>("/v1/:chain/miners", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
     const chainId = parseChainId(request.params.chain);
     if (!chainId) {
       return reply.code(400).send({ error: "Invalid chain id" });

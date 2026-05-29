@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { Loader2 } from "lucide-react";
+import { useCallback, useState } from "react";
 import { BcPanel } from "@/components/explorer/BlockchairUi";
 import { RankList, formatHeight } from "@/components/explorer/ExplorerUi";
 import { ChainPanelLink } from "@/components/explorer/chain/ChainPanelLink";
@@ -29,13 +30,18 @@ export function VrmMinersPreview({
     (initialMiners.period?.type as MinersPeriod) || "month",
   );
   const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [loading, setLoading] = useState(false);
 
-  const loadPeriod = useCallback((nextPeriod: MinersPeriod) => {
-    setPeriod(nextPeriod);
-    setError(null);
+  const loadPeriod = useCallback(
+    async (nextPeriod: MinersPeriod) => {
+      if (nextPeriod === period || loading) {
+        return;
+      }
 
-    startTransition(async () => {
+      setLoading(true);
+      setPeriod(nextPeriod);
+      setError(null);
+
       try {
         const result = await fetchMinersLeaderboardClient("vrm", {
           period: nextPeriod,
@@ -44,9 +50,12 @@ export function VrmMinersPreview({
         setMiners(result);
       } catch {
         setError("Unable to load miners for this period.");
+      } finally {
+        setLoading(false);
       }
-    });
-  }, []);
+    },
+    [loading, period],
+  );
 
   return (
     <BcPanel
@@ -55,19 +64,25 @@ export function VrmMinersPreview({
         <ChainPanelLink href={`/vrm/miners?period=${period}`} label="Miners" />
       }
     >
-      <div className="mb-3 flex flex-wrap gap-1.5">
+      <div className="mb-3 flex flex-wrap items-center gap-1.5">
         {PERIODS.map((option) => (
           <Button
             key={option.id}
             type="button"
             variant={period === option.id ? "primary" : "secondary"}
             size="sm"
-            disabled={isPending}
-            onClick={() => loadPeriod(option.id)}
+            disabled={loading}
+            onClick={() => void loadPeriod(option.id)}
           >
             {option.label}
           </Button>
         ))}
+        {loading ? (
+          <span className="inline-flex items-center gap-1.5 text-xs text-fg-muted">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+            Loading…
+          </span>
+        ) : null}
       </div>
 
       {error ? (
@@ -78,7 +93,7 @@ export function VrmMinersPreview({
         </p>
       ) : miners.items.length === 0 ? (
         <p className="text-sm text-fg-muted">
-          {isPending ? "Loading miners…" : "No mining rewards recorded yet."}
+          {loading ? "Loading miners…" : "No mining rewards recorded yet."}
         </p>
       ) : (
         <RankList

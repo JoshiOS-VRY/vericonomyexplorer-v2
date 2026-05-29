@@ -59,6 +59,22 @@ SQLite reads run in a worker pool (default **4** workers, capped by CPU count) s
 
 For local development, `VCEXP_API_CACHE_TTL_MS=300000` (5 minutes) reduces repeated cold-query latency.
 
+### Rate limiting (abuse prevention)
+
+Per-client limits apply to public `/v1/*` traffic. SSR and Docker-internal calls from private IPs (RFC1918, loopback) are allowlisted so Next.js server fetches are not capped as a single client.
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `VCEXP_RATE_LIMIT_WINDOW_MINUTES` | `15` | Window length; set `-1` to disable |
+| `VCEXP_RATE_LIMIT_MAX` | `900` | Max requests per IP per window |
+| `VCEXP_RATE_LIMIT_CRAWLER_MAX` | `120` | Max for known crawler user-agents |
+| `VCEXP_RATE_LIMIT_HEAVY_MAX` | `60` | Per-minute cap on search, richlist, utxos, etc. |
+| `VCEXP_RATE_LIMIT_SSE_MAX` | `4` | Concurrent `/tip/stream` connections per IP |
+| `VCEXP_RATE_LIMIT_ALLOW_IPS` | — | Extra comma-separated allowlisted IPs |
+| `VCEXP_REDIS_URL` / `BTCEXP_REDIS_URL` | — | Optional Redis store for multi-instance deployments |
+
+Legacy Express and Next.js BFF routes honor the same `VCEXP_*` / `BTCEXP_RATE_LIMIT_*` env vars where noted in `env.example`.
+
 ### Benchmarks
 
 With explorer-api running on port 3003:

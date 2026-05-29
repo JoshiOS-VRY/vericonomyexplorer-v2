@@ -128,9 +128,18 @@ module.exports = {
 	},
 
 	rateLimiting: {
-		windowMinutes: process.env.BTCEXP_RATE_LIMIT_WINDOW_MINUTES || 15,
-		windowMaxRequests: process.env.BTCEXP_RATE_LIMIT_WINDOW_MAX_REQUESTS || 500, // Reduced from 1000 to 500 for better protection
-		crawlerWindowMaxRequests: process.env.BTCEXP_RATE_LIMIT_CRAWLER_MAX_REQUESTS || 100 // Stricter limit for crawlers
+		windowMinutes:
+			process.env.VCEXP_RATE_LIMIT_WINDOW_MINUTES ??
+			process.env.BTCEXP_RATE_LIMIT_WINDOW_MINUTES ??
+			15,
+		windowMaxRequests:
+			process.env.VCEXP_RATE_LIMIT_MAX ??
+			process.env.BTCEXP_RATE_LIMIT_WINDOW_MAX_REQUESTS ??
+			500,
+		crawlerWindowMaxRequests:
+			process.env.VCEXP_RATE_LIMIT_CRAWLER_MAX ??
+			process.env.BTCEXP_RATE_LIMIT_CRAWLER_MAX_REQUESTS ??
+			100,
 	},
 
 	rpcBlacklist:

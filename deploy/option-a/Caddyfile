@@ -5,6 +5,9 @@
 
 {$PUBLIC_DOMAIN} {
   # API + SSE: bypass Next.js (rewrites are build-time) and avoid compressing event streams.
+  # Application rate limits live in explorer-api (VCEXP_RATE_LIMIT_*). Optional coarse edge
+  # limiting: https://caddyserver.com/docs/modules/http.handlers.rate_limit
+  # Example: rate_limit { zone public_api { key {remote_ip} events 50 window 1s} }
   handle /v1/* {
     reverse_proxy vericonomy-explorer-fast-api:3003
   }

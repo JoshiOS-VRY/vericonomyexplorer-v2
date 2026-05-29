@@ -1,3 +1,4 @@
+import { healthRateLimitRouteConfig, heavyRateLimitRouteConfig } from "../env.js";
 import { cacheKey, createSwrCache, refreshCacheInBackground, swrFetch, } from "../cache/swrCache.js";
 import { registerChainScopedCache, registerGlobalCache } from "../cache/registry.js";
 import { registerChainTipRefresh, registerGlobalTipRefresh, refreshOnTip, } from "../cache/tipRefresh.js";
@@ -121,7 +122,7 @@ export function registerCacheInvalidation() {
     });
 }
 export async function registerChainRoutes(app) {
-    app.get("/v1/health", async () => ({
+    app.get("/v1/health", { ...healthRateLimitRouteConfig }, async () => ({
         ok: true,
         service: "explorer-api",
     }));
@@ -142,14 +143,14 @@ export async function registerChainRoutes(app) {
         }
         return swrFetch(summaryLiteCache, cacheKey(chainId, "summary-lite"), () => fetchChainSummaryLite(chainId));
     });
-    app.get("/v1/:chain/health", async (request, reply) => {
+    app.get("/v1/:chain/health", { ...healthRateLimitRouteConfig }, async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });
         }
         return chainHealthCache.fetch(cacheKey(chainId, "health"));
     });
-    app.get("/v1/:chain/activity-history", async (request, reply) => {
+    app.get("/v1/:chain/activity-history", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });

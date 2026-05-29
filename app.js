@@ -280,10 +280,6 @@ if (rateLimitWindowMinutes == -1) {
 				return true;
 			}
 
-			if (req.originalUrl.includes("/api/")) {
-				return true;
-			}
-
 			return false;
 		},
 		handler: function (req, res, next) {

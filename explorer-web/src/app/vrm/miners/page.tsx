@@ -1,23 +1,19 @@
-import Link from "next/link";
 import {
   AlertBanner,
-  DataTable,
   PageHero,
-  PaginationLinks,
-  formatHeight,
 } from "@/components/explorer/ExplorerUi";
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { VrmMinersPageClient } from "@/components/explorer/vrm/VrmMinersPageClient";
 import { getMinersLeaderboard } from "@/lib/api/indexer";
 import { formatExplorerUserMessage } from "@/lib/explorerCopy";
 import { normalizeLimit, normalizeOffset } from "@/lib/utils";
 
-const PERIODS = [
-  { id: "week", label: "This week" },
-  { id: "month", label: "This month" },
-  { id: "year", label: "Past year" },
-  { id: "all", label: "All time" },
-] as const;
+const PERIODS = ["week", "month", "year", "all"] as const;
+type MinersPeriod = (typeof PERIODS)[number];
+
+function normalizePeriod(value: string | undefined): MinersPeriod {
+  const period = (value || "month").trim().toLowerCase();
+  return PERIODS.includes(period as MinersPeriod) ? (period as MinersPeriod) : "month";
+}
 
 export default async function MinersPage({
   searchParams,
@@ -29,7 +25,7 @@ export default async function MinersPage({
   }>;
 }) {
   const params = await searchParams;
-  const period = params.period || "month";
+  const period = normalizePeriod(params.period);
   const limit = normalizeLimit(params.limit, 50);
   const offset = normalizeOffset(params.offset);
 
@@ -64,52 +60,13 @@ export default async function MinersPage({
         title="Verium Top Miners"
         subtitle="Addresses ranked by VRM earned from block rewards in the selected period."
       />
-      <div className="flex flex-wrap gap-2">
-        {PERIODS.map((option) => {
-          const active = miners.period?.type === option.id;
-          return (
-            <Link key={option.id} href={`/vrm/miners?period=${option.id}`}>
-              <Button variant={active ? "primary" : "secondary"} size="sm">
-                {option.label}
-              </Button>
-            </Link>
-          );
-        })}
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Mined VRM</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <DataTable
-            headers={["Rank", "Address", "Mined", "Blocks", "Last block"]}
-            rows={miners.items.map((item) => [
-              `#${item.rank}`,
-              <Link
-                key="a"
-                href={`/vrm/address/${item.address}`}
-                className="text-xs text-accent hover:underline"
-              >
-                {item.address}
-              </Link>,
-              `${item.mined.amount} ${item.mined.ticker}`,
-              formatHeight(item.blockCount),
-              item.lastMinedHeight != null ? (
-                <Link key="lb" href={`/vrm/block/${item.lastMinedHeight}`}>
-                  {formatHeight(item.lastMinedHeight)}
-                </Link>
-              ) : (
-                "N/A"
-              ),
-            ])}
-          />
-          <PaginationLinks
-            basePath="/vrm/miners"
-            paging={miners.paging ?? { limit, offset, total: 0, hasMore: false }}
-            extraParams={{ period }}
-          />
-        </CardContent>
-      </Card>
+      <VrmMinersPageClient
+        key={`${period}-${offset}`}
+        initialMiners={miners}
+        initialPeriod={period}
+        limit={limit}
+        offset={offset}
+      />
     </div>
   );
 }

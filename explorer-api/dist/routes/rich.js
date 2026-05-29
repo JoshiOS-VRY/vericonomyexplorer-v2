@@ -1,3 +1,4 @@
+import { heavyRateLimitRouteConfig } from "../env.js";
 import { createSwrCache } from "../cache/swrCache.js";
 import { fetchLeaderboard, fetchMinedLeaderboard, fetchRichlist } from "../data/legacy.js";
 import { parseChainId } from "../types.js";
@@ -44,7 +45,7 @@ const minersCache = createSwrCache({
     },
 });
 export async function registerRichRoutes(app) {
-    app.get("/v1/:chain/richlist", async (request, reply) => {
+    app.get("/v1/:chain/richlist", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });
@@ -52,7 +53,7 @@ export async function registerRichRoutes(app) {
         const key = `${chainId}:${request.query.limit ?? ""}:${request.query.offset ?? ""}`;
         return richlistCache.fetch(key);
     });
-    app.get("/v1/:chain/leaderboard", async (request, reply) => {
+    app.get("/v1/:chain/leaderboard", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });
@@ -60,7 +61,7 @@ export async function registerRichRoutes(app) {
         const key = `${chainId}:${request.query.period ?? ""}:${request.query.sort ?? ""}:${request.query.limit ?? ""}:${request.query.offset ?? ""}`;
         return leaderboardCache.fetch(key);
     });
-    app.get("/v1/:chain/miners", async (request, reply) => {
+    app.get("/v1/:chain/miners", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });

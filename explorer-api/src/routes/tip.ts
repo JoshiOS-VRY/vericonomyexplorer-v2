@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { getBroker, getTip } from "../live/brokers.js";
 import { initSse, writeSse } from "../live/sse.js";
+import { releaseSseConnection, tryAcquireSseConnection } from "../security/sseConnections.js";
 import type { TipState } from "../types.js";
 import { parseChainId } from "../types.js";
 
@@ -38,6 +39,13 @@ export async function registerTipRoutes(app: FastifyInstance): Promise<void> {
     const chainId = parseChainId(request.params.chain);
     if (!chainId) {
       return reply.code(400).send({ error: "Invalid chain id" });
+    }
+
+    if (!tryAcquireSseConnection(request)) {
+      return reply.code(429).send({
+        error: "Too many requests",
+        requestId: request.id,
+      });
     }
 
     const broker = getBroker(chainId);
@@ -78,6 +86,7 @@ export async function registerTipRoutes(app: FastifyInstance): Promise<void> {
       const cleanup = () => {
         broker.off("tip", onUpdate);
         clearInterval(heartbeat);
+        releaseSseConnection(request);
         resolve();
       };
       request.raw.on("close", cleanup);

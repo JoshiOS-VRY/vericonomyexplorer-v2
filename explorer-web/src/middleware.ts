@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import {
+  checkBffRateLimit,
+  getClientIpFromHeaders,
+  type BffRateLimitTier,
+} from "@/lib/rateLimit";
 
 const legacyRedirects: Record<string, (pathname: string) => string | null> = {
   "/block/block/": (p) => `/block/${p.split("/block/block/")[1]}`,
@@ -13,8 +18,38 @@ const legacyRedirects: Record<string, (pathname: string) => string | null> = {
     `/block-height/${p.split("/block-height/block-height/")[1]}`,
 };
 
+function bffRateLimitTier(pathname: string): BffRateLimitTier | null {
+  if (pathname.startsWith("/api/rpc")) return "rpc";
+  if (pathname.startsWith("/api/internal")) return "internal";
+  if (pathname.startsWith("/api/proxy")) return "proxy";
+  if (pathname === "/api/connect" || pathname === "/api/disconnect" || pathname === "/disconnect") {
+    return "auth";
+  }
+  return null;
+}
+
+function rateLimitedResponse(retryAfterSec?: number): NextResponse {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (retryAfterSec != null) {
+    headers["Retry-After"] = String(retryAfterSec);
+  }
+  return NextResponse.json(
+    { error: "Too many requests" },
+    { status: 429, headers },
+  );
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  const tier = bffRateLimitTier(pathname);
+  if (tier) {
+    const ip = getClientIpFromHeaders(request.headers);
+    const result = checkBffRateLimit(tier, ip, request.method);
+    if (!result.allowed) {
+      return rateLimitedResponse(result.retryAfterSec);
+    }
+  }
 
   for (const [prefix, resolver] of Object.entries(legacyRedirects)) {
     if (pathname.startsWith(prefix)) {

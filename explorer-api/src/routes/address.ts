@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { heavyRateLimitRouteConfig } from "../env.js";
 import { createSwrCache, swrFetch } from "../cache/swrCache.js";
 import {
   fetchAddress,
@@ -81,7 +82,7 @@ export async function registerAddressRoutes(app: FastifyInstance): Promise<void>
   app.get<{
     Params: { chain: string; address: string };
     Querystring: { maxPoints?: string; since?: string };
-  }>("/v1/:chain/address/:address/balance-history", async (request, reply) => {
+  }>("/v1/:chain/address/:address/balance-history", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
     const chainId = parseChainId(request.params.chain);
     if (!chainId) {
       return reply.code(400).send({ error: "Invalid chain id" });
@@ -98,7 +99,7 @@ export async function registerAddressRoutes(app: FastifyInstance): Promise<void>
   app.get<{
     Params: { chain: string; address: string };
     Querystring: { limit?: string; offset?: string };
-  }>("/v1/:chain/address/:address/utxos", async (request, reply) => {
+  }>("/v1/:chain/address/:address/utxos", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
     const chainId = parseChainId(request.params.chain);
     if (!chainId) {
       return reply.code(400).send({ error: "Invalid chain id" });

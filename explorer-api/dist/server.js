@@ -18,7 +18,10 @@ const app = Fastify({
         level: process.env.VCEXP_FAST_API_LOG_LEVEL ?? "info",
     },
     genReqId: () => randomUUID(),
+    trustProxy: true,
 });
+const { registerSecurity } = await import("./security/rateLimit.js");
+await registerSecurity(app);
 await app.register(cors, {
     origin: true,
     credentials: true,

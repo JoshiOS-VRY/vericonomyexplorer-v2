@@ -1,3 +1,4 @@
+import { heavyRateLimitRouteConfig } from "../env.js";
 import { createSwrCache, swrFetch } from "../cache/swrCache.js";
 import { fetchAddress, fetchAddressBalanceHistory, fetchAddressUtxos, } from "../data/legacy.js";
 import { parseChainId } from "../types.js";
@@ -59,7 +60,7 @@ export async function registerAddressRoutes(app) {
         const key = `${chainId}:${request.params.address}:${limit ?? ""}:${offset ?? ""}:${includeRank ? "1" : "0"}`;
         return swrFetch(addressCache, key, () => fetchAddress(chainId, request.params.address, { limit, offset, includeRank }));
     });
-    app.get("/v1/:chain/address/:address/balance-history", async (request, reply) => {
+    app.get("/v1/:chain/address/:address/balance-history", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });
@@ -69,7 +70,7 @@ export async function registerAddressRoutes(app) {
         const key = `${chainId}:${request.params.address}:${maxPoints ?? ""}:${since ?? ""}`;
         return swrFetch(balanceHistoryCache, key, () => fetchAddressBalanceHistory(chainId, request.params.address, { maxPoints, since }));
     });
-    app.get("/v1/:chain/address/:address/utxos", async (request, reply) => {
+    app.get("/v1/:chain/address/:address/utxos", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });

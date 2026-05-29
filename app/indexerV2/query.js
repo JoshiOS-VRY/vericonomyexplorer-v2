@@ -366,56 +366,61 @@ function getMinedLeaderboard(chainId, options = {}) {
 	};
 }
 
+const MINERS_EXCLUDED_BLOCK_HEIGHT = 1;
+
 function queryMinedLeaderboardRows(db, chain, since, limit, offset) {
-	if (since == null) {
-		const countRow = db.prepare(`
-			SELECT COUNT(*) AS count
-			FROM (
-				SELECT address
-				FROM address_balance_buckets
-				WHERE chain_id = ?
-				GROUP BY address
-				HAVING SUM(mined_sats) > 0
-			)
-		`).get(chain);
-
-		const rows = db.prepare(`
-			SELECT
-				address,
-				SUM(mined_sats) AS mined_sats
-			FROM address_balance_buckets
-			WHERE chain_id = ?
-			GROUP BY address
-			HAVING SUM(mined_sats) > 0
-			ORDER BY mined_sats DESC, address ASC
-			LIMIT ? OFFSET ?
-		`).all(chain, limit, offset);
-
-		return { countRow, rows };
-	}
+	const timeFilter = since == null ? "" : " AND t.time >= ?";
+	const countParams = since == null ? [chain] : [chain, since];
+	const rowParams = since == null
+		? [chain, limit, offset]
+		: [chain, since, limit, offset];
 
 	const countRow = db.prepare(`
 		SELECT COUNT(*) AS count
 		FROM (
-			SELECT address
-			FROM address_balance_buckets
-			WHERE chain_id = ? AND bucket_start >= ?
-			GROUP BY address
-			HAVING SUM(mined_sats) > 0
+			SELECT v.address
+			FROM transactions t
+			INNER JOIN vouts v
+				ON v.chain_id = t.chain_id
+				AND v.txid = t.txid
+			INNER JOIN blocks b
+				ON b.chain_id = t.chain_id
+				AND b.height = t.block_height
+				AND b.status = 'main'
+			WHERE t.chain_id = ?
+				AND t.is_coinbase = 1
+				AND t.block_height != ?
+				AND v.value_sats > 0
+				AND v.address IS NOT NULL
+				${timeFilter}
+			GROUP BY v.address
+			HAVING SUM(v.value_sats) > 0
 		)
-	`).get(chain, since);
+	`).get(chain, MINERS_EXCLUDED_BLOCK_HEIGHT, ...countParams.slice(1));
 
 	const rows = db.prepare(`
 		SELECT
-			address,
-			SUM(mined_sats) AS mined_sats
-		FROM address_balance_buckets
-		WHERE chain_id = ? AND bucket_start >= ?
-		GROUP BY address
-		HAVING SUM(mined_sats) > 0
+			v.address AS address,
+			SUM(v.value_sats) AS mined_sats
+		FROM transactions t
+		INNER JOIN vouts v
+			ON v.chain_id = t.chain_id
+			AND v.txid = t.txid
+		INNER JOIN blocks b
+			ON b.chain_id = t.chain_id
+			AND b.height = t.block_height
+			AND b.status = 'main'
+		WHERE t.chain_id = ?
+			AND t.is_coinbase = 1
+			AND t.block_height != ?
+			AND v.value_sats > 0
+			AND v.address IS NOT NULL
+			${timeFilter}
+		GROUP BY v.address
+		HAVING SUM(v.value_sats) > 0
 		ORDER BY mined_sats DESC, address ASC
 		LIMIT ? OFFSET ?
-	`).all(chain, since, limit, offset);
+	`).all(chain, MINERS_EXCLUDED_BLOCK_HEIGHT, ...rowParams.slice(1));
 
 	return { countRow, rows };
 }
@@ -444,9 +449,12 @@ function enrichMinedBlockStats(db, chain, addresses, since) {
 			AND b.status = 'main'
 		WHERE t.chain_id = ?
 			AND t.is_coinbase = 1
+			AND t.block_height != ?
 			AND v.address IN (${placeholders})
 			AND v.value_sats > 0
 	`;
+
+	params.splice(1, 0, MINERS_EXCLUDED_BLOCK_HEIGHT);
 
 	if (since != null) {
 		sql += " AND t.time >= ?";

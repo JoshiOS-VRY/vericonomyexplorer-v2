@@ -1,3 +1,4 @@
+import { heavyRateLimitRouteConfig } from "../env.js";
 import { createSwrCache } from "../cache/swrCache.js";
 import { fetchTransaction, fetchTransactionRelatedAddresses, } from "../data/legacy.js";
 import { parseChainId } from "../types.js";
@@ -31,7 +32,7 @@ export async function registerTxRoutes(app) {
         }
         return txCache.fetch(`${chainId}:${request.params.txid}`);
     });
-    app.get("/v1/:chain/tx/:txid/related-addresses", async (request, reply) => {
+    app.get("/v1/:chain/tx/:txid/related-addresses", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });

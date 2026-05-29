@@ -1,3 +1,4 @@
+import { heavyRateLimitRouteConfig } from "../env.js";
 import { createSwrCache } from "../cache/swrCache.js";
 import { registerChainScopedCache } from "../cache/registry.js";
 import { fetchAddress, fetchBlock, fetchTransaction } from "../data/legacy.js";
@@ -46,7 +47,7 @@ async function resolveSearchPath(chainId, query) {
     return { path: null };
 }
 export async function registerSearchRoutes(app) {
-    app.get("/v1/:chain/search", async (request, reply) => {
+    app.get("/v1/:chain/search", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });

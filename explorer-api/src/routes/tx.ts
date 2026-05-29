@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { heavyRateLimitRouteConfig } from "../env.js";
 import { createSwrCache } from "../cache/swrCache.js";
 import {
   fetchTransaction,
@@ -43,7 +44,7 @@ export async function registerTxRoutes(app: FastifyInstance): Promise<void> {
   app.get<{
     Params: { chain: string; txid: string };
     Querystring: { limit?: string };
-  }>("/v1/:chain/tx/:txid/related-addresses", async (request, reply) => {
+  }>("/v1/:chain/tx/:txid/related-addresses", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
     const chainId = parseChainId(request.params.chain);
     if (!chainId) {
       return reply.code(400).send({ error: "Invalid chain id" });

@@ -54,7 +54,7 @@ Important incomplete pieces:
 - The public VRC explorer should stay disabled or clearly labeled until VRC indexing is trusted.
 - Install/setup scripting should be improved so a new server can be configured by prompts.
 - Leaderboard definitions need final product decisions before public launch.
-- Public API rate limits and Caddy rules need production tuning.
+- Tune public API rate limits (`VCEXP_RATE_LIMIT_*` in `.env`) and optional edge limits in Caddy/nginx for your traffic profile.
 
 ## Repository Map
 
@@ -306,7 +306,7 @@ Before public launch:
 - Do not commit `.env`, `configs/chains.json`, RPC passwords, or generated SQLite databases.
 - Keep nodes and RPC ports private.
 - Put the explorer behind Caddy with HTTPS.
-- Add public API rate limiting.
+- Public API rate limiting is enabled on `explorer-api` (`/v1/*`), Next.js BFF (`/api/rpc`, `/api/internal`, etc.), and legacy Express; tune `VCEXP_RATE_LIMIT_*` before launch.
 - Consider separate read-only public API routes from internal admin/debug routes.
 - Disable or protect any admin/status pages that expose filesystem paths, node details, or credentials.
 - Run containers as non-root.

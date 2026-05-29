@@ -1,5 +1,7 @@
 import type { FastifyInstance } from "fastify";
 
+import { healthRateLimitRouteConfig, heavyRateLimitRouteConfig } from "../env.js";
+
 import {
 
   cacheKey,
@@ -297,7 +299,7 @@ export function registerCacheInvalidation(): void {
 
 export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
 
-  app.get("/v1/health", async () => ({
+  app.get("/v1/health", { ...healthRateLimitRouteConfig }, async () => ({
 
     ok: true,
 
@@ -367,7 +369,10 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
 
 
 
-  app.get<{ Params: { chain: string } }>("/v1/:chain/health", async (request, reply) => {
+  app.get<{ Params: { chain: string } }>(
+    "/v1/:chain/health",
+    { ...healthRateLimitRouteConfig },
+    async (request, reply) => {
 
     const chainId = parseChainId(request.params.chain);
 
@@ -379,13 +384,16 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
 
     return chainHealthCache.fetch(cacheKey(chainId, "health"));
 
-  });
+  },
+  );
 
 
 
   app.get<{ Params: { chain: string }; Querystring: { maxPoints?: string; since?: string } }>(
 
     "/v1/:chain/activity-history",
+
+    { ...heavyRateLimitRouteConfig },
 
     async (request, reply) => {
 
