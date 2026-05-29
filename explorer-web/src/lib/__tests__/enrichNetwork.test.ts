@@ -2,6 +2,7 @@ import { describe, expect, it } from "@jest/globals";
 import {
   enrichHomeNetworkPayload,
   enrichVrmNetworkStats,
+  estimateVrmHashrateKhPerMin,
   mergeHomeNetworkPayload,
 } from "@/lib/enrichNetwork";
 import type { ChainSummary, HomeNetworkPayload } from "@/lib/api/types";
@@ -42,12 +43,12 @@ function summaryWithTip(
 }
 
 describe("enrichNetwork", () => {
-  it("fills missing VRM difficulty from indexed tip block", () => {
+  it("prefers live tip difficulty and derives VRM hashrate from it", () => {
     const enriched = enrichVrmNetworkStats(
       {
         hashrateKhPerMin: 80,
         hashrate7dKhPerMin: null,
-        difficulty: null,
+        difficulty: 0.0001,
         blocks: null,
         supply: null,
         maxSupply: null,
@@ -56,6 +57,9 @@ describe("enrichNetwork", () => {
     );
 
     expect(enriched.difficulty).toBeCloseTo(0.00009284);
+    expect(enriched.hashrateKhPerMin).toBeCloseTo(
+      estimateVrmHashrateKhPerMin(0.00009284),
+    );
     expect(enriched.blocks).toBe(1098551);
   });
 

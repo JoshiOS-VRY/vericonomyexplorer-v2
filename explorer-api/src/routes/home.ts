@@ -31,7 +31,7 @@ const homeShellCache = createSwrCache({
 
 const homeNetworkCache = createSwrCache({
   max: 4,
-  ttlMs: 120_000,
+  ttlMs: 30_000,
   fetch: async (_key, signal) => {
     if (signal.aborted) throw new Error("aborted");
     const data = await fetchHomeNetwork();
@@ -56,9 +56,12 @@ registerGlobalCache(homeMarketCache);
 
 registerGlobalTipRefresh("home", () => refreshCacheInBackground(homeCache, "home"));
 registerGlobalTipRefresh("shell", () => refreshCacheInBackground(homeShellCache, "shell"));
+registerGlobalTipRefresh("network", () =>
+  refreshCacheInBackground(homeNetworkCache, "network"),
+);
 
 export function registerHomeCacheInvalidation(): void {
-  /* home/shell refresh is registered via registerGlobalTipRefresh above */
+  /* home/shell/network refresh is registered via registerGlobalTipRefresh above */
 }
 
 export async function registerHomeRoutes(app: FastifyInstance): Promise<void> {

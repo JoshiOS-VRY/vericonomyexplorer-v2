@@ -32,7 +32,7 @@ Home dashboard data (market + network stats + summaries):
 
 - `GET /v1/home` — full home payload (cached ~30s)
 - `GET /v1/home/shell` — indexed landing data only (cached ~30s)
-- `GET /v1/home/network` — RPC network stats (cached ~120s)
+- `GET /v1/home/network` — RPC network stats (cached ~30s, refreshed on new blocks)
 - `GET /v1/home/market` — market-only refresh for client polling (cached ~120s)
 
 Market data is fetched server-side from LiveCoinWatch (`VCEXP_LCW_API_KEY`) with optional CoinGecko BTC reference (`VCEXP_COINGECKO_API_KEY`).

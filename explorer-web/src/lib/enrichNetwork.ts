@@ -1,4 +1,7 @@
 import type { ChainSummary, HomeNetworkPayload, VrcNetworkStats, VrmNetworkStats } from "@/lib/api/types";
+import { hashPerSecToKhPerMin } from "@/lib/formatMarket";
+
+const VRM_TARGET_BLOCK_TIME_SECONDS = 300;
 
 function parseDifficulty(value: string | null | undefined): number | null {
   if (value == null || value === "") return null;
@@ -15,15 +18,27 @@ function chainHeight(summary: ChainSummary): number | null {
   );
 }
 
+export function estimateVrmHashrateKhPerMin(difficulty: number): number {
+  const hashPerSec = (difficulty * 2 ** 32) / VRM_TARGET_BLOCK_TIME_SECONDS;
+  return hashPerSecToKhPerMin(hashPerSec);
+}
+
 export function enrichVrmNetworkStats(
   network: VrmNetworkStats,
   summary: ChainSummary,
 ): VrmNetworkStats {
   const tip = summary.latestBlocks[0];
+  const tipDifficulty = parseDifficulty(tip?.difficulty);
+  const difficulty = tipDifficulty ?? network.difficulty;
+  const hashrateKhPerMin =
+    tipDifficulty != null
+      ? estimateVrmHashrateKhPerMin(tipDifficulty)
+      : network.hashrateKhPerMin;
 
   return {
     ...network,
-    difficulty: network.difficulty ?? parseDifficulty(tip?.difficulty),
+    difficulty,
+    hashrateKhPerMin,
     blocks: network.blocks ?? chainHeight(summary),
     supply: network.supply,
   };
@@ -34,10 +49,11 @@ export function enrichVrcNetworkStats(
   summary: ChainSummary,
 ): VrcNetworkStats {
   const tip = summary.latestBlocks[0];
+  const tipDifficulty = parseDifficulty(tip?.difficulty);
 
   return {
     ...network,
-    difficulty: network.difficulty ?? parseDifficulty(tip?.difficulty),
+    difficulty: tipDifficulty ?? network.difficulty,
     blocks: network.blocks ?? chainHeight(summary),
     supply: network.supply,
   };

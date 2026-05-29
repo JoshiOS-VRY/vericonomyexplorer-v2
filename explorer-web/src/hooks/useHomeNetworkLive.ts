@@ -4,10 +4,39 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTipStream } from "@/components/explorer/TipStreamProvider";
 import { fetchHomeNetwork } from "@/lib/api/client";
 import { usePageVisible } from "@/hooks/usePageVisible";
-import type { HomeNetworkPayload } from "@/lib/api/types";
-import { mergeHomeNetworkPayload } from "@/lib/enrichNetwork";
+import type { HomeNetworkPayload, VrcNetworkStats, VrmNetworkStats } from "@/lib/api/types";
 
-const FALLBACK_INTERVAL_MS = 90_000;
+const NETWORK_POLL_MS = 30_000;
+
+function vrmNetworkReceived(stats: VrmNetworkStats): boolean {
+  return (
+    stats.hashrateKhPerMin != null ||
+    stats.difficulty != null ||
+    stats.blocks != null ||
+    stats.supply != null
+  );
+}
+
+function vrcNetworkReceived(stats: VrcNetworkStats): boolean {
+  return (
+    stats.difficulty != null ||
+    stats.blocks != null ||
+    stats.supply != null ||
+    stats.interestRatePercent != null ||
+    stats.netStakeWeight != null
+  );
+}
+
+function applyNetworkRefresh(
+  prev: HomeNetworkPayload,
+  next: HomeNetworkPayload,
+): HomeNetworkPayload {
+  return {
+    fetchedAt: next.fetchedAt || prev.fetchedAt,
+    vrm: vrmNetworkReceived(next.vrm) ? next.vrm : prev.vrm,
+    vrc: vrcNetworkReceived(next.vrc) ? next.vrc : prev.vrc,
+  };
+}
 
 export function useHomeNetworkLive(initialNetwork: HomeNetworkPayload) {
   const { subscribe } = useTipStream("vrm");
@@ -24,7 +53,7 @@ export function useHomeNetworkLive(initialNetwork: HomeNetworkPayload) {
     setIsRefreshing(true);
     try {
       const next = await fetchHomeNetwork();
-      setNetwork((prev) => mergeHomeNetworkPayload(prev, next));
+      setNetwork((prev) => applyNetworkRefresh(prev, next));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to refresh network");
@@ -48,7 +77,7 @@ export function useHomeNetworkLive(initialNetwork: HomeNetworkPayload) {
 
     const interval = window.setInterval(() => {
       void refresh();
-    }, FALLBACK_INTERVAL_MS);
+    }, NETWORK_POLL_MS);
 
     return () => {
       unsubVrm();

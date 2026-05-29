@@ -198,21 +198,31 @@ export function ChainHubSection({
           <p className="px-5 py-8 text-sm text-fg-muted">No blocks yet.</p>
         ) : (
           <>
-            <div className="block-chain-strip m-2">
+            <div className="block-chain-strip-panel mx-2 mb-2 mt-1.5">
               <div
-                className="block-chain-strip__track animate-pulse rounded-xl shadow"
-                aria-hidden
-              />
-              <div className="block-chain-strip__nodes">
-                {stripBlocks.map((block, index) => (
-                  <BlockChainStripCell
-                    key={block.hash}
-                    block={block}
-                    chainLogo={config.logo}
-                    blockHref={config.blockHref?.(block.height)}
-                    isTip={index === stripBlocks.length - 1}
-                  />
-                ))}
+                className="block-chain-strip"
+                aria-label={`Latest ${stripBlocks.length} ${config.ticker} blocks`}
+              >
+                <div className="block-chain-strip__track" aria-hidden>
+                  <span className="block-chain-strip__track-base" />
+                  <span className="block-chain-strip__track-flow" />
+                </div>
+                <div className="block-chain-strip__nodes">
+                  {stripBlocks.map((block, index) => (
+                    <BlockChainStripCell
+                      key={block.hash}
+                      block={block}
+                      chainLogo={config.logo}
+                      blockHref={config.blockHref?.(block.height)}
+                      isTip={index === stripBlocks.length - 1}
+                      tipLive={
+                        atTip && index === stripBlocks.length - 1
+                      }
+                      ageIndex={index}
+                      totalCount={stripBlocks.length}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -253,20 +263,54 @@ function BlockChainStripCell({
   chainLogo,
   blockHref,
   isTip,
+  tipLive = false,
+  ageIndex,
+  totalCount,
 }: {
   block: IndexedBlock;
   chainLogo: string;
   blockHref?: string;
   isTip: boolean;
+  tipLive?: boolean;
+  ageIndex: number;
+  totalCount: number;
 }) {
+  const recency =
+    totalCount > 1 ? ageIndex / (totalCount - 1) : 1;
+  const tooltip = `Block #${formatHeight(block.height)} · ${block.txCount} tx${
+    block.txCount === 1 ? "" : "s"
+  }`;
+
   const nodeSlot = (
-    <span className="block-chain-strip__node-slot">
+    <span
+      className="block-chain-strip__node-slot"
+      style={
+        {
+          "--block-recency": recency,
+          "--block-stagger": `${ageIndex * 45}ms`,
+        } as React.CSSProperties
+      }
+    >
+      {isTip ? (
+        <span
+          className={cn(
+            "block-chain-strip__tip-badge",
+            tipLive && "block-chain-strip__tip-badge--live",
+          )}
+        >
+          {tipLive ? "Live tip" : "Tip"}
+        </span>
+      ) : null}
+      {tipLive ? (
+        <span className="block-chain-strip__tip-ring" aria-hidden />
+      ) : null}
       <span
         className={cn(
           "block-chain-strip__node",
           isTip && "block-chain-strip__node--tip",
+          tipLive && "block-chain-strip__node--live",
         )}
-        title={`Block #${formatHeight(block.height)}`}
+        title={tooltip}
       >
         <span className="block-chain-strip__logo-badge" aria-hidden>
           <Image
@@ -282,15 +326,31 @@ function BlockChainStripCell({
   );
 
   return (
-    <div className="block-chain-strip__cell">
+    <div
+      className="block-chain-strip__cell"
+      style={{ "--block-stagger": `${ageIndex * 45}ms` } as React.CSSProperties}
+    >
       {blockHref ? (
-        <Link href={blockHref} className="block-chain-strip__link" prefetch>
+        <Link
+          href={blockHref}
+          className="block-chain-strip__link"
+          prefetch
+          title={tooltip}
+        >
           {nodeSlot}
         </Link>
       ) : (
         nodeSlot
       )}
-      <span className="block-chain-strip__label tabular-nums">
+      <span
+        className={cn(
+          "block-chain-strip__label tabular-nums",
+          isTip && "block-chain-strip__label--tip",
+        )}
+      >
+        {isTip && tipLive ? (
+          <span className="block-chain-strip__label-dot" aria-hidden />
+        ) : null}
         #{formatHeight(block.height)}
       </span>
     </div>
