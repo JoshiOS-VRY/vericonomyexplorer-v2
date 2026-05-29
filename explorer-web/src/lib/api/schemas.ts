@@ -106,6 +106,25 @@ export const leaderboardSchema = z.object({
   items: z.array(z.record(z.string(), z.unknown())).optional().default([]),
 });
 
+export const minersSchema = z.object({
+  chainId: z.string(),
+  trusted: z.boolean(),
+  enabled: z.boolean().optional(),
+  message: z.string().optional(),
+  source: sourceSchema,
+  health: chainHealthSchema.optional(),
+  label: z.string().optional(),
+  period: z
+    .object({
+      type: z.string(),
+      start: z.number().nullable().optional(),
+      end: z.number(),
+    })
+    .optional(),
+  paging: pagingSchema.optional(),
+  items: z.array(z.record(z.string(), z.unknown())).optional().default([]),
+});
+
 const amountSchema = z.object({
   amount: z.string(),
   ticker: z.string(),

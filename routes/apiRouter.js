@@ -144,6 +144,22 @@ router.get("/indexer/:chainId/leaderboard", function(req, res, next) {
 	next();
 });
 
+router.get("/indexer/:chainId/miners", function(req, res, next) {
+	try {
+		res.json(indexerQuery.getMinedLeaderboard(req.params.chainId, {
+			period: req.query.period,
+			limit: req.query.limit,
+			offset: req.query.offset,
+			allowUntrusted: req.query.allowUntrusted === "true"
+		}));
+
+	} catch (err) {
+		handleIndexerApiError(res, err);
+	}
+
+	next();
+});
+
 router.get("/indexer/:chainId/address/:address", function(req, res, next) {
 	try {
 		res.json(indexerQuery.getAddress(req.params.chainId, req.params.address, {

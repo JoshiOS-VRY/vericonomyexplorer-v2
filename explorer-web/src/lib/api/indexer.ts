@@ -1,5 +1,5 @@
 import { v1Fetch, v1FetchText } from "@/lib/api/v1";
-import { parseOrThrow, chainSummarySchema, indexerHealthSchema, richlistSchema, leaderboardSchema, transactionResultSchema, blockResultSchema } from "@/lib/api/schemas";
+import { parseOrThrow, chainSummarySchema, indexerHealthSchema, richlistSchema, leaderboardSchema, minersSchema, transactionResultSchema, blockResultSchema } from "@/lib/api/schemas";
 import type {
   AddressBalanceHistoryResult,
   AddressResult,
@@ -13,6 +13,7 @@ import type {
   HomeShellPayload,
   IndexerHealth,
   LeaderboardResult,
+  MinersLeaderboardResult,
   RichlistResult,
   TransactionRelatedAddressesResult,
   TransactionResult,
@@ -79,6 +80,7 @@ export async function getVrmDashboard(): Promise<VrmDashboardPayload> {
     summary: parseOrThrow(chainSummarySchema, data.summary) as unknown as ChainSummary,
     richlist: parseOrThrow(richlistSchema, data.richlist) as unknown as RichlistResult,
     leaderboard: parseOrThrow(leaderboardSchema, data.leaderboard) as unknown as LeaderboardResult,
+    miners: parseOrThrow(minersSchema, data.miners) as unknown as MinersLeaderboardResult,
     network: data.network,
     market: data.market,
     fetchedAt: data.fetchedAt,
@@ -137,6 +139,25 @@ export async function getLeaderboard(
     revalidate: SUMMARY_REVALIDATE_SECONDS,
   });
   return parseOrThrow(leaderboardSchema, data) as unknown as LeaderboardResult;
+}
+
+export async function getMinersLeaderboard(
+  chainId: string,
+  params: {
+    period?: string;
+    limit?: number;
+    offset?: number;
+  } = {},
+): Promise<MinersLeaderboardResult> {
+  const search = new URLSearchParams();
+  if (params.period) search.set("period", params.period);
+  if (params.limit != null) search.set("limit", String(params.limit));
+  if (params.offset != null) search.set("offset", String(params.offset));
+  const qs = search.toString();
+  const data = await v1Fetch<unknown>(`/${chainId}/miners${qs ? `?${qs}` : ""}`, {
+    revalidate: SUMMARY_REVALIDATE_SECONDS,
+  });
+  return parseOrThrow(minersSchema, data) as unknown as MinersLeaderboardResult;
 }
 
 export async function getAddress(

@@ -17,6 +17,7 @@ const METHOD_PRIORITY = {
     getAddress: 1,
     getRichlist: 1,
     getLeaderboard: 1,
+    getMinedLeaderboard: 1,
     getChainHealth: 1,
     getAddressBalanceHistory: 1,
     getAddressUtxos: 1,

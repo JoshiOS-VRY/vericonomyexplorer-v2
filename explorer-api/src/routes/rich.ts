@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { createSwrCache } from "../cache/swrCache.js";
-import { fetchLeaderboard, fetchRichlist } from "../data/legacy.js";
+import { fetchLeaderboard, fetchMinedLeaderboard, fetchRichlist } from "../data/legacy.js";
 import { parseChainId } from "../types.js";
 
 const richlistCache = createSwrCache({
@@ -31,6 +31,20 @@ const leaderboardCache = createSwrCache({
   },
 });
 
+const minersCache = createSwrCache({
+  max: 32,
+  ttlMs: 30_000,
+  fetch: async (key, signal) => {
+    if (signal.aborted) throw new Error("aborted");
+    const [chainId, period, limit, offset] = key.split(":");
+    return fetchMinedLeaderboard(chainId, {
+      period: period || undefined,
+      limit: limit ? Number(limit) : undefined,
+      offset: offset ? Number(offset) : undefined,
+    }) as Promise<Record<string, unknown>>;
+  },
+});
+
 export async function registerRichRoutes(app: FastifyInstance): Promise<void> {
   app.get<{
     Params: { chain: string };
@@ -54,5 +68,17 @@ export async function registerRichRoutes(app: FastifyInstance): Promise<void> {
     }
     const key = `${chainId}:${request.query.period ?? ""}:${request.query.sort ?? ""}:${request.query.limit ?? ""}:${request.query.offset ?? ""}`;
     return leaderboardCache.fetch(key);
+  });
+
+  app.get<{
+    Params: { chain: string };
+    Querystring: { period?: string; limit?: string; offset?: string };
+  }>("/v1/:chain/miners", async (request, reply) => {
+    const chainId = parseChainId(request.params.chain);
+    if (!chainId) {
+      return reply.code(400).send({ error: "Invalid chain id" });
+    }
+    const key = `${chainId}:${request.query.period ?? ""}:${request.query.limit ?? ""}:${request.query.offset ?? ""}`;
+    return minersCache.fetch(key);
   });
 }

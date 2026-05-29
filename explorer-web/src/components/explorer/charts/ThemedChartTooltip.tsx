@@ -2,6 +2,7 @@
 
 import type { TooltipProps } from "recharts";
 import type { ChartThemeColors } from "@/hooks/useChartTheme";
+import { formatChartTooltipRange } from "@/lib/chartDates";
 import { cn } from "@/lib/utils";
 
 function formatRange(startTime?: number, endTime?: number): string | null {
@@ -9,14 +10,7 @@ function formatRange(startTime?: number, endTime?: number): string | null {
     return null;
   }
 
-  return `${new Date(startTime * 1000).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })} – ${new Date(endTime * 1000).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  })}`;
+  return formatChartTooltipRange(startTime, endTime);
 }
 
 export function ThemedChartTooltip({

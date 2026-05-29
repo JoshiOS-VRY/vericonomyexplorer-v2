@@ -66,6 +66,10 @@ function getVrmDashboardBundle(options = {}) {
 			sort: "activity",
 			limit: 5
 		})),
+		miners: query.getMinedLeaderboard("vrm", Object.assign({}, vrmOpts, {
+			period: "month",
+			limit: 5
+		})),
 		activityHistory: query.getChainActivityHistory("vrm", Object.assign({}, vrmOpts, {
 			since: since30d,
 			maxPoints: 100
@@ -83,6 +87,7 @@ const handlers = {
 	getVrmDashboardBundle,
 	getRichlist: query.getRichlist,
 	getLeaderboard: query.getLeaderboard,
+	getMinedLeaderboard: query.getMinedLeaderboard,
 	getAddress: query.getAddress,
 	getAddressBalanceHistory: query.getAddressBalanceHistory,
 	getChainActivityHistory: query.getChainActivityHistory,

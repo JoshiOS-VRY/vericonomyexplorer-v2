@@ -4,6 +4,7 @@ export function getPageTitle(pathname: string): string {
   if (path === "/") return "VeriConomy Explorer";
   if (path === "/vrm") return "Verium Explorer";
   if (path.startsWith("/vrm/richlist")) return "Richlist";
+  if (path.startsWith("/vrm/miners")) return "Top Miners";
   if (path.startsWith("/vrm/leaderboard")) return "Leaderboard";
   if (path.startsWith("/vrm/block/") || path.startsWith("/vrc/block/")) return "Block Detail";
   if (path.startsWith("/vrm/tx/") || path.startsWith("/vrc/tx/")) return "Transaction";

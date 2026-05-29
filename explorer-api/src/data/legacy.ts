@@ -128,6 +128,17 @@ export function fetchLeaderboard(
   return runIndexerQuery("getLeaderboard", [chainId], options);
 }
 
+export function fetchMinedLeaderboard(
+  chainId: string,
+  options: {
+    period?: string;
+    limit?: number;
+    offset?: number;
+  } = {},
+) {
+  return runIndexerQuery("getMinedLeaderboard", [chainId], options);
+}
+
 export function fetchAddressBalanceHistory(
   chainId: string,
   address: string,

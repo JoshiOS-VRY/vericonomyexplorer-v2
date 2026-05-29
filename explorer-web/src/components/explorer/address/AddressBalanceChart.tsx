@@ -27,6 +27,11 @@ import type {
   AddressBalanceHistoryPeriodId,
   AddressBalanceHistoryResult,
 } from "@/lib/api/types";
+import {
+  formatChartAxisDate,
+  formatChartDateTime,
+  formatChartTooltipRange,
+} from "@/lib/chartDates";
 import { cn } from "@/lib/utils";
 
 const CHART_VIEWS: { id: AddressBalanceChartView; label: string }[] = [
@@ -107,7 +112,7 @@ function ActivityChartTooltip({
   const ticker = row?.ticker ?? "VRM";
   const range =
     row?.startTime != null && row?.endTime != null
-      ? `${new Date(row.startTime * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${new Date(row.endTime * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+      ? formatChartTooltipRange(row.startTime, row.endTime)
       : null;
 
   const entries = payload
@@ -166,13 +171,7 @@ function BalanceChartTooltip({
   } | undefined;
   const ticker = point?.ticker ?? "VRM";
   const value = payload[0]?.value;
-  const time =
-    point?.time != null
-      ? new Date(point.time * 1000).toLocaleString(undefined, {
-          dateStyle: "medium",
-          timeStyle: "short",
-        })
-      : null;
+  const time = point?.time != null ? formatChartDateTime(point.time) : null;
 
   return (
     <div
@@ -378,15 +377,8 @@ function CumulativeBalanceChart({
   );
 }
 
-function formatBalancePointLabel(time: number, period: AddressBalanceHistoryPeriodId): string {
-  const date = new Date(time * 1000);
-  if (period === "all") {
-    return date.toLocaleDateString(undefined, { month: "short", year: "2-digit" });
-  }
-  if (period === "1y") {
-    return date.toLocaleDateString(undefined, { month: "short", year: "2-digit" });
-  }
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+function formatBalancePointLabel(time: number, _period: AddressBalanceHistoryPeriodId): string {
+  return formatChartAxisDate(time);
 }
 
 export function AddressBalanceChart({

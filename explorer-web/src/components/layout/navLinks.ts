@@ -40,6 +40,7 @@ export const headerNav: HeaderNavItem[] = [
     items: [
       { href: "/vrm", label: "Explore" },
       { href: "/vrm/richlist", label: "Richlist" },
+      { href: "/vrm/miners", label: "Miners" },
       { href: "/vrm/leaderboard", label: "Leaderboard" },
     ],
   },
@@ -88,6 +89,12 @@ export const sidebarNav: SidebarItem[] = [
     href: "/vrm/richlist",
     label: "Richlist",
     icon: "richlist",
+    section: "explorer",
+  },
+  {
+    href: "/vrm/miners",
+    label: "Miners",
+    icon: "leaderboard",
     section: "explorer",
   },
   {

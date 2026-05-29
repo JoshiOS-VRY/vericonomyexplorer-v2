@@ -50,6 +50,9 @@ export function fetchRichlist(chainId, options = {}) {
 export function fetchLeaderboard(chainId, options = {}) {
     return runIndexerQuery("getLeaderboard", [chainId], options);
 }
+export function fetchMinedLeaderboard(chainId, options = {}) {
+    return runIndexerQuery("getMinedLeaderboard", [chainId], options);
+}
 export function fetchAddressBalanceHistory(chainId, address, options = {}) {
     return runIndexerQuery("getAddressBalanceHistory", [chainId, address], options);
 }

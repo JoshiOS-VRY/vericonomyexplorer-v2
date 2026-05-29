@@ -6,7 +6,7 @@ async function fetchVrmDashboardIndexed() {
   const vrmHealth = await runIndexerQuery<Record<string, unknown>>("getChainHealth", ["vrm"], {});
   const queryOpts = { ...skipOpts, chainHealth: vrmHealth };
 
-  const [summary, richlist, leaderboard] = await Promise.all([
+  const [summary, richlist, leaderboard, miners] = await Promise.all([
     runIndexerQuery<Record<string, unknown>>("getChainSummaryIndexed", ["vrm"], queryOpts),
     runIndexerQuery<Record<string, unknown>>("getRichlist", ["vrm"], {
       limit: 5,
@@ -18,9 +18,14 @@ async function fetchVrmDashboardIndexed() {
       limit: 5,
       chainHealth: vrmHealth,
     }),
+    runIndexerQuery<Record<string, unknown>>("getMinedLeaderboard", ["vrm"], {
+      period: "month",
+      limit: 5,
+      chainHealth: vrmHealth,
+    }),
   ]);
 
-  return { summary, richlist, leaderboard };
+  return { summary, richlist, leaderboard, miners };
 }
 
 export async function fetchVrmDashboardBundle() {
@@ -34,6 +39,7 @@ export async function fetchVrmDashboardBundle() {
     summary,
     richlist: indexed.richlist,
     leaderboard: indexed.leaderboard,
+    miners: indexed.miners,
     fetchedAt: new Date().toISOString(),
   };
 }

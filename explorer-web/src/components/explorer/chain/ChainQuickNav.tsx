@@ -21,6 +21,12 @@ export function ChainQuickNav({
             hrefLabel: "View rich list",
           },
           {
+            title: "Top miners",
+            description: "Addresses ranked by VRM earned from block rewards.",
+            href: "/vrm/miners?period=month",
+            hrefLabel: "View miners",
+          },
+          {
             title: "Activity leaderboard",
             description: "Monthly transfer activity ranked by address.",
             href: "/vrm/leaderboard?period=month&sort=activity",

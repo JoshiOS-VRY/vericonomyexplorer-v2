@@ -70,6 +70,11 @@ export declare function fetchLeaderboard(chainId: string, options?: {
     limit?: number;
     offset?: number;
 }): Promise<unknown>;
+export declare function fetchMinedLeaderboard(chainId: string, options?: {
+    period?: string;
+    limit?: number;
+    offset?: number;
+}): Promise<unknown>;
 export declare function fetchAddressBalanceHistory(chainId: string, address: string, options?: {
     maxPoints?: number;
     since?: number;

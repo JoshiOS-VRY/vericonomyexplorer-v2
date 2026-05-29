@@ -22,6 +22,7 @@ import { InsightsChartPanel } from "@/components/explorer/charts/InsightsChartPa
 import { useChartTheme } from "@/hooks/useChartTheme";
 import { CHART_ANIMATION, CHART_MARGINS, formatCompactAxisValue } from "@/lib/chartVisuals";
 import { fetchMarketHistoryClient } from "@/lib/insights/marketHistory";
+import { formatChartAxisDate } from "@/lib/chartDates";
 import {
   formatInsightsFooter,
   getChainAccentVar,
@@ -45,7 +46,9 @@ export function InsightsMarketChart({ chainId }: { chainId: "vrm" | "vrc" }) {
   const [currency, setCurrency] = useState<"usd" | "btc">("usd");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [points, setPoints] = useState<{ label: string; value: number }[]>([]);
+  const [points, setPoints] = useState<
+    { label: string; startTime: number; endTime: number; value: number }[]
+  >([]);
   const [source, setSource] = useState<string>("unavailable");
 
   const load = useCallback(async () => {
@@ -55,10 +58,9 @@ export function InsightsMarketChart({ chainId }: { chainId: "vrm" | "vrc" }) {
       const result = await fetchMarketHistoryClient(chainId, period, currency);
       setPoints(
         result.points.map((point) => ({
-          label: new Date(point.time * 1000).toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-          }),
+          label: formatChartAxisDate(point.time),
+          startTime: point.time,
+          endTime: point.time,
           value: point.value,
         })),
       );

@@ -10,5 +10,6 @@ export declare function fetchVrmDashboardBundle(): Promise<{
     };
     richlist: Record<string, unknown>;
     leaderboard: Record<string, unknown>;
+    miners: Record<string, unknown>;
     fetchedAt: string;
 }>;

@@ -12,6 +12,7 @@ import type { PriceHistoryPoint } from "@/lib/api/types";
 import { gradientId } from "@/lib/chartVisuals";
 import { getChainAccentVar } from "@/lib/insightsChartConfig";
 import { formatUsdPrice } from "@/lib/formatMarket";
+import { formatChartTooltipDate } from "@/lib/chartDates";
 import { useResolvedCssColor } from "@/hooks/useResolvedCssColor";
 
 interface PriceSparklineProps {
@@ -43,9 +44,15 @@ export function PriceSparkline({ data, ticker }: PriceSparklineProps) {
           <Tooltip
             content={({ active, payload }) => {
               if (!active || !payload?.[0]) return null;
-              const value = payload[0].value as number;
+              const row = payload[0].payload as { time?: number; value?: number };
+              const value = row.value ?? (payload[0].value as number);
               return (
                 <div className="insights-chart-tooltip rounded-lg border border-border/80 bg-bg-panel/95 px-2.5 py-1.5 text-xs shadow-lg backdrop-blur-md">
+                  {row.time != null ? (
+                    <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-fg-subtle">
+                      {formatChartTooltipDate(row.time)}
+                    </p>
+                  ) : null}
                   <span className="font-bold tabular-nums">{formatUsdPrice(value, 4)}</span>
                 </div>
               );

@@ -1,4 +1,4 @@
-import type { AddressUtxosResult, ChainSummary, HomeMarketPayload, HomeNetworkPayload, IndexedBlock } from "@/lib/api/types";
+import type { AddressUtxosResult, ChainSummary, HomeMarketPayload, HomeNetworkPayload, IndexedBlock, MinersLeaderboardResult } from "@/lib/api/types";
 import { getClientV1Url, getTipStreamUrl } from "@/lib/api/v1Urls";
 
 export class ClientApiError extends Error {
@@ -97,6 +97,21 @@ export async function fetchHomeMarket(): Promise<HomeMarketPayload> {
 
 export async function fetchHomeNetwork(): Promise<HomeNetworkPayload> {
   return clientApiFetch<HomeNetworkPayload>("/home/network");
+}
+
+export async function fetchMinersLeaderboardClient(
+  chainId: string,
+  params: { period?: string; limit?: number; offset?: number } = {},
+): Promise<MinersLeaderboardResult> {
+  const search = new URLSearchParams();
+  if (params.period) search.set("period", params.period);
+  if (params.limit != null) search.set("limit", String(params.limit));
+  if (params.offset != null) search.set("offset", String(params.offset));
+  const qs = search.toString();
+
+  return clientApiFetch<MinersLeaderboardResult>(
+    `/${chainId}/miners${qs ? `?${qs}` : ""}`,
+  );
 }
 
 export async function searchChainClient(

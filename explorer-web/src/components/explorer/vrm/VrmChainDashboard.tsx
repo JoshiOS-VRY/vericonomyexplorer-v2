@@ -11,6 +11,7 @@ import { ChainRichlistPreview } from "@/components/explorer/chain/ChainRichlistP
 import { ChainTransactionsPanel } from "@/components/explorer/chain/ChainTransactionsPanel";
 import { ChainExplorerHero } from "@/components/explorer/vrm/VrmChainHero";
 import { VrmLeaderboardPreview } from "@/components/explorer/vrm/VrmLeaderboardPreview";
+import { VrmMinersPreview } from "@/components/explorer/vrm/VrmMinersPreview";
 import { useLiveChainSummary } from "@/hooks/useLiveChainSummary";
 import type { ChainMarket, VrmDashboardPayload, VrmNetworkStats } from "@/lib/api/types";
 import { fetchHomeMarket, fetchHomeNetwork } from "@/lib/api/client";
@@ -21,6 +22,7 @@ export function VrmChainDashboard({
   summary: initialSummary,
   richlist: initialRichlist,
   leaderboard: initialLeaderboard,
+  miners: initialMiners,
 }: VrmDashboardPayload) {
   const [market, setMarket] = useState<ChainMarket>(emptyMarketPayload().vrm);
   const [network, setNetwork] = useState<VrmNetworkStats>(emptyNetworkPayload().vrm);
@@ -92,6 +94,7 @@ export function VrmChainDashboard({
             richlist={initialRichlist}
             totalSupply={network.supply}
           />
+          <VrmMinersPreview miners={initialMiners} />
           <VrmLeaderboardPreview leaderboard={initialLeaderboard} />
         </div>
       </div>

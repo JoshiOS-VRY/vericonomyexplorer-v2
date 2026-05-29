@@ -20,6 +20,7 @@ export default async function ApiDocsPage() {
           "/v1/:chain/summary/lite",
           "/v1/:chain/richlist",
           "/v1/:chain/leaderboard",
+          "/v1/:chain/miners",
           "/v1/:chain/address/:address",
           "/v1/:chain/address/:address/balance-history",
           "/v1/:chain/address/:address/utxos",

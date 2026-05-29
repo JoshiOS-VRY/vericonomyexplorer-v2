@@ -7,6 +7,7 @@ const utils = require("../utils.js");
 const { hourBucketStart } = require("./periodStats.js");
 const { atomicUnitsToDecimal } = require("./valueUtils.js");
 const { indexedSupplyAtHeight } = require("./supplyHistory.js");
+const { formatChartDayLabel } = require("./chartDates.js");
 const {
 	difficultyToHashPerSec,
 	hashPerSecToKhPerMin
@@ -312,6 +313,158 @@ function getLeaderboard(chainId, options = {}) {
 	};
 }
 
+function getMinedLeaderboard(chainId, options = {}) {
+	const db = options.db || dbModule.openDatabase();
+	const chain = normalizeChainId(chainId);
+	const limit = normalizeLimit(options.limit);
+	const offset = normalizeOffset(options.offset);
+	const period = normalizeMinersPeriod(options.period);
+	const chainHealth = resolveChainHealth(chain, options);
+
+	if (chain !== "vrm") {
+		return {
+			chainId: chain,
+			enabled: false,
+			trusted: false,
+			source: getSource(chainHealth, "leaderboards"),
+			message: "Top miners are only available for Verium (VRM).",
+			items: []
+		};
+	}
+
+	if (!chainHealth.checks.hasBlocks) {
+		return disabledResponse(chain, chainHealth, "leaderboards");
+	}
+
+	const periodBounds = getMinersPeriodBounds(period, options.now);
+	const since = periodBounds.since;
+	const { countRow, rows } = queryMinedLeaderboardRows(db, chain, since, limit, offset);
+	const blockStats = enrichMinedBlockStats(db, chain, rows.map(row => row.address), since);
+
+	return {
+		chainId: chain,
+		trusted: chainHealth.trusted,
+		source: getSource(chainHealth, "leaderboards"),
+		period: periodBounds,
+		label: "Top miners",
+		paging: getPaging(limit, offset, countRow.count),
+		items: rows.map((row, index) => {
+			const stats = blockStats.get(row.address) || {
+				blockCount: 0,
+				lastMinedHeight: null
+			};
+
+			return {
+				rank: offset + index + 1,
+				address: row.address,
+				minedAtomic: stringifyInteger(row.mined_sats),
+				mined: formatAtomic(chain, row.mined_sats),
+				blockCount: stats.blockCount,
+				lastMinedHeight: stats.lastMinedHeight
+			};
+		})
+	};
+}
+
+function queryMinedLeaderboardRows(db, chain, since, limit, offset) {
+	if (since == null) {
+		const countRow = db.prepare(`
+			SELECT COUNT(*) AS count
+			FROM (
+				SELECT address
+				FROM address_balance_buckets
+				WHERE chain_id = ?
+				GROUP BY address
+				HAVING SUM(mined_sats) > 0
+			)
+		`).get(chain);
+
+		const rows = db.prepare(`
+			SELECT
+				address,
+				SUM(mined_sats) AS mined_sats
+			FROM address_balance_buckets
+			WHERE chain_id = ?
+			GROUP BY address
+			HAVING SUM(mined_sats) > 0
+			ORDER BY mined_sats DESC, address ASC
+			LIMIT ? OFFSET ?
+		`).all(chain, limit, offset);
+
+		return { countRow, rows };
+	}
+
+	const countRow = db.prepare(`
+		SELECT COUNT(*) AS count
+		FROM (
+			SELECT address
+			FROM address_balance_buckets
+			WHERE chain_id = ? AND bucket_start >= ?
+			GROUP BY address
+			HAVING SUM(mined_sats) > 0
+		)
+	`).get(chain, since);
+
+	const rows = db.prepare(`
+		SELECT
+			address,
+			SUM(mined_sats) AS mined_sats
+		FROM address_balance_buckets
+		WHERE chain_id = ? AND bucket_start >= ?
+		GROUP BY address
+		HAVING SUM(mined_sats) > 0
+		ORDER BY mined_sats DESC, address ASC
+		LIMIT ? OFFSET ?
+	`).all(chain, since, limit, offset);
+
+	return { countRow, rows };
+}
+
+function enrichMinedBlockStats(db, chain, addresses, since) {
+	const stats = new Map();
+
+	if (!addresses.length) {
+		return stats;
+	}
+
+	const placeholders = addresses.map(() => "?").join(",");
+	const params = [chain, ...addresses];
+	let sql = `
+		SELECT
+			v.address AS address,
+			COUNT(DISTINCT t.txid) AS block_count,
+			MAX(t.block_height) AS last_mined_height
+		FROM transactions t
+		INNER JOIN vouts v
+			ON v.chain_id = t.chain_id
+			AND v.txid = t.txid
+		INNER JOIN blocks b
+			ON b.chain_id = t.chain_id
+			AND b.height = t.block_height
+			AND b.status = 'main'
+		WHERE t.chain_id = ?
+			AND t.is_coinbase = 1
+			AND v.address IN (${placeholders})
+			AND v.value_sats > 0
+	`;
+
+	if (since != null) {
+		sql += " AND t.time >= ?";
+		params.push(since);
+	}
+
+	sql += " GROUP BY v.address";
+
+	for (const row of db.prepare(sql).all(...params)) {
+		stats.set(row.address, {
+			blockCount: toNumber(row.block_count),
+			lastMinedHeight: toNullableNumber(row.last_mined_height)
+		});
+	}
+
+	return stats;
+}
+
 function getAddress(chainId, address, options = {}) {
 	const db = options.db || dbModule.openDatabase();
 	const chain = normalizeChainId(chainId);
@@ -608,14 +761,10 @@ function formatInsightsGroupLabel(startTime, groupBy) {
 	}
 
 	if (groupBy === "month") {
-		return start.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+		return start.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 	}
 
-	if (groupBy === "week") {
-		return start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-	}
-
-	return start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+	return formatChartDayLabel(startTime);
 }
 
 function buildCalendarBucketPlan(since, maxPoints, firstTime, lastTime, groupBy) {
@@ -642,24 +791,8 @@ function buildCalendarBucketPlan(since, maxPoints, firstTime, lastTime, groupBy)
 	return buckets;
 }
 
-function formatActivityBucketLabel(startTime, endTime, since) {
-	const start = new Date(startTime * 1000);
-	const end = new Date(endTime * 1000);
-	const span = endTime - startTime;
-
-	if (!since || span <= 2 * 86_400) {
-		return start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-	}
-
-	if (span <= 10 * 86_400) {
-		return start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-	}
-
-	if (span <= 40 * 86_400) {
-		return start.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-	}
-
-	return start.toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+function formatActivityBucketLabel(startTime) {
+	return formatChartDayLabel(startTime);
 }
 
 function findActivityBucketIndex(buckets, time) {
@@ -1700,6 +1833,55 @@ function normalizePeriod(value) {
 	return "week";
 }
 
+function normalizeMinersPeriod(value) {
+	const period = String(value || "month").trim().toLowerCase();
+
+	if (["week", "month", "year", "all"].includes(period)) {
+		return period;
+	}
+
+	return "month";
+}
+
+function getMinersPeriodBounds(period, nowValue) {
+	const nowSec = Math.floor((nowValue ? new Date(nowValue) : new Date()).getTime() / 1000);
+
+	if (period === "all") {
+		return {
+			type: "all",
+			start: null,
+			end: nowSec,
+			since: null,
+			startIso: null,
+			endIso: new Date(nowSec * 1000).toISOString()
+		};
+	}
+
+	if (period === "year") {
+		const since = nowSec - 365 * 86_400;
+
+		return {
+			type: "year",
+			start: since,
+			end: nowSec,
+			since,
+			startIso: new Date(since * 1000).toISOString(),
+			endIso: new Date(nowSec * 1000).toISOString()
+		};
+	}
+
+	const bounds = getPeriodBounds(period, nowValue);
+
+	return {
+		type: bounds.type,
+		start: bounds.start,
+		end: bounds.end,
+		since: bounds.start,
+		startIso: bounds.startIso,
+		endIso: bounds.endIso
+	};
+}
+
 function normalizeLeaderboardSort(value) {
 	const sort = String(value || "net").trim().toLowerCase();
 
@@ -2116,6 +2298,7 @@ module.exports = {
 	computeBlockTotalsRaw,
 	getRichlist,
 	getLeaderboard,
+	getMinedLeaderboard,
 	getAddress,
 	getAddressBalanceHistory,
 	getChainActivityHistory,

@@ -169,6 +169,28 @@ export interface LeaderboardResult {
   items: LeaderboardItem[];
 }
 
+export interface MinersLeaderboardItem {
+  rank: number;
+  address: string;
+  minedAtomic: string;
+  mined: AmountDisplay;
+  blockCount: number;
+  lastMinedHeight: number | null;
+}
+
+export interface MinersLeaderboardResult {
+  chainId: string;
+  trusted: boolean;
+  enabled?: boolean;
+  message?: string;
+  source: SourceInfo;
+  health?: ChainHealth;
+  label?: string;
+  period?: { type: string; start: number | null; end: number };
+  paging?: Paging;
+  items: MinersLeaderboardItem[];
+}
+
 export interface AddressTransaction {
   txid: string;
   blockHeight: number;
@@ -282,6 +304,7 @@ export interface VrmDashboardPayload {
   summary: ChainSummary;
   richlist: RichlistResult;
   leaderboard: LeaderboardResult;
+  miners: MinersLeaderboardResult;
   network?: VrmNetworkStats;
   market?: ChainMarket;
   activityHistory?: ChainActivityHistoryResult;
