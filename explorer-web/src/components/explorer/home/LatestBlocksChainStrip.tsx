@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { Blocks, ChevronRight, ExternalLink } from "lucide-react";
 import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
 import {
   BcStat,
@@ -70,6 +70,7 @@ export function ChainHubSection({
     <section
       className={cn(
         "chain-hub-section block-chain-section flex h-full flex-col overflow-hidden rounded-xl border border-border bg-bg-panel shadow-sm",
+        "chain-hub-section--accent",
       )}
       data-chain={chainId}
       style={
@@ -79,28 +80,39 @@ export function ChainHubSection({
         } as React.CSSProperties
       }
     >
-      <div className="chain-hub-section__identity flex shrink-0 items-center justify-between gap-3 border-b border-border px-3 py-4 sm:px-4">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <Image
-            src={config.logo}
-            alt=""
-            width={32}
-            height={32}
-            className="h-8 w-8 shrink-0 object-contain"
-          />
+      <div className="chain-hub-section__identity flex shrink-0 items-center justify-between gap-3 border-b border-border px-3 py-3.5 sm:px-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="chain-hub-section__logo-ring flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-bg-subtle/60">
+            <Image
+              src={config.logo}
+              alt=""
+              width={28}
+              height={28}
+              className="h-7 w-7 object-contain"
+            />
+          </span>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <h2 className="text-sm font-bold text-fg">{config.name}</h2>
-              <span className="rounded bg-bg-subtle px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-fg-muted">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-semibold tracking-tight text-fg">
+                {config.name}
+              </h2>
+              <span className="chain-hub-section__ticker rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
                 {config.ticker}
               </span>
-              <span className="text-[10px] text-fg-subtle">
-                {config.consensus}
-              </span>
             </div>
-            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-fg-muted">
-              <StatusDot tone={statusTone} pulse={atTip} />
-              <span>{getChainSyncLabel(health, tipBlock?.height, chainHeight)}</span>
+            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
+              <span
+                className={cn(
+                  "chain-hub-section__status inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-medium",
+                  atTip
+                    ? "chain-hub-section__status--live"
+                    : "border-border text-fg-muted",
+                )}
+              >
+                <StatusDot tone={statusTone} pulse={atTip} />
+                {getChainSyncLabel(health, tipBlock?.height, chainHeight)}
+              </span>
+              <span className="text-fg-subtle">{config.consensus}</span>
             </div>
           </div>
         </div>
@@ -175,33 +187,59 @@ export function ChainHubSection({
       </div>
 
       <div className="chain-hub-section__blocks shrink-0">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-t border-border px-3 py-1.5 sm:px-4">
-          <h3 className="text-[10px] font-bold uppercase tracking-wide text-fg-subtle">
-            Latest {config.ticker} blocks
-          </h3>
+        <header className="chain-hub-blocks-head flex flex-wrap items-center justify-between gap-2 border-b border-t border-border px-3 py-2 sm:px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="chain-hub-blocks-head__icon flex h-6 w-6 items-center justify-center rounded-md border border-border/70 bg-bg-subtle/50">
+              <Blocks className="h-3.5 w-3.5 text-fg-muted" aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <h3 className="text-xs font-semibold text-fg">
+                Latest blocks
+              </h3>
+              <p className="text-[10px] text-fg-subtle">
+                {stripBlocks.length > 0
+                  ? `${stripBlocks.length} most recent · click to open`
+                  : "Waiting for indexed blocks"}
+              </p>
+            </div>
+          </div>
           {config.exploreHref ? (
             <Link
               href={config.exploreHref}
               className={cn(
-                "text-xs font-semibold hover:underline",
+                "chain-hub-blocks-head__link inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-colors",
                 chainId === "vrm"
                   ? "text-[var(--chain-vrm)]"
                   : "text-[var(--chain-vrc)]",
               )}
             >
               View all
+              <ExternalLink className="h-3 w-3 opacity-70" aria-hidden />
             </Link>
           ) : null}
         </header>
 
         {stripBlocks.length === 0 ? (
-          <p className="px-5 py-8 text-sm text-fg-muted">No blocks yet.</p>
+          <div className="chain-hub-blocks-empty mx-3 my-6 rounded-lg border border-dashed border-border px-4 py-10 text-center">
+            <Blocks className="mx-auto h-8 w-8 text-fg-subtle/50" aria-hidden />
+            <p className="mt-3 text-sm font-medium text-fg-muted">
+              No blocks indexed yet
+            </p>
+            <p className="mt-1 text-xs text-fg-subtle">
+              Blocks will appear here as the chain syncs.
+            </p>
+          </div>
         ) : (
           <>
-            <div className="block-chain-strip-panel mx-2 mb-2 mt-1.5">
+            <div className="block-chain-strip-panel mx-3 mb-2.5 mt-2.5">
+              <div className="block-chain-strip-panel__meta">
+                <span>Older</span>
+                <span className="block-chain-strip-panel__meta-divider" />
+                <span>Newest</span>
+              </div>
               <div
                 className="block-chain-strip"
-                aria-label={`Latest ${stripBlocks.length} ${config.ticker} blocks`}
+                aria-label={`Latest ${stripBlocks.length} ${config.ticker} blocks, oldest to newest`}
               >
                 <div className="block-chain-strip__track" aria-hidden>
                   <span className="block-chain-strip__track-base" />
@@ -226,7 +264,7 @@ export function ChainHubSection({
               </div>
             </div>
 
-            <div className="overflow-x-auto border-t border-border px-2">
+            <div className="block-chain-table-wrap overflow-x-auto border-t border-border">
               <table className="bc-table block-chain-table">
                 <thead>
                   <tr>
@@ -277,7 +315,7 @@ function BlockChainStripCell({
 }) {
   const recency =
     totalCount > 1 ? ageIndex / (totalCount - 1) : 1;
-  const tooltip = `Block #${formatHeight(block.height)} · ${block.txCount} tx${
+  const tooltip = `Block #${formatHeight(block.height)} · ${block.txCount} transaction${
     block.txCount === 1 ? "" : "s"
   }`;
 
@@ -336,6 +374,7 @@ function BlockChainStripCell({
           className="block-chain-strip__link"
           prefetch
           title={tooltip}
+          aria-label={tooltip}
         >
           {nodeSlot}
         </Link>
@@ -351,7 +390,12 @@ function BlockChainStripCell({
         {isTip && tipLive ? (
           <span className="block-chain-strip__label-dot" aria-hidden />
         ) : null}
-        #{formatHeight(block.height)}
+        <span className="block-chain-strip__label-height">
+          #{formatHeight(block.height)}
+        </span>
+      </span>
+      <span className="block-chain-strip__txs tabular-nums" aria-hidden>
+        {block.txCount} tx
       </span>
     </div>
   );
