@@ -32,8 +32,8 @@ export function AppShell({
             initialVrcSummary={initialVrcSummary}
           />
         </SearchRecentBlocksProvider>
-        <main className="flex-1 px-4 py-6 sm:px-6">
-          <div className="mx-auto max-w-[1400px]">{children}</div>
+        <main className="flex-1 px-5 py-8 sm:px-8">
+          <div className="mx-auto max-w-[1720px]">{children}</div>
         </main>
         <footer className="border-t border-border bg-bg-panel py-4 text-center text-xs text-fg-subtle">
           VeriConomy Explorer · Verium (VRM) · VeriCoin (VRC)

@@ -82,16 +82,14 @@ export const chainHealthCache = createSwrCache({
 });
 export const activityHistoryCache = createSwrCache({
     max: 32,
-    ttlMs: 60_000,
+    ttlMs: 300_000,
     fetch: async (key, signal) => {
         if (signal.aborted)
             throw new Error("aborted");
         const [chainId, maxPoints, since] = key.split(":");
-        const chainHealth = (await chainHealthCache.fetch(cacheKey(chainId, "health")));
         const result = await fetchChainActivityHistory(chainId, {
             maxPoints: maxPoints ? Number(maxPoints) : undefined,
             since: since ? Number(since) : undefined,
-            chainHealth,
         });
         return result;
     },
@@ -158,8 +156,14 @@ export async function registerChainRoutes(app) {
         }
         const maxPoints = request.query.maxPoints ?? "";
         const since = request.query.since ?? "";
-        const key = `${chainId}:${maxPoints}:${since}`;
-        return activityHistoryCache.fetch(key);
+        const cappedMaxPoints = maxPoints
+            ? String(Math.min(Math.max(Number(maxPoints) || 120, 2), 120))
+            : "";
+        const key = `${chainId}:${cappedMaxPoints}:${since}`;
+        return swrFetch(activityHistoryCache, key, () => fetchChainActivityHistory(chainId, {
+            maxPoints: cappedMaxPoints ? Number(cappedMaxPoints) : undefined,
+            since: since ? Number(since) : undefined,
+        }));
     });
     app.get("/v1/:chain/blocks/latest", async (request, reply) => {
         const chainId = parseChainId(request.params.chain);

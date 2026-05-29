@@ -1,6 +1,9 @@
 export const CHART_MARGINS = { top: 16, right: 16, left: 8, bottom: 24 };
 
 export function formatCompactAxisValue(value: number): string {
+  if (!Number.isFinite(value)) return "—";
+  if (value === 0) return "0";
+
   const abs = Math.abs(value);
   if (abs >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
   if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;

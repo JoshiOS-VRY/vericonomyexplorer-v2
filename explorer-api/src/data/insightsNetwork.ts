@@ -9,15 +9,5 @@ export async function fetchNetworkMetricHistory(
     chainHealth?: Record<string, unknown>;
   } = {},
 ) {
-  const chainHealth =
-    options.chainHealth ??
-    ((await runIndexerQuery<Record<string, unknown>>("getChainHealth", [chainId], {})) as Record<
-      string,
-      unknown
-    >);
-
-  return runIndexerQuery("getNetworkMetricHistory", [chainId], {
-    ...options,
-    chainHealth,
-  });
+  return runIndexerQuery("getNetworkMetricHistory", [chainId], options);
 }

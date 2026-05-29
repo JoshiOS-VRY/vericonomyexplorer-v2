@@ -1,7 +1,14 @@
 export type SidebarItem = {
   href: string;
   label: string;
-  icon: "overview" | "explorer" | "richlist" | "leaderboard" | "blocks" | "api" | "insights";
+  icon:
+    | "overview"
+    | "explorer"
+    | "richlist"
+    | "leaderboard"
+    | "blocks"
+    | "api"
+    | "insights";
   exact?: boolean;
   prefix?: boolean;
   section?: "explorer" | "data";
@@ -46,16 +53,55 @@ export const headerNav: HeaderNavItem[] = [
     ],
   },
   { type: "link", href: "/insights", label: "Insights", prefix: true },
-  { type: "link", href: "/api/docs", label: "API", prefix: true },
 ];
 
 export const sidebarNav: SidebarItem[] = [
-  { href: "/", label: "Home", icon: "overview", exact: true, section: "explorer" },
-  { href: "/vrm", label: "Verium", icon: "explorer", prefix: true, section: "explorer" },
-  { href: "/vrc", label: "Vericoin", icon: "explorer", prefix: true, section: "explorer" },
-  { href: "/insights", label: "Insights", icon: "insights", prefix: true, section: "explorer" },
-  { href: "/vrm/richlist", label: "Richlist", icon: "richlist", section: "explorer" },
-  { href: "/vrm/leaderboard", label: "Leaderboard", icon: "leaderboard", section: "explorer" },
-  { href: "/blocks", label: "Block list", icon: "blocks", prefix: true, section: "data" },
+  {
+    href: "/",
+    label: "Home",
+    icon: "overview",
+    exact: true,
+    section: "explorer",
+  },
+  {
+    href: "/vrm",
+    label: "Verium",
+    icon: "explorer",
+    prefix: true,
+    section: "explorer",
+  },
+  {
+    href: "/vrc",
+    label: "Vericoin",
+    icon: "explorer",
+    prefix: true,
+    section: "explorer",
+  },
+  {
+    href: "/insights",
+    label: "Insights",
+    icon: "insights",
+    prefix: true,
+    section: "explorer",
+  },
+  {
+    href: "/vrm/richlist",
+    label: "Richlist",
+    icon: "richlist",
+    section: "explorer",
+  },
+  {
+    href: "/vrm/leaderboard",
+    label: "Leaderboard",
+    icon: "leaderboard",
+    section: "explorer",
+  },
+  {
+    href: "/blocks",
+    label: "Block list",
+    icon: "blocks",
+    prefix: true,
+    section: "data",
+  },
   { href: "/api/docs", label: "API", icon: "api", section: "data" },
 ];

@@ -1,6 +1,6 @@
 import { BcPanel } from "@/components/explorer/BlockchairUi";
 import { RankList, formatHeight } from "@/components/explorer/ExplorerUi";
-import { VrmPanelLink } from "@/components/explorer/vrm/VrmBlocksPanel";
+import { ChainPanelLink } from "@/components/explorer/chain/ChainPanelLink";
 import type { LeaderboardResult } from "@/lib/api/types";
 import { formatExplorerUserMessage } from "@/lib/explorerCopy";
 import { ellipsizeMiddle } from "@/lib/utils";
@@ -10,7 +10,7 @@ export function VrmLeaderboardPreview({ leaderboard }: { leaderboard: Leaderboar
     <BcPanel
       title="Activity"
       action={
-        <VrmPanelLink
+        <ChainPanelLink
           href="/vrm/leaderboard?period=month&sort=activity"
           label="Leaderboard"
         />

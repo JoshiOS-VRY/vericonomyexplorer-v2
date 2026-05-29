@@ -38,12 +38,7 @@ export async function fetchVrmDashboardIndexed() {
     return runIndexerQuery("getVrmDashboardBundle", [], {});
 }
 export async function fetchChainActivityHistory(chainId, options = {}) {
-    const chainHealth = options.chainHealth ??
-        (await runIndexerQuery("getChainHealth", [chainId], {}));
-    return runIndexerQuery("getChainActivityHistory", [chainId], {
-        ...options,
-        chainHealth,
-    });
+    return runIndexerQuery("getChainActivityHistory", [chainId], options);
 }
 export async function fetchIndexerHealth() {
     const baseHealth = await runIndexerQuery("getIndexerHealthIndexed", [], {});

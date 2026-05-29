@@ -10,6 +10,7 @@ export declare function parseVrcMiningInfo(miningInfo: unknown): {
 };
 export declare function fetchOnChainSupply(chainId: ChainId, rpcCall: RpcCall, blocks: number, blockchainInfo?: unknown): Promise<number | null>;
 export declare function getMaxSupply(chainId: ChainId): number | null;
+export declare function estimatedSupplyAtHeight(chainId: ChainId, height: number): number | null;
 export declare function getTargetBlockTimeSeconds(chainId: ChainId): number;
 export declare function hashPerSecToKhPerMin(hashPerSec: number): number;
 export declare function fetchVrmHashrate(rpcCall: RpcCall, chainId?: ChainId): Promise<{

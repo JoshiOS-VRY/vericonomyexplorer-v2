@@ -42,7 +42,8 @@ export function supplyFromBlockchainInfo(blockchainInfo: unknown): number | null
     return null;
   }
 
-  return parseRpcNumber((blockchainInfo as Record<string, unknown>).totalsupply);
+  const supply = parseRpcNumber((blockchainInfo as Record<string, unknown>).totalsupply);
+  return supply != null && supply > 0 ? supply : null;
 }
 
 export function parseVrcMiningInfo(miningInfo: unknown): {
@@ -106,7 +107,7 @@ function utxoSetTimeoutMs(chainId: ChainId): number {
     return Number(process.env.VCEXP_VRC_UTXO_SET_TIMEOUT_MS ?? 120_000);
   }
 
-  return Number(process.env.VCEXP_UTXO_SET_TIMEOUT_MS ?? 30_000);
+  return Number(process.env.VCEXP_UTXO_SET_TIMEOUT_MS ?? 120_000);
 }
 
 export async function fetchOnChainSupply(
@@ -126,7 +127,7 @@ export async function fetchOnChainSupply(
       const supply = parseRpcNumber(
         (utxo as { total_amount?: number | string }).total_amount,
       );
-      if (supply != null) {
+      if (supply != null && supply > 0) {
         return supply;
       }
     }
@@ -134,15 +135,27 @@ export async function fetchOnChainSupply(
     /* fall through */
   }
 
-  if (chainId === "vrc") {
-    return null;
+  if (chainId === "vrm") {
+    try {
+      const utxo = await rpcCall(
+        "gettxoutsetinfo",
+        ["muhash"],
+        utxoSetTimeoutMs(chainId),
+      );
+      if (utxo && typeof utxo === "object" && "total_amount" in utxo) {
+        const supply = parseRpcNumber(
+          (utxo as { total_amount?: number | string }).total_amount,
+        );
+        if (supply != null && supply > 0) {
+          return supply;
+        }
+      }
+    } catch {
+      /* fall through */
+    }
   }
 
-  try {
-    return estimatedSupply(chainId, blocks);
-  } catch {
-    return null;
-  }
+  return null;
 }
 
 export function getMaxSupply(chainId: ChainId): number | null {
@@ -151,6 +164,13 @@ export function getMaxSupply(chainId: ChainId): number | null {
   if (!max) return null;
   const value = Number(max.toString());
   return Number.isFinite(value) ? value : null;
+}
+
+export function estimatedSupplyAtHeight(
+  chainId: ChainId,
+  height: number,
+): number | null {
+  return estimatedSupply(chainId, height);
 }
 
 function estimatedSupply(chainId: ChainId, height: number): number | null {

@@ -25,7 +25,8 @@ export function supplyFromBlockchainInfo(blockchainInfo) {
     if (!blockchainInfo || typeof blockchainInfo !== "object") {
         return null;
     }
-    return parseRpcNumber(blockchainInfo.totalsupply);
+    const supply = parseRpcNumber(blockchainInfo.totalsupply);
+    return supply != null && supply > 0 ? supply : null;
 }
 export function parseVrcMiningInfo(miningInfo) {
     if (!miningInfo || typeof miningInfo !== "object") {
@@ -71,7 +72,7 @@ function utxoSetTimeoutMs(chainId) {
     if (chainId === "vrc") {
         return Number(process.env.VCEXP_VRC_UTXO_SET_TIMEOUT_MS ?? 120_000);
     }
-    return Number(process.env.VCEXP_UTXO_SET_TIMEOUT_MS ?? 30_000);
+    return Number(process.env.VCEXP_UTXO_SET_TIMEOUT_MS ?? 120_000);
 }
 export async function fetchOnChainSupply(chainId, rpcCall, blocks, blockchainInfo) {
     const fromChain = supplyFromBlockchainInfo(blockchainInfo);
@@ -82,7 +83,7 @@ export async function fetchOnChainSupply(chainId, rpcCall, blocks, blockchainInf
         const utxo = await rpcCall("gettxoutsetinfo", [], utxoSetTimeoutMs(chainId));
         if (utxo && typeof utxo === "object" && "total_amount" in utxo) {
             const supply = parseRpcNumber(utxo.total_amount);
-            if (supply != null) {
+            if (supply != null && supply > 0) {
                 return supply;
             }
         }
@@ -90,15 +91,21 @@ export async function fetchOnChainSupply(chainId, rpcCall, blocks, blockchainInf
     catch {
         /* fall through */
     }
-    if (chainId === "vrc") {
-        return null;
+    if (chainId === "vrm") {
+        try {
+            const utxo = await rpcCall("gettxoutsetinfo", ["muhash"], utxoSetTimeoutMs(chainId));
+            if (utxo && typeof utxo === "object" && "total_amount" in utxo) {
+                const supply = parseRpcNumber(utxo.total_amount);
+                if (supply != null && supply > 0) {
+                    return supply;
+                }
+            }
+        }
+        catch {
+            /* fall through */
+        }
     }
-    try {
-        return estimatedSupply(chainId, blocks);
-    }
-    catch {
-        return null;
-    }
+    return null;
 }
 export function getMaxSupply(chainId) {
     const coin = COINS[chainId];
@@ -107,6 +114,9 @@ export function getMaxSupply(chainId) {
         return null;
     const value = Number(max.toString());
     return Number.isFinite(value) ? value : null;
+}
+export function estimatedSupplyAtHeight(chainId, height) {
+    return estimatedSupply(chainId, height);
 }
 function estimatedSupply(chainId, height) {
     const coin = COINS[chainId];

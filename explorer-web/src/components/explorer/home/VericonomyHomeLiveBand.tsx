@@ -10,6 +10,7 @@ import { useHomeNetworkLive } from "@/hooks/useHomeNetworkLive";
 import type { HomeShellPayload } from "@/lib/api/types";
 import { isChainLive } from "@/lib/chainDisplay";
 import { enrichHomeNetworkPayload } from "@/lib/enrichNetwork";
+import { applyOnChainMarketCap } from "@/lib/enrichMarket";
 import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
 
 interface VericonomyHomeLiveBandProps {
@@ -31,7 +32,10 @@ export function VericonomyHomeLiveBand({
     live.vrm.summary,
     live.vrc.summary,
   );
-  const market = { vrm: vrmMarket, vrc: vrcMarket };
+  const market = {
+    vrm: applyOnChainMarketCap(vrmMarket, "vrm", network.vrm.supply),
+    vrc: applyOnChainMarketCap(vrcMarket, "vrc", network.vrc.supply),
+  };
 
   const vrmSummary = hydrated ? live.vrm.summary : initialShell.vrm.summary;
   const vrcSummary = hydrated ? live.vrc.summary : initialShell.vrc.summary;
@@ -47,7 +51,7 @@ export function VericonomyHomeLiveBand({
   );
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <BinaryChainHero vrmLive={vrmLive} vrcLive={vrcLive} />
 
       <div className="grid items-stretch gap-6 xl:grid-cols-2">

@@ -203,7 +203,7 @@ export function BlockchairHeader({
 }) {
   return (
     <header className="bc-header sticky top-0 z-40 border-b border-border bg-bg-panel shadow-sm">
-      <div className="mx-auto flex max-w-[1400px] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
+      <div className="mx-auto flex max-w-[1720px] flex-wrap items-center gap-x-4 gap-y-2 px-5 py-2.5 sm:px-8">
         <Link href="/" prefetch className="flex shrink-0 items-center gap-2.5">
           <Image
             src="/img/vericonomy/binary-chain-icon.svg"
@@ -239,13 +239,13 @@ export function BlockchairHeader({
       </div>
 
       <div className="border-t border-border/80 bg-bg-subtle/50 px-4 py-3 sm:px-6">
-        <div className="mx-auto max-w-[1400px]">
+        <div className="mx-auto max-w-[1720px]">
           <HeaderSearch />
         </div>
       </div>
 
       <div className="border-t border-border/60 px-4 py-2 md:hidden sm:px-6">
-        <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto">
+        <div className="mx-auto flex max-w-[1720px] gap-1 overflow-x-auto">
           {headerNav.map((item) => (
             <HeaderNavItemView
               key={item.type === "dropdown" ? item.label : item.href}

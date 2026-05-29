@@ -1,10 +1,15 @@
-export function formatUsdPrice(value: number | null | undefined, digits = 2): string {
+import { formatCompactBalance } from "@/lib/utils";
+
+export function formatUsdPrice(value: number | null | undefined, digits?: number): string {
   if (value == null || !Number.isFinite(value)) return "—";
+  const resolvedDigits =
+    digits ??
+    (value < 0.000001 ? 10 : value < 0.0001 ? 8 : value < 0.01 ? 6 : value < 1 ? 4 : 2);
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
+    minimumFractionDigits: resolvedDigits,
+    maximumFractionDigits: resolvedDigits,
   }).format(value);
 }
 
@@ -29,6 +34,15 @@ export function formatSupply(value: number | null | undefined, ticker: string): 
   return `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value)} ${ticker}`;
 }
 
+/** Compact supply for tight hub stat cells (e.g. 56.26M VRC). */
+export function formatHubSupply(
+  value: number | null | undefined,
+  ticker: string,
+): string {
+  if (value == null || !Number.isFinite(value)) return "—";
+  return `${formatCompactBalance(value)} ${ticker}`;
+}
+
 export function formatHashrateKhPerMin(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
   return `${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} KH/m`;
@@ -43,6 +57,43 @@ export function formatPercentChange(value: number | null | undefined): string {
 export function formatPercent(value: number | null | undefined, digits = 2): string {
   if (value == null || !Number.isFinite(value)) return "—";
   return `${value.toFixed(digits)}%`;
+}
+
+/** Share of total coin supply (e.g. richlist balance / chain supply). */
+export function formatSupplySharePct(
+  balance: number,
+  totalSupply: number | null | undefined,
+): string | null {
+  if (
+    !Number.isFinite(balance) ||
+    totalSupply == null ||
+    !Number.isFinite(totalSupply) ||
+    totalSupply <= 0
+  ) {
+    return null;
+  }
+
+  const pct = (balance / totalSupply) * 100;
+  if (pct >= 10) return `${pct.toFixed(1)}%`;
+  if (pct >= 1) return `${pct.toFixed(2)}%`;
+  if (pct >= 0.01) return `${pct.toFixed(3)}%`;
+  if (pct >= 0.0001) return `${pct.toFixed(4)}%`;
+  return "<0.01%";
+}
+
+export function supplySharePercent(
+  balance: number,
+  totalSupply: number | null | undefined,
+): number | null {
+  if (
+    !Number.isFinite(balance) ||
+    totalSupply == null ||
+    !Number.isFinite(totalSupply) ||
+    totalSupply <= 0
+  ) {
+    return null;
+  }
+  return Math.min(100, (balance / totalSupply) * 100);
 }
 
 export function hashPerSecToKhPerMin(hashPerSec: number): number {

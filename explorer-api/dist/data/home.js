@@ -1,4 +1,4 @@
-import { fetchHomeMarket } from "../market/index.js";
+import { fetchHomeMarket, applyOnChainMarketCap } from "../market/index.js";
 import { fetchVrcNetworkStats, fetchVrmNetworkStats } from "../network/index.js";
 import { fetchLandingData } from "./legacy.js";
 const emptyVrmNetwork = () => ({
@@ -51,8 +51,8 @@ export async function fetchHomeData() {
         fetchHomeNetwork(),
         fetchHomeMarketOnly(),
     ]);
-    const vrmMarket = applySupplyMcap(market.vrm, network.vrm.supply);
-    const vrcMarket = applySupplyMcap(market.vrc, network.vrc.supply);
+    const vrmMarket = applyOnChainMarketCap(market.vrm, "vrm", network.vrm.supply);
+    const vrcMarket = applyOnChainMarketCap(market.vrc, "vrc", network.vrc.supply);
     return {
         vrm: {
             summary: shell.vrm.summary,
@@ -70,16 +70,15 @@ export async function fetchHomeData() {
         fetchedAt: new Date().toISOString(),
     };
 }
-function applySupplyMcap(market, supply) {
-    if (market.marketCap != null || market.usd == null || supply == null) {
-        return market;
-    }
-    return {
-        ...market,
-        marketCap: market.usd * supply,
-        source: market.source === "unavailable" ? "computed" : market.source,
-    };
-}
 export async function fetchHomeMarketOnly() {
-    return fetchHomeMarket(null, null);
+    const [vrmNetwork, vrcNetwork] = await Promise.all([
+        fetchVrmNetworkStats().catch(emptyVrmNetwork),
+        fetchVrcNetworkStats().catch(emptyVrcNetwork),
+    ]);
+    const market = await fetchHomeMarket(vrmNetwork.supply, vrcNetwork.supply);
+    return {
+        vrm: applyOnChainMarketCap(market.vrm, "vrm", vrmNetwork.supply),
+        vrc: applyOnChainMarketCap(market.vrc, "vrc", vrcNetwork.supply),
+        fetchedAt: market.fetchedAt,
+    };
 }

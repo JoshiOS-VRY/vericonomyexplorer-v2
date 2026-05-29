@@ -4,15 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { Blocks, ChevronRight, ExternalLink } from "lucide-react";
 import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
-import {
-  BcStat,
-  BcStatGrid,
-  BcTableLink,
-} from "@/components/explorer/BlockchairUi";
+import { BcTableLink } from "@/components/explorer/BlockchairUi";
 import { ExtractedByCell } from "@/components/explorer/block/ExtractedByCell";
 import { StatusDot, formatHeight } from "@/components/explorer/ExplorerUi";
 import { ChainMarketCard } from "@/components/explorer/home/ChainMarketCard";
 import { ChainNetworkCard } from "@/components/explorer/home/ChainNetworkCard";
+import {
+  ChainHubStatCell,
+  ChainHubStatRow,
+} from "@/components/explorer/home/ChainHubStats";
 import type {
   ChainMarket,
   ChainSummary,
@@ -32,7 +32,7 @@ import {
 import { formatPercent } from "@/lib/formatMarket";
 import { cn, formatDifficulty } from "@/lib/utils";
 
-const STRIP_BLOCK_COUNT = 10;
+const STRIP_BLOCK_COUNT = 5;
 const HUB_TABLE_ROW_COUNT = 5;
 
 export interface ChainHubSectionProps {
@@ -77,31 +77,34 @@ export function ChainHubSection({
         {
           "--block-chain-accent": theme.accent,
           "--block-chain-accent-soft": theme.accentSoft,
+          "--block-chain-accent-bright":
+            chainId === "vrm" ? "rgb(132 180 221)" : "rgb(147 197 253)",
+          "--block-chain-accent-deep": theme.accentHover,
         } as React.CSSProperties
       }
     >
-      <div className="chain-hub-section__identity flex shrink-0 items-center justify-between gap-3 border-b border-border px-3 py-3.5 sm:px-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="chain-hub-section__logo-ring flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-bg-subtle/60">
+      <div className="chain-hub-section__identity flex shrink-0 items-center justify-between gap-4 border-b border-border px-4 py-4 sm:px-5">
+        <div className="flex min-w-0 items-center gap-3.5">
+          <span className="chain-hub-section__logo-ring flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-bg-subtle/60">
             <Image
               src={config.logo}
               alt=""
-              width={28}
-              height={28}
-              className="h-7 w-7 object-contain"
+              width={32}
+              height={32}
+              className="h-8 w-8 object-contain"
             />
           </span>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base font-semibold tracking-tight text-fg">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h2 className="text-lg font-semibold tracking-tight text-fg sm:text-xl">
                 {config.name}
               </h2>
-              <span className="chain-hub-section__ticker rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+              <span className="chain-hub-section__ticker rounded-md px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider">
                 {config.ticker}
               </span>
             </div>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-fg-muted">
-              <span
+            <div className="mt-1.5 flex flex-wrap items-center gap-2.5 text-sm text-fg-muted">
+              {/* <span
                 className={cn(
                   "chain-hub-section__status inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 font-medium",
                   atTip
@@ -111,7 +114,7 @@ export function ChainHubSection({
               >
                 <StatusDot tone={statusTone} pulse={atTip} />
                 {getChainSyncLabel(health, tipBlock?.height, chainHeight)}
-              </span>
+              </span> */}
               <span className="text-fg-subtle">{config.consensus}</span>
             </div>
           </div>
@@ -121,7 +124,7 @@ export function ChainHubSection({
             href={config.exploreHref}
             prefetch
             className={cn(
-              "chain-explore-btn shrink-0 rounded-md px-2.5 py-1 text-[11px]",
+              "chain-explore-btn shrink-0 rounded-md px-3 py-1.5 text-xs sm:text-sm",
               chainId === "vrm"
                 ? "chain-explore-btn-vrm"
                 : "chain-explore-btn-vrc",
@@ -139,35 +142,38 @@ export function ChainHubSection({
         )}
       </div>
 
-      <BcStatGrid className="chain-hub-quick-stats chain-summary-stat-grid border-b border-border">
-        <BcStat
+      <ChainHubStatRow
+        cols={3}
+        className="chain-hub-quick-stats border-b border-border"
+      >
+        <ChainHubStatCell
           label="Height"
           value={formatHeight(displayHeight)}
           numericValue={displayHeight ?? undefined}
           animated
           pulse={heightPulse}
         />
-        <BcStat
+        <ChainHubStatCell
           label="Addresses"
           value={formatHeight(health.counts.addressCount)}
           numericValue={health.counts.addressCount}
           animated
         />
-        <BcStat
+        <ChainHubStatCell
           label="Latest"
           value={
             tipBlock ? (
               <LiveRelativeTime
                 time={tipBlock.time}
                 interval="second"
-                className="truncate text-xs font-semibold"
+                className="truncate"
               />
             ) : (
               "—"
             )
           }
         />
-      </BcStatGrid>
+      </ChainHubStatRow>
 
       <div className="chain-hub-section__metrics shrink-0">
         <ChainMarketCard
@@ -187,16 +193,14 @@ export function ChainHubSection({
       </div>
 
       <div className="chain-hub-section__blocks shrink-0">
-        <header className="chain-hub-blocks-head flex flex-wrap items-center justify-between gap-2 border-b border-t border-border px-3 py-2 sm:px-4">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="chain-hub-blocks-head__icon flex h-6 w-6 items-center justify-center rounded-md border border-border/70 bg-bg-subtle/50">
-              <Blocks className="h-3.5 w-3.5 text-fg-muted" aria-hidden />
+        <header className="chain-hub-blocks-head flex flex-wrap items-center justify-between gap-2 border-b border-t border-border px-4 py-2.5 sm:px-5">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="chain-hub-blocks-head__icon flex h-7 w-7 items-center justify-center rounded-md border border-border/70 bg-bg-subtle/50">
+              <Blocks className="h-4 w-4 text-fg-muted" aria-hidden />
             </span>
             <div className="min-w-0">
-              <h3 className="text-xs font-semibold text-fg">
-                Latest blocks
-              </h3>
-              <p className="text-[10px] text-fg-subtle">
+              <h3 className="text-sm font-semibold text-fg">Latest blocks</h3>
+              <p className="text-xs text-fg-subtle">
                 {stripBlocks.length > 0
                   ? `${stripBlocks.length} most recent · click to open`
                   : "Waiting for indexed blocks"}
@@ -207,7 +211,7 @@ export function ChainHubSection({
             <Link
               href={config.exploreHref}
               className={cn(
-                "chain-hub-blocks-head__link inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold transition-colors",
+                "chain-hub-blocks-head__link inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-sm font-semibold transition-colors",
                 chainId === "vrm"
                   ? "text-[var(--chain-vrm)]"
                   : "text-[var(--chain-vrc)]",
@@ -253,9 +257,7 @@ export function ChainHubSection({
                       chainLogo={config.logo}
                       blockHref={config.blockHref?.(block.height)}
                       isTip={index === stripBlocks.length - 1}
-                      tipLive={
-                        atTip && index === stripBlocks.length - 1
-                      }
+                      tipLive={atTip && index === stripBlocks.length - 1}
                       ageIndex={index}
                       totalCount={stripBlocks.length}
                     />
@@ -313,8 +315,7 @@ function BlockChainStripCell({
   ageIndex: number;
   totalCount: number;
 }) {
-  const recency =
-    totalCount > 1 ? ageIndex / (totalCount - 1) : 1;
+  const recency = totalCount > 1 ? ageIndex / (totalCount - 1) : 1;
   const tooltip = `Block #${formatHeight(block.height)} · ${block.txCount} transaction${
     block.txCount === 1 ? "" : "s"
   }`;
@@ -329,19 +330,6 @@ function BlockChainStripCell({
         } as React.CSSProperties
       }
     >
-      {isTip ? (
-        <span
-          className={cn(
-            "block-chain-strip__tip-badge",
-            tipLive && "block-chain-strip__tip-badge--live",
-          )}
-        >
-          {tipLive ? "Live tip" : "Tip"}
-        </span>
-      ) : null}
-      {tipLive ? (
-        <span className="block-chain-strip__tip-ring" aria-hidden />
-      ) : null}
       <span
         className={cn(
           "block-chain-strip__node",
@@ -413,10 +401,10 @@ function BlockChainTableRow({
   const hashShort = formatBlockHashShort(block.hash);
 
   return (
-    <tr className="transition-colors hover:bg-bg-subtle/80">
+    <tr className="transition-colors hover:bg-bg-subtle/80 py-4">
       <td>
         {blockHref ? (
-          <BcTableLink href={blockHref} className="tabular-nums" prefetch>
+          <BcTableLink href={blockHref} className="tabular-nums py-4" prefetch>
             {formatHeight(block.height)}
           </BcTableLink>
         ) : (
@@ -427,11 +415,15 @@ function BlockChainTableRow({
       </td>
       <td>
         {blockHref ? (
-          <BcTableLink href={blockHref} className="text-xs" prefetch>
+          <BcTableLink
+            href={blockHref}
+            className="text-sm tabular-nums"
+            prefetch
+          >
             {hashShort}
           </BcTableLink>
         ) : (
-          <span className="text-xs text-fg-muted">{hashShort}</span>
+          <span className="text-sm text-fg-muted">{hashShort}</span>
         )}
       </td>
       <td className="min-w-24 max-w-48 truncate">
@@ -440,12 +432,12 @@ function BlockChainTableRow({
             block={block}
             chainId={chainId}
             className={cn(
-              "text-xs font-medium hover:underline",
+              "text-sm font-medium hover:underline",
               "text-[var(--chain-vrm)]",
             )}
           />
         ) : (
-          <span className="text-xs tabular-nums text-fg-muted">
+          <span className="text-sm tabular-nums text-fg-muted">
             {formatPercent(block.interestRatePercent)}
           </span>
         )}

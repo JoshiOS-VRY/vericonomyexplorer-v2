@@ -3,10 +3,16 @@ import type { VrcNetworkStats, VrmNetworkStats } from "@/lib/api/types";
 import { CHAIN_EXPLORERS } from "@/lib/chainDisplay";
 import {
   formatHashrateKhPerMin,
+  formatHubSupply,
   formatPercent,
   formatSupply,
 } from "@/lib/formatMarket";
 import { cn, formatDifficulty, formatNumber } from "@/lib/utils";
+import {
+  ChainHubSectionHead,
+  ChainHubStatCell,
+  ChainHubStatRow,
+} from "./ChainHubStats";
 
 interface ChainNetworkCardProps {
   chainId: "vrm" | "vrc";
@@ -28,17 +34,17 @@ export function ChainNetworkCard({
 
   if (chainId === "vrm") {
     const vrm = network as VrmNetworkStats;
+    const supplyDisplay = formatHubSupply(vrm.supply, config.ticker);
     const body = hubLayout ? (
-      <div className="chain-hub-network-grid grid grid-cols-3 divide-x divide-border px-2">
-        <NetworkStat
-          label="Hash"
+      <ChainHubStatRow cols={4}>
+        <ChainHubStatCell
+          label="Hashrate"
           value={formatHashrateKhPerMin(vrm.hashrateKhPerMin)}
           numericValue={vrm.hashrateKhPerMin ?? undefined}
           formatFn={(n) => formatHashrateKhPerMin(n)}
           animated={animated}
-          hubLayout
         />
-        <NetworkStat
+        <ChainHubStatCell
           label="Difficulty"
           value={
             vrm.difficulty != null
@@ -48,21 +54,32 @@ export function ChainNetworkCard({
           numericValue={vrm.difficulty ?? undefined}
           formatFn={(n) => formatDifficulty(String(n))}
           animated={animated}
-          hubLayout
+          mono
         />
-        <NetworkStat
+        <ChainHubStatCell
           label="Supply"
-          value={formatSupply(vrm.supply, config.ticker)}
+          value={supplyDisplay}
           numericValue={vrm.supply ?? undefined}
-          formatFn={(n) => formatSupply(n, config.ticker)}
+          formatFn={(n) => formatHubSupply(n, config.ticker)}
           animated={animated}
-          hubLayout
+          title={
+            vrm.supply != null
+              ? formatSupply(vrm.supply, config.ticker)
+              : undefined
+          }
         />
-      </div>
+        <ChainHubStatCell
+          label="7d Hashrate"
+          value={formatHashrateKhPerMin(vrm.hashrate7dKhPerMin)}
+          numericValue={vrm.hashrate7dKhPerMin ?? undefined}
+          formatFn={(n) => formatHashrateKhPerMin(n)}
+          animated={animated}
+        />
+      </ChainHubStatRow>
     ) : (
       <div className="grid grid-cols-2 divide-x divide-y divide-border lg:grid-cols-3 lg:divide-y-0">
         <NetworkStat
-          label="Network Hash"
+          label="Network Hashrate"
           value={formatHashrateKhPerMin(vrm.hashrateKhPerMin)}
           numericValue={vrm.hashrateKhPerMin ?? undefined}
           formatFn={(n) => formatHashrateKhPerMin(n)}
@@ -97,7 +114,7 @@ export function ChainNetworkCard({
         ) : null}
         {vrm.hashrate7dKhPerMin != null ? (
           <NetworkStat
-            label="7d Hash"
+            label="7d Hashrate"
             value={formatHashrateKhPerMin(vrm.hashrate7dKhPerMin)}
             numericValue={vrm.hashrate7dKhPerMin}
             formatFn={(n) => formatHashrateKhPerMin(n)}
@@ -110,16 +127,15 @@ export function ChainNetworkCard({
     if (embedded) {
       return (
         <div className={hubLayout ? "chain-hub-network" : undefined}>
-          <div
-            className={cn(
-              "border-b border-border px-3 py-1.5",
-              hubLayout && "chain-hub-section-head",
-            )}
-          >
-            <h4 className="text-[10px] font-bold uppercase tracking-wide text-fg-subtle">
-              Network
-            </h4>
-          </div>
+          {hubLayout ? (
+            <ChainHubSectionHead title="Network" />
+          ) : (
+            <div className="border-b border-border px-3 py-1.5">
+              <h4 className="text-xs font-bold uppercase tracking-wide text-fg-subtle sm:text-[11px]">
+                Network
+              </h4>
+            </div>
+          )}
           {body}
         </div>
       );
@@ -136,33 +152,36 @@ export function ChainNetworkCard({
   }
 
   const vrc = network as VrcNetworkStats;
+  const supplyDisplay = formatHubSupply(vrc.supply, config.ticker);
   const body = hubLayout ? (
-    <div className="chain-hub-network-grid grid grid-cols-4 divide-x divide-border">
-      <NetworkStat
-        label="PoST rate"
+    <ChainHubStatRow cols={4}>
+      <ChainHubStatCell
+        label="Interest rate"
         value={formatPercent(vrc.interestRatePercent)}
         numericValue={vrc.interestRatePercent ?? undefined}
         formatFn={(n) => formatPercent(n)}
         animated={animated}
-        hubLayout
       />
-      <NetworkStat
+      <ChainHubStatCell
         label="Supply"
-        value={formatSupply(vrc.supply, config.ticker)}
+        value={supplyDisplay}
         numericValue={vrc.supply ?? undefined}
-        formatFn={(n) => formatSupply(n, config.ticker)}
+        formatFn={(n) => formatHubSupply(n, config.ticker)}
         animated={animated}
-        hubLayout
+        title={
+          vrc.supply != null
+            ? formatSupply(vrc.supply, config.ticker)
+            : undefined
+        }
       />
-      <NetworkStat
+      <ChainHubStatCell
         label="Staked"
         value={formatPercent(vrc.percentStaked)}
         numericValue={vrc.percentStaked ?? undefined}
         formatFn={(n) => formatPercent(n)}
         animated={animated}
-        hubLayout
       />
-      <NetworkStat
+      <ChainHubStatCell
         label="Difficulty"
         value={
           vrc.difficulty != null
@@ -172,18 +191,18 @@ export function ChainNetworkCard({
         numericValue={vrc.difficulty ?? undefined}
         formatFn={(n) => formatDifficulty(String(n))}
         animated={animated}
-        hubLayout
+        mono
       />
-    </div>
+    </ChainHubStatRow>
   ) : (
     <div className="grid grid-cols-2 divide-x divide-y divide-border lg:grid-cols-3 lg:divide-y-0">
       <NetworkStat
-        label="Interest Rate"
+        label="Ann. Interest Rate"
         value={formatPercent(vrc.interestRatePercent)}
         numericValue={vrc.interestRatePercent ?? undefined}
         formatFn={(n) => formatPercent(n)}
         animated={animated}
-        hint="Annual PoST rate"
+        hint="Annualized Interest rate"
       />
       <NetworkStat
         label="Market Cap Supply"
@@ -223,16 +242,15 @@ export function ChainNetworkCard({
   if (embedded) {
     return (
       <div className={hubLayout ? "chain-hub-network" : undefined}>
-        <div
-          className={cn(
-            "border-b border-border px-3 py-1.5",
-            hubLayout && "chain-hub-section-head",
-          )}
-        >
-          <h4 className="text-[10px] font-bold uppercase tracking-wide text-fg-subtle">
-            Network
-          </h4>
-        </div>
+        {hubLayout ? (
+          <ChainHubSectionHead title="Network" />
+        ) : (
+          <div className="border-b border-border px-3 py-1.5">
+            <h4 className="text-xs font-bold uppercase tracking-wide text-fg-subtle sm:text-[11px]">
+              Network
+            </h4>
+          </div>
+        )}
         {body}
       </div>
     );
@@ -258,7 +276,6 @@ function NetworkStat({
   animated = false,
   numericValue,
   formatFn,
-  hubLayout = false,
 }: {
   label: string;
   value: string;
@@ -267,29 +284,7 @@ function NetworkStat({
   animated?: boolean;
   numericValue?: number;
   formatFn?: (value: number) => string;
-  hubLayout?: boolean;
 }) {
-  if (hubLayout) {
-    return (
-      <div className={cn("chain-hub-stat-cell px-2 py-1.5", className)}>
-        <div className="truncate text-[10px] font-semibold uppercase tracking-wide text-fg-subtle">
-          {label}
-        </div>
-        <div className="mt-0.5 truncate text-xs font-semibold tabular-nums text-fg">
-          {animated ? (
-            <AnimatedStatValue
-              value={value}
-              numericValue={numericValue}
-              formatFn={formatFn}
-            />
-          ) : (
-            value
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={cn("px-4 py-3", className)}>
       <div className="text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">

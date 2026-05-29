@@ -8,6 +8,11 @@ import {
   formatUsdPrice,
 } from "@/lib/formatMarket";
 import { cn } from "@/lib/utils";
+import {
+  ChainHubSectionHead,
+  ChainHubStatCell,
+  ChainHubStatRow,
+} from "./ChainHubStats";
 import { LazyPriceSparkline } from "./LazyPriceSparkline";
 
 interface ChainMarketCardProps {
@@ -29,16 +34,41 @@ export function ChainMarketCard({
   const config = CHAIN_EXPLORERS[chainId];
   const changePositive = market.change24h != null && market.change24h >= 0;
   const showOptionalMarketStats = !hubLayout;
+  const sourceLabel =
+    market.source !== "unavailable" ? market.source : "price unavailable";
 
-  const body = (
+  const hubBody = (
+    <ChainHubStatRow cols={3}>
+      <ChainHubStatCell
+        label="BTC Price"
+        value={formatBtcPrice(market.btc)}
+        numericValue={market.btc ?? undefined}
+        formatFn={(n) => formatBtcPrice(n)}
+        animated={animated}
+        mono
+      />
+      <ChainHubStatCell
+        label="USD Price"
+        value={formatUsdPrice(market.usd)}
+        numericValue={market.usd ?? undefined}
+        formatFn={(n) => formatUsdPrice(n)}
+        animated={animated}
+      />
+      <ChainHubStatCell
+        label="Market Cap"
+        value={formatUsdCompact(market.marketCap)}
+        numericValue={market.marketCap ?? undefined}
+        formatFn={(n) => formatUsdCompact(n)}
+        animated={animated}
+      />
+    </ChainHubStatRow>
+  );
+
+  const body = hubLayout ? (
+    hubBody
+  ) : (
     <>
-      <div
-        className={
-          hubLayout
-            ? "chain-hub-market-grid grid grid-cols-3 divide-x divide-border px-2"
-            : "grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-3 sm:divide-y-0"
-        }
-      >
+      <div className="grid grid-cols-2 divide-x divide-y divide-border sm:grid-cols-3 sm:divide-y-0">
         <MarketStat
           label="BTC Price"
           value={formatBtcPrice(market.btc)}
@@ -46,7 +76,6 @@ export function ChainMarketCard({
           formatFn={(n) => formatBtcPrice(n)}
           animated={animated}
           mono
-          hubLayout={hubLayout}
         />
         <MarketStat
           label="USD Price"
@@ -54,7 +83,6 @@ export function ChainMarketCard({
           numericValue={market.usd ?? undefined}
           formatFn={(n) => formatUsdPrice(n)}
           animated={animated}
-          hubLayout={hubLayout}
         />
         <MarketStat
           label="Market Cap"
@@ -62,8 +90,7 @@ export function ChainMarketCard({
           numericValue={market.marketCap ?? undefined}
           formatFn={(n) => formatUsdCompact(n)}
           animated={animated}
-          className={hubLayout ? undefined : "col-span-2 sm:col-span-1"}
-          hubLayout={hubLayout}
+          className="col-span-2 sm:col-span-1"
         />
         {showOptionalMarketStats && market.change24h != null ? (
           <MarketStat
@@ -86,7 +113,7 @@ export function ChainMarketCard({
         ) : null}
       </div>
 
-      {hubLayout ? null : market.priceHistory24h.length > 1 ? (
+      {market.priceHistory24h.length > 1 ? (
         <div className="border-t border-border px-2 py-2">
           <LazyPriceSparkline
             data={market.priceHistory24h}
@@ -100,21 +127,18 @@ export function ChainMarketCard({
   if (embedded) {
     return (
       <div className={hubLayout ? "chain-hub-market" : undefined}>
-        <div
-          className={cn(
-            "flex items-center justify-between gap-2 border-b border-border px-3 py-1.5",
-            hubLayout && "chain-hub-section-head",
-          )}
-        >
-          <h4 className="text-[10px] font-bold uppercase tracking-wide text-fg-subtle">
-            Market
-          </h4>
-          <span className="truncate text-[10px] font-medium uppercase tracking-wide text-fg-subtle">
-            {market.source !== "unavailable"
-              ? market.source
-              : "price unavailable"}
-          </span>
-        </div>
+        {hubLayout ? (
+          <ChainHubSectionHead title="Market" meta={sourceLabel} />
+        ) : (
+          <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-1.5">
+            <h4 className="text-xs font-bold uppercase tracking-wide text-fg-subtle sm:text-[11px]">
+              Market
+            </h4>
+            <span className="truncate text-xs font-medium uppercase tracking-wide text-fg-subtle">
+              {sourceLabel}
+            </span>
+          </div>
+        )}
         {body}
       </div>
     );
@@ -126,9 +150,7 @@ export function ChainMarketCard({
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-bold text-fg">{config.name} Market</h3>
           <span className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
-            {market.source !== "unavailable"
-              ? market.source
-              : "price unavailable"}
+            {sourceLabel}
           </span>
         </div>
       </div>
@@ -146,7 +168,6 @@ function MarketStat({
   animated = false,
   numericValue,
   formatFn,
-  hubLayout = false,
 }: {
   label: string;
   value: string;
@@ -156,36 +177,7 @@ function MarketStat({
   animated?: boolean;
   numericValue?: number;
   formatFn?: (value: number) => string;
-  hubLayout?: boolean;
 }) {
-  if (hubLayout) {
-    return (
-      <div className={cn("chain-hub-stat-cell px-2 py-1.5", className)}>
-        <div className="truncate text-[10px] font-semibold uppercase tracking-wide text-fg-subtle">
-          {label}
-        </div>
-        <div
-          className={cn(
-            "mt-0.5 truncate text-xs font-semibold tabular-nums text-fg",
-            mono && "text-[11px]",
-            valueClassName,
-          )}
-        >
-          {animated ? (
-            <AnimatedStatValue
-              value={value}
-              numericValue={numericValue}
-              formatFn={formatFn}
-              className={valueClassName}
-            />
-          ) : (
-            value
-          )}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className={cn("px-4 py-3", className)}>
       <div className="text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">

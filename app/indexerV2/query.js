@@ -6,6 +6,11 @@ const { computeBlockTotalsRaw } = require("./blockTotals.js");
 const utils = require("../utils.js");
 const { hourBucketStart } = require("./periodStats.js");
 const { atomicUnitsToDecimal } = require("./valueUtils.js");
+const { indexedSupplyAtHeight } = require("./supplyHistory.js");
+const {
+	difficultyToHashPerSec,
+	hashPerSecToKhPerMin
+} = require("./networkMetrics.js");
 
 const defaultLimit = 25;
 const maxLimit = 100;
@@ -959,7 +964,6 @@ function getChainActivityHistory(chainId, options = {}) {
 	const chain = normalizeChainId(chainId);
 	const maxPoints = normalizeBalanceHistoryPoints(options.maxPoints);
 	const since = normalizeSince(options.since);
-	const chainHealth = resolveChainHealth(chain, options);
 	const bucketBounds = since
 		? prepare(db, `
 			SELECT MIN(bucket_start) AS min_time, MAX(bucket_start) AS max_time
@@ -1002,8 +1006,8 @@ function getChainActivityHistory(chainId, options = {}) {
 
 	return {
 		chainId: chain,
-		trusted: bucketRows.length > 0 ? chainHealth.trusted : false,
-		source: getSource(chainHealth, "summary"),
+		trusted: bucketRows.length > 0,
+		source: { label: "index", type: "index" },
 		since,
 		categories: chainActivityCategories,
 		backfillRequired: bucketRows.length === 0,
@@ -2049,6 +2053,62 @@ function toNumber(value) {
 	return typeof value === "bigint" ? Number(value) : Number(value);
 }
 
+function getIndexedHashrate7dAvg(chainId, options = {}) {
+	const chain = normalizeChainId(chainId);
+
+	if (chain !== "vrm") {
+		return { chainId: chain, hashrate7dKhPerMin: null, sampleCount: 0 };
+	}
+
+	const db = options.db || dbModule.openDatabase();
+	const since = Math.floor(Date.now() / 1000) - 7 * 86400;
+	const row = db.prepare(`
+		SELECT AVG(difficulty) AS avg_difficulty, COUNT(*) AS sample_count
+		FROM blocks
+		WHERE chain_id = ? AND status = 'main' AND time >= ? AND difficulty IS NOT NULL
+	`).get(chain, since);
+
+	if (!row?.sample_count || row.avg_difficulty == null) {
+		return { chainId: chain, hashrate7dKhPerMin: null, sampleCount: 0 };
+	}
+
+	const avgDifficulty = Number(row.avg_difficulty);
+	if (!Number.isFinite(avgDifficulty) || avgDifficulty <= 0) {
+		return { chainId: chain, hashrate7dKhPerMin: null, sampleCount: 0 };
+	}
+
+	const hashPerSec = difficultyToHashPerSec(avgDifficulty, chain);
+	const hashrate7dKhPerMin =
+		hashPerSec != null ? hashPerSecToKhPerMin(hashPerSec) : null;
+
+	return {
+		chainId: chain,
+		hashrate7dKhPerMin,
+		sampleCount: toNumber(row.sample_count)
+	};
+}
+
+function getIndexedSupplyAtHeight(chainId, options = {}) {
+	const chain = normalizeChainId(chainId);
+	const db = options.db || dbModule.openDatabase();
+	const height = Number(options.height);
+
+	if (!Number.isFinite(height) || height < 0) {
+		return { chainId: chain, height: null, supply: null };
+	}
+
+	const supply = indexedSupplyAtHeight(db, chain, height);
+
+	return {
+		chainId: chain,
+		height,
+		supply:
+			typeof supply === "number" && Number.isFinite(supply) && supply > 0
+				? supply
+				: null
+	};
+}
+
 module.exports = {
 	getChainSummary,
 	getChainSummaryLite,
@@ -2065,5 +2125,7 @@ module.exports = {
 	getTransactionRelatedAddresses,
 	getBlock,
 	enrichBlockInterestRates,
-	resolveChainHealth
+	resolveChainHealth,
+	getIndexedSupplyAtHeight,
+	getIndexedHashrate7dAvg
 };

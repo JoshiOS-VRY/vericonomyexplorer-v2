@@ -16,6 +16,26 @@ export function formatNumber(value: number | null | undefined): string {
   return value.toLocaleString();
 }
 
+/** Compact coin balance for tables (e.g. 264.27K, 2.20M). */
+export function formatCompactBalance(amount: string | number): string {
+  const num = typeof amount === "string" ? Number.parseFloat(amount) : amount;
+  if (!Number.isFinite(num)) {
+    return typeof amount === "string" ? amount : "—";
+  }
+
+  const abs = Math.abs(num);
+  if (abs >= 1_000_000_000) return `${(num / 1_000_000_000).toFixed(2)}B`;
+  if (abs >= 1_000_000) return `${(num / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000) return `${(num / 1_000).toFixed(2)}K`;
+  if (abs >= 100) {
+    return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  }
+  return num.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 8,
+  });
+}
+
 export function formatDifficulty(value: number | string | null | undefined): string {
   if (value == null || value === "") return "N/A";
   const num = typeof value === "string" ? Number(value) : value;

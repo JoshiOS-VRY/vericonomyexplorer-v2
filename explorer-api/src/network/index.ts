@@ -1,3 +1,4 @@
+import { runIndexerQuery } from "../db/queryPool.js";
 import { rpc } from "../rpc/index.js";
 import type { ChainId } from "../types.js";
 import type { VrcNetworkStats, VrmNetworkStats } from "../types/home.js";
@@ -5,6 +6,7 @@ import {
   fetchOnChainSupply,
   fetchVrmHashrate,
   getMaxSupply,
+  getTargetBlockTimeSeconds,
   hashPerSecToKhPerMin,
   parseRpcNumber,
   parseVrcMiningInfo,
@@ -50,6 +52,120 @@ function parseLegacyStakingInfo(stakingInfo: unknown): {
   };
 }
 
+async function fetchIndexedTipHeight(chainId: ChainId): Promise<number | null> {
+  try {
+    const summary = (await runIndexerQuery("getChainSummaryLiteIndexed", [chainId], {
+      skipLiveBlocks: true,
+      skipLiveRpc: true,
+      limit: 1,
+    })) as { latestBlocks?: { height: number }[] };
+
+    return summary?.latestBlocks?.[0]?.height ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchIndexedSupply(
+  chainId: ChainId,
+  height: number,
+): Promise<number | null> {
+  try {
+    const result = (await runIndexerQuery("getIndexedSupplyAtHeight", [chainId], {
+      height,
+    })) as { supply?: number | null };
+
+    const supply = result?.supply;
+    return typeof supply === "number" && Number.isFinite(supply) && supply > 0
+      ? supply
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveVrmSupply(
+  call: RpcCall,
+  blocks: number | null,
+  blockchainInfo: unknown,
+): Promise<number | null> {
+  if (blocks == null) {
+    return null;
+  }
+
+  const rpcSupply = await fetchOnChainSupply("vrm", call, blocks, blockchainInfo);
+  if (rpcSupply != null && rpcSupply > 0) {
+    return rpcSupply;
+  }
+
+  // Coinbase mint sum from the indexer — accurate when RPC UTXO set is unavailable.
+  // Do not use estimatedSupplyAtHeight for VRM: Verium PoWT rewards are not approximated
+  // by the placeholder blockRewardFunction and would skew supply (~275K vs ~3.7M).
+  return fetchIndexedSupply("vrm", blocks);
+}
+
+async function fetchIndexedHashrate7dKhPerMin(
+  chainId: ChainId,
+): Promise<number | null> {
+  try {
+    const result = (await runIndexerQuery("getIndexedHashrate7dAvg", [chainId], {})) as {
+      hashrate7dKhPerMin?: number | null;
+    };
+
+    const value = result?.hashrate7dKhPerMin;
+    return typeof value === "number" && Number.isFinite(value) && value > 0
+      ? value
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function difficultyToHashrateKhPerMin(
+  difficulty: number,
+  chainId: ChainId = "vrm",
+): number | null {
+  if (!Number.isFinite(difficulty) || difficulty <= 0) {
+    return null;
+  }
+
+  const targetBlockTimeSeconds = getTargetBlockTimeSeconds(chainId);
+  const hashPerSec = (difficulty * 2 ** 32) / targetBlockTimeSeconds;
+  return hashPerSec > 0 ? hashPerSecToKhPerMin(hashPerSec) : null;
+}
+
+async function resolveVrmHashrates(
+  call: RpcCall,
+  difficulty: number | null,
+): Promise<{ hashrateKhPerMin: number | null; hashrate7dKhPerMin: number | null }> {
+  const hashrates = await fetchVrmHashrate(call, "vrm");
+
+  let hashrateKhPerMin =
+    hashrates.currentHashPerSec != null
+      ? hashPerSecToKhPerMin(hashrates.currentHashPerSec)
+      : null;
+
+  let hashrate7dKhPerMin =
+    hashrates.hashrate7dHashPerSec != null
+      ? hashPerSecToKhPerMin(hashrates.hashrate7dHashPerSec)
+      : null;
+
+  // Verium does not support getnetworkhashps — derive 7d avg from indexed block difficulty.
+  if (hashrate7dKhPerMin == null) {
+    hashrate7dKhPerMin = await fetchIndexedHashrate7dKhPerMin("vrm");
+  }
+
+  if (hashrateKhPerMin == null && difficulty != null) {
+    hashrateKhPerMin = difficultyToHashrateKhPerMin(difficulty, "vrm");
+  }
+
+  if (hashrate7dKhPerMin == null && hashrateKhPerMin != null) {
+    hashrate7dKhPerMin = hashrateKhPerMin;
+  }
+
+  return { hashrateKhPerMin, hashrate7dKhPerMin };
+}
+
 export async function fetchVrmNetworkStats(): Promise<VrmNetworkStats> {
   const call = rpcCall("vrm");
 
@@ -60,37 +176,39 @@ export async function fetchVrmNetworkStats(): Promise<VrmNetworkStats> {
       totalsupply?: unknown;
     } | null;
 
-    const blocks = parseRpcNumber(blockchainInfo?.blocks);
+    let blocks = parseRpcNumber(blockchainInfo?.blocks);
     const difficulty = parseRpcNumber(blockchainInfo?.difficulty);
 
+    if (blocks == null) {
+      blocks = await fetchIndexedTipHeight("vrm");
+    }
+
     const [hashrates, supply] = await Promise.all([
-      fetchVrmHashrate(call, "vrm"),
-      blocks != null
-        ? fetchOnChainSupply("vrm", call, blocks, blockchainInfo)
-        : Promise.resolve(null),
+      resolveVrmHashrates(call, difficulty),
+      resolveVrmSupply(call, blocks, blockchainInfo),
     ]);
 
     return {
-      hashrateKhPerMin:
-        hashrates.currentHashPerSec != null
-          ? hashPerSecToKhPerMin(hashrates.currentHashPerSec)
-          : null,
-      hashrate7dKhPerMin:
-        hashrates.hashrate7dHashPerSec != null
-          ? hashPerSecToKhPerMin(hashrates.hashrate7dHashPerSec)
-          : null,
+      hashrateKhPerMin: hashrates.hashrateKhPerMin,
+      hashrate7dKhPerMin: hashrates.hashrate7dKhPerMin,
       difficulty,
       blocks,
       supply,
       maxSupply: getMaxSupply("vrm"),
     };
   } catch {
+    const blocks = await fetchIndexedTipHeight("vrm");
+    const [supply, hashrates] = await Promise.all([
+      blocks != null ? fetchIndexedSupply("vrm", blocks) : null,
+      fetchIndexedHashrate7dKhPerMin("vrm"),
+    ]);
+
     return {
       hashrateKhPerMin: null,
-      hashrate7dKhPerMin: null,
+      hashrate7dKhPerMin: hashrates,
       difficulty: null,
-      blocks: null,
-      supply: null,
+      blocks,
+      supply,
       maxSupply: getMaxSupply("vrm"),
     };
   }

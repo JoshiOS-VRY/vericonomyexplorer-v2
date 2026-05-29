@@ -50,12 +50,14 @@ const METHOD_PRIORITY: Record<string, number> = {
   enrichBlockInterestRatesIndexed: 1,
   getChainSummaryIndexed: 2,
   getChainSummaryLiteIndexed: 1,
+  getChainActivityHistory: 1,
   getLatestBlocksIndexed: 2,
   getLandingBundle: 2,
   getVrmDashboardBundle: 2,
   getIndexerHealthIndexed: 2,
-  getChainActivityHistory: 2,
   getNetworkMetricHistory: 2,
+  getIndexedSupplyAtHeight: 1,
+  getIndexedHashrate7dAvg: 1,
 };
 
 function defaultWorkerCount(): number {

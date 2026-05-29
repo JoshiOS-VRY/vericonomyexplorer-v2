@@ -5,6 +5,7 @@ import { useTipStream } from "@/components/explorer/TipStreamProvider";
 import { fetchHomeNetwork } from "@/lib/api/client";
 import { usePageVisible } from "@/hooks/usePageVisible";
 import type { HomeNetworkPayload, VrcNetworkStats, VrmNetworkStats } from "@/lib/api/types";
+import { mergeHomeNetworkPayload } from "@/lib/enrichNetwork";
 
 const NETWORK_POLL_MS = 30_000;
 
@@ -31,10 +32,12 @@ function applyNetworkRefresh(
   prev: HomeNetworkPayload,
   next: HomeNetworkPayload,
 ): HomeNetworkPayload {
+  const merged = mergeHomeNetworkPayload(prev, next);
+
   return {
-    fetchedAt: next.fetchedAt || prev.fetchedAt,
-    vrm: vrmNetworkReceived(next.vrm) ? next.vrm : prev.vrm,
-    vrc: vrcNetworkReceived(next.vrc) ? next.vrc : prev.vrc,
+    fetchedAt: merged.fetchedAt,
+    vrm: vrmNetworkReceived(next.vrm) ? merged.vrm : prev.vrm,
+    vrc: vrcNetworkReceived(next.vrc) ? merged.vrc : prev.vrc,
   };
 }
 

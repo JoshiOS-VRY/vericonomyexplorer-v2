@@ -92,6 +92,8 @@ const handlers = {
 	getTransactionRelatedAddresses: query.getTransactionRelatedAddresses,
 	getChainHealth: health.getChainHealth,
 	enrichBlockInterestRatesIndexed: query.enrichBlockInterestRates,
+	getIndexedSupplyAtHeight: query.getIndexedSupplyAtHeight,
+	getIndexedHashrate7dAvg: query.getIndexedHashrate7dAvg,
 };
 
 parentPort.on("message", (message) => {

@@ -397,7 +397,9 @@
     box-shadow 0.15s ease;
 }
 
-.chain-summary-card:not(.chain-hub-section):hover .chain-summary-stat-grid .bc-stat {
+.chain-summary-card:not(.chain-hub-section):hover
+  .chain-summary-stat-grid
+  .bc-stat {
   background-color: color-mix(in srgb, var(--bg-subtle) 35%, var(--bg-panel));
 }
 
@@ -415,8 +417,13 @@
 }
 
 .chain-hub-section__ticker {
-  border: 1px solid color-mix(in srgb, var(--block-chain-accent) 22%, var(--border));
-  background: color-mix(in srgb, var(--block-chain-accent-soft) 55%, var(--bg-subtle));
+  border: 1px solid
+    color-mix(in srgb, var(--block-chain-accent) 22%, var(--border));
+  background: color-mix(
+    in srgb,
+    var(--block-chain-accent-soft) 55%,
+    var(--bg-subtle)
+  );
   color: color-mix(in srgb, var(--block-chain-accent) 55%, var(--fg-muted));
 }
 
@@ -431,7 +438,11 @@
 }
 
 .chain-hub-blocks-head__link:hover {
-  background: color-mix(in srgb, var(--block-chain-accent) 8%, var(--bg-subtle));
+  background: color-mix(
+    in srgb,
+    var(--block-chain-accent) 8%,
+    var(--bg-subtle)
+  );
 }
 
 .chain-hub-blocks-empty {
@@ -456,38 +467,49 @@
   padding: 0;
 }
 
-.chain-hub-quick-stats .bc-stat {
-  padding: 0.375rem 0.625rem;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  border-right: 1px solid var(--border);
+.chain-hub-stat-row {
+  align-items: stretch;
 }
 
-.chain-hub-quick-stats .bc-stat:last-child {
-  border-right: none;
+.chain-hub-stat-cell {
+  min-height: 3.25rem;
+  padding: 0.625rem 0.875rem;
 }
 
-.chain-hub-quick-stats .bc-stat > div:first-child {
-  font-size: 0.625rem;
-  line-height: 1.2;
+@media (min-width: 640px) {
+  .chain-hub-stat-cell {
+    min-height: 3.5rem;
+    padding: 0.75rem 1rem;
+  }
 }
 
-.chain-hub-quick-stats .bc-stat > div:nth-child(2) {
-  margin-top: 0.125rem;
-  font-size: 0.75rem;
+.chain-hub-stat-cell__label {
+  font-size: 0.6875rem;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+
+.chain-hub-stat-cell__value {
+  margin-top: 0.3125rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 640px) {
+  .chain-hub-stat-cell__value {
+    font-size: 0.9375rem;
+  }
 }
 
 .chain-hub-section-head {
   display: flex;
-  min-height: 1.625rem;
+  min-height: 2.125rem;
   align-items: center;
-}
-
-.chain-hub-stat-cell {
-  min-height: 2.375rem;
 }
 
 .chain-hub-market,
@@ -500,9 +522,8 @@
   flex: 0 0 auto;
 }
 
-/* VRM 3-col / VRC 4-col network — same row height for strip alignment */
-.chain-hub-network-grid {
-  min-height: 2.375rem;
+.chain-hub-section__metrics .chain-hub-market {
+  border-bottom: 1px solid var(--border);
 }
 
 .chain-hub-section .bc-table th,
@@ -527,8 +548,12 @@ html:not(.light) .chain-hub-section[data-chain="vrm"] .bc-table a,
 html:not(.light) .chain-hub-section[data-chain="vrc"] .bc-table a,
 html:not(.light) .chain-hub-section[data-chain="vrm"] .text-accent,
 html:not(.light) .chain-hub-section[data-chain="vrc"] .text-accent,
-html:not(.light) .chain-hub-section[data-chain="vrm"] a:not(.chain-explore-btn):not(.block-chain-strip__link),
-html:not(.light) .chain-hub-section[data-chain="vrc"] a:not(.chain-explore-btn):not(.block-chain-strip__link) {
+html:not(.light)
+  .chain-hub-section[data-chain="vrm"]
+  a:not(.chain-explore-btn):not(.block-chain-strip__link),
+html:not(.light)
+  .chain-hub-section[data-chain="vrc"]
+  a:not(.chain-explore-btn):not(.block-chain-strip__link) {
   color: rgb(255 255 255);
 }
 
@@ -536,8 +561,12 @@ html:not(.light) .chain-hub-section[data-chain="vrm"] .bc-table a:hover,
 html:not(.light) .chain-hub-section[data-chain="vrc"] .bc-table a:hover,
 html:not(.light) .chain-hub-section[data-chain="vrm"] .text-accent:hover,
 html:not(.light) .chain-hub-section[data-chain="vrc"] .text-accent:hover,
-html:not(.light) .chain-hub-section[data-chain="vrm"] a:not(.chain-explore-btn):not(.block-chain-strip__link):hover,
-html:not(.light) .chain-hub-section[data-chain="vrc"] a:not(.chain-explore-btn):not(.block-chain-strip__link):hover {
+html:not(.light)
+  .chain-hub-section[data-chain="vrm"]
+  a:not(.chain-explore-btn):not(.block-chain-strip__link):hover,
+html:not(.light)
+  .chain-hub-section[data-chain="vrc"]
+  a:not(.chain-explore-btn):not(.block-chain-strip__link):hover {
   color: rgb(255 255 255 / 0.88);
 }
 
@@ -545,7 +574,8 @@ html:not(.light) .chain-hub-section[data-chain="vrc"] a:not(.chain-explore-btn):
 .block-chain-strip-panel {
   overflow: hidden;
   border-radius: 0.875rem;
-  border: 1px solid color-mix(in srgb, var(--block-chain-accent) 22%, var(--border));
+  border: 1px solid
+    color-mix(in srgb, var(--block-chain-accent) 22%, var(--border));
   background:
     radial-gradient(
       ellipse 90% 70% at 0% 100%,
@@ -655,10 +685,10 @@ html:not(.light) .chain-hub-section[data-chain="vrc"] a:not(.chain-explore-btn):
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.25rem;
   align-items: start;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .block-chain-strip__cell {
@@ -694,47 +724,11 @@ html:not(.light) .chain-hub-section[data-chain="vrc"] a:not(.chain-explore-btn):
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  overflow: visible;
   opacity: calc(0.5 + var(--block-recency, 1) * 0.5);
   transform: scale(calc(0.9 + var(--block-recency, 1) * 0.1));
   transition:
     opacity 0.25s ease,
     transform 0.25s ease;
-}
-
-.block-chain-strip__tip-badge {
-  position: absolute;
-  top: -0.625rem;
-  left: 50%;
-  z-index: 2;
-  translate: -50% 0;
-  padding: 0.125rem 0.4375rem;
-  border-radius: 9999px;
-  border: 1px solid color-mix(in srgb, var(--block-chain-accent) 40%, var(--border));
-  background: color-mix(in srgb, var(--bg-panel) 82%, var(--block-chain-accent));
-  font-size: 0.5rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--fg-muted);
-  white-space: nowrap;
-  line-height: 1.25;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
-}
-
-.block-chain-strip__tip-badge--live {
-  border-color: color-mix(in srgb, var(--success) 45%, var(--block-chain-accent));
-  color: var(--success);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--success) 12%, transparent);
-}
-
-.block-chain-strip__tip-ring {
-  position: absolute;
-  inset: -0.25rem;
-  border-radius: 0.5rem;
-  border: 1.5px solid color-mix(in srgb, var(--block-chain-accent) 55%, transparent);
-  animation: block-chain-tip-ring 2.4s ease-in-out infinite;
-  pointer-events: none;
 }
 
 .block-chain-strip__node {
@@ -808,31 +802,113 @@ html:not(.light) .chain-hub-section[data-chain="vrc"] a:not(.chain-explore-btn):
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.1875rem;
+  gap: 0.375rem;
   width: 100%;
   min-width: 0;
   min-height: 0.6875rem;
-  font-size: 0.5625rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--fg-subtle);
   line-height: 1.2;
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition: color 0.2s ease;
+  transition: filter 0.2s ease;
+  padding-top: 0.375rem;
 }
 
 .block-chain-strip__label-height {
+  display: inline-block;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Light mode — chain accent → deep slate (reversed flow for pale panel) */
+.light .block-chain-strip__label-height {
+  background-image: linear-gradient(
+    345deg,
+    rgb(30 41 59) 0%,
+    color-mix(
+        in srgb,
+        var(--block-chain-accent-bright, var(--block-chain-accent)) 62%,
+        rgb(30 41 59)
+      )
+      100%
+  );
+}
+
+.light .block-chain-section[data-chain="vrm"] .block-chain-strip__label-height {
+  background-image: linear-gradient(
+    345deg,
+    rgb(30 41 59) 0%,
+    var(--block-chain-accent-deep, rgb(88 106 122)) 100%
+  );
+}
+
+.light .block-chain-section[data-chain="vrc"] .block-chain-strip__label-height {
+  background-image: linear-gradient(
+    345deg,
+    rgb(30 41 59) 0%,
+    var(--block-chain-accent, rgb(65 139 202)) 100%
+  );
+}
+
+.light .block-chain-strip__label--tip .block-chain-strip__label-height {
+  font-weight: 700;
+}
+
+.light .block-chain-section[data-chain="vrm"]
+  .block-chain-strip__label--tip
+  .block-chain-strip__label-height {
+  background-image: linear-gradient(
+    345deg,
+    rgb(15 23 42) 0%,
+    var(--block-chain-accent, rgb(70 80 90)) 45%,
+    var(--block-chain-accent-bright, rgb(132 180 221)) 100%
+  );
+}
+
+.light .block-chain-section[data-chain="vrc"]
+  .block-chain-strip__label--tip
+  .block-chain-strip__label-height {
+  background-image: linear-gradient(
+    345deg,
+    rgb(15 23 42) 0%,
+    var(--block-chain-accent, rgb(65 139 202)) 50%,
+    var(--block-chain-accent-deep, rgb(3 44 87)) 100%
+  );
+}
+
+/* Dark mode — white → bright accent */
+html:not(.light) .block-chain-strip__label-height {
+  background-image: linear-gradient(
+    165deg,
+    rgb(248 250 252) 0%,
+    color-mix(
+        in srgb,
+        var(--block-chain-accent-bright, var(--block-chain-accent)) 55%,
+        rgb(226 232 240)
+      )
+      100%
+  );
+}
+
+html:not(.light) .block-chain-strip__label--tip .block-chain-strip__label-height {
+  background-image: linear-gradient(
+    165deg,
+    rgb(255 255 255) 0%,
+    var(--block-chain-accent-bright, var(--block-chain-accent)) 100%
+  );
 }
 
 .block-chain-strip__label--tip {
   font-weight: 700;
-  color: color-mix(in srgb, var(--block-chain-accent) 75%, var(--fg));
 }
 
 .block-chain-strip__txs {
@@ -851,7 +927,8 @@ html:not(.light) .chain-hub-section[data-chain="vrc"] a:not(.chain-explore-btn):
 }
 
 .block-chain-strip__cell:hover .block-chain-strip__txs,
-.block-chain-strip__cell:has(.block-chain-strip__link:focus-visible) .block-chain-strip__txs {
+.block-chain-strip__cell:has(.block-chain-strip__link:focus-visible)
+  .block-chain-strip__txs {
   opacity: 0.9;
   max-height: 0.75rem;
 }
@@ -879,8 +956,12 @@ html:not(.light) .chain-hub-section[data-chain="vrc"] a:not(.chain-explore-btn):
   animation: live-dot-breathe 2s ease-in-out infinite;
 }
 
-.block-chain-strip__link:hover .block-chain-strip__label {
-  color: color-mix(in srgb, var(--block-chain-accent) 55%, var(--fg-muted));
+.block-chain-strip__link:hover .block-chain-strip__label-height {
+  filter: brightness(1.08);
+}
+
+.light .block-chain-strip__link:hover .block-chain-strip__label-height {
+  filter: brightness(0.94) saturate(1.12);
 }
 
 .block-chain-section[data-chain="vrm"] .block-chain-table a {
@@ -905,18 +986,6 @@ html:not(.light) .chain-hub-section[data-chain="vrc"] a:not(.chain-explore-btn):
   }
 }
 
-@keyframes block-chain-tip-ring {
-  0%,
-  100% {
-    opacity: 0.35;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.9;
-    transform: scale(1.06);
-  }
-}
-
 @keyframes block-chain-cell-enter {
   0% {
     opacity: 0;
@@ -930,7 +999,6 @@ html:not(.light) .chain-hub-section[data-chain="vrc"] a:not(.chain-explore-btn):
 
 @media (prefers-reduced-motion: reduce) {
   .block-chain-strip__track-flow,
-  .block-chain-strip__tip-ring,
   .block-chain-strip__label-dot,
   .block-chain-strip__cell {
     animation: none;
@@ -975,12 +1043,6 @@ html:not(.light) .chain-hub-section[data-chain="vrc"] a:not(.chain-explore-btn):
 
   .block-chain-strip__label {
     font-size: 0.53125rem;
-  }
-
-  .block-chain-strip__tip-badge {
-    top: -0.5rem;
-    font-size: 0.4375rem;
-    padding: 0.0625rem 0.3125rem;
   }
 
   .block-chain-strip__txs {
@@ -1048,7 +1110,11 @@ li[role="presentation"] + .search-dropdown-section {
   --chart-accent: var(--accent);
   border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-subtle) 55%, transparent) 0%, transparent 42%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-subtle) 55%, transparent) 0%,
+      transparent 42%
+    ),
     color-mix(in srgb, var(--bg-panel) 96%, var(--bg-subtle));
 }
 
@@ -1070,7 +1136,11 @@ li[role="presentation"] + .search-dropdown-section {
 
 .insights-chart-panel-vrm > div:first-child,
 .insights-chart-panel-vrc > div:first-child {
-  border-bottom-color: color-mix(in srgb, var(--insights-accent, var(--border)) 18%, var(--border));
+  border-bottom-color: color-mix(
+    in srgb,
+    var(--insights-accent, var(--border)) 18%,
+    var(--border)
+  );
 }
 
 .insights-chart-panel-vrm {
@@ -1116,7 +1186,9 @@ li[role="presentation"] + .search-dropdown-section {
 }
 
 .insights-kpi-tile {
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .insights-kpi-tile:hover {
@@ -1125,13 +1197,20 @@ li[role="presentation"] + .search-dropdown-section {
 }
 
 .insights-chart-grid .insights-chart-panel {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .insights-chart-grid .insights-chart-panel:hover {
   box-shadow:
     0 8px 24px color-mix(in srgb, var(--bg) 35%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--insights-accent, var(--border)) 12%, var(--border));
+    0 0 0 1px
+      color-mix(
+        in srgb,
+        var(--insights-accent, var(--border)) 12%,
+        var(--border)
+      );
 }
 
 .recharts-default-legend .recharts-legend-item-text {
@@ -1166,4 +1245,134 @@ li[role="presentation"] + .search-dropdown-section {
 .address-balance-chart .recharts-wrapper,
 .insights-chart-canvas .recharts-wrapper {
   overflow: visible;
+}
+
+/* ── Home page layout & richlist ── */
+.home-page .chain-hub-stat-cell {
+  min-height: 3.5rem;
+}
+
+.home-page .chain-hub-stat-cell__label {
+  font-size: 0.6875rem;
+}
+
+.home-page .chain-hub-stat-cell__value {
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.home-page .chain-hub-section .bc-table th,
+.home-page .chain-hub-section .bc-table td {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.home-page .chain-hub-section .bc-table th {
+  font-size: 0.6875rem;
+}
+
+.home-richlist-panel > div:first-child {
+  padding: 1rem 1.25rem;
+}
+
+.home-richlist-panel > div:first-child h2 {
+  font-size: 1.125rem;
+}
+
+.home-richlist-panel--vrm {
+  border-top: 2px solid var(--chain-vrm);
+}
+
+.home-richlist-panel--vrc {
+  border-top: 2px solid var(--chain-vrc);
+}
+
+.home-page .rounded-xl.border.border-border.bg-bg-panel.p-5 {
+  padding: 1.5rem;
+}
+
+.home-page .rounded-xl.border.border-border.bg-bg-panel.p-5 h3 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.home-page .rounded-xl.border.border-border.bg-bg-panel.p-5 p {
+  font-size: 0.9375rem;
+}
+
+.home-page .rounded-xl.border.border-border.bg-bg-panel.p-5 a {
+  font-size: 0.9375rem;
+}
+
+.richlist-balance-list {
+  border: none;
+  border-radius: 0;
+}
+
+.richlist-balance-list__row:nth-child(even) {
+  background: color-mix(in srgb, var(--richlist-accent-soft) 35%, transparent);
+}
+
+.richlist-balance-list__ticker {
+  color: var(--richlist-accent);
+}
+
+.richlist-balance-list__pct {
+  color: color-mix(in srgb, var(--richlist-accent) 55%, var(--fg-muted));
+}
+
+.richlist-balance-list__bar-fill {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--richlist-accent) 55%, transparent),
+    var(--richlist-accent)
+  );
+}
+
+.richlist-rank--gold {
+  border: 1px solid rgb(234 179 8 / 0.45);
+  background: linear-gradient(
+    135deg,
+    rgb(250 204 21 / 0.35),
+    rgb(234 179 8 / 0.2)
+  );
+  color: rgb(161 98 7);
+}
+
+.richlist-rank--silver {
+  border: 1px solid rgb(148 163 184 / 0.5);
+  background: linear-gradient(
+    135deg,
+    rgb(226 232 240 / 0.55),
+    rgb(148 163 184 / 0.25)
+  );
+  color: rgb(71 85 105);
+}
+
+.richlist-rank--bronze {
+  border: 1px solid rgb(217 119 6 / 0.45);
+  background: linear-gradient(
+    135deg,
+    rgb(251 191 36 / 0.35),
+    rgb(217 119 6 / 0.18)
+  );
+  color: rgb(146 64 14);
+}
+
+.richlist-rank--default {
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--fg-subtle);
+}
+
+html:not(.light) .richlist-rank--gold {
+  color: rgb(253 224 71);
+}
+
+html:not(.light) .richlist-rank--silver {
+  color: rgb(226 232 240);
+}
+
+html:not(.light) .richlist-rank--bronze {
+  color: rgb(251 191 36);
 }

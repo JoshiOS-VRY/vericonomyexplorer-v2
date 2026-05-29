@@ -214,7 +214,7 @@ export const activityHistoryCache = createSwrCache({
 
   max: 32,
 
-  ttlMs: 60_000,
+  ttlMs: 300_000,
 
   fetch: async (key, signal) => {
 
@@ -222,19 +222,11 @@ export const activityHistoryCache = createSwrCache({
 
     const [chainId, maxPoints, since] = key.split(":");
 
-    const chainHealth = (await chainHealthCache.fetch(
-
-      cacheKey(chainId as ChainId, "health"),
-
-    )) as Record<string, unknown>;
-
     const result = await fetchChainActivityHistory(chainId, {
 
       maxPoints: maxPoints ? Number(maxPoints) : undefined,
 
       since: since ? Number(since) : undefined,
-
-      chainHealth,
 
     });
 
@@ -411,9 +403,18 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
 
       const since = request.query.since ?? "";
 
-      const key = `${chainId}:${maxPoints}:${since}`;
+      const cappedMaxPoints = maxPoints
+        ? String(Math.min(Math.max(Number(maxPoints) || 120, 2), 120))
+        : "";
 
-      return activityHistoryCache.fetch(key);
+      const key = `${chainId}:${cappedMaxPoints}:${since}`;
+
+      return swrFetch(activityHistoryCache, key, () =>
+        fetchChainActivityHistory(chainId, {
+          maxPoints: cappedMaxPoints ? Number(cappedMaxPoints) : undefined,
+          since: since ? Number(since) : undefined,
+        }),
+      );
 
     },
 

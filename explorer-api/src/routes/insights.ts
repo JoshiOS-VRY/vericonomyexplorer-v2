@@ -1,6 +1,5 @@
 import type { FastifyInstance } from "fastify";
 import {
-  cacheKey,
   createSwrCache,
   type CacheValue,
 } from "../cache/swrCache.js";
@@ -8,26 +7,17 @@ import { registerChainScopedCache } from "../cache/registry.js";
 import { fetchNetworkMetricHistory } from "../data/insightsNetwork.js";
 import { fetchMarketHistory } from "../market/history.js";
 import { parseChainId } from "../types.js";
-import { chainHealthCache } from "./chain.js";
 
 const networkHistoryCache = createSwrCache({
   max: 32,
-  ttlMs: 60_000,
+  ttlMs: 300_000,
   fetch: async (key, signal) => {
     if (signal.aborted) throw new Error("aborted");
     const [chainId, maxPoints, since, groupBy] = key.split(":");
-    const parsedChainId = parseChainId(chainId);
-    const chainHealth = parsedChainId
-      ? ((await chainHealthCache.fetch(cacheKey(parsedChainId, "health"))) as Record<
-          string,
-          unknown
-        >)
-      : undefined;
     const result = await fetchNetworkMetricHistory(chainId, {
       maxPoints: maxPoints ? Number(maxPoints) : undefined,
       since: since ? Number(since) : undefined,
       groupBy: groupBy || undefined,
-      chainHealth,
     });
     return result as CacheValue;
   },

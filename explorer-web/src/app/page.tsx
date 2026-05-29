@@ -1,10 +1,12 @@
 import { AlertBanner } from "@/components/explorer/ExplorerUi";
 import { UserMessageBanner } from "@/components/explorer/UserMessageBanner";
 import { VericonomyHomeLiveBand } from "@/components/explorer/home/VericonomyHomeLiveBand";
+import { VericonomyHomeRichlists } from "@/components/explorer/home/VericonomyHomeRichlists";
 import { VericonomyHomeStatic } from "@/components/explorer/home/VericonomyHomeSections";
-import { getHomeShell } from "@/lib/api/indexer";
+import { getHomeNetwork, getHomeShell } from "@/lib/api/indexer";
 import type {
   ChainSummary,
+  HomeNetworkPayload,
   HomeShellPayload,
   LeaderboardResult,
   RichlistResult,
@@ -14,9 +16,13 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   let shell: HomeShellPayload;
+  let network: HomeNetworkPayload | null = null;
 
   try {
-    shell = await getHomeShell();
+    [shell, network] = await Promise.all([
+      getHomeShell(),
+      getHomeNetwork().catch(() => null),
+    ]);
   } catch {
     return (
       <AlertBanner title="Explorer Unavailable">
@@ -36,15 +42,19 @@ export default async function HomePage() {
   const normalized = normalizeShell(shell);
 
   return (
-    <div className="space-y-8">
+    <div className="home-page space-y-10">
       <UserMessageBanner />
       <VericonomyHomeLiveBand initialShell={normalized} />
 
-      <VericonomyHomeStatic
+      <VericonomyHomeRichlists
         vrmRichlist={normalized.vrm.richlist}
         vrcRichlist={normalized.vrc.richlist}
-        vrmLeaderboard={normalized.vrmLeaderboard}
+        vrmSummary={normalized.vrm.summary}
+        vrcSummary={normalized.vrc.summary}
+        initialNetwork={network ?? undefined}
       />
+
+      <VericonomyHomeStatic />
     </div>
   );
 }

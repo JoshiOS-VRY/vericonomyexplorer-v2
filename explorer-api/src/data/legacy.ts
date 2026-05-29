@@ -97,17 +97,7 @@ export async function fetchChainActivityHistory(
   chainId: string,
   options: { maxPoints?: number; since?: number; chainHealth?: Record<string, unknown> } = {},
 ) {
-  const chainHealth =
-    options.chainHealth ??
-    ((await runIndexerQuery<Record<string, unknown>>("getChainHealth", [chainId], {})) as Record<
-      string,
-      unknown
-    >);
-
-  return runIndexerQuery("getChainActivityHistory", [chainId], {
-    ...options,
-    chainHealth,
-  });
+  return runIndexerQuery("getChainActivityHistory", [chainId], options);
 }
 
 export async function fetchIndexerHealth() {

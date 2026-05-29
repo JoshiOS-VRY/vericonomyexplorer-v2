@@ -34,11 +34,15 @@ export function enrichVrmNetworkStats(
     tipDifficulty != null
       ? estimateVrmHashrateKhPerMin(tipDifficulty)
       : network.hashrateKhPerMin;
+  const hashrate7dKhPerMin =
+    network.hashrate7dKhPerMin ??
+    (hashrateKhPerMin != null ? hashrateKhPerMin : null);
 
   return {
     ...network,
     difficulty,
     hashrateKhPerMin,
+    hashrate7dKhPerMin,
     blocks: network.blocks ?? chainHeight(summary),
     supply: network.supply,
   };

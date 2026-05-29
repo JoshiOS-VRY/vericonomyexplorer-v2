@@ -28,10 +28,24 @@ const emptyMarket = (): ChainMarket => ({
   priceHistory24h: [],
 });
 
+function resolveEffectiveUsd(
+  chainId: ChainId,
+  usd: number | null,
+  btc: number | null,
+  btcUsd: number | null,
+): number | null {
+  // VRC: derive USD from BTC × BTC/USD so cap matches the displayed BTC price.
+  if (chainId === "vrc" && btc != null && btcUsd != null && btcUsd > 0) {
+    return btc * btcUsd;
+  }
+  return usd;
+}
+
 function finalizeMarket(
   partial: ReturnType<typeof mapLcwToMarket>,
   onChainSupply: number | null,
   btcUsd: number | null,
+  chainId: ChainId,
 ): ChainMarket {
   let { usd, btc, marketCap, source } = partial;
 
@@ -40,17 +54,57 @@ function finalizeMarket(
     if (source === "unavailable") source = "computed";
   }
 
-  if (marketCap == null && usd != null && onChainSupply != null) {
-    marketCap = usd * onChainSupply;
+  const effectiveUsd = resolveEffectiveUsd(chainId, usd, btc, btcUsd);
+
+  if (marketCap == null && effectiveUsd != null && onChainSupply != null) {
+    marketCap = effectiveUsd * onChainSupply;
     if (source === "unavailable") source = "computed";
   }
 
+  return applyOnChainMarketCap(
+    {
+      ...partial,
+      usd: effectiveUsd,
+      btc,
+      marketCap,
+      source,
+    },
+    chainId,
+    onChainSupply,
+  );
+}
+
+/** VRC cap is always on-chain supply × USD; VRM fills cap only when external data lacks it. */
+export function applyOnChainMarketCap(
+  market: ChainMarket,
+  chainId: ChainId,
+  onChainSupply: number | null,
+): ChainMarket {
+  if (
+    onChainSupply == null ||
+    !Number.isFinite(onChainSupply) ||
+    market.usd == null
+  ) {
+    return market;
+  }
+
+  if (chainId === "vrc") {
+    return {
+      ...market,
+      marketCap: market.usd * onChainSupply,
+      circulatingSupply: onChainSupply,
+    };
+  }
+
+  if (market.marketCap != null) {
+    return market;
+  }
+
   return {
-    ...partial,
-    usd,
-    btc,
-    marketCap,
-    source,
+    ...market,
+    marketCap: market.usd * onChainSupply,
+    circulatingSupply: onChainSupply,
+    source: market.source === "unavailable" ? "computed" : market.source,
   };
 }
 
@@ -79,17 +133,17 @@ async function fetchChainMarketInternal(
 
   let partial = mapLcwToMarket(usdData, btcData, history);
 
-  if (chainId === "vrc" && cgVrc && partial.usd == null && cgVrc.usd != null) {
+  if (chainId === "vrc" && cgVrc && (cgVrc.usd != null || cgVrc.btc != null)) {
     partial = {
       ...partial,
-      usd: cgVrc.usd,
+      usd: cgVrc.usd ?? partial.usd,
       btc: cgVrc.btc ?? partial.btc,
       source: "coingecko",
       updatedAt: new Date().toISOString(),
     };
   }
 
-  return finalizeMarket(partial, onChainSupply, btcUsd);
+  return finalizeMarket(partial, onChainSupply, btcUsd, chainId);
 }
 
 const marketCache = createSwrCache({

@@ -15,35 +15,35 @@ export function BinaryChainHero({ vrmLive, vrcLive }: BinaryChainHeroProps) {
 
   return (
     <section className="binary-chain-hero overflow-hidden rounded-xl border border-border bg-gradient-to-br from-bg-panel via-bg-panel to-accent/5 shadow-sm">
-      <div className="px-5 py-6 sm:px-6">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-4">
+      <div className="px-6 py-8 sm:px-8">
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-5">
             <div className="hidden shrink-0 -space-x-2 sm:flex">
               <Image
                 src={vrm.logo}
                 alt=""
-                width={48}
-                height={48}
-                className="relative z-10 h-12 w-12 rounded-full border-2 border-bg-panel bg-bg-panel object-contain"
+                width={56}
+                height={56}
+                className="relative z-10 h-14 w-14 rounded-full border-2 border-bg-panel bg-bg-panel object-contain"
               />
               <Image
                 src={vrc.logo}
                 alt=""
-                width={48}
-                height={48}
-                className="relative h-12 w-12 rounded-full border-2 border-bg-panel bg-bg-panel object-contain"
+                width={56}
+                height={56}
+                className="relative h-14 w-14 rounded-full border-2 border-bg-panel bg-bg-panel object-contain"
               />
             </div>
             <div>
-              <h5 className="text-xs font-semibold uppercase tracking-wider">
+              <h5 className="text-sm font-semibold uppercase tracking-wider text-fg-muted">
                 VeriConomy Binary Chain block explorer
               </h5>
 
-              <p className="mt-2 max-w-2xl text-sm text-fg-muted">
+              <p className="mt-3 max-w-3xl text-base leading-relaxed text-fg-muted sm:text-lg">
                 Live market data, network stats, and on-chain activity for Verium
                 (PoWT) and VeriCoin (PoST).
               </p>
-              <div className="mt-3 flex flex-wrap items-center gap-4">
+              <div className="mt-4 flex flex-wrap items-center gap-4">
                 <LiveBadge label={vrm.ticker} live={vrmLive} />
                 <LiveBadge label={vrc.ticker} live={vrcLive} />
               </div>
@@ -63,7 +63,7 @@ function LiveBadge({ label, live }: { label: string; live: boolean }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold",
+        "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-semibold",
         live
           ? "border-success/30 bg-success/10 text-success"
           : "border-border bg-bg-subtle text-fg-muted",

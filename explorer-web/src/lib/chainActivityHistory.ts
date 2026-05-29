@@ -34,6 +34,8 @@ export function getChainActivityHistoryMaxPoints(
   return CHAIN_ACTIVITY_HISTORY_PERIODS.find((item) => item.id === periodId)?.maxPoints ?? 120;
 }
 
+const activityHistoryClientCache = new Map<string, Promise<ChainActivityHistoryResult>>();
+
 export async function fetchChainActivityHistoryClient(
   chainId: string,
   periodId: AddressBalanceHistoryPeriodId,
@@ -45,7 +47,17 @@ export async function fetchChainActivityHistoryClient(
     search.set("since", String(since));
   }
 
-  return clientApiFetch<ChainActivityHistoryResult>(
-    `/${chainId}/activity-history?${search.toString()}`,
-  );
+  const path = `/${chainId}/activity-history?${search.toString()}`;
+  const cached = activityHistoryClientCache.get(path);
+  if (cached) {
+    return cached;
+  }
+
+  const promise = clientApiFetch<ChainActivityHistoryResult>(path).finally(() => {
+    window.setTimeout(() => {
+      activityHistoryClientCache.delete(path);
+    }, 300_000);
+  });
+  activityHistoryClientCache.set(path, promise);
+  return promise;
 }
