@@ -26,6 +26,17 @@ export declare function fetchLatestBlocks(chainId: string, options?: Record<stri
     outputCount?: number | null;
     interestRatePercent?: number | null;
 })[]>;
+export declare function fetchBlocksPage(chainId: string, options?: Record<string, unknown>): Promise<{
+    items: (Record<string, unknown> & {
+        height?: number;
+        hash?: string;
+        time?: number | null;
+        extractedBy?: string | null;
+        extractedByAddress?: string | null;
+        outputCount?: number | null;
+        interestRatePercent?: number | null;
+    })[];
+}>;
 export declare function fetchLandingData(): Promise<{
     vrmSummary: Record<string, unknown> & {
         health?: Record<string, unknown> & {
@@ -86,7 +97,7 @@ export declare function fetchAddressUtxos(chainId: string, address: string, opti
 export declare function fetchTransaction(chainId: string, txid: string, queryOptions?: {
     timeoutMs?: number;
     priority?: number;
-}): Promise<unknown>;
+}): Promise<Record<string, unknown>>;
 export declare function fetchTransactionRelatedAddresses(chainId: string, txid: string, options?: {
     limit?: number;
 }): Promise<unknown>;
@@ -96,7 +107,7 @@ export declare function fetchAddress(chainId: string, address: string, options?:
     includeRank?: boolean;
 }, queryOptions?: {
     timeoutMs?: number;
-}): Promise<unknown>;
+}): Promise<Record<string, unknown>>;
 export declare function fetchBlock(chainId: string, hashOrHeight: string, options?: {
     limit?: number;
     offset?: number;

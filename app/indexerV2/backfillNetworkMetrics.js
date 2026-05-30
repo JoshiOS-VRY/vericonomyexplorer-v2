@@ -4,10 +4,15 @@
 require("./loadEnv.js");
 
 const dbModule = require("./db.js");
-const { backfillFromBlocks } = require("./networkMetrics.js");
+const { backfillFromBlocks, backfillAddressGrowth } = require("./networkMetrics.js");
 
 function parseArgs(argv) {
-	const result = { chain: null, since: null, sampleEveryHours: 1 };
+	const result = {
+		chain: null,
+		since: null,
+		sampleEveryHours: 1,
+		addressGrowthOnly: false
+	};
 
 	for (let i = 0; i < argv.length; i += 1) {
 		const arg = argv[i];
@@ -20,6 +25,8 @@ function parseArgs(argv) {
 		} else if (arg === "--sample-every-hours" && argv[i + 1]) {
 			result.sampleEveryHours = Number(argv[i + 1]);
 			i += 1;
+		} else if (arg === "--address-growth-only") {
+			result.addressGrowthOnly = true;
 		}
 	}
 
@@ -29,15 +36,27 @@ function parseArgs(argv) {
 function main() {
 	const args = parseArgs(process.argv.slice(2));
 	if (!args.chain) {
-		console.error("Usage: node app/indexerV2/backfillNetworkMetrics.js --chain vrm|vrc [--since unix] [--sample-every-hours 1]");
+		console.error(
+			"Usage: node app/indexerV2/backfillNetworkMetrics.js --chain vrm|vrc "
+			+ "[--since unix] [--sample-every-hours 1] [--address-growth-only]"
+		);
 		process.exit(1);
 	}
 
-	const db = dbModule.openDatabase();
-	const result = backfillFromBlocks(db, args.chain, {
-		since: args.since,
-		sampleEveryHours: args.sampleEveryHours
+	const db = dbModule.openDatabase(undefined, {
+		skipHeavyBackfills: args.addressGrowthOnly
 	});
+
+	const result = args.addressGrowthOnly
+		? backfillAddressGrowth(db, args.chain, {
+			since: args.since,
+			sampleEveryHours: args.sampleEveryHours
+		})
+		: backfillFromBlocks(db, args.chain, {
+			since: args.since,
+			sampleEveryHours: args.sampleEveryHours,
+			skipSupplySeries: args.since != null
+		});
 
 	console.log(JSON.stringify(result, null, 2));
 	dbModule.closeDatabase();

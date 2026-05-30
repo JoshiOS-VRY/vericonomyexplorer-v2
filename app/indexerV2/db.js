@@ -34,7 +34,7 @@ function applyReadPragmas(targetDb) {
 	targetDb.pragma("busy_timeout = 10000");
 }
 
-function openDatabase(dbPath = getDatabasePath()) {
+function openDatabase(dbPath = getDatabasePath(), options = {}) {
 	if (db) {
 		return db;
 	}
@@ -51,7 +51,7 @@ function openDatabase(dbPath = getDatabasePath()) {
 	db.pragma("busy_timeout = 10000");
 	db.pragma("synchronous = NORMAL");
 
-	schema.applySchema(db);
+	schema.applySchema(db, options);
 	seedChains(db);
 
 	debugLog(`Indexer V2 database opened: ${dbPath}`);

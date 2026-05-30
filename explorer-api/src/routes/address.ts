@@ -73,10 +73,21 @@ export async function registerAddressRoutes(app: FastifyInstance): Promise<void>
     const offset = request.query.offset ? Number(request.query.offset) : undefined;
     const includeRank = parseIncludeRank(request.query.includeRank);
     const key = `${chainId}:${request.params.address}:${limit ?? ""}:${offset ?? ""}:${includeRank ? "1" : "0"}`;
+    const cached = addressCache.get(key, { allowStale: true }) as { found?: boolean } | undefined;
+    if (cached?.found) {
+      return cached;
+    }
 
-    return swrFetch(addressCache, key, () =>
-      fetchAddress(chainId, request.params.address, { limit, offset, includeRank }),
-    );
+    const result = (await fetchAddress(chainId, request.params.address, {
+      limit,
+      offset,
+      includeRank,
+    })) as Record<string, unknown>;
+    if (result.found) {
+      addressCache.set(key, result);
+    }
+
+    return result;
   });
 
   app.get<{

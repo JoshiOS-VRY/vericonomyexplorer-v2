@@ -3,7 +3,7 @@ import { cacheKey, createSwrCache, refreshCacheInBackground, swrFetch, } from ".
 import { registerChainScopedCache, registerGlobalCache } from "../cache/registry.js";
 import { registerChainTipRefresh, registerGlobalTipRefresh, refreshOnTip, } from "../cache/tipRefresh.js";
 import { refreshChainCachesOnTip } from "../data/chainCacheRefresh.js";
-import { fetchChainHealth, fetchChainActivityHistory, fetchChainSummary, fetchChainSummaryLite, fetchIndexerHealth, fetchLandingData, fetchLatestBlocks, } from "../data/legacy.js";
+import { fetchChainHealth, fetchChainActivityHistory, fetchChainSummary, fetchChainSummaryLite, fetchIndexerHealth, fetchLandingData, fetchLatestBlocks, fetchBlocksPage, } from "../data/legacy.js";
 import { fetchVrmDashboardBundle } from "../data/vrmDashboard.js";
 import { onAnyTip } from "../live/brokers.js";
 import { parseChainId } from "../types.js";
@@ -179,5 +179,17 @@ export async function registerChainRoutes(app) {
             return { blocks: await fetchLatestBlocks(chainId) };
         });
         return cached.blocks ?? [];
+    });
+    app.get("/v1/:chain/blocks", async (request, reply) => {
+        const chainId = parseChainId(request.params.chain);
+        if (!chainId) {
+            return reply.code(400).send({ error: "Invalid chain id" });
+        }
+        const limit = request.query.limit;
+        const offset = request.query.offset;
+        return fetchBlocksPage(chainId, {
+            limit,
+            offset,
+        });
     });
 }

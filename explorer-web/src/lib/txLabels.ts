@@ -8,15 +8,20 @@ export function isCoinbaseTx(tx: Pick<IndexedTransaction, "isCoinbase" | "isCoin
 }
 
 export function formatConfirmationLabel(confirmations: number | null | undefined): string {
-  if (confirmations == null || !Number.isFinite(confirmations)) {
-    return "Confirmations unavailable";
+  const count =
+    confirmations == null || !Number.isFinite(confirmations)
+      ? 1
+      : Math.max(0, confirmations);
+
+  if (count <= 0) {
+    return "Unconfirmed";
   }
 
-  if (confirmations <= 1) {
+  if (count === 1) {
     return "Confirmed · 1 confirmation";
   }
 
-  return `Confirmed · ${formatNumber(confirmations)} confirmations`;
+  return `Confirmed · ${formatNumber(count)} confirmations`;
 }
 
 export function classifyOutputRole(

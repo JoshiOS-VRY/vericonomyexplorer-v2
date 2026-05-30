@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import type { IndexedBlock, Paging } from "@/lib/api/types";
 import { fetchBlocksPageClient } from "@/lib/api/client";
 import type { ChainId } from "@/lib/chainDisplay";
+import { pickBlockPageBase } from "@/lib/chainBlocksPage";
 import { formatPercent } from "@/lib/formatMarket";
 import { cn, formatDifficulty } from "@/lib/utils";
 
@@ -88,6 +89,7 @@ export function ChainBlocksPanel({
     hasMore: false,
   });
   const [filledPage, setFilledPage] = useState<IndexedBlock[] | null>(null);
+  const filledPageCount = filledPage?.length ?? 0;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -138,7 +140,7 @@ export function ChainBlocksPanel({
       return;
     }
 
-    const base = filledPage ?? liveBlocks;
+    const base = pickBlockPageBase(filledPage, liveBlocks);
     const liveByHeight = new Map(
       liveBlocks.map((block) => [block.height, block]),
     );
@@ -163,6 +165,10 @@ export function ChainBlocksPanel({
       return;
     }
 
+    if (filledPageCount >= pageSize) {
+      return;
+    }
+
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -176,8 +182,10 @@ export function ChainBlocksPanel({
         if (cancelled) {
           return;
         }
-        setFilledPage(result.items);
-        setPaging(result.paging);
+        if (result.items.length > 0) {
+          setFilledPage(result.items);
+          setPaging(result.paging);
+        }
       } catch {
         if (!cancelled) {
           setError("Unable to load blocks for this page.");
@@ -192,7 +200,7 @@ export function ChainBlocksPanel({
     return () => {
       cancelled = true;
     };
-  }, [chainId, liveBlocks.length, offset, pageSize]);
+  }, [chainId, filledPageCount, liveBlocks.length, offset, pageSize]);
 
   useEffect(() => {
     if (offset === 0) {

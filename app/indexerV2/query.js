@@ -1408,7 +1408,10 @@ function getBlock(chainId, hashOrHeight, options = {}) {
 	const db = options.db || dbModule.openDatabase();
 	const chain = normalizeChainId(chainId);
 	const value = String(hashOrHeight || "").trim();
-	const chainHealth = resolveChainHealth(chain, options);
+	const chainHealth = resolveChainHealth(chain, {
+		skipAddressCount: true,
+		...options
+	});
 	const block = /^\d+$/.test(value)
 		? db.prepare(`
 			SELECT height, hash, previous_hash, next_hash, time, tx_count, size, difficulty,
@@ -1446,7 +1449,8 @@ function getBlock(chainId, hashOrHeight, options = {}) {
 	const transactions = attachTransactionSummaries(
 		db,
 		chain,
-		txRows.map(tx => mapTransaction(tx))
+		txRows.map(tx => mapTransaction(tx)),
+		{ includeFees: options.includeTransactionFeeSummaries === true }
 	);
 
 	return {
@@ -2153,11 +2157,12 @@ function computeBlockTotals(db, chainId, blockHeight, txCount = 0) {
 	};
 }
 
-function attachTransactionSummaries(db, chainId, transactions) {
+function attachTransactionSummaries(db, chainId, transactions, options = {}) {
 	if (!transactions.length) {
 		return transactions;
 	}
 
+	const includeFees = options.includeFees === true;
 	const txids = transactions.map(tx => tx.txid);
 	const placeholders = txids.map(() => "?").join(",");
 	const outputStats = db.prepare(`
@@ -2168,7 +2173,9 @@ function attachTransactionSummaries(db, chainId, transactions) {
 	`).all(chainId, ...txids);
 	const statsByTxid = Object.fromEntries(outputStats.map(row => [row.txid, row]));
 
-	const nonCoinbaseTxids = transactions.filter(tx => !tx.isCoinbase).map(tx => tx.txid);
+	const nonCoinbaseTxids = includeFees
+		? transactions.filter(tx => !tx.isCoinbase).map(tx => tx.txid)
+		: [];
 	const inputStatsByTxid = {};
 	if (nonCoinbaseTxids.length > 0) {
 		const inputPlaceholders = nonCoinbaseTxids.map(() => "?").join(",");

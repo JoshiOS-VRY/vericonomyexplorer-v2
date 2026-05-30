@@ -279,15 +279,51 @@ export async function fetchBlockWithRpcFallback(
       return rpc;
     }
 
-    return {
-      ...rpc,
-      trusted: false,
-      source: {
-        label: `Live ${chainId.toUpperCase()} node`,
-        type: "rpc",
-        trustLevel: "unverified",
-      },
-    };
+    return rpc;
+  } catch {
+    return indexed;
+  }
+}
+
+export async function fetchTransactionWithRpcFallback(
+  chainId: ChainId,
+  txid: string,
+  indexed: Record<string, unknown>,
+  options: Record<string, unknown> = {},
+): Promise<Record<string, unknown>> {
+  if (indexed.found) {
+    return indexed;
+  }
+
+  try {
+    const rpc = (await liveChain.getTransactionFromRpc(chainId, txid, options)) as Record<
+      string,
+      unknown
+    >;
+
+    return rpc.found ? rpc : indexed;
+  } catch {
+    return indexed;
+  }
+}
+
+export async function fetchAddressWithRpcFallback(
+  chainId: ChainId,
+  address: string,
+  indexed: Record<string, unknown>,
+  options: Record<string, unknown> = {},
+): Promise<Record<string, unknown>> {
+  if (indexed.found) {
+    return indexed;
+  }
+
+  try {
+    const rpc = (await liveChain.getAddressFromRpc(chainId, address, options)) as Record<
+      string,
+      unknown
+    >;
+
+    return rpc.found ? rpc : indexed;
   } catch {
     return indexed;
   }

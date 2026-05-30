@@ -1,6 +1,6 @@
 import { runIndexerQuery, txLookupTimeoutMs } from "../db/queryPool.js";
 import { getTip } from "../live/brokers.js";
-import { enrichChainSummary, enrichLatestBlocksLive, enrichIndexerHealth, fetchBlockWithRpcFallback, } from "./liveEnrichment.js";
+import { enrichChainSummary, enrichLatestBlocksLive, enrichIndexerHealth, fetchBlockWithRpcFallback, fetchTransactionWithRpcFallback, fetchAddressWithRpcFallback, } from "./liveEnrichment.js";
 const summaryQueryOptions = {
     skipBlockEnrichment: true,
 };
@@ -18,6 +18,15 @@ export async function fetchLatestBlocks(chainId, options = {}) {
     const queryOptions = { ...summaryQueryOptions, ...options };
     const indexed = (await runIndexerQuery("getLatestBlocksIndexed", [chainId], queryOptions));
     return enrichLatestBlocksLive(indexed.latestBlocks, chainId, indexed.health, queryOptions);
+}
+export async function fetchBlocksPage(chainId, options = {}) {
+    const queryOptions = { skipBlockEnrichment: false, ...options };
+    const indexed = (await runIndexerQuery("getBlocksPageIndexed", [chainId], queryOptions));
+    const items = await enrichLatestBlocksLive(indexed.items, chainId, indexed.health, { ...queryOptions, skipLiveBlocks: true });
+    return {
+        ...indexed,
+        items,
+    };
 }
 export async function fetchLandingData() {
     const skipOpts = { skipLiveBlocks: true, skipLiveRpc: true };
@@ -59,12 +68,13 @@ export function fetchAddressBalanceHistory(chainId, address, options = {}) {
 export function fetchAddressUtxos(chainId, address, options = {}) {
     return runIndexerQuery("getAddressUtxos", [chainId, address], options);
 }
-export function fetchTransaction(chainId, txid, queryOptions = {}) {
-    return runIndexerQuery("getTransaction", [chainId, txid], {}, {
+export async function fetchTransaction(chainId, txid, queryOptions = {}) {
+    const indexed = (await runIndexerQuery("getTransaction", [chainId, txid], {}, {
         ...queryOptions,
         timeoutMs: queryOptions.timeoutMs ?? txLookupTimeoutMs,
         priority: queryOptions.priority ?? 0,
-    });
+    }));
+    return fetchTransactionWithRpcFallback(chainId, txid, indexed, queryOptions);
 }
 export function fetchTransactionRelatedAddresses(chainId, txid, options = {}) {
     return runIndexerQuery("getTransactionRelatedAddresses", [chainId, txid], options, {
@@ -72,11 +82,18 @@ export function fetchTransactionRelatedAddresses(chainId, txid, options = {}) {
         priority: 0,
     });
 }
-export function fetchAddress(chainId, address, options = {}, queryOptions = {}) {
-    return runIndexerQuery("getAddress", [chainId, address], options, queryOptions);
+export async function fetchAddress(chainId, address, options = {}, queryOptions = {}) {
+    const indexed = (await runIndexerQuery("getAddress", [chainId, address], options, queryOptions));
+    return fetchAddressWithRpcFallback(chainId, address, indexed, {
+        ...options,
+        ...queryOptions,
+    });
 }
 export async function fetchBlock(chainId, hashOrHeight, options = {}) {
-    const indexed = (await runIndexerQuery("getBlockIndexed", [chainId, hashOrHeight], options));
+    const indexed = (await runIndexerQuery("getBlockIndexed", [chainId, hashOrHeight], {
+        skipAddressCount: true,
+        ...options,
+    }, { priority: 0 }));
     return fetchBlockWithRpcFallback(chainId, hashOrHeight, indexed, options);
 }
 export function fetchChainHealth(chainId) {

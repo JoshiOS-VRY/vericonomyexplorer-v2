@@ -6,6 +6,8 @@ import {
   enrichLatestBlocksLive,
   enrichIndexerHealth,
   fetchBlockWithRpcFallback,
+  fetchTransactionWithRpcFallback,
+  fetchAddressWithRpcFallback,
 } from "./liveEnrichment.js";
 
 const summaryQueryOptions = {
@@ -179,16 +181,23 @@ export function fetchAddressUtxos(
   return runIndexerQuery("getAddressUtxos", [chainId, address], options);
 }
 
-export function fetchTransaction(
+export async function fetchTransaction(
   chainId: string,
   txid: string,
   queryOptions: { timeoutMs?: number; priority?: number } = {},
 ) {
-  return runIndexerQuery("getTransaction", [chainId, txid], {}, {
-    ...queryOptions,
-    timeoutMs: queryOptions.timeoutMs ?? txLookupTimeoutMs,
-    priority: queryOptions.priority ?? 0,
-  });
+  const indexed = (await runIndexerQuery<Record<string, unknown>>(
+    "getTransaction",
+    [chainId, txid],
+    {},
+    {
+      ...queryOptions,
+      timeoutMs: queryOptions.timeoutMs ?? txLookupTimeoutMs,
+      priority: queryOptions.priority ?? 0,
+    },
+  )) as Record<string, unknown>;
+
+  return fetchTransactionWithRpcFallback(chainId as ChainId, txid, indexed, queryOptions);
 }
 
 export function fetchTransactionRelatedAddresses(
@@ -202,13 +211,23 @@ export function fetchTransactionRelatedAddresses(
   });
 }
 
-export function fetchAddress(
+export async function fetchAddress(
   chainId: string,
   address: string,
   options: { limit?: number; offset?: number; includeRank?: boolean } = {},
   queryOptions: { timeoutMs?: number } = {},
 ) {
-  return runIndexerQuery("getAddress", [chainId, address], options, queryOptions);
+  const indexed = (await runIndexerQuery<Record<string, unknown>>(
+    "getAddress",
+    [chainId, address],
+    options,
+    queryOptions,
+  )) as Record<string, unknown>;
+
+  return fetchAddressWithRpcFallback(chainId as ChainId, address, indexed, {
+    ...options,
+    ...queryOptions,
+  });
 }
 
 export async function fetchBlock(
@@ -219,7 +238,11 @@ export async function fetchBlock(
   const indexed = (await runIndexerQuery<Record<string, unknown>>(
     "getBlockIndexed",
     [chainId, hashOrHeight],
-    options,
+    {
+      skipAddressCount: true,
+      ...options,
+    },
+    { priority: 0 },
   )) as Record<string, unknown>;
 
   return fetchBlockWithRpcFallback(chainId as ChainId, hashOrHeight, indexed, options);

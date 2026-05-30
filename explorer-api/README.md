@@ -107,6 +107,21 @@ node app/indexerV2/backfillStats.js
 node app/indexerV2/backfillStats.js vrm   # single chain
 ```
 
+### Insights network metrics / address growth
+
+Historical difficulty/supply/hashrate buckets (optional `--since` unix timestamp):
+
+```bash
+npm run indexer:backfill-network-metrics -- --chain vrm
+```
+
+Historical **address growth** only (fast; uses `address_balances.first_seen_time`, skips schema v6/v7 backfills):
+
+```bash
+npm run indexer:backfill-address-growth -- --chain vrm
+npm run indexer:backfill-address-growth -- --chain vrm --since $(date -d '365 days ago' +%s)
+```
+
 The indexer loop runs `maybeCheckpointWal()` when caught up and the WAL file exceeds `VCEXP_WAL_CHECKPOINT_MB` (default `512` MB). Manual checkpoint:
 
 ```bash

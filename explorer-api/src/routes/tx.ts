@@ -37,7 +37,22 @@ export async function registerTxRoutes(app: FastifyInstance): Promise<void> {
       if (!chainId) {
         return reply.code(400).send({ error: "Invalid chain id" });
       }
-      return txCache.fetch(`${chainId}:${request.params.txid}`);
+
+      const key = `${chainId}:${request.params.txid}`;
+      const cached = txCache.get(key, { allowStale: true }) as { found?: boolean } | undefined;
+      if (cached?.found) {
+        return cached;
+      }
+
+      const result = (await fetchTransaction(chainId, request.params.txid)) as Record<
+        string,
+        unknown
+      >;
+      if (result.found) {
+        txCache.set(key, result);
+      }
+
+      return result;
     },
   );
 

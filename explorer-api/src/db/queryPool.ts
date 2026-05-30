@@ -74,15 +74,20 @@ function defaultWorkerCount(): number {
 function defaultFastWorkerCount(totalWorkers: number): number {
   const configured = Number(process.env.VCEXP_API_DB_FAST_WORKERS);
   if (Number.isFinite(configured) && configured >= 0) {
-    return Math.min(configured, Math.max(0, totalWorkers - 2));
+    return Math.min(configured, Math.max(0, totalWorkers - 1));
   }
 
-  return Math.min(2, Math.max(0, totalWorkers - 2));
+  if (totalWorkers <= 1) {
+    return 0;
+  }
+
+  // Keep at least one fast worker so block/tx lookups are not queued behind dashboards.
+  return Math.min(2, Math.max(1, Math.floor(totalWorkers / 2)));
 }
 
 const totalWorkerCount = defaultWorkerCount();
 const fastWorkerCount = defaultFastWorkerCount(totalWorkerCount);
-const mainWorkerCount = Math.max(2, totalWorkerCount - fastWorkerCount);
+const mainWorkerCount = Math.max(1, totalWorkerCount - fastWorkerCount);
 const defaultWorkerTimeoutMs = Number(process.env.VCEXP_API_DB_WORKER_TIMEOUT_MS ?? 120_000);
 const sqliteBusyRetryAttempts = Number(process.env.VCEXP_SQLITE_BUSY_RETRY_ATTEMPTS ?? 4);
 const sqliteBusyRetryDelayMs = Number(process.env.VCEXP_SQLITE_BUSY_RETRY_DELAY_MS ?? 75);

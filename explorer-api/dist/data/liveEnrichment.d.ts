@@ -26,4 +26,6 @@ export declare function enrichLatestBlocksLive(latestBlocks: unknown, chainId: C
 export declare function enrichChainSummary(summary: SummaryPayload, chainId: ChainId, options?: Record<string, unknown>): Promise<SummaryPayload>;
 export declare function enrichIndexerHealth(baseHealth: IndexerHealthPayload, options?: Record<string, unknown>): Promise<IndexerHealthPayload>;
 export declare function fetchBlockWithRpcFallback(chainId: ChainId, hashOrHeight: string, indexed: Record<string, unknown>, options?: Record<string, unknown>): Promise<Record<string, unknown>>;
+export declare function fetchTransactionWithRpcFallback(chainId: ChainId, txid: string, indexed: Record<string, unknown>, options?: Record<string, unknown>): Promise<Record<string, unknown>>;
+export declare function fetchAddressWithRpcFallback(chainId: ChainId, address: string, indexed: Record<string, unknown>, options?: Record<string, unknown>): Promise<Record<string, unknown>>;
 export {};

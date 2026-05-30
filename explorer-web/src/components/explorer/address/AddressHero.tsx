@@ -3,9 +3,8 @@ import { EntityHero } from "@/components/explorer/BlockDetail";
 import { TimeCell, formatHeight } from "@/components/explorer/ExplorerUi";
 import { AddressRichlistBadge } from "@/components/explorer/address/AddressRichlistBadge";
 import { AddressShareActions } from "@/components/explorer/address/AddressShareActions";
-import { EXPLORER_DATA_INCOMPLETE, formatExplorerUserMessage } from "@/lib/explorerCopy";
 import type { AddressResult } from "@/lib/api/types";
-import { cn, ellipsizeMiddle } from "@/lib/utils";
+import { ellipsizeMiddle } from "@/lib/utils";
 
 export function AddressHero({ result }: { result: AddressResult }) {
   const { balance } = result;
@@ -55,13 +54,6 @@ export function AddressHero({ result }: { result: AddressResult }) {
             </div>
           ) : null}
         </div>
-      }
-      footer={
-        result.trusted === false ? (
-          <p className={cn("border-t border-warning/20 bg-warning/5 px-4 py-2.5 text-xs text-warning sm:px-5")}>
-            {formatExplorerUserMessage(result.source.message || EXPLORER_DATA_INCOMPLETE)}
-          </p>
-        ) : null
       }
     />
   );

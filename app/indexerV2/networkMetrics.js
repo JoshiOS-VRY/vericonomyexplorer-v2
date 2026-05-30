@@ -2,6 +2,11 @@
 
 const { hourBucketStart } = require("./periodStats.js");
 const { buildSupplySeries, supplyAtHeight } = require("./supplyHistory.js");
+const {
+	loadAddressFirstSeenTimes,
+	resolveAddressGrowthRange,
+	addressCountAtBucketEnd
+} = require("./addressGrowth.js");
 const veriumCoin = require("../coins/verium.js");
 const Decimal = require("decimal.js");
 
@@ -135,7 +140,8 @@ function backfillFromBlocks(db, chainId, options = {}) {
 		return { chainId, bucketsWritten: 0 };
 	}
 
-	const supplySeries = buildSupplySeries(db, chainId);
+	const supplySeries = options.skipSupplySeries === true ? null : buildSupplySeries(db, chainId);
+	const addressFirstSeenTimes = loadAddressFirstSeenTimes(db, chainId);
 	const buckets = new Map();
 	for (const row of rows) {
 		const bucketStart = hourBucketStart(toSafeNumber(row.time));
@@ -164,9 +170,15 @@ function backfillFromBlocks(db, chainId, options = {}) {
 				difficulty: bucket.difficulty
 			};
 
-			const indexedSupply = supplyAtHeight(supplySeries, bucket.blockHeight);
-			if (indexedSupply != null) {
-				metrics.supply = indexedSupply;
+			if (supplySeries) {
+				const indexedSupply = supplyAtHeight(supplySeries, bucket.blockHeight);
+				if (indexedSupply != null) {
+					metrics.supply = indexedSupply;
+				}
+			}
+
+			if (addressFirstSeenTimes.length > 0) {
+				metrics.addressCount = addressCountAtBucketEnd(addressFirstSeenTimes, bucketStart);
 			}
 
 			if (chainId === "vrm" && bucket.difficulty != null) {
@@ -182,12 +194,62 @@ function backfillFromBlocks(db, chainId, options = {}) {
 	});
 
 	run();
-	return { chainId, bucketsWritten, firstBucket: buckets.size ? Math.min(...buckets.keys()) : null };
+	return {
+		chainId,
+		bucketsWritten,
+		firstBucket: buckets.size ? Math.min(...buckets.keys()) : null,
+		addressesTracked: addressFirstSeenTimes.length
+	};
+}
+
+/**
+ * Backfill cumulative address_count into network_metric_buckets (historical growth curve).
+ * Does not require block scans or supply recomputation.
+ */
+function backfillAddressGrowth(db, chainId, options = {}) {
+	const since = options.since ?? null;
+	const sampleEveryHours = Number(options.sampleEveryHours ?? 1);
+	const addressFirstSeenTimes = loadAddressFirstSeenTimes(db, chainId);
+
+	if (!addressFirstSeenTimes.length) {
+		return { chainId, bucketsWritten: 0, addressesTracked: 0 };
+	}
+
+	const { rangeStart, rangeEnd } = resolveAddressGrowthRange(db, chainId, options);
+	let startBucket = rangeStart;
+	if (since != null) {
+		startBucket = Math.max(startBucket, hourBucketStart(since));
+	}
+
+	let bucketsWritten = 0;
+	const run = db.transaction(() => {
+		for (let bucketStart = startBucket; bucketStart <= rangeEnd; bucketStart += HOUR_SECONDS * sampleEveryHours) {
+			if (sampleEveryHours > 1 && (bucketStart / HOUR_SECONDS) % sampleEveryHours !== 0) {
+				continue;
+			}
+
+			upsertNetworkMetricBucket(db, chainId, {
+				bucketStart,
+				addressCount: addressCountAtBucketEnd(addressFirstSeenTimes, bucketStart)
+			});
+			bucketsWritten += 1;
+		}
+	});
+
+	run();
+	return {
+		chainId,
+		bucketsWritten,
+		rangeStart: startBucket,
+		rangeEnd,
+		addressesTracked: addressFirstSeenTimes.length
+	};
 }
 
 module.exports = {
 	upsertNetworkMetricBucket,
 	backfillFromBlocks,
+	backfillAddressGrowth,
 	difficultyToHashPerSec,
 	hashPerSecToKhPerMin,
 	getTargetBlockTimeSeconds,

@@ -121,13 +121,15 @@ export async function enrichChainSummary(summary, chainId, options = {}) {
         if (tip) {
             summary.health = health.enrichWithLiveRpc(summary.health, tip.height, options);
         }
+    }
+    catch {
+        /* keep indexed health when live tip lookup fails */
+    }
+    try {
         summary.latestBlocks = await enrichLatestBlocksLive(summary.latestBlocks, chainId, summary.health, options);
     }
     catch {
-        summary.health = {
-            ...summary.health,
-            explorerStatus: offlineStatus,
-        };
+        /* block enrichment failure should not mark the chain offline */
     }
     return summary;
 }
@@ -156,15 +158,31 @@ export async function fetchBlockWithRpcFallback(chainId, hashOrHeight, indexed, 
         if (!rpc.found) {
             return rpc;
         }
-        return {
-            ...rpc,
-            trusted: false,
-            source: {
-                label: `Live ${chainId.toUpperCase()} node`,
-                type: "rpc",
-                trustLevel: "unverified",
-            },
-        };
+        return rpc;
+    }
+    catch {
+        return indexed;
+    }
+}
+export async function fetchTransactionWithRpcFallback(chainId, txid, indexed, options = {}) {
+    if (indexed.found) {
+        return indexed;
+    }
+    try {
+        const rpc = (await liveChain.getTransactionFromRpc(chainId, txid, options));
+        return rpc.found ? rpc : indexed;
+    }
+    catch {
+        return indexed;
+    }
+}
+export async function fetchAddressWithRpcFallback(chainId, address, indexed, options = {}) {
+    if (indexed.found) {
+        return indexed;
+    }
+    try {
+        const rpc = (await liveChain.getAddressFromRpc(chainId, address, options));
+        return rpc.found ? rpc : indexed;
     }
     catch {
         return indexed;

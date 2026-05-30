@@ -3,6 +3,17 @@
 const utils = require("../utils.js");
 const { getChainConfig, getRpcCredentials } = require("./chainConfig.js");
 const { createRpcClient } = require("./rpcClient.js");
+const { atomicUnitsToDecimal } = require("./valueUtils.js");
+const {
+	buildRpcBlockResult,
+	lookupRpcTransaction,
+	lookupRpcAddress
+} = require("./rpcLiveEntities.js");
+
+const chainUnits = {
+	vrc: { ticker: "VRC", decimalPlaces: 8 },
+	vrm: { ticker: "VRM", decimalPlaces: 8 }
+};
 
 async function getTip(chainId, options = {}) {
 	const rpc = getClient(chainId, options);
@@ -149,6 +160,67 @@ function getClient(chainId, options = {}) {
 	return createRpcClient(getRpcCredentials(chainConfig));
 }
 
+const rpcBlockDefaultLimit = 25;
+const rpcBlockMaxLimit = 100;
+
+function normalizeRpcBlockLimit(value) {
+	const parsed = Number(value);
+	if (!Number.isFinite(parsed) || parsed <= 0) {
+		return rpcBlockDefaultLimit;
+	}
+
+	return Math.min(Math.floor(parsed), rpcBlockMaxLimit);
+}
+
+function normalizeRpcBlockOffset(value) {
+	const parsed = Number(value);
+	if (!Number.isFinite(parsed) || parsed < 0) {
+		return 0;
+	}
+
+	return Math.floor(parsed);
+}
+
+function getRpcBlockPaging(limit, offset, total) {
+	return {
+		limit,
+		offset,
+		total,
+		hasMore: offset + limit < total
+	};
+}
+
+function formatRpcAtomic(chainId, value) {
+	const unit = chainUnits[chainId] || {
+		ticker: String(chainId).toUpperCase(),
+		decimalPlaces: 8
+	};
+
+	return {
+		amount: atomicUnitsToDecimal(value, unit.decimalPlaces),
+		ticker: unit.ticker,
+		decimalPlaces: unit.decimalPlaces
+	};
+}
+
+function sumRpcOutputSats(vouts) {
+	if (!Array.isArray(vouts)) {
+		return 0n;
+	}
+
+	let total = 0n;
+	for (const vout of vouts) {
+		const value = Number(vout.value);
+		if (!Number.isFinite(value)) {
+			continue;
+		}
+
+		total += BigInt(Math.round(value * 100000000));
+	}
+
+	return total;
+}
+
 async function getBlockFromRpc(chainId, hashOrHeight, options = {}) {
 	const rpc = getClient(chainId, options);
 	const value = String(hashOrHeight || "").trim();
@@ -162,38 +234,117 @@ async function getBlockFromRpc(chainId, hashOrHeight, options = {}) {
 		hash = await rpc.call("getblockhash", [Number(value)]);
 	}
 
-	const block = await rpc.call("getblock", [hash, 2]);
-	let nextHash = null;
+	const tipHeight = Number(await rpc.call("getblockcount"));
+	const limit = normalizeRpcBlockLimit(options.limit);
+	const offset = normalizeRpcBlockOffset(options.offset);
 
+	const headerBlock = await rpc.call("getblock", [hash, 1]);
+	const txCount = headerBlock.nTx != null
+		? Number(headerBlock.nTx)
+		: (Array.isArray(headerBlock.tx) ? headerBlock.tx.length : 0);
+	const verbosity = txCount <= 100 ? 2 : 1;
+	const block = verbosity === 2
+		? await rpc.call("getblock", [hash, 2])
+		: headerBlock;
+
+	let nextHash = null;
 	try {
-		nextHash = await rpc.call("getblockhash", [block.height + 1]);
+		nextHash = await rpc.call("getblockhash", [Number(block.height) + 1]);
 	} catch (err) {
 		nextHash = null;
 	}
 
-	const transactions = (block.tx || []).map((tx, txIndex) => mapRpcTransaction(tx, block, txIndex));
+	if (verbosity === 1 && Array.isArray(headerBlock.tx) && headerBlock.tx.length > 0) {
+		const pageTxids = headerBlock.tx.slice(offset, offset + limit);
+		const decodedTxs = typeof rpc.batch === "function"
+			? await rpc.batch(pageTxids.map((txid) => ({
+				method: "getrawtransaction",
+				params: [txid, true, hash]
+			})))
+			: await Promise.all(
+				pageTxids.map((txid) => rpc.call("getrawtransaction", [txid, true, hash])),
+			);
 
-	return {
-		chainId: String(chainId).toLowerCase(),
-		found: true,
-		block: {
-			height: Number(block.height),
-			hash: block.hash,
-			previousHash: block.previousblockhash || null,
+		return buildRpcBlockResult(chainId, {
+			...headerBlock,
+			tx: decodedTxs
+		}, {
+			limit,
+			offset,
 			nextHash,
-			time: Number(block.time),
-			txCount: transactions.length,
-			size: block.size == null ? null : Number(block.size),
-			difficulty: block.difficulty == null ? null : String(block.difficulty)
-		},
-		transactions,
-		paging: {
-			limit: transactions.length,
-			offset: 0,
-			total: transactions.length,
-			hasMore: false
-		}
-	};
+			tipHeight,
+			totalTxCount: txCount,
+			txsArePaged: true
+		});
+	}
+
+	return buildRpcBlockResult(chainId, block, {
+		limit,
+		offset,
+		nextHash,
+		tipHeight
+	});
+}
+
+async function getTransactionFromRpc(chainId, txid, options = {}) {
+	const rpc = getClient(chainId, options);
+	const result = await lookupRpcTransaction(rpc, chainId, txid, options);
+
+	if (!result) {
+		return {
+			chainId: String(chainId).toLowerCase(),
+			txid: String(txid || "").trim().toLowerCase(),
+			found: false,
+			trusted: true,
+			source: { label: "live", type: "rpc", trustLevel: "live" }
+		};
+	}
+
+	return result;
+}
+
+async function getAddressFromRpc(chainId, address, options = {}) {
+	const rpc = getClient(chainId, options);
+	const result = await lookupRpcAddress(rpc, chainId, address, options);
+
+	if (!result) {
+		return {
+			chainId: String(chainId).toLowerCase(),
+			address: String(address || "").trim(),
+			found: false,
+			trusted: true,
+			source: { label: "live", type: "rpc", trustLevel: "live" },
+			balance: {
+				address: String(address || "").trim(),
+				balance: formatRpcAtomic(chainId, 0n),
+				balanceAtomic: "0",
+				totalReceived: formatRpcAtomic(chainId, 0n),
+				totalReceivedAtomic: "0",
+				totalSent: formatRpcAtomic(chainId, 0n),
+				totalSentAtomic: "0",
+				txCount: 0,
+				firstSeenHeight: null,
+				firstSeenTime: null,
+				lastSeenHeight: null
+			},
+			richlist: {
+				enabled: false,
+				eligible: null,
+				rank: null,
+				total: null,
+				percentile: null
+			},
+			paging: {
+				limit: Math.max(1, Math.min(Number(options.limit) || 25, 100)),
+				offset: Math.max(0, Number(options.offset) || 0),
+				total: 0,
+				hasMore: false
+			},
+			transactions: []
+		};
+	}
+
+	return result;
 }
 
 function mapRpcTransaction(tx, block, txIndex) {
@@ -218,5 +369,7 @@ module.exports = {
 	getRecentBlocks,
 	enrichBlockMiners,
 	getBlockFromRpc,
+	getTransactionFromRpc,
+	getAddressFromRpc,
 	mapRpcBlock
 };

@@ -30,7 +30,16 @@ export async function registerTxRoutes(app) {
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });
         }
-        return txCache.fetch(`${chainId}:${request.params.txid}`);
+        const key = `${chainId}:${request.params.txid}`;
+        const cached = txCache.get(key, { allowStale: true });
+        if (cached?.found) {
+            return cached;
+        }
+        const result = (await fetchTransaction(chainId, request.params.txid));
+        if (result.found) {
+            txCache.set(key, result);
+        }
+        return result;
     });
     app.get("/v1/:chain/tx/:txid/related-addresses", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
         const chainId = parseChainId(request.params.chain);

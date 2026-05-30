@@ -227,6 +227,8 @@ const indexes = [
 	"CREATE INDEX IF NOT EXISTS idx_blocks_chain_status_height ON blocks(chain_id, status, height DESC);",
 	"CREATE INDEX IF NOT EXISTS idx_transactions_chain_block ON transactions(chain_id, block_height, tx_index);",
 	"CREATE INDEX IF NOT EXISTS idx_transactions_chain_time ON transactions(chain_id, time DESC);",
+	"CREATE INDEX IF NOT EXISTS idx_vouts_chain_txid ON vouts(chain_id, txid);",
+	"CREATE INDEX IF NOT EXISTS idx_vins_chain_txid ON vins(chain_id, txid);",
 	"CREATE INDEX IF NOT EXISTS idx_vouts_chain_address ON vouts(chain_id, address);",
 	"CREATE INDEX IF NOT EXISTS idx_vouts_chain_spent ON vouts(chain_id, is_spent, address);",
 	"CREATE INDEX IF NOT EXISTS idx_vouts_chain_unspent_address ON vouts(chain_id, address, value_sats DESC) WHERE is_spent = 0;",
@@ -354,7 +356,9 @@ function analyzeDatabase(db) {
 	}
 }
 
-function applyMigrations(db) {
+function applyMigrations(db, options = {}) {
+	const skipHeavyBackfills = options.skipHeavyBackfills === true;
+
 	// Always repair known legacy column gaps (idempotent). Some databases were
 	// stamped schema v2 before these columns were actually added.
 	ensureColumn(db, "address_period_stats", "last_seen_height", "INTEGER");
@@ -370,23 +374,25 @@ function applyMigrations(db) {
 
 	const stored = getStoredSchemaVersion(db);
 
-	if (stored < 6) {
-		for (const indexSql of indexes) {
-			db.exec(indexSql);
+	for (const indexSql of indexes) {
+		db.exec(indexSql);
+	}
+
+	if (!skipHeavyBackfills) {
+		if (stored < 6) {
+			runSchemaV6Backfills(db);
+			analyzeDatabase(db);
 		}
 
-		runSchemaV6Backfills(db);
-		analyzeDatabase(db);
-	}
+		if (stored < 7) {
+			db.exec("DROP INDEX IF EXISTS idx_blocks_chain_hash;");
+			runSchemaV7Backfills(db);
+			analyzeDatabase(db);
+		}
 
-	if (stored < 7) {
-		db.exec("DROP INDEX IF EXISTS idx_blocks_chain_hash;");
-		runSchemaV7Backfills(db);
-		analyzeDatabase(db);
-	}
-
-	if (stored < schemaVersion) {
-		setStoredSchemaVersion(db, schemaVersion);
+		if (stored < schemaVersion) {
+			setStoredSchemaVersion(db, schemaVersion);
+		}
 	}
 }
 
@@ -424,10 +430,12 @@ function runSchemaV7Backfills(db) {
 	}
 }
 
-function applySchema(db) {
+function applySchema(db, options = {}) {
 	db.exec(getSchemaSql());
-	applyMigrations(db);
-	setStoredSchemaVersion(db, schemaVersion);
+	applyMigrations(db, options);
+	if (options.skipHeavyBackfills !== true) {
+		setStoredSchemaVersion(db, schemaVersion);
+	}
 }
 
 module.exports = {
