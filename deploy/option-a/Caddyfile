@@ -9,7 +9,7 @@
   # limiting: https://caddyserver.com/docs/modules/http.handlers.rate_limit
   # Example: rate_limit { zone public_api { key {remote_ip} events 50 window 1s} }
   handle /v1/* {
-    reverse_proxy vericonomy-explorer-fast-api:3003
+    reverse_proxy explorer-fast-api:3003
   }
 
   handle {
@@ -22,12 +22,12 @@
       Referrer-Policy "strict-origin-when-cross-origin"
     }
 
-    reverse_proxy vericonomy-explorer-web:3000
+    reverse_proxy explorer-web:3000
   }
 }
 
 # Keep legacy Express routes public on a dedicated hostname.
 {$LEGACY_PUBLIC_DOMAIN} {
   encode zstd gzip
-  reverse_proxy vericonomy-explorer-express:3002
+  reverse_proxy explorer-express:3002
 }
