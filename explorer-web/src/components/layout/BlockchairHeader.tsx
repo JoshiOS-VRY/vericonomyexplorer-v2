@@ -295,7 +295,7 @@ export function BlockchairHeader({
             className="h-8 w-8 object-contain"
           />
           <div className="leading-tight">
-            <span className="block text-sm font-bold tracking-tight text-fg">VeriConomy</span>
+            <span className="block text-sm font-bold tracking-tight text-fg">Vericonomy</span>
             <span className="block text-[11px] font-medium text-accent">Block explorer</span>
           </div>
         </Link>

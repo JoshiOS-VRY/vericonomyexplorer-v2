@@ -14,6 +14,7 @@ import type {
   IndexerHealth,
   LeaderboardResult,
   MinersLeaderboardResult,
+  PeersResult,
   RichlistResult,
   TransactionRelatedAddressesResult,
   TransactionResult,
@@ -51,6 +52,18 @@ export async function getLandingData(): Promise<{
     vrcRichlist: parseOrThrow(richlistSchema, data.vrcRichlist) as unknown as RichlistResult,
     vrmLeaderboard: parseOrThrow(leaderboardSchema, data.vrmLeaderboard) as unknown as LeaderboardResult,
   };
+}
+
+export async function getPeers(
+  chainId: string,
+  params: { limit?: number } = {},
+): Promise<PeersResult> {
+  const search = new URLSearchParams();
+  if (params.limit != null) search.set("limit", String(params.limit));
+  const qs = search.toString();
+  return v1Fetch<PeersResult>(`/${chainId}/peers${qs ? `?${qs}` : ""}`, {
+    revalidate: SUMMARY_REVALIDATE_SECONDS,
+  });
 }
 
 export async function getHomeShell(): Promise<HomeShellPayload> {

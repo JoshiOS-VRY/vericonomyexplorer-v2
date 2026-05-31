@@ -530,3 +530,32 @@ export interface HomeMarketPayload {
   vrc: ChainMarket;
   fetchedAt: string;
 }
+
+export interface PeerEntry {
+  id: number;
+  address: string;
+  ip: string;
+  port: number | null;
+  subversion: string;
+  protocolVersion: number | null;
+  inbound: boolean;
+  connectedSeconds: number | null;
+  lastSeen: string | null;
+  pingMs: number | null;
+}
+
+export interface PeerVersionGroup {
+  subversion: string;
+  protocolVersion: number | null;
+  count: number;
+}
+
+export interface PeersResult {
+  chainId: string;
+  fetchedAt: string;
+  total: number;
+  inbound: number;
+  outbound: number;
+  versions: PeerVersionGroup[];
+  peers: PeerEntry[];
+}
