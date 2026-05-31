@@ -6,6 +6,7 @@ export function getPageTitle(pathname: string): string {
   if (path.startsWith("/vrm/richlist")) return "Richlist";
   if (path.startsWith("/vrm/miners")) return "Top Miners";
   if (path.startsWith("/vrm/leaderboard")) return "Leaderboard";
+  if (path.startsWith("/vrm/peers") || path.startsWith("/vrc/peers")) return "Peers";
   if (path.startsWith("/vrm/block/") || path.startsWith("/vrc/block/")) return "Block Detail";
   if (path.startsWith("/vrm/tx/") || path.startsWith("/vrc/tx/")) return "Transaction";
   if (path.startsWith("/vrm/address/") || path.startsWith("/vrc/address/")) return "Address";
