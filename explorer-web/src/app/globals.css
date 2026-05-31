@@ -455,11 +455,12 @@
 
 .chain-hub-section__metrics {
   flex: 0 0 auto;
+  /* Market + network stacks (2 heads + 2 stat rows) — keep Verium/VeriCoin hubs aligned */
+  min-height: calc(2 * 2.125rem + 2 * 3.5rem);
 }
 
 .chain-hub-section__blocks {
-  margin-top: auto;
-  flex-shrink: 0;
+  flex: 0 0 auto;
 }
 
 .chain-hub-quick-stats {

@@ -6,6 +6,7 @@ import { AddressUtxoPanelSkeleton } from "@/components/explorer/address/AddressS
 import { fetchAddressUtxosClient } from "@/lib/api/client";
 import type { AddressUtxosResult } from "@/lib/api/types";
 import { ADDRESS_UTXOS_ENABLED } from "@/lib/featureFlags";
+import type { ChainId } from "@/lib/chainDisplay";
 
 export function AddressUtxoPanelClient({
   chainId,
@@ -66,5 +67,5 @@ export function AddressUtxoPanelClient({
     return <AddressUtxoPanelSkeleton />;
   }
 
-  return <AddressUtxoPanel utxos={utxos} basePath={basePath} />;
+  return <AddressUtxoPanel chainId={chainId as ChainId} utxos={utxos} basePath={basePath} />;
 }

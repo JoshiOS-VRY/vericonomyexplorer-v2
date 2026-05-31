@@ -6,6 +6,7 @@ import { AddressRichlistCard } from "@/components/explorer/address/AddressRichli
 import { BcPanel } from "@/components/explorer/BlockchairUi";
 import { clientApiFetch } from "@/lib/api/client";
 import type { AddressRichlistInfo } from "@/lib/api/types";
+import type { ChainId } from "@/lib/chainDisplay";
 
 export function AddressRichlistRankClient({
   chainId,
@@ -59,5 +60,5 @@ export function AddressRichlistRankClient({
     );
   }
 
-  return <AddressRichlistCard richlist={richlist} address={address} />;
+  return <AddressRichlistCard chainId={chainId as ChainId} richlist={richlist} address={address} />;
 }

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { SearchForm } from "@/components/explorer/SearchForm";
 import { useSearchRecentBlocks } from "@/components/explorer/SearchRecentBlocksContext";
 import { SyncStatusPills } from "@/components/layout/SyncStatusPills";
@@ -79,17 +80,71 @@ function HeaderNavLink({
   );
 }
 
-function HeaderNavDropdown({
+function HeaderNavDropdownMenu({
   pathname,
   item,
   className,
+  style,
+  onNavigate,
 }: {
   pathname: string;
   item: HeaderNavDropdownItem;
   className?: string;
+  style?: CSSProperties;
+  onNavigate?: () => void;
+}) {
+  return (
+    <div
+      role="menu"
+      style={style}
+      className={cn(
+        "z-50 min-w-[10rem] rounded-md border border-border bg-bg-panel py-1 shadow-lg",
+        className,
+      )}
+    >
+      {item.items.map((child) => {
+        const childActive = isNavLinkActive(pathname, child.href, false, item.prefix);
+        return (
+          <Link
+            key={child.href}
+            href={child.href}
+            prefetch
+            role="menuitem"
+            data-nav-link
+            data-nav-prefix={item.prefix ? "true" : undefined}
+            aria-current={childActive ? "page" : undefined}
+            onClick={onNavigate}
+            className={cn(
+              "block px-3 py-2 text-sm transition-colors",
+              childActive
+                ? "bg-accent/10 text-accent"
+                : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
+            )}
+          >
+            {child.label}
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+function HeaderNavDropdown({
+  pathname,
+  item,
+  className,
+  usePortalMenu = false,
+}: {
+  pathname: string;
+  item: HeaderNavDropdownItem;
+  className?: string;
+  usePortalMenu?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
   const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const active = isNavDropdownActive(pathname, item.items, item.prefix);
 
   useEffect(() => {
@@ -97,10 +152,33 @@ function HeaderNavDropdown({
       return;
     }
 
-    function handlePointerDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setOpen(false);
+    function updateMenuPosition() {
+      if (!usePortalMenu || !buttonRef.current) {
+        return;
       }
+
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuStyle({
+        position: "fixed",
+        top: rect.bottom + 4,
+        left: rect.left,
+        minWidth: Math.max(rect.width, 160),
+      });
+    }
+
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (
+        rootRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
+        return;
+      }
+      setOpen(false);
     }
 
     function handleEscape(event: KeyboardEvent) {
@@ -109,17 +187,36 @@ function HeaderNavDropdown({
       }
     }
 
-    document.addEventListener("mousedown", handlePointerDown);
+    const listenerTimer = window.setTimeout(() => {
+      document.addEventListener("pointerdown", handlePointerDown);
+    }, 0);
     document.addEventListener("keydown", handleEscape);
+
     return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
+      window.clearTimeout(listenerTimer);
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+      document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [open]);
+  }, [open, usePortalMenu]);
+
+  const closeMenu = () => setOpen(false);
+
+  const menu = open ? (
+    <HeaderNavDropdownMenu
+      pathname={pathname}
+      item={item}
+      onNavigate={closeMenu}
+      className={usePortalMenu ? undefined : "absolute left-0 top-[calc(100%+4px)]"}
+      style={usePortalMenu ? menuStyle : undefined}
+    />
+  ) : null;
 
   return (
     <div ref={rootRef} className="relative">
       <button
+        ref={buttonRef}
         type="button"
         data-nav-dropdown
         data-nav-prefix={item.prefix ? "true" : undefined}
@@ -137,36 +234,12 @@ function HeaderNavDropdown({
           ▾
         </span>
       </button>
-      {open ? (
-        <div
-          role="menu"
-          className="absolute left-0 top-[calc(100%+4px)] z-50 min-w-[10rem] rounded-md border border-border bg-bg-panel py-1 shadow-lg"
-        >
-          {item.items.map((child) => {
-            const childActive = isNavLinkActive(pathname, child.href, false, item.prefix);
-            return (
-              <Link
-                key={child.href}
-                href={child.href}
-                prefetch
-                role="menuitem"
-                data-nav-link
-                data-nav-prefix={item.prefix ? "true" : undefined}
-                aria-current={childActive ? "page" : undefined}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "block px-3 py-2 text-sm transition-colors",
-                  childActive
-                    ? "bg-accent/10 text-accent"
-                    : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
-                )}
-              >
-                {child.label}
-              </Link>
-            );
-          })}
-        </div>
-      ) : null}
+      {usePortalMenu && menu
+        ? createPortal(
+            <div ref={menuRef}>{menu}</div>,
+            document.body,
+          )
+        : menu}
     </div>
   );
 }
@@ -175,13 +248,22 @@ function HeaderNavItemView({
   pathname,
   item,
   className,
+  usePortalMenu = false,
 }: {
   pathname: string;
   item: HeaderNavItem;
   className?: string;
+  usePortalMenu?: boolean;
 }) {
   if (item.type === "dropdown") {
-    return <HeaderNavDropdown pathname={pathname} item={item} className={className} />;
+    return (
+      <HeaderNavDropdown
+        pathname={pathname}
+        item={item}
+        className={className}
+        usePortalMenu={usePortalMenu}
+      />
+    );
   }
 
   return <HeaderNavLink pathname={pathname} item={item} className={className} />;
@@ -245,12 +327,13 @@ export function BlockchairHeader({
       </div>
 
       <div className="border-t border-border/60 px-4 py-2 md:hidden sm:px-6">
-        <div className="mx-auto flex max-w-[1720px] gap-1 overflow-x-auto">
+        <div className="mx-auto flex max-w-[1720px] flex-wrap gap-1">
           {headerNav.map((item) => (
             <HeaderNavItemView
               key={item.type === "dropdown" ? item.label : item.href}
               pathname={pathname}
               item={item}
+              usePortalMenu
               className="shrink-0 rounded px-2.5 py-1 text-xs font-medium"
             />
           ))}

@@ -8,18 +8,19 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "update:all": "ncu -u --reject vericonomy-dual-explorer && npm install"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
     "clsx": "^2.1.1",
-    "dotenv": "^16.6.1",
-    "lucide-react": "^1.16.0",
+    "dotenv": "^17.4.2",
+    "lucide-react": "^1.17.0",
     "motion": "^12.40.0",
-    "next": "15.5.18",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "recharts": "^2.15.4",
+    "next": "16.2.6",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "recharts": "^3.8.1",
     "sharp": "^0.34.5",
     "tailwind-merge": "^3.6.0",
     "vericonomy-dual-explorer": "file:..",
@@ -27,17 +28,18 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
-    "@jest/globals": "^30.0.5",
+    "@jest/globals": "^30.4.1",
     "@tailwindcss/postcss": "^4",
     "@types/jest": "^30.0.0",
-    "@types/node": "^20",
+    "@types/node": "^25",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "15.5.18",
-    "jest": "^30.0.5",
+    "eslint": "^10",
+    "eslint-config-next": "16.2.6",
+    "jest": "^30.4.2",
+    "npm-check-updates": "^18.0.1",
     "tailwindcss": "^4",
-    "ts-jest": "^29.4.1",
-    "typescript": "^5"
+    "ts-jest": "^29.4.11",
+    "typescript": "^6"
   }
 }

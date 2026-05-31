@@ -2,14 +2,19 @@ import Link from "next/link";
 import { BcPanel } from "@/components/explorer/BlockchairUi";
 import { formatHeight } from "@/components/explorer/ExplorerUi";
 import type { AddressRichlistInfo } from "@/lib/api/types";
+import { CHAIN_EXPLORERS, type ChainId } from "@/lib/chainDisplay";
 
 export function AddressRichlistCard({
+  chainId,
   richlist,
   address,
 }: {
+  chainId: ChainId;
   richlist: AddressRichlistInfo;
   address: string;
 }) {
+  const richlistHref = CHAIN_EXPLORERS[chainId].richlistHref;
+
   if (!richlist.enabled) {
     return (
       <BcPanel title="Rich list">
@@ -27,12 +32,14 @@ export function AddressRichlistCard({
           This address has no positive balance and is not ranked on the rich
           list.
         </p>
-        <Link
-          href="/vrm/richlist"
-          className="mt-3 inline-block text-sm font-medium text-accent hover:underline"
-        >
-          Browse rich list
-        </Link>
+        {richlistHref ? (
+          <Link
+            href={richlistHref}
+            className="mt-3 inline-block text-sm font-medium text-accent hover:underline"
+          >
+            Browse rich list
+          </Link>
+        ) : null}
       </BcPanel>
     );
   }
@@ -55,12 +62,14 @@ export function AddressRichlistCard({
             {topPercent != null ? ` · top ${topPercent}%` : ""}
           </p>
         </div>
-        <Link
-          href={`/vrm/richlist?offset=${offset}&limit=50`}
-          className="inline-flex items-center rounded-md border border-border bg-bg-subtle px-3 py-1.5 text-sm font-medium text-fg transition hover:border-border-strong hover:bg-bg-muted"
-        >
-          View on rich list
-        </Link>
+        {richlistHref ? (
+          <Link
+            href={`${richlistHref}?offset=${offset}&limit=50`}
+            className="inline-flex items-center rounded-md border border-border bg-bg-subtle px-3 py-1.5 text-sm font-medium text-fg transition hover:border-border-strong hover:bg-bg-muted"
+          >
+            View on rich list
+          </Link>
+        ) : null}
         <p className="text-xs text-fg-subtle break-all">{address}</p>
       </div>
     </BcPanel>

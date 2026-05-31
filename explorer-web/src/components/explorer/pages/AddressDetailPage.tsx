@@ -71,7 +71,7 @@ export async function AddressDetailPage({
         }
       />
 
-      <AddressHero result={result} />
+      <AddressHero chainId={chainId} result={result} />
 
       {!result.found ? (
         <AlertBanner title="Address Not Found">

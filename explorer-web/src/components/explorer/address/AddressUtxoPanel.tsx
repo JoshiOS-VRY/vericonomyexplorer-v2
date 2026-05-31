@@ -2,11 +2,14 @@ import Link from "next/link";
 import { BcHashLink, BcPanel } from "@/components/explorer/BlockchairUi";
 import { formatHeight, PaginationLinks } from "@/components/explorer/ExplorerUi";
 import type { AddressUtxosResult } from "@/lib/api/types";
+import { chainBlockPath, chainTxPath, type ChainId } from "@/lib/chainDisplay";
 
 export function AddressUtxoPanel({
+  chainId,
   utxos,
   basePath,
 }: {
+  chainId: ChainId;
   utxos: AddressUtxosResult;
   basePath: string;
 }) {
@@ -20,7 +23,8 @@ export function AddressUtxoPanel({
       flush
       action={
         <span className="rounded-md bg-bg-subtle px-2 py-0.5 text-[11px] font-medium tabular-nums text-fg-subtle">
-          {formatHeight(utxos.summary.utxoCount)} · {utxos.summary.totalValue.amount} {utxos.summary.totalValue.ticker}
+          {formatHeight(utxos.summary.utxoCount)} · {utxos.summary.totalValue.amount}{" "}
+          {utxos.summary.totalValue.ticker}
         </span>
       }
     >
@@ -38,7 +42,7 @@ export function AddressUtxoPanel({
               <tr key={`${item.txid}:${item.vout}`}>
                 <td>
                   <BcHashLink
-                    href={`/vrm/tx/${item.txid}`}
+                    href={chainTxPath(chainId, item.txid)}
                     value={`${item.txid.slice(0, 12)}…:${item.vout}`}
                   />
                 </td>
@@ -46,7 +50,10 @@ export function AddressUtxoPanel({
                   {item.value.amount} {item.value.ticker}
                 </td>
                 <td>
-                  <Link href={`/vrm/block/${item.blockHeight}`} className="text-accent hover:underline tabular-nums">
+                  <Link
+                    href={chainBlockPath(chainId, item.blockHeight)}
+                    className="text-accent hover:underline tabular-nums"
+                  >
                     {formatHeight(item.blockHeight)}
                   </Link>
                 </td>

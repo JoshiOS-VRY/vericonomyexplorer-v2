@@ -1,5 +1,6 @@
 import { AddressUtxoPanel } from "@/components/explorer/address/AddressUtxoPanel";
 import { getAddressUtxos } from "@/lib/api/indexer";
+import type { ChainId } from "@/lib/chainDisplay";
 
 export async function AddressUtxoPanelServer({
   chainId,
@@ -29,5 +30,11 @@ export async function AddressUtxoPanelServer({
     );
   }
 
-  return <AddressUtxoPanel utxos={utxos} basePath={basePath} />;
+  return (
+    <AddressUtxoPanel
+      chainId={chainId as ChainId}
+      utxos={utxos}
+      basePath={basePath}
+    />
+  );
 }
