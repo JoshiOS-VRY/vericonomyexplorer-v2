@@ -156,7 +156,7 @@ class QueryWorkerSlot {
     });
 
     worker.on("error", (error) => {
-      this.failPending(error);
+      this.failPending(error instanceof Error ? error : new Error(String(error)));
       if (!this.terminated) {
         this.onFatalError();
         this.respawn();
