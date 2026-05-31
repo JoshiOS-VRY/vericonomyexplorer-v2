@@ -1,9 +1,14 @@
 "use client";
 
-import type { TooltipProps } from "recharts";
+import type { TooltipContentProps } from "recharts";
 import type { ChartThemeColors } from "@/hooks/useChartTheme";
 import { formatChartTooltipRange } from "@/lib/chartDates";
 import { cn } from "@/lib/utils";
+
+/** Props Recharts injects at runtime when `content` is a React element. */
+export type RechartsTooltipContentProps = Partial<
+  Pick<TooltipContentProps<number, string>, "active" | "payload" | "label">
+>;
 
 function formatRange(startTime?: number, endTime?: number): string | null {
   if (startTime == null || endTime == null) {
@@ -21,7 +26,7 @@ export function ThemedChartTooltip({
   valueFormatter,
   unit,
   accentColor,
-}: TooltipProps<number, string> & {
+}: RechartsTooltipContentProps & {
   colors: ChartThemeColors;
   valueFormatter?: (value: number, name?: string) => string;
   unit?: string;
@@ -61,13 +66,16 @@ export function ThemedChartTooltip({
         </div>
       </div>
       <ul className="mt-2.5 space-y-1.5">
-        {entries.map((item) => {
+        {entries.map((item, index) => {
           const swatch =
             typeof item.color === "string"
               ? item.color
               : accentColor ?? colors.accent;
           return (
-            <li key={item.dataKey} className="flex items-center justify-between gap-4">
+            <li
+              key={String(item.dataKey ?? item.name ?? index)}
+              className="flex items-center justify-between gap-4"
+            >
               <span className="flex items-center gap-2 text-xs font-medium" style={{ color: colors.fgMuted }}>
                 <span
                   className="inline-block h-2 w-2 shrink-0 rounded-full ring-2 ring-offset-1"
@@ -99,7 +107,7 @@ export function CountChartTooltip({
   colors,
   unit,
   accentColor,
-}: TooltipProps<number, string> & {
+}: RechartsTooltipContentProps & {
   colors: ChartThemeColors;
   unit: string;
   accentColor?: string;

@@ -10,7 +10,6 @@ import {
   Legend,
   ResponsiveContainer,
   Tooltip,
-  type TooltipProps,
   XAxis,
   YAxis,
 } from "recharts";
@@ -33,6 +32,7 @@ import {
   formatChartTooltipRange,
 } from "@/lib/chartDates";
 import { cn } from "@/lib/utils";
+import type { RechartsTooltipContentProps } from "@/components/explorer/charts/ThemedChartTooltip";
 
 const CHART_VIEWS: { id: AddressBalanceChartView; label: string }[] = [
   { id: "activity", label: "Activity" },
@@ -97,7 +97,7 @@ function ActivityChartTooltip({
   payload,
   label,
   colors,
-}: TooltipProps<number, string> & {
+}: RechartsTooltipContentProps & {
   colors: ReturnType<typeof useChartTheme>;
 }) {
   if (!active || !payload?.length) {
@@ -137,8 +137,11 @@ function ActivityChartTooltip({
         </p>
       ) : null}
       <ul className="mt-2 space-y-1">
-        {entries.map((item) => (
-          <li key={item.dataKey} className="flex items-center justify-between gap-4 text-xs">
+        {entries.map((item, index) => (
+          <li
+            key={String(item.dataKey ?? item.name ?? index)}
+            className="flex items-center justify-between gap-4 text-xs"
+          >
             <span className="font-medium" style={{ color: colors.fgMuted }}>
               {item.name}
             </span>
@@ -157,7 +160,7 @@ function BalanceChartTooltip({
   payload,
   label,
   colors,
-}: TooltipProps<number, string> & {
+}: RechartsTooltipContentProps & {
   colors: ReturnType<typeof useChartTheme>;
 }) {
   if (!active || !payload?.length) {

@@ -39,7 +39,7 @@ function rateLimitedResponse(retryAfterSec?: number): NextResponse {
   );
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const tier = bffRateLimitTier(pathname);
