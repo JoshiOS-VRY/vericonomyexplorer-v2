@@ -22,8 +22,8 @@
 			},
 			"indexer": {
 				"storeRawJson": false,
-				"batchSize": 100,
-				"pauseMs": 500
+				"batchSize": 500,
+				"pauseMs": 0
 			}
 		},
 		{

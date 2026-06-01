@@ -281,7 +281,9 @@ function ensureDatabaseMigrations(dbPath = getDatabasePath()) {
 		migrationDb.defaultSafeIntegers(true);
 		migrationDb.pragma("foreign_keys = ON");
 		migrationDb.pragma("busy_timeout = 60000");
+		migrationDb.exec(schema.getSchemaSql());
 		schema.applyMigrations(migrationDb);
+		schema.setStoredSchemaVersion(migrationDb, schema.schemaVersion);
 		migrationDb.close();
 
 		debugLog(`Indexer V2 migrations applied: ${dbPath}`);

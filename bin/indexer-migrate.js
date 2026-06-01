@@ -3,6 +3,7 @@
 
 require("../app/indexerV2/loadEnv.js");
 
+const fs = require("fs");
 const Database = require("better-sqlite3");
 const dbModule = require("../app/indexerV2/db.js");
 const schema = require("../app/indexerV2/schema.js");
@@ -10,6 +11,10 @@ const schema = require("../app/indexerV2/schema.js");
 const dbPath = dbModule.getDatabasePath();
 
 function readSchemaVersion() {
+	if (!fs.existsSync(dbPath)) {
+		return 0;
+	}
+
 	const checkDb = new Database(dbPath, { readonly: true });
 	checkDb.pragma("busy_timeout = 5000");
 	const version = schema.getStoredSchemaVersion(checkDb);
@@ -19,7 +24,8 @@ function readSchemaVersion() {
 
 const before = readSchemaVersion();
 process.stderr.write(
-	`[indexer-migrate] database=${dbPath} schema=${before} target=${schema.schemaVersion}\n`
+	`[indexer-migrate] database=${dbPath} exists=${fs.existsSync(dbPath)} `
+	+ `schema=${before} target=${schema.schemaVersion}\n`
 );
 
 if (before >= schema.schemaVersion) {

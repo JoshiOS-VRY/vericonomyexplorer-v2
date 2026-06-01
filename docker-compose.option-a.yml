@@ -135,7 +135,7 @@ services:
       dockerfile: Dockerfile
     image: vericonomy-vrc-indexer:option-a
     restart: unless-stopped
-    command: ["npm", "run", "indexer:vrc"]
+    command: ["node", "./bin/indexer-v2-loop.js", "--chain", "vrc", "--pause-ms", "0", "--log-every", "1000"]
     env_file:
       - ${ENV_FILE:-.env.production}
     environment:

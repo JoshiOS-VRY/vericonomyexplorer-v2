@@ -592,5 +592,6 @@ module.exports = {
 	analyzeDatabase,
 	ensureColumn,
 	tableHasColumn,
-	getStoredSchemaVersion
+	getStoredSchemaVersion,
+	setStoredSchemaVersion
 };
