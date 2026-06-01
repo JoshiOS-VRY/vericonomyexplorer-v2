@@ -84,12 +84,12 @@ const COIN_ATOMIC_DECIMALS = 8;
 function formatAtomicDelta(deltaAtomic: string, ticker: string): AmountDisplay {
   const negative = deltaAtomic.startsWith("-");
   const raw = BigInt(negative ? deltaAtomic.slice(1) : deltaAtomic);
-  const divisor = 10n ** BigInt(COIN_ATOMIC_DECIMALS);
+  const divisor = BigInt(10) ** BigInt(COIN_ATOMIC_DECIMALS);
   const whole = raw / divisor;
   const frac = raw % divisor;
 
   let amount: string;
-  if (frac === 0n) {
+  if (frac === BigInt(0)) {
     amount = whole.toString();
   } else {
     const fracStr = frac
@@ -170,8 +170,8 @@ export function aggregateAddressEvents(events: AddressEvent[]): AggregatedAddres
     })
     .sort((a, b) => {
       const diff = absAtomic(b.deltaAtomic) - absAtomic(a.deltaAtomic);
-      if (diff > 0n) return 1;
-      if (diff < 0n) return -1;
+      if (diff > BigInt(0)) return 1;
+      if (diff < BigInt(0)) return -1;
       return a.address.localeCompare(b.address);
     });
 }
