@@ -175,12 +175,12 @@ Optional: limit block scans to the last year:
 SINCE=$(date -d '365 days ago' +%s) ./deploy/option-a/backfill-vrc-insights.sh
 ```
 
-If the database is busy, pause the matching indexer while backfilling:
+If the database is busy, pause the matching indexer **and explorer-api** while backfilling:
 
 ```bash
-docker compose -f docker-compose.option-a.yml --env-file .env.production stop vrc-indexer
+docker compose -f docker-compose.option-a.yml --env-file .env.production stop vrc-indexer explorer-api
 ./deploy/option-a/backfill-vrc-insights.sh
-docker compose -f docker-compose.option-a.yml --env-file .env.production start vrc-indexer
+docker compose -f docker-compose.option-a.yml --env-file .env.production start vrc-indexer explorer-api
 ```
 
 **What backfills do and do not cover**

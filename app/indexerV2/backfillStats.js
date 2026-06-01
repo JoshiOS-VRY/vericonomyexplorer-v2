@@ -11,6 +11,16 @@ const {
 	getPeriodBoundsForTime
 } = require("./periodStats.js");
 
+function getBackfillBatchSize() {
+	const configured = Number(process.env.VCEXP_BACKFILL_STATS_BATCH_SIZE ?? 25_000);
+	return Number.isFinite(configured) && configured > 0 ? Math.trunc(configured) : 25_000;
+}
+
+function logProgress(phase, processed, total) {
+	const pct = total > 0 ? ((processed / total) * 100).toFixed(1) : "?";
+	process.stderr.write(`[backfill-stats] ${phase}: ${processed}/${total} (${pct}%)\n`);
+}
+
 function getAddressActivityCategory(row) {
 	if (row.event_type === "spend") {
 		return "spent";
@@ -27,8 +37,22 @@ function getAddressActivityCategory(row) {
 	return "received";
 }
 
-function backfillChain(db, chainId) {
+function runBatchTransaction(db, rows, fn) {
+	if (rows.length === 0) {
+		return;
+	}
+
+	const run = db.transaction(() => {
+		for (const row of rows) {
+			fn(row);
+		}
+	});
+	run();
+}
+
+function backfillChain(db, chainId, options = {}) {
 	const now = Date.now();
+	const batchSize = options.batchSize ?? getBackfillBatchSize();
 	const periodStatements = createPeriodStatStatements(db);
 
 	db.prepare(`
@@ -43,8 +67,15 @@ function backfillChain(db, chainId) {
 		DELETE FROM address_period_stats WHERE chain_id = ?
 	`).run(chainId);
 
-	const events = db.prepare(`
+	const eventCount = db.prepare(`
+		SELECT COUNT(*) AS count
+		FROM address_events
+		WHERE chain_id = ?
+	`).get(chainId).count;
+
+	const selectEvents = db.prepare(`
 		SELECT
+			address_events.id,
 			address_events.address,
 			address_events.delta_sats,
 			address_events.block_height,
@@ -57,14 +88,21 @@ function backfillChain(db, chainId) {
 			ON transactions.chain_id = address_events.chain_id
 			AND transactions.txid = address_events.txid
 		WHERE address_events.chain_id = ?
-		ORDER BY address_events.time ASC, address_events.id ASC
-	`).all(chainId);
+			AND address_events.id > ?
+		ORDER BY address_events.id ASC
+		LIMIT ?
+	`);
 
-	let transactionCount = 0;
-	let blockCount = 0;
+	let lastEventId = 0;
+	let processedEvents = 0;
 
-	const backfillEvents = db.transaction(() => {
-		for (const row of events) {
+	while (true) {
+		const batch = selectEvents.all(chainId, lastEventId, batchSize);
+		if (batch.length === 0) {
+			break;
+		}
+
+		runBatchTransaction(db, batch, (row) => {
 			recordAddressBalanceBucket(
 				periodStatements,
 				chainId,
@@ -74,17 +112,24 @@ function backfillChain(db, chainId) {
 				getAddressActivityCategory(row),
 				now
 			);
-		}
+		});
 
-		const transactions = db.prepare(`
-			SELECT time, is_coinbase, is_coinstake
-			FROM transactions
-			WHERE chain_id = ? AND time IS NOT NULL
-			ORDER BY time ASC
-		`).all(chainId);
-		transactionCount = transactions.length;
+		lastEventId = batch[batch.length - 1].id;
+		processedEvents += batch.length;
+		logProgress(`${chainId} address events`, processedEvents, eventCount);
+	}
 
-		for (const tx of transactions) {
+	const transactions = db.prepare(`
+		SELECT time, is_coinbase, is_coinstake
+		FROM transactions
+		WHERE chain_id = ? AND time IS NOT NULL
+		ORDER BY time ASC
+	`).all(chainId);
+	const transactionCount = transactions.length;
+
+	for (let offset = 0; offset < transactions.length; offset += batchSize) {
+		const batch = transactions.slice(offset, offset + batchSize);
+		runBatchTransaction(db, batch, (tx) => {
 			recordTransactionActivity(
 				periodStatements,
 				chainId,
@@ -93,25 +138,29 @@ function backfillChain(db, chainId) {
 				Number(tx.is_coinstake),
 				now
 			);
-		}
+		});
+		logProgress(`${chainId} transactions`, Math.min(offset + batch.length, transactionCount), transactionCount);
+	}
 
-		const blocks = db.prepare(`
-			SELECT time
-			FROM blocks
-			WHERE chain_id = ? AND status = 'main' AND time IS NOT NULL
-			ORDER BY time ASC
-		`).all(chainId);
-		blockCount = blocks.length;
+	const blocks = db.prepare(`
+		SELECT time
+		FROM blocks
+		WHERE chain_id = ? AND status = 'main' AND time IS NOT NULL
+		ORDER BY time ASC
+	`).all(chainId);
+	const blockCount = blocks.length;
 
-		for (const block of blocks) {
+	for (let offset = 0; offset < blocks.length; offset += batchSize) {
+		const batch = blocks.slice(offset, offset + batchSize);
+		runBatchTransaction(db, batch, (block) => {
 			recordBlockActivity(periodStatements, chainId, block.time, now);
-		}
-	});
+		});
+		logProgress(`${chainId} blocks`, Math.min(offset + batch.length, blockCount), blockCount);
+	}
 
-	backfillEvents();
-
-	const periodRows = db.prepare(`
+	const selectPeriodRows = db.prepare(`
 		SELECT
+			id,
 			address,
 			time,
 			delta_sats,
@@ -119,13 +168,22 @@ function backfillChain(db, chainId) {
 			block_height
 		FROM address_events
 		WHERE chain_id = ?
-		ORDER BY time ASC, id ASC
-	`).all(chainId);
+			AND id > ?
+		ORDER BY id ASC
+		LIMIT ?
+	`);
 
-	const periodBackfill = db.transaction(() => {
-		const seenTxByPeriod = new Set();
+	const seenTxByPeriod = new Set();
+	lastEventId = 0;
+	processedEvents = 0;
 
-		for (const row of periodRows) {
+	while (true) {
+		const batch = selectPeriodRows.all(chainId, lastEventId, batchSize);
+		if (batch.length === 0) {
+			break;
+		}
+
+		runBatchTransaction(db, batch, (row) => {
 			for (const period of ["week", "month"]) {
 				const bounds = getPeriodBoundsForTime(period, row.time);
 				const txKey = `${bounds.periodStart}:${row.address}:${row.txid}`;
@@ -145,13 +203,16 @@ function backfillChain(db, chainId) {
 					now
 				);
 			}
-		}
-	});
-	periodBackfill();
+		});
+
+		lastEventId = batch[batch.length - 1].id;
+		processedEvents += batch.length;
+		logProgress(`${chainId} period stats`, processedEvents, eventCount);
+	}
 
 	return {
 		chainId,
-		events: events.length,
+		events: eventCount,
 		transactions: transactionCount,
 		blocks: blockCount
 	};
@@ -159,7 +220,7 @@ function backfillChain(db, chainId) {
 
 function main() {
 	const chainId = process.argv[2];
-	const db = dbModule.openDatabase();
+	const db = dbModule.openDatabase(undefined, { skipHeavyBackfills: true });
 
 	if (chainId) {
 		const result = backfillChain(db, chainId);
@@ -177,5 +238,6 @@ if (require.main === module) {
 
 module.exports = {
 	backfillChain,
-	hourBucketStart
+	hourBucketStart,
+	getBackfillBatchSize
 };

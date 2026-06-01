@@ -50,10 +50,17 @@ warn_if_indexer_running() {
   local chain="$1"
   local service
   service="$(indexer_service_for_chain "$chain")"
+  local running=()
   if "${COMPOSE[@]}" ps --status running --services 2>/dev/null | grep -qx "$service"; then
-    echo "Note: $service is running. For heavy backfills, consider:"
-    echo "  ${COMPOSE[*]} stop $service"
+    running+=("$service")
+  fi
+  if "${COMPOSE[@]}" ps --status running --services 2>/dev/null | grep -qx "explorer-api"; then
+    running+=("explorer-api")
+  fi
+  if ((${#running[@]} > 0)); then
+    echo "Note: ${running[*]} running. Stop them before heavy backfills to avoid SQLite lock contention:"
+    echo "  ${COMPOSE[*]} stop ${running[*]}"
     echo "  ... run backfill ..."
-    echo "  ${COMPOSE[*]} start $service"
+    echo "  ${COMPOSE[*]} start ${running[*]}"
   fi
 }

@@ -126,9 +126,12 @@ npm run indexer:backfill-address-growth -- --chain vrm --since $(date -d '365 da
 **Chain activity** buckets (Insights “Chain activity” chart):
 
 ```bash
+# Stop indexer + explorer-api first on production to avoid SQLite lock contention
 npm run indexer:backfill-stats -- vrm
 npm run indexer:backfill-stats -- vrc
 ```
+
+Progress logs to stderr in batches (default 25,000 rows). Tune with `VCEXP_BACKFILL_STATS_BATCH_SIZE`.
 
 **Production Docker (option-a):** see `deploy/option-a/backfill-vrc-insights.sh` and `backfill-vrm-insights.sh` for full per-chain scripts.
 
