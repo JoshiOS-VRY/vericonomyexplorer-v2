@@ -373,33 +373,16 @@ process.on("unhandledRejection", (reason, p) => {
 function loadMiningPoolConfigs() {
 	debugLog("Loading mining pools config");
 
-	global.miningPoolsConfigs = [];
+	const miningPoolConfigs = require("./indexerV2/miningPoolConfigs.js");
+	global.miningPoolsConfigs = miningPoolConfigs.getMiningPoolConfigs(global.coinConfig.ticker);
 
-	var miningPoolsConfigDir = path.join(__dirname, "public", "txt", "mining-pools-configs", global.coinConfig.ticker);
-
-	fs.readdir(miningPoolsConfigDir, function(err, files) {
-		if (err) {
-			utils.logError("3ufhwehe", err, {configDir:miningPoolsConfigDir, desc:"Unable to scan directory"});
-
-			return;
-		}
-
-		files.forEach(function(file) {
-			var filepath = path.join(miningPoolsConfigDir, file);
-
-			var contents = fs.readFileSync(filepath, 'utf8');
-
-			global.miningPoolsConfigs.push(JSON.parse(contents));
-		});
-
-		for (var i = 0; i < global.miningPoolsConfigs.length; i++) {
-			for (var x in global.miningPoolsConfigs[i].payout_addresses) {
-				if (global.miningPoolsConfigs[i].payout_addresses.hasOwnProperty(x)) {
-					global.specialAddresses[x] = {type:"minerPayout", minerInfo:global.miningPoolsConfigs[i].payout_addresses[x]};
-				}
+	for (var i = 0; i < global.miningPoolsConfigs.length; i++) {
+		for (var x in global.miningPoolsConfigs[i].payout_addresses) {
+			if (global.miningPoolsConfigs[i].payout_addresses.hasOwnProperty(x)) {
+				global.specialAddresses[x] = {type:"minerPayout", minerInfo:global.miningPoolsConfigs[i].payout_addresses[x]};
 			}
 		}
-	});
+	}
 }
 
 async function getSourcecodeProjectMetadata() {

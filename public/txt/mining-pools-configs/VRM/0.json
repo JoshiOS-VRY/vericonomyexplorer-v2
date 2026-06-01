@@ -1,12 +1,12 @@
 {
-	"coinbase_tags" : {
+	"coinbase_tags": {
 		"/VERIUMPOOL/": {
 			"name": "VeriumPool",
 			"link": "https://veriumpool.com"
 		},
 		"/VRMPOOL/": {
-			"name": "VRM Pool",
-			"link": "https://vrmpool.com"
+			"name": "Verium Pool",
+			"link": "https://pool.vericonomy.com"
 		},
 		"/VERIUM/": {
 			"name": "Verium Mining",
@@ -17,7 +17,11 @@
 			"link": "https://verium.org"
 		}
 	},
-	"payout_addresses" : {
+	"payout_addresses": {
+		"VRq98Nm2P6anLHPgnHdb6NnibJ6GoG3Jm9": {
+			"name": "Verium Pool",
+			"link": "https://pool.vericonomy.com"
+		},
 		"VXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX": {
 			"name": "VeriumPool",
 			"link": "https://veriumpool.com"

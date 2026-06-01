@@ -29,4 +29,7 @@ function loadIndexerEnv() {
 
 loadIndexerEnv();
 
+const { loadAllMiningPoolConfigs } = require("./miningPoolConfigs.js");
+loadAllMiningPoolConfigs();
+
 module.exports = { loadIndexerEnv };

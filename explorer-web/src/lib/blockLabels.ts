@@ -22,13 +22,15 @@ export function isTipBlock(nextHash?: string | null): boolean {
   return !nextHash;
 }
 
-export function minerDisplayName(block: Pick<IndexedBlock, "extractedBy" | "extractedByAddress">): string {
-  if (block.extractedByAddress) {
-    return block.extractedByAddress;
-  }
-
+export function minerDisplayName(
+  block: Pick<IndexedBlock, "extractedBy" | "extractedByAddress">,
+): string {
   if (block.extractedBy) {
     return block.extractedBy;
+  }
+
+  if (block.extractedByAddress) {
+    return block.extractedByAddress;
   }
 
   return "Unknown";

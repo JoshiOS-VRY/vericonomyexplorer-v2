@@ -12,6 +12,11 @@ const {
 	difficultyToHashPerSec,
 	hashPerSecToKhPerMin
 } = require("./networkMetrics.js");
+const {
+	attachMinerLink,
+	chainIdToTicker,
+	mapMinerFields,
+} = require("./miningPoolConfigs.js");
 
 const defaultLimit = 25;
 const maxLimit = 100;
@@ -126,7 +131,7 @@ function getChainSummary(chainId, options = {}) {
 		WHERE chain_id = ? AND status = 'main'
 		ORDER BY height DESC
 		LIMIT 10
-	`).all(chain).map(block => mapBlock(block));
+	`).all(chain).map(block => mapBlock(block, chain));
 	let enrichedLatestBlocks = options.skipBlockEnrichment === true
 		? latestBlocks
 		: enrichLatestBlocks(db, chain, latestBlocks);
@@ -195,7 +200,7 @@ function getLatestBlocks(chainId, options = {}) {
 		WHERE chain_id = ? AND status = 'main'
 		ORDER BY height DESC
 		LIMIT ?
-	`).all(chain, limit).map(block => mapBlock(block));
+	`).all(chain, limit).map(block => mapBlock(block, chain));
 	let enrichedLatestBlocks = options.skipBlockEnrichment === true
 		? latestBlocks
 		: enrichLatestBlocks(db, chain, latestBlocks);
@@ -242,7 +247,7 @@ function getBlocksPage(chainId, options = {}) {
 		WHERE chain_id = ? AND status = 'main'
 		ORDER BY height DESC
 		LIMIT ? OFFSET ?
-	`).all(chain, limit, offset).map(block => mapBlock(block));
+	`).all(chain, limit, offset).map(block => mapBlock(block, chain));
 	let items = options.skipBlockEnrichment === true
 		? rows
 		: enrichLatestBlocks(db, chain, rows);
@@ -1446,7 +1451,7 @@ function getBlock(chainId, hashOrHeight, options = {}) {
 		ORDER BY tx_index ASC
 		LIMIT ? OFFSET ?
 	`).all(chain, block.height, limit, offset);
-	const mappedBlock = enrichLatestBlocks(db, chain, [mapBlock(block)])[0];
+	const mappedBlock = enrichLatestBlocks(db, chain, [mapBlock(block, chain)])[0];
 	const transactions = attachTransactionSummaries(
 		db,
 		chain,
@@ -1497,8 +1502,8 @@ function disabledResponse(chainId, chainHealth, feature) {
 	};
 }
 
-function mapBlock(block) {
-	return {
+function mapBlock(block, chainId) {
+	const mapped = {
 		height: toNumber(block.height),
 		hash: block.hash,
 		previousHash: block.previous_hash || null,
@@ -1513,6 +1518,8 @@ function mapBlock(block) {
 		extractedBy: block.extracted_by || block.extractedBy || null,
 		extractedByAddress: block.extracted_by_address || block.extractedByAddress || null
 	};
+
+	return chainId ? attachMinerLink(mapped, chainId) : mapped;
 }
 
 function enrichLatestBlocks(db, chain, blocks) {
@@ -1522,7 +1529,7 @@ function enrichLatestBlocks(db, chain, blocks) {
 
 	const fullyEnriched = blocks.every(block =>
 		block.outputCount != null
-		&& (chain !== "vrm" || block.extractedByAddress || block.extractedBy)
+		&& (chain !== "vrm" || block.extractedBy)
 	);
 
 	if (fullyEnriched) {
@@ -1618,6 +1625,13 @@ function enrichBlocks(db, chain, blocks) {
 		WHERE v.chain_id = ? AND t.block_height IN (${placeholders}) AND t.is_coinbase = 1
 		ORDER BY t.block_height DESC, v.n ASC
 	`).all(chain, ...heights);
+	const coinbaseRawByHeight = Object.fromEntries(
+		db.prepare(`
+			SELECT block_height AS height, raw_json
+			FROM transactions
+			WHERE chain_id = ? AND block_height IN (${placeholders}) AND is_coinbase = 1
+		`).all(chain, ...heights).map(row => [row.height, row.raw_json])
+	);
 	const coinbaseVoutsByHeight = {};
 
 	for (const row of coinbaseVouts) {
@@ -1629,17 +1643,40 @@ function enrichBlocks(db, chain, blocks) {
 
 	return blocks.map(block => {
 		const coinbaseRows = coinbaseVoutsByHeight[block.height] || [];
-		const miner = coinbaseRows.length > 0 ? identifyMinerFromVouts(coinbaseRows, block) : null;
-
-		return Object.assign({}, block, {
+		const coinbaseRaw = coinbaseRawByHeight[block.height] || null;
+		const miner = coinbaseRows.length > 0
+			? identifyMinerFromVouts(coinbaseRows, block, chain, coinbaseRaw)
+			: null;
+		const mapped = mapMinerFields(miner);
+		const enriched = Object.assign({}, block, {
 			outputCount: block.outputCount ?? outputCountByHeight[block.height] ?? null,
-			extractedBy: block.extractedBy ?? (miner ? miner.name : null),
-			extractedByAddress: block.extractedByAddress ?? (miner && miner.type === "address-only" ? miner.name : null)
+			extractedBy: block.extractedBy || mapped.extractedBy || null,
+			extractedByAddress: mapped.extractedBy
+				? null
+				: (block.extractedByAddress || mapped.extractedByAddress || null),
 		});
+
+		return attachMinerLink(enriched, chain);
 	});
 }
 
-function identifyMinerFromVouts(vouts, block) {
+function identifyMinerFromVouts(vouts, block, chainId, coinbaseRawJson) {
+	if (coinbaseRawJson) {
+		try {
+			const coinbaseTx = JSON.parse(coinbaseRawJson);
+			const miner = utils.identifyMiner(
+				coinbaseTx,
+				block.height,
+				chainIdToTicker(chainId),
+			);
+			if (miner) {
+				return miner;
+			}
+		} catch {
+			/* fall through to vout reconstruction */
+		}
+	}
+
 	const coinbaseTx = {
 		blockhash: block.hash,
 		vin: [{ coinbase: "00" }],
@@ -1650,7 +1687,7 @@ function identifyMinerFromVouts(vouts, block) {
 		}))
 	};
 
-	return utils.identifyMiner(coinbaseTx, block.height);
+	return utils.identifyMiner(coinbaseTx, block.height, chainIdToTicker(chainId));
 }
 
 function mapTransaction(tx) {

@@ -8,18 +8,20 @@ export function ExtractedByCell({
   chainId,
   className,
 }: {
-  block: Pick<IndexedBlock, "extractedBy" | "extractedByAddress">;
+  block: Pick<IndexedBlock, "extractedBy" | "extractedByAddress" | "extractedByLink">;
   chainId: ChainId;
   className?: string;
 }) {
-  if (block.extractedByAddress) {
+  if (block.extractedBy && block.extractedByLink) {
     return (
       <Link
-        href={chainAddressPath(chainId, block.extractedByAddress)}
-        title={block.extractedByAddress}
+        href={block.extractedByLink}
+        title={block.extractedBy}
         className={className ?? "text-sm font-medium text-accent hover:underline"}
+        target="_blank"
+        rel="noreferrer"
       >
-        {ellipsizeMiddle(block.extractedByAddress, 24)}
+        {block.extractedBy}
       </Link>
     );
   }
@@ -29,6 +31,18 @@ export function ExtractedByCell({
       <span className={className ?? "text-sm font-medium text-fg"} title={block.extractedBy}>
         {block.extractedBy}
       </span>
+    );
+  }
+
+  if (block.extractedByAddress) {
+    return (
+      <Link
+        href={chainAddressPath(chainId, block.extractedByAddress)}
+        title={block.extractedByAddress}
+        className={className ?? "text-sm font-medium text-accent hover:underline"}
+      >
+        {ellipsizeMiddle(block.extractedByAddress, 24)}
+      </Link>
     );
   }
 

@@ -550,14 +550,17 @@ function logMemoryUsage() {
 	//debugLog("memoryUsage: heapUsed=" + mbUsed + ", heapTotal=" + mbTotal + ", ratio=" + parseInt(mbUsed / mbTotal * 100));
 }
 
-function identifyMiner(coinbaseTx, blockHeight) {
+function identifyMiner(coinbaseTx, blockHeight, ticker) {
 	if (coinbaseTx == null || coinbaseTx.vin == null || coinbaseTx.vin.length == 0) {
 		return null;
 	}
-	
-	if (global.miningPoolsConfigs) {
-		for (let i = 0; i < global.miningPoolsConfigs.length; i++) {
-			let miningPoolsConfig = global.miningPoolsConfigs[i];
+
+	const miningPoolConfigs = require("./indexerV2/miningPoolConfigs.js");
+	const configSets = miningPoolConfigs.getMiningPoolConfigsForIdentify(ticker);
+
+	for (const miningPoolsConfigs of configSets) {
+		for (let i = 0; i < miningPoolsConfigs.length; i++) {
+			let miningPoolsConfig = miningPoolsConfigs[i];
 
 			for (let payoutAddress in miningPoolsConfig.payout_addresses) {
 				if (miningPoolsConfig.payout_addresses.hasOwnProperty(payoutAddress)) {

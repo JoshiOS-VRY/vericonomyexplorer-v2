@@ -5,6 +5,10 @@ import { jsonReplacer } from "./util/json.js";
 
 loadEnv();
 
+const { createRequire } = await import("node:module");
+const require = createRequire(import.meta.url);
+require("../../app/indexerV2/miningPoolConfigs.js").loadAllMiningPoolConfigs();
+
 const { default: cors } = await import("@fastify/cors");
 const { default: Fastify } = await import("fastify");
 const { applyCacheHeaders } = await import("./cache/httpCache.js");

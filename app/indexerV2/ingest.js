@@ -16,8 +16,9 @@ const {
 	isCoinbaseTx,
 	isCoinstakeTx
 } = require("./valueUtils.js");
+const { chainIdToTicker, mapMinerFields } = require("./miningPoolConfigs.js");
 
-function computeBlockEnrichment(block) {
+function computeBlockEnrichment(block, chainId) {
 	const txs = Array.isArray(block.tx) ? block.tx : [];
 	let outputCount = 0;
 
@@ -28,12 +29,16 @@ function computeBlockEnrichment(block) {
 	}
 
 	const coinbaseTx = txs.length > 0 && typeof txs[0] === "object" ? txs[0] : null;
-	const miner = coinbaseTx ? utils.identifyMiner(coinbaseTx, Number(block.height)) : null;
+	const ticker = chainIdToTicker(chainId);
+	const miner = coinbaseTx
+		? utils.identifyMiner(coinbaseTx, Number(block.height), ticker)
+		: null;
+	const mapped = mapMinerFields(miner);
 
 	return {
 		output_count: outputCount > 0 ? outputCount : null,
-		extracted_by: miner ? miner.name : null,
-		extracted_by_address: miner && miner.type === "address-only" ? miner.name : null
+		extracted_by: mapped.extractedBy,
+		extracted_by_address: mapped.extractedByAddress,
 	};
 }
 
@@ -242,7 +247,7 @@ function ingestBlock(chainId, block, options = {}) {
 
 	const run = db.transaction(() => {
 		const periodStatements = indexOnly ? null : createPeriodStatStatements(db);
-		const enrichment = computeBlockEnrichment(block);
+		const enrichment = computeBlockEnrichment(block, chainId);
 
 		statements.upsertBlock.run({
 			chain_id: chainId,

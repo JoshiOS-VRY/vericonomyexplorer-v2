@@ -2,6 +2,11 @@
 
 const utils = require("../utils.js");
 const {
+	attachMinerLink,
+	chainIdToTicker,
+	mapMinerFields,
+} = require("./miningPoolConfigs.js");
+const {
 	decimalToAtomicUnits,
 	atomicUnitsToDecimal,
 	getVoutAddresses,
@@ -294,14 +299,18 @@ function buildRpcBlockResult(chainId, block, options = {}) {
 	const offset = options.offset ?? 0;
 	const tipHeight = options.tipHeight;
 	const coinbaseTx = fullTxs ? txs.find((tx) => isCoinbaseTx(tx)) : null;
-	const miner = coinbaseTx ? utils.identifyMiner(coinbaseTx, Number(block.height)) : null;
+	const ticker = chainIdToTicker(chainId);
+	const miner = coinbaseTx
+		? utils.identifyMiner(coinbaseTx, Number(block.height), ticker)
+		: null;
+	const mapped = mapMinerFields(miner);
 
 	return {
 		chainId: String(chainId).toLowerCase(),
 		found: true,
 		trusted: true,
 		source: { label: "live", type: "rpc", trustLevel: "live" },
-		block: {
+		block: attachMinerLink({
 			height: Number(block.height),
 			hash: block.hash,
 			previousHash: block.previousblockhash || null,
@@ -311,9 +320,9 @@ function buildRpcBlockResult(chainId, block, options = {}) {
 			size: block.size == null ? null : Number(block.size),
 			difficulty: block.difficulty == null ? null : String(block.difficulty),
 			outputCount: fullTxs ? countBlockOutputsFromTxs(txs) : null,
-			extractedBy: miner ? miner.name : null,
-			extractedByAddress: miner && miner.type === "address-only" ? miner.name : null
-		},
+			extractedBy: mapped.extractedBy,
+			extractedByAddress: mapped.extractedByAddress,
+		}, chainId),
 		transactions: fullTxs
 			? mapRpcBlockTransactions(
 				chainId,

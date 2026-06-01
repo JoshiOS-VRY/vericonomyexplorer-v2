@@ -5,6 +5,11 @@ const { getChainConfig, getRpcCredentials } = require("./chainConfig.js");
 const { createRpcClient } = require("./rpcClient.js");
 const { atomicUnitsToDecimal } = require("./valueUtils.js");
 const {
+	attachMinerLink,
+	chainIdToTicker,
+	mapMinerFields,
+} = require("./miningPoolConfigs.js");
+const {
 	buildRpcBlockResult,
 	lookupRpcTransaction,
 	lookupRpcAddress
@@ -57,13 +62,13 @@ async function getRecentBlocks(chainId, count = 10, options = {}) {
 		const blockResults = await rpc.batch(
 			hashResults.map((hash) => ({ method: "getblock", params: [hash, verbosity] }))
 		);
-		return blockResults.map((block) => mapRpcBlock(block, verbosity));
+		return blockResults.map((block) => mapRpcBlock(block, verbosity, chainId));
 	}
 
 	const blocks = await Promise.all(heights.map(async (height) => {
 		const hash = await rpc.call("getblockhash", [height]);
 		const block = await rpc.call("getblock", [hash, verbosity]);
-		return mapRpcBlock(block, verbosity);
+		return mapRpcBlock(block, verbosity, chainId);
 	}));
 
 	return blocks;
@@ -75,7 +80,7 @@ async function enrichBlockMiners(chainId, blocks, options = {}) {
 	}
 
 	const needsMiner = blocks.filter(
-		(block) => block && !block.extractedBy && !block.extractedByAddress
+		(block) => block && (!block.extractedBy || !block.extractedByLink),
 	);
 	if (needsMiner.length === 0) {
 		return blocks;
@@ -97,7 +102,7 @@ async function enrichBlockMiners(chainId, blocks, options = {}) {
 
 	const minerByHash = Object.fromEntries(
 		fullBlocks.map((block) => {
-			const mapped = mapRpcBlock(block, 2);
+			const mapped = mapRpcBlock(block, 2, chainId);
 			return [mapped.hash, mapped];
 		})
 	);
@@ -110,18 +115,25 @@ async function enrichBlockMiners(chainId, blocks, options = {}) {
 
 		return Object.assign({}, block, {
 			outputCount: block.outputCount ?? enriched.outputCount ?? null,
-			extractedBy: block.extractedBy ?? enriched.extractedBy ?? null,
-			extractedByAddress: block.extractedByAddress ?? enriched.extractedByAddress ?? null
+			extractedBy: enriched.extractedBy ?? block.extractedBy ?? null,
+			extractedByAddress: enriched.extractedBy
+				? null
+				: (block.extractedByAddress ?? enriched.extractedByAddress ?? null),
+			extractedByLink: enriched.extractedByLink ?? block.extractedByLink ?? null,
 		});
 	});
 }
 
-function mapRpcBlock(block, verbosity = 2) {
+function mapRpcBlock(block, verbosity = 2, chainId = "vrm") {
 	const txs = Array.isArray(block.tx) ? block.tx : [];
 	const coinbaseTx = verbosity >= 2 && txs.length > 0 && typeof txs[0] === "object" ? txs[0] : null;
-	const miner = coinbaseTx ? utils.identifyMiner(coinbaseTx, Number(block.height)) : null;
+	const ticker = chainIdToTicker(chainId);
+	const miner = coinbaseTx
+		? utils.identifyMiner(coinbaseTx, Number(block.height), ticker)
+		: null;
+	const mapped = mapMinerFields(miner);
 
-	return {
+	return attachMinerLink({
 		height: Number(block.height),
 		hash: block.hash,
 		previousHash: block.previousblockhash || null,
@@ -131,9 +143,9 @@ function mapRpcBlock(block, verbosity = 2) {
 		size: block.size == null ? null : Number(block.size),
 		difficulty: block.difficulty == null ? null : String(block.difficulty),
 		outputCount: verbosity >= 2 ? countBlockOutputs(block) : null,
-		extractedBy: miner ? miner.name : null,
-		extractedByAddress: miner && miner.type === "address-only" ? miner.name : null
-	};
+		extractedBy: mapped.extractedBy,
+		extractedByAddress: mapped.extractedByAddress,
+	}, chainId);
 }
 
 function countBlockOutputs(block) {
