@@ -1,4 +1,9 @@
-import type { AddressEvent, IndexedTransaction, TxOutput } from "@/lib/api/types";
+import type {
+  AddressEvent,
+  AmountDisplay,
+  IndexedTransaction,
+  TxOutput,
+} from "@/lib/api/types";
 import { formatNumber } from "@/lib/utils";
 
 export type OutputRole = "payment" | "change" | "mining" | "unknown";
@@ -63,6 +68,112 @@ export function addressEventRole(event: AddressEvent): "sender" | "recipient" | 
   }
 
   return "neutral";
+}
+
+export interface AggregatedAddressEvent {
+  address: string;
+  role: ReturnType<typeof addressEventRole>;
+  eventType: string;
+  deltaAtomic: string;
+  delta: AmountDisplay;
+  contributionCount: number;
+}
+
+const COIN_ATOMIC_DECIMALS = 8;
+
+function formatAtomicDelta(deltaAtomic: string, ticker: string): AmountDisplay {
+  const negative = deltaAtomic.startsWith("-");
+  const raw = BigInt(negative ? deltaAtomic.slice(1) : deltaAtomic);
+  const divisor = 10n ** BigInt(COIN_ATOMIC_DECIMALS);
+  const whole = raw / divisor;
+  const frac = raw % divisor;
+
+  let amount: string;
+  if (frac === 0n) {
+    amount = whole.toString();
+  } else {
+    const fracStr = frac
+      .toString()
+      .padStart(COIN_ATOMIC_DECIMALS, "0")
+      .replace(/0+$/, "");
+    amount = `${whole}.${fracStr}`;
+  }
+
+  if (negative) {
+    amount = `-${amount}`;
+  }
+
+  return { amount, ticker };
+}
+
+function absAtomic(deltaAtomic: string): bigint {
+  return BigInt(deltaAtomic.startsWith("-") ? deltaAtomic.slice(1) : deltaAtomic);
+}
+
+/** One row per (address, role); sums deltas when the indexer emits per-input/per-output events. */
+export function aggregateAddressEvents(events: AddressEvent[]): AggregatedAddressEvent[] {
+  const groups = new Map<
+    string,
+    {
+      address: string;
+      role: ReturnType<typeof addressEventRole>;
+      eventType: string;
+      deltaAtomic: bigint;
+      ticker: string;
+      count: number;
+      singleEvent: AddressEvent | null;
+    }
+  >();
+
+  for (const event of events) {
+    const role = addressEventRole(event);
+    const key = `${event.address}\0${role}`;
+    const delta = BigInt(event.deltaAtomic);
+    const existing = groups.get(key);
+
+    if (existing) {
+      existing.deltaAtomic += delta;
+      existing.count += 1;
+      existing.singleEvent = null;
+      if (existing.eventType !== event.eventType) {
+        existing.eventType = "mixed";
+      }
+    } else {
+      groups.set(key, {
+        address: event.address,
+        role,
+        eventType: event.eventType,
+        deltaAtomic: delta,
+        ticker: event.delta.ticker,
+        count: 1,
+        singleEvent: event,
+      });
+    }
+  }
+
+  return [...groups.values()]
+    .map((group) => {
+      const deltaAtomic = group.deltaAtomic.toString();
+      const delta =
+        group.count === 1 && group.singleEvent
+          ? group.singleEvent.delta
+          : formatAtomicDelta(deltaAtomic, group.ticker);
+
+      return {
+        address: group.address,
+        role: group.role,
+        eventType: group.eventType,
+        deltaAtomic,
+        delta,
+        contributionCount: group.count,
+      };
+    })
+    .sort((a, b) => {
+      const diff = absAtomic(b.deltaAtomic) - absAtomic(a.deltaAtomic);
+      if (diff > 0n) return 1;
+      if (diff < 0n) return -1;
+      return a.address.localeCompare(b.address);
+    });
 }
 
 export function formatAmountPair(amount: { amount: string; ticker: string }): string {
