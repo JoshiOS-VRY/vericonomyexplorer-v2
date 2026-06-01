@@ -63,7 +63,9 @@ export function ChainHubSection({
   const statusTone = getChainStatusTone(health, tipBlock?.height, chainHeight);
   const displayHeight = chainHeight ?? getChainTipHeight(health);
   const stripBlocks = [...blocks.slice(0, STRIP_BLOCK_COUNT)].reverse();
-  const tableRows = blocks.slice(0, HUB_TABLE_ROW_COUNT);
+  const tableRows = Array.from({ length: HUB_TABLE_ROW_COUNT }, (_, index) =>
+    blocks[index] ?? null,
+  );
   const producerColumnLabel = chainId === "vrm" ? "Extracted by" : "Interest";
 
   return (
@@ -189,7 +191,7 @@ export function ChainHubSection({
         />
       </div>
 
-      <div className="chain-hub-section__blocks shrink-0">
+      <div className="chain-hub-section__blocks min-h-0 flex-1">
         <header className="chain-hub-blocks-head flex flex-wrap items-center justify-between gap-2 border-b border-t border-border px-4 py-2.5 sm:px-5">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="chain-hub-blocks-head__icon flex h-7 w-7 items-center justify-center rounded-md border border-border/70 bg-bg-subtle/50">
@@ -277,14 +279,18 @@ export function ChainHubSection({
                   </tr>
                 </thead>
                 <tbody>
-                  {tableRows.map((block) => (
-                    <BlockChainTableRow
-                      key={block.hash}
-                      block={block}
-                      chainId={chainId}
-                      blockHref={config.blockHref?.(block.height)}
-                    />
-                  ))}
+                  {tableRows.map((block, index) =>
+                    block ? (
+                      <BlockChainTableRow
+                        key={block.hash}
+                        block={block}
+                        chainId={chainId}
+                        blockHref={config.blockHref?.(block.height)}
+                      />
+                    ) : (
+                      <BlockChainTablePlaceholderRow key={`placeholder-${index}`} />
+                    ),
+                  )}
                 </tbody>
               </table>
             </div>
@@ -398,10 +404,10 @@ function BlockChainTableRow({
   const hashShort = formatBlockHashShort(block.hash);
 
   return (
-    <tr className="transition-colors hover:bg-bg-subtle/80 py-4">
+    <tr className="block-chain-table-row transition-colors hover:bg-bg-subtle/80">
       <td>
         {blockHref ? (
-          <BcTableLink href={blockHref} className="tabular-nums py-4" prefetch>
+          <BcTableLink href={blockHref} className="tabular-nums" prefetch>
             {formatHeight(block.height)}
           </BcTableLink>
         ) : (
@@ -451,6 +457,16 @@ function BlockChainTableRow({
       <td className="text-right tabular-nums text-fg-muted">
         {block.difficulty ? formatDifficulty(block.difficulty) : "—"}
       </td>
+    </tr>
+  );
+}
+
+function BlockChainTablePlaceholderRow() {
+  return (
+    <tr className="block-chain-table-row block-chain-table-row--placeholder" aria-hidden>
+      {Array.from({ length: 7 }, (_, index) => (
+        <td key={index}>&nbsp;</td>
+      ))}
     </tr>
   );
 }

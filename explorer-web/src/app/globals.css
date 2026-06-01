@@ -460,7 +460,10 @@
 }
 
 .chain-hub-section__blocks {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .chain-hub-quick-stats {
@@ -858,7 +861,37 @@ html:not(.light)
 }
 
 .block-chain-table-wrap {
+  flex: 1 1 auto;
   padding: 0 0.5rem 0.5rem;
+}
+
+.home-page .chain-hub-section .block-chain-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.home-page .chain-hub-section .block-chain-table thead tr th {
+  height: 2.25rem;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+
+.home-page .chain-hub-section .block-chain-table tbody {
+  height: 14.375rem; /* 5 rows × 2.875rem */
+}
+
+.home-page .chain-hub-section .block-chain-table tbody tr.block-chain-table-row td {
+  height: 2.875rem;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+
+.home-page .chain-hub-section .block-chain-table tbody tr.block-chain-table-row--placeholder {
+  pointer-events: none;
+}
+
+.home-page .chain-hub-section .block-chain-table tbody tr.block-chain-table-row--placeholder td {
+  border-bottom: 1px solid var(--border);
 }
 
 .block-chain-table-wrap .bc-table thead th {

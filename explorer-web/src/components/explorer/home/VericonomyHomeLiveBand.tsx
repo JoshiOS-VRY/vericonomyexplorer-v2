@@ -54,7 +54,7 @@ export function VericonomyHomeLiveBand({
     <div className="space-y-8">
       <BinaryChainHero vrmLive={vrmLive} vrcLive={vrcLive} />
 
-      <div className="grid items-stretch gap-6 xl:grid-cols-2">
+      <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <ChainHubSection
           chainId="vrm"
           summary={live.vrm.summary}
