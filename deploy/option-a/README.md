@@ -143,6 +143,63 @@ docker compose -f docker-compose.option-a.yml exec vrc-indexer npm run indexer:v
 docker compose -f docker-compose.option-a.yml logs -f vrc-indexer
 ```
 
+## 5b) Insights chart backfills (Docker)
+
+One-off jobs use `docker compose run --rm` against the shared SQLite volume. Scripts live in `deploy/option-a/` (run from repo root on the VPS).
+
+**Vericoin (VRC)** — full Insights history (recommended after initial VRC index sync):
+
+```bash
+chmod +x deploy/option-a/backfill-vrc-*.sh
+./deploy/option-a/backfill-vrc-insights.sh
+```
+
+Individual steps (same as manual `docker compose run`):
+
+```bash
+./deploy/option-a/backfill-vrc-stats.sh              # Chain activity chart
+./deploy/option-a/backfill-vrc-network-metrics.sh  # Difficulty, supply
+./deploy/option-a/backfill-vrc-address-growth.sh   # Address growth
+```
+
+**Verium (VRM)** — mirror scripts:
+
+```bash
+chmod +x deploy/option-a/backfill-vrm-*.sh
+./deploy/option-a/backfill-vrm-insights.sh
+```
+
+Optional: limit block scans to the last year:
+
+```bash
+SINCE=$(date -d '365 days ago' +%s) ./deploy/option-a/backfill-vrc-insights.sh
+```
+
+If the database is busy, pause the matching indexer while backfilling:
+
+```bash
+docker compose -f docker-compose.option-a.yml --env-file .env.production stop vrc-indexer
+./deploy/option-a/backfill-vrc-insights.sh
+docker compose -f docker-compose.option-a.yml --env-file .env.production start vrc-indexer
+```
+
+**What backfills do and do not cover**
+
+| Insights chart | VRC backfill command |
+| --- | --- |
+| Address growth | `backfill-vrc-address-growth` |
+| Difficulty, supply | `backfill-vrc-network-metrics` |
+| Chain activity | `backfill-vrc-stats` |
+| Interest, staking %, expected stake time | Live snapshots only (since `explorer-api` records RPC mining info on new tips) |
+| Market price (USD/BTC) | External APIs (`/v1/:chain/insights/market-history`), not the indexer DB |
+
+Equivalent raw compose invocations:
+
+```bash
+docker compose -f docker-compose.option-a.yml --env-file .env.production run --rm vrc-indexer \
+  npm run indexer:backfill-address-growth -- --chain vrc
+```
+
 ## 6) Security notes
 
 - Never expose Verium or VeriCoin RPC directly to the internet.

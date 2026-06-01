@@ -119,8 +119,18 @@ Historical **address growth** only (fast; uses `address_balances.first_seen_time
 
 ```bash
 npm run indexer:backfill-address-growth -- --chain vrm
+npm run indexer:backfill-address-growth -- --chain vrc
 npm run indexer:backfill-address-growth -- --chain vrm --since $(date -d '365 days ago' +%s)
 ```
+
+**Chain activity** buckets (Insights “Chain activity” chart):
+
+```bash
+npm run indexer:backfill-stats -- vrm
+npm run indexer:backfill-stats -- vrc
+```
+
+**Production Docker (option-a):** see `deploy/option-a/backfill-vrc-insights.sh` and `backfill-vrm-insights.sh` for full per-chain scripts.
 
 The indexer loop runs `maybeCheckpointWal()` when caught up and the WAL file exceeds `VCEXP_WAL_CHECKPOINT_MB` (default `512` MB). Manual checkpoint:
 

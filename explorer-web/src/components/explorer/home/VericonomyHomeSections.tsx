@@ -15,6 +15,12 @@ export function VericonomyHomeStatic() {
         href="/vrm/leaderboard?period=month&sort=activity"
         hrefLabel="View leaderboard"
       />
+      <FeatureTile
+        title="API reference"
+        description="REST endpoints for integrations and automation."
+        href="/api/docs"
+        hrefLabel="Read API docs"
+      />
     </div>
   );
 }

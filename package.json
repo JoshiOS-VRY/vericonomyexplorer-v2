@@ -27,6 +27,7 @@
 		"indexer:checkpoint": "node ./bin/indexer-checkpoint.js",
 		"indexer:backfill-network-metrics": "node ./bin/backfill-network-metrics.js",
 		"indexer:backfill-address-growth": "node ./bin/backfill-address-growth.js",
+		"indexer:backfill-stats": "node ./bin/backfill-stats.js",
 		"indexer:v2:schema-migration-smoke": "node ./app/indexerV2/schemaMigrationSmoke.js",
 		"indexer:v2:repair-schema": "node ./bin/indexer-repair-schema.js",
 		"test": "node ./bin/test.js",
