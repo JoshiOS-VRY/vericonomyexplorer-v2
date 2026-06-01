@@ -48,11 +48,14 @@ function openDatabase(dbPath = getDatabasePath(), options = {}) {
 	db.defaultSafeIntegers(true);
 	db.pragma("journal_mode = WAL");
 	db.pragma("foreign_keys = ON");
-	db.pragma("busy_timeout = 10000");
+	const busyTimeoutMs = Number(options.busyTimeoutMs ?? 10_000);
+	db.pragma(`busy_timeout = ${Number.isFinite(busyTimeoutMs) && busyTimeoutMs > 0 ? busyTimeoutMs : 10_000}`);
 	db.pragma("synchronous = NORMAL");
 
 	schema.applySchema(db, options);
-	seedChains(db);
+	if (options.skipSeed !== true) {
+		seedChains(db);
+	}
 
 	debugLog(`Indexer V2 database opened: ${dbPath}`);
 

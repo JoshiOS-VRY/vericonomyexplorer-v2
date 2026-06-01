@@ -12,8 +12,8 @@ const {
 } = require("./periodStats.js");
 
 function getBackfillBatchSize() {
-	const configured = Number(process.env.VCEXP_BACKFILL_STATS_BATCH_SIZE ?? 25_000);
-	return Number.isFinite(configured) && configured > 0 ? Math.trunc(configured) : 25_000;
+	const configured = Number(process.env.VCEXP_BACKFILL_STATS_BATCH_SIZE ?? 5_000);
+	return Number.isFinite(configured) && configured > 0 ? Math.trunc(configured) : 5_000;
 }
 
 function logProgress(phase, processed, total) {
@@ -50,23 +50,54 @@ function runBatchTransaction(db, rows, fn) {
 	run();
 }
 
-function backfillChain(db, chainId, options = {}) {
-	const now = Date.now();
-	const batchSize = options.batchSize ?? getBackfillBatchSize();
-	const periodStatements = createPeriodStatStatements(db);
+function backfillTransactions(db, chainId, periodStatements, batchSize, now) {
+	const transactions = db.prepare(`
+		SELECT time, is_coinbase, is_coinstake
+		FROM transactions
+		WHERE chain_id = ? AND time IS NOT NULL
+		ORDER BY time ASC
+	`).all(chainId);
+	const transactionCount = transactions.length;
 
-	db.prepare(`
-		DELETE FROM address_balance_buckets WHERE chain_id = ?
-	`).run(chainId);
+	for (let offset = 0; offset < transactions.length; offset += batchSize) {
+		const batch = transactions.slice(offset, offset + batchSize);
+		runBatchTransaction(db, batch, (tx) => {
+			recordTransactionActivity(
+				periodStatements,
+				chainId,
+				tx.time,
+				Number(tx.is_coinbase),
+				Number(tx.is_coinstake),
+				now
+			);
+		});
+		logProgress(`${chainId} transactions (chain activity)`, Math.min(offset + batch.length, transactionCount), transactionCount);
+	}
 
-	db.prepare(`
-		DELETE FROM chain_activity_buckets WHERE chain_id = ?
-	`).run(chainId);
+	return transactionCount;
+}
 
-	db.prepare(`
-		DELETE FROM address_period_stats WHERE chain_id = ?
-	`).run(chainId);
+function backfillBlocks(db, chainId, periodStatements, batchSize, now) {
+	const blocks = db.prepare(`
+		SELECT time
+		FROM blocks
+		WHERE chain_id = ? AND status = 'main' AND time IS NOT NULL
+		ORDER BY time ASC
+	`).all(chainId);
+	const blockCount = blocks.length;
 
+	for (let offset = 0; offset < blocks.length; offset += batchSize) {
+		const batch = blocks.slice(offset, offset + batchSize);
+		runBatchTransaction(db, batch, (block) => {
+			recordBlockActivity(periodStatements, chainId, block.time, now);
+		});
+		logProgress(`${chainId} blocks (chain activity)`, Math.min(offset + batch.length, blockCount), blockCount);
+	}
+
+	return blockCount;
+}
+
+function backfillAddressEvents(db, chainId, periodStatements, batchSize, now) {
 	const eventCount = db.prepare(`
 		SELECT COUNT(*) AS count
 		FROM address_events
@@ -116,48 +147,13 @@ function backfillChain(db, chainId, options = {}) {
 
 		lastEventId = batch[batch.length - 1].id;
 		processedEvents += batch.length;
-		logProgress(`${chainId} address events`, processedEvents, eventCount);
+		logProgress(`${chainId} address events (balance buckets)`, processedEvents, eventCount);
 	}
 
-	const transactions = db.prepare(`
-		SELECT time, is_coinbase, is_coinstake
-		FROM transactions
-		WHERE chain_id = ? AND time IS NOT NULL
-		ORDER BY time ASC
-	`).all(chainId);
-	const transactionCount = transactions.length;
+	return eventCount;
+}
 
-	for (let offset = 0; offset < transactions.length; offset += batchSize) {
-		const batch = transactions.slice(offset, offset + batchSize);
-		runBatchTransaction(db, batch, (tx) => {
-			recordTransactionActivity(
-				periodStatements,
-				chainId,
-				tx.time,
-				Number(tx.is_coinbase),
-				Number(tx.is_coinstake),
-				now
-			);
-		});
-		logProgress(`${chainId} transactions`, Math.min(offset + batch.length, transactionCount), transactionCount);
-	}
-
-	const blocks = db.prepare(`
-		SELECT time
-		FROM blocks
-		WHERE chain_id = ? AND status = 'main' AND time IS NOT NULL
-		ORDER BY time ASC
-	`).all(chainId);
-	const blockCount = blocks.length;
-
-	for (let offset = 0; offset < blocks.length; offset += batchSize) {
-		const batch = blocks.slice(offset, offset + batchSize);
-		runBatchTransaction(db, batch, (block) => {
-			recordBlockActivity(periodStatements, chainId, block.time, now);
-		});
-		logProgress(`${chainId} blocks`, Math.min(offset + batch.length, blockCount), blockCount);
-	}
-
+function backfillPeriodStats(db, chainId, periodStatements, batchSize, now, eventCount) {
 	const selectPeriodRows = db.prepare(`
 		SELECT
 			id,
@@ -174,8 +170,8 @@ function backfillChain(db, chainId, options = {}) {
 	`);
 
 	const seenTxByPeriod = new Set();
-	lastEventId = 0;
-	processedEvents = 0;
+	let lastEventId = 0;
+	let processedEvents = 0;
 
 	while (true) {
 		const batch = selectPeriodRows.all(chainId, lastEventId, batchSize);
@@ -209,18 +205,65 @@ function backfillChain(db, chainId, options = {}) {
 		processedEvents += batch.length;
 		logProgress(`${chainId} period stats`, processedEvents, eventCount);
 	}
+}
+
+function backfillChain(db, chainId, options = {}) {
+	const now = Date.now();
+	const batchSize = options.batchSize ?? getBackfillBatchSize();
+	const periodStatements = createPeriodStatStatements(db);
+
+	const eventCount = db.prepare(`
+		SELECT COUNT(*) AS count FROM address_events WHERE chain_id = ?
+	`).get(chainId).count;
+	const transactionCount = db.prepare(`
+		SELECT COUNT(*) AS count FROM transactions WHERE chain_id = ? AND time IS NOT NULL
+	`).get(chainId).count;
+	const blockCount = db.prepare(`
+		SELECT COUNT(*) AS count FROM blocks WHERE chain_id = ? AND status = 'main' AND time IS NOT NULL
+	`).get(chainId).count;
+
+	process.stderr.write(
+		`[backfill-stats] starting ${chainId}: `
+		+ `${transactionCount} txs, ${blockCount} blocks, ${eventCount} address events `
+		+ `(batch size ${batchSize})\n`
+	);
+	process.stderr.write(
+		"[backfill-stats] chain_activity_buckets fill during transactions/blocks phases; "
+		+ "address_balance_buckets fill during address-events phase\n"
+	);
+
+	db.prepare(`
+		DELETE FROM address_balance_buckets WHERE chain_id = ?
+	`).run(chainId);
+
+	db.prepare(`
+		DELETE FROM chain_activity_buckets WHERE chain_id = ?
+	`).run(chainId);
+
+	db.prepare(`
+		DELETE FROM address_period_stats WHERE chain_id = ?
+	`).run(chainId);
+
+	const transactions = backfillTransactions(db, chainId, periodStatements, batchSize, now);
+	const blocks = backfillBlocks(db, chainId, periodStatements, batchSize, now);
+	const events = backfillAddressEvents(db, chainId, periodStatements, batchSize, now);
+	backfillPeriodStats(db, chainId, periodStatements, batchSize, now, events);
 
 	return {
 		chainId,
-		events: eventCount,
-		transactions: transactionCount,
-		blocks: blockCount
+		events,
+		transactions,
+		blocks
 	};
 }
 
 function main() {
 	const chainId = process.argv[2];
-	const db = dbModule.openDatabase(undefined, { skipHeavyBackfills: true });
+	const db = dbModule.openDatabase(undefined, {
+		skipHeavyBackfills: true,
+		skipSeed: true,
+		busyTimeoutMs: 120_000
+	});
 
 	if (chainId) {
 		const result = backfillChain(db, chainId);

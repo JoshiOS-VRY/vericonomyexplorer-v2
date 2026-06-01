@@ -8,6 +8,9 @@ cd "$ROOT_DIR"
 ENV_FILE="${ENV_FILE:-.env.production}"
 COMPOSE=(docker compose -f docker-compose.option-a.yml --env-file "$ENV_FILE")
 
+# Services that open the shared SQLite volume for writes.
+DB_WRITER_SERVICES=(vrc-indexer vrm-indexer explorer-fast-api explorer-express)
+
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Missing $ENV_FILE (copy deploy/option-a/.env.production.example)."
   exit 1
@@ -30,6 +33,35 @@ indexer_service_for_chain() {
   esac
 }
 
+running_db_writers() {
+  local running=()
+  local service
+  for service in "${DB_WRITER_SERVICES[@]}"; do
+    if "${COMPOSE[@]}" ps --status running --services 2>/dev/null | grep -qx "$service"; then
+      running+=("$service")
+    fi
+  done
+  (IFS=$'\n'; echo "${running[*]:-}")
+}
+
+stop_db_writers() {
+  local running
+  running="$(running_db_writers)"
+  if [[ -z "$running" ]]; then
+    echo "No DB writer services running."
+    return 0
+  fi
+  # shellcheck disable=SC2206
+  local services=($running)
+  echo "Stopping DB writers: ${services[*]}"
+  "${COMPOSE[@]}" stop "${services[@]}"
+}
+
+start_db_writers() {
+  echo "Starting DB writers: ${DB_WRITER_SERVICES[*]}"
+  "${COMPOSE[@]}" start "${DB_WRITER_SERVICES[@]}"
+}
+
 run_indexer_backfill() {
   local chain="$1"
   shift
@@ -47,20 +79,13 @@ optional_since_args() {
 }
 
 warn_if_indexer_running() {
-  local chain="$1"
-  local service
-  service="$(indexer_service_for_chain "$chain")"
-  local running=()
-  if "${COMPOSE[@]}" ps --status running --services 2>/dev/null | grep -qx "$service"; then
-    running+=("$service")
-  fi
-  if "${COMPOSE[@]}" ps --status running --services 2>/dev/null | grep -qx "explorer-api"; then
-    running+=("explorer-api")
-  fi
-  if ((${#running[@]} > 0)); then
-    echo "Note: ${running[*]} running. Stop them before heavy backfills to avoid SQLite lock contention:"
-    echo "  ${COMPOSE[*]} stop ${running[*]}"
+  local running
+  running="$(running_db_writers)"
+  if [[ -n "$running" ]]; then
+    echo "Note: DB writers still running ($running)."
+    echo "Stop them before heavy backfills to avoid SQLite lock contention:"
+    echo "  source deploy/option-a/_backfill-common.sh && stop_db_writers"
     echo "  ... run backfill ..."
-    echo "  ${COMPOSE[*]} start ${running[*]}"
+    echo "  source deploy/option-a/_backfill-common.sh && start_db_writers"
   fi
 }

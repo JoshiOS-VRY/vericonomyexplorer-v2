@@ -131,7 +131,9 @@ npm run indexer:backfill-stats -- vrm
 npm run indexer:backfill-stats -- vrc
 ```
 
-Progress logs to stderr in batches (default 25,000 rows). Tune with `VCEXP_BACKFILL_STATS_BATCH_SIZE`.
+Progress logs to stderr in batches (default 5,000 rows). Tune with `VCEXP_BACKFILL_STATS_BATCH_SIZE`.
+
+**Chain activity** (`chain_activity_buckets`) is populated during the transactions/blocks phases, which run first. The long address-events phase fills `address_balance_buckets` only.
 
 **Production Docker (option-a):** see `deploy/option-a/backfill-vrc-insights.sh` and `backfill-vrm-insights.sh` for full per-chain scripts.
 
