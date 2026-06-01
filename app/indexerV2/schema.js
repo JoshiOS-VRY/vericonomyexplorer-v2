@@ -2,6 +2,58 @@
 
 const schemaVersion = 7;
 
+function logMigration(message) {
+	process.stderr.write(`[indexer-migrate] ${message}\n`);
+}
+
+function toMigrationCount(value) {
+	const parsed = typeof value === "bigint" ? Number(value) : Number(value);
+	return Number.isFinite(parsed) ? Math.trunc(parsed) : 0;
+}
+
+function getMigrationBatchSize() {
+	const configured = Number(process.env.VCEXP_MIGRATION_BATCH_SIZE ?? 5_000);
+	return Number.isFinite(configured) && configured > 0 ? Math.trunc(configured) : 5_000;
+}
+
+function runBatchTransaction(db, rows, fn) {
+	if (rows.length === 0) {
+		return;
+	}
+
+	const run = db.transaction(() => {
+		for (const row of rows) {
+			fn(row);
+		}
+	});
+	run();
+}
+
+function runMigrationProgress(db, label, countSql, countParams, selectBatchSql, selectParams, updateFn) {
+	const batchSize = getMigrationBatchSize();
+	const total = toMigrationCount(db.prepare(countSql).get(...countParams).count);
+
+	if (total === 0) {
+		logMigration(`${label}: nothing to update`);
+		return;
+	}
+
+	logMigration(`${label}: updating ${total} rows (batch size ${batchSize})`);
+	let processed = 0;
+
+	while (true) {
+		const batch = db.prepare(selectBatchSql).all(...selectParams, batchSize);
+		if (batch.length === 0) {
+			break;
+		}
+
+		runBatchTransaction(db, batch, updateFn);
+		processed += batch.length;
+		const pct = ((processed / total) * 100).toFixed(1);
+		logMigration(`${label}: ${processed}/${total} (${pct}%)`);
+	}
+}
+
 const tables = [
 	`CREATE TABLE IF NOT EXISTS indexer_meta (
 		key TEXT PRIMARY KEY,
@@ -298,7 +350,7 @@ function setStoredSchemaVersion(db, version) {
 
 function runSchemaV6Backfills(db) {
 	if (tableHasColumn(db, "address_transactions", "net_delta_sats")) {
-		db.exec(`
+		const updateNetDelta = db.prepare(`
 			UPDATE address_transactions
 			SET net_delta_sats = (
 				SELECT COALESCE(SUM(delta_sats), 0)
@@ -307,12 +359,30 @@ function runSchemaV6Backfills(db) {
 					AND e.address = address_transactions.address
 					AND e.txid = address_transactions.txid
 			)
-			WHERE net_delta_sats IS NULL
+			WHERE chain_id = ?
+				AND address = ?
+				AND txid = ?
+				AND net_delta_sats IS NULL
 		`);
+
+		runMigrationProgress(
+			db,
+			"schema v6 address_transactions.net_delta_sats",
+			`SELECT COUNT(*) AS count FROM address_transactions WHERE net_delta_sats IS NULL`,
+			[],
+			`
+				SELECT chain_id, address, txid
+				FROM address_transactions
+				WHERE net_delta_sats IS NULL
+				LIMIT ?
+			`,
+			[],
+			(row) => updateNetDelta.run(row.chain_id, row.address, row.txid)
+		);
 	}
 
 	if (tableHasColumn(db, "address_balances", "first_seen_height")) {
-		db.exec(`
+		const updateFirstSeen = db.prepare(`
 			UPDATE address_balances
 			SET
 				first_seen_height = (
@@ -327,12 +397,29 @@ function runSchemaV6Backfills(db) {
 					WHERE at.chain_id = address_balances.chain_id
 						AND at.address = address_balances.address
 				)
-			WHERE first_seen_height IS NULL
+			WHERE chain_id = ?
+				AND address = ?
+				AND first_seen_height IS NULL
 		`);
+
+		runMigrationProgress(
+			db,
+			"schema v6 address_balances.first_seen",
+			`SELECT COUNT(*) AS count FROM address_balances WHERE first_seen_height IS NULL`,
+			[],
+			`
+				SELECT chain_id, address
+				FROM address_balances
+				WHERE first_seen_height IS NULL
+				LIMIT ?
+			`,
+			[],
+			(row) => updateFirstSeen.run(row.chain_id, row.address)
+		);
 	}
 
 	if (tableHasColumn(db, "blocks", "output_count")) {
-		db.exec(`
+		const updateOutputCount = db.prepare(`
 			UPDATE blocks
 			SET output_count = (
 				SELECT COUNT(*)
@@ -342,8 +429,25 @@ function runSchemaV6Backfills(db) {
 				WHERE v.chain_id = blocks.chain_id
 					AND t.block_height = blocks.height
 			)
-			WHERE output_count IS NULL
+			WHERE chain_id = ?
+				AND height = ?
+				AND output_count IS NULL
 		`);
+
+		runMigrationProgress(
+			db,
+			"schema v6 blocks.output_count",
+			`SELECT COUNT(*) AS count FROM blocks WHERE output_count IS NULL`,
+			[],
+			`
+				SELECT chain_id, height
+				FROM blocks
+				WHERE output_count IS NULL
+				LIMIT ?
+			`,
+			[],
+			(row) => updateOutputCount.run(row.chain_id, row.height)
+		);
 	}
 }
 
@@ -380,18 +484,23 @@ function applyMigrations(db, options = {}) {
 
 	if (!skipHeavyBackfills) {
 		if (stored < 6) {
+			logMigration(`schema v${stored} -> v6: starting heavy backfills`);
 			runSchemaV6Backfills(db);
+			logMigration("schema v6: running ANALYZE");
 			analyzeDatabase(db);
 		}
 
 		if (stored < 7) {
+			logMigration(`schema v${Math.max(stored, 6)} -> v7: starting backfills`);
 			db.exec("DROP INDEX IF EXISTS idx_blocks_chain_hash;");
 			runSchemaV7Backfills(db);
+			logMigration("schema v7: running ANALYZE");
 			analyzeDatabase(db);
 		}
 
 		if (stored < schemaVersion) {
 			setStoredSchemaVersion(db, schemaVersion);
+			logMigration(`schema version set to ${schemaVersion}`);
 		}
 	}
 }
@@ -402,31 +511,64 @@ function runSchemaV7Backfills(db) {
 	}
 
 	const { computeBlockTotalsRaw } = require("./blockTotals.js");
-	const rows = db.prepare(`
-		SELECT chain_id, height, tx_count
+	const batchSize = getMigrationBatchSize();
+	const total = toMigrationCount(db.prepare(`
+		SELECT COUNT(*) AS count
 		FROM blocks
 		WHERE status = 'main' AND fee_sats IS NULL
-	`).all();
+	`).get().count);
+
+	if (total === 0) {
+		logMigration("schema v7 blocks.fee_sats: nothing to update");
+		return;
+	}
+
+	logMigration(`schema v7 blocks.fee_sats: updating ${total} rows (batch size ${batchSize})`);
+
+	const selectBlocks = db.prepare(`
+		SELECT chain_id, height, tx_count
+		FROM blocks
+		WHERE status = 'main'
+			AND fee_sats IS NULL
+			AND height > ?
+		ORDER BY height ASC
+		LIMIT ?
+	`);
 	const updateTotals = db.prepare(`
 		UPDATE blocks
 		SET fee_sats = ?, total_output_sats = ?
 		WHERE chain_id = ? AND height = ?
 	`);
 
-	for (const row of rows) {
-		const totals = computeBlockTotalsRaw(
-			db,
-			row.chain_id,
-			Number(row.height),
-			Number(row.tx_count)
-		);
+	let lastHeight = -1;
+	let processed = 0;
 
-		updateTotals.run(
-			totals.feeSats === null ? null : totals.feeSats,
-			totals.totalOutputSats,
-			row.chain_id,
-			row.height
-		);
+	while (true) {
+		const batch = selectBlocks.all(lastHeight, batchSize);
+		if (batch.length === 0) {
+			break;
+		}
+
+		runBatchTransaction(db, batch, (row) => {
+			const totals = computeBlockTotalsRaw(
+				db,
+				row.chain_id,
+				toMigrationCount(row.height),
+				toMigrationCount(row.tx_count)
+			);
+
+			updateTotals.run(
+				totals.feeSats === null ? null : totals.feeSats,
+				totals.totalOutputSats,
+				row.chain_id,
+				row.height
+			);
+		});
+
+		lastHeight = toMigrationCount(batch[batch.length - 1].height);
+		processed += batch.length;
+		const pct = ((processed / total) * 100).toFixed(1);
+		logMigration(`schema v7 blocks.fee_sats: ${processed}/${total} (${pct}%)`);
 	}
 }
 

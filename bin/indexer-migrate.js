@@ -18,6 +18,21 @@ function readSchemaVersion() {
 }
 
 const before = readSchemaVersion();
+process.stderr.write(
+	`[indexer-migrate] database=${dbPath} schema=${before} target=${schema.schemaVersion}\n`
+);
+
+if (before >= schema.schemaVersion) {
+	console.log(JSON.stringify({
+		dbPath,
+		targetSchemaVersion: schema.schemaVersion,
+		schemaVersionBefore: before,
+		schemaVersionAfter: before,
+		migration: { ran: false, reason: "already-current" }
+	}, null, 2));
+	process.exit(0);
+}
+
 const result = dbModule.ensureDatabaseMigrations(dbPath);
 const after = readSchemaVersion();
 

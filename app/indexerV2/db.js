@@ -264,6 +264,7 @@ function ensureDatabaseMigrations(dbPath = getDatabasePath()) {
 	}
 
 	const lockPath = `${dbPath}.migrate.lock`;
+	process.stderr.write(`[indexer-migrate] waiting for migration lock ${lockPath}\n`);
 	const lockFd = acquireMigrationLock(lockPath);
 
 	try {
@@ -273,6 +274,8 @@ function ensureDatabaseMigrations(dbPath = getDatabasePath()) {
 				reason: "already-current",
 			};
 		}
+
+		process.stderr.write(`[indexer-migrate] acquired lock; applying migrations\n`);
 
 		const migrationDb = new Database(dbPath);
 		migrationDb.defaultSafeIntegers(true);
