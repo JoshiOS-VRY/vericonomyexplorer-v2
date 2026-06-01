@@ -8,7 +8,8 @@ const {
 	recordTransactionActivity,
 	recordBlockActivity,
 	hourBucketStart,
-	getPeriodBoundsForTime
+	getPeriodBoundsForTime,
+	toSafeInteger
 } = require("./periodStats.js");
 
 function getBackfillBatchSize() {
@@ -16,9 +17,15 @@ function getBackfillBatchSize() {
 	return Number.isFinite(configured) && configured > 0 ? Math.trunc(configured) : 5_000;
 }
 
+function toCount(value) {
+	return toSafeInteger(value);
+}
+
 function logProgress(phase, processed, total) {
-	const pct = total > 0 ? ((processed / total) * 100).toFixed(1) : "?";
-	process.stderr.write(`[backfill-stats] ${phase}: ${processed}/${total} (${pct}%)\n`);
+	const done = toCount(processed);
+	const goal = toCount(total);
+	const pct = goal > 0 ? ((done / goal) * 100).toFixed(1) : "?";
+	process.stderr.write(`[backfill-stats] ${phase}: ${done}/${goal} (${pct}%)\n`);
 }
 
 function getAddressActivityCategory(row) {
@@ -51,16 +58,35 @@ function runBatchTransaction(db, rows, fn) {
 }
 
 function backfillTransactions(db, chainId, periodStatements, batchSize, now) {
-	const transactions = db.prepare(`
-		SELECT time, is_coinbase, is_coinstake
+	const transactionCount = toCount(db.prepare(`
+		SELECT COUNT(*) AS count
 		FROM transactions
 		WHERE chain_id = ? AND time IS NOT NULL
-		ORDER BY time ASC
-	`).all(chainId);
-	const transactionCount = transactions.length;
+	`).get(chainId).count);
 
-	for (let offset = 0; offset < transactions.length; offset += batchSize) {
-		const batch = transactions.slice(offset, offset + batchSize);
+	const selectTransactions = db.prepare(`
+		SELECT time, is_coinbase, is_coinstake, block_height, tx_index
+		FROM transactions
+		WHERE chain_id = ?
+			AND time IS NOT NULL
+			AND (
+				block_height > ?
+				OR (block_height = ? AND tx_index >= ?)
+			)
+		ORDER BY block_height ASC, tx_index ASC
+		LIMIT ?
+	`);
+
+	let lastHeight = -1;
+	let lastTxIndex = 0;
+	let processed = 0;
+
+	while (true) {
+		const batch = selectTransactions.all(chainId, lastHeight, lastHeight, lastTxIndex, batchSize);
+		if (batch.length === 0) {
+			break;
+		}
+
 		runBatchTransaction(db, batch, (tx) => {
 			recordTransactionActivity(
 				periodStatements,
@@ -71,38 +97,62 @@ function backfillTransactions(db, chainId, periodStatements, batchSize, now) {
 				now
 			);
 		});
-		logProgress(`${chainId} transactions (chain activity)`, Math.min(offset + batch.length, transactionCount), transactionCount);
+
+		const last = batch[batch.length - 1];
+		lastHeight = toCount(last.block_height);
+		lastTxIndex = toCount(last.tx_index) + 1;
+		processed += batch.length;
+		logProgress(`${chainId} transactions (chain activity)`, processed, transactionCount);
 	}
 
 	return transactionCount;
 }
 
 function backfillBlocks(db, chainId, periodStatements, batchSize, now) {
-	const blocks = db.prepare(`
-		SELECT time
+	const blockCount = toCount(db.prepare(`
+		SELECT COUNT(*) AS count
 		FROM blocks
 		WHERE chain_id = ? AND status = 'main' AND time IS NOT NULL
-		ORDER BY time ASC
-	`).all(chainId);
-	const blockCount = blocks.length;
+	`).get(chainId).count);
 
-	for (let offset = 0; offset < blocks.length; offset += batchSize) {
-		const batch = blocks.slice(offset, offset + batchSize);
+	const selectBlocks = db.prepare(`
+		SELECT time, height
+		FROM blocks
+		WHERE chain_id = ?
+			AND status = 'main'
+			AND time IS NOT NULL
+			AND height > ?
+		ORDER BY height ASC
+		LIMIT ?
+	`);
+
+	let lastHeight = -1;
+	let processed = 0;
+
+	while (true) {
+		const batch = selectBlocks.all(chainId, lastHeight, batchSize);
+		if (batch.length === 0) {
+			break;
+		}
+
 		runBatchTransaction(db, batch, (block) => {
 			recordBlockActivity(periodStatements, chainId, block.time, now);
 		});
-		logProgress(`${chainId} blocks (chain activity)`, Math.min(offset + batch.length, blockCount), blockCount);
+
+		lastHeight = toCount(batch[batch.length - 1].height);
+		processed += batch.length;
+		logProgress(`${chainId} blocks (chain activity)`, processed, blockCount);
 	}
 
 	return blockCount;
 }
 
 function backfillAddressEvents(db, chainId, periodStatements, batchSize, now) {
-	const eventCount = db.prepare(`
+	const eventCount = toCount(db.prepare(`
 		SELECT COUNT(*) AS count
 		FROM address_events
 		WHERE chain_id = ?
-	`).get(chainId).count;
+	`).get(chainId).count);
 
 	const selectEvents = db.prepare(`
 		SELECT
@@ -145,7 +195,7 @@ function backfillAddressEvents(db, chainId, periodStatements, batchSize, now) {
 			);
 		});
 
-		lastEventId = batch[batch.length - 1].id;
+		lastEventId = toCount(batch[batch.length - 1].id);
 		processedEvents += batch.length;
 		logProgress(`${chainId} address events (balance buckets)`, processedEvents, eventCount);
 	}
@@ -154,6 +204,7 @@ function backfillAddressEvents(db, chainId, periodStatements, batchSize, now) {
 }
 
 function backfillPeriodStats(db, chainId, periodStatements, batchSize, now, eventCount) {
+	const totalEvents = toCount(eventCount);
 	const selectPeriodRows = db.prepare(`
 		SELECT
 			id,
@@ -201,9 +252,36 @@ function backfillPeriodStats(db, chainId, periodStatements, batchSize, now, even
 			}
 		});
 
-		lastEventId = batch[batch.length - 1].id;
+		lastEventId = toCount(batch[batch.length - 1].id);
 		processedEvents += batch.length;
-		logProgress(`${chainId} period stats`, processedEvents, eventCount);
+		logProgress(`${chainId} period stats`, processedEvents, totalEvents);
+	}
+}
+
+function logIndexedCoverage(db, chainId) {
+	const coverage = db.prepare(`
+		SELECT
+			(SELECT COUNT(*) FROM blocks WHERE chain_id = ? AND status = 'main') AS main_blocks,
+			(SELECT MAX(height) FROM blocks WHERE chain_id = ? AND status = 'main') AS max_indexed_height,
+			(SELECT last_indexed_height FROM sync_state WHERE chain_id = ?) AS last_indexed_height,
+			(SELECT best_rpc_height FROM sync_state WHERE chain_id = ?) AS best_rpc_height
+	`).get(chainId, chainId, chainId, chainId);
+
+	const mainBlocks = toCount(coverage.main_blocks);
+	const maxHeight = toCount(coverage.max_indexed_height);
+	const lastIndexed = toCount(coverage.last_indexed_height);
+	const rpcTip = toCount(coverage.best_rpc_height);
+
+	process.stderr.write(
+		`[backfill-stats] indexed coverage: ${mainBlocks} main-chain block rows, `
+		+ `max height ${maxHeight}, sync_state last_indexed=${lastIndexed}, rpc_tip=${rpcTip}\n`
+	);
+
+	if (rpcTip > 0 && maxHeight > 0 && maxHeight < rpcTip - 10) {
+		process.stderr.write(
+			`[backfill-stats] warning: indexer is ~${rpcTip - maxHeight} blocks behind RPC tip; `
+			+ "backfill only covers indexed blocks. Let vrc-indexer catch up, then re-run.\n"
+		);
 	}
 }
 
@@ -212,15 +290,17 @@ function backfillChain(db, chainId, options = {}) {
 	const batchSize = options.batchSize ?? getBackfillBatchSize();
 	const periodStatements = createPeriodStatStatements(db);
 
-	const eventCount = db.prepare(`
+	logIndexedCoverage(db, chainId);
+
+	const eventCount = toCount(db.prepare(`
 		SELECT COUNT(*) AS count FROM address_events WHERE chain_id = ?
-	`).get(chainId).count;
-	const transactionCount = db.prepare(`
+	`).get(chainId).count);
+	const transactionCount = toCount(db.prepare(`
 		SELECT COUNT(*) AS count FROM transactions WHERE chain_id = ? AND time IS NOT NULL
-	`).get(chainId).count;
-	const blockCount = db.prepare(`
+	`).get(chainId).count);
+	const blockCount = toCount(db.prepare(`
 		SELECT COUNT(*) AS count FROM blocks WHERE chain_id = ? AND status = 'main' AND time IS NOT NULL
-	`).get(chainId).count;
+	`).get(chainId).count);
 
 	process.stderr.write(
 		`[backfill-stats] starting ${chainId}: `
