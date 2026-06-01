@@ -5,6 +5,11 @@ const { getChainConfig, getRpcCredentials } = require("./chainConfig.js");
 const { createRpcClient } = require("./rpcClient.js");
 const { ingestBlock } = require("./ingest.js");
 const { rollbackFromHeight } = require("./reorg.js");
+const {
+	resolveIndexOnly,
+	resolveRpcBatchSize,
+	resolveStoreRawJson
+} = require("./indexOnly.js");
 
 async function syncRange(options = {}) {
 	const chainId = normalizeChainId(options.chain || process.env.VCEXP_INDEXER_CHAIN || "vrm");
@@ -13,11 +18,12 @@ async function syncRange(options = {}) {
 	const rpc = options.rpc || createRpcClient(rpcCredentials);
 	const db = options.db || dbModule.openDatabase();
 	const indexerConfig = chainConfig.indexer || {};
+	const indexOnly = resolveIndexOnly(options, indexerConfig);
+	const rpcBatchSize = resolveRpcBatchSize(options, indexOnly);
+	const storeRawJson = resolveStoreRawJson(options, indexerConfig, indexOnly);
 	const batchSize = Number(options.batchSize || indexerConfig.batchSize || 0);
 	const pauseMs = Number(options.pauseMs === undefined ? indexerConfig.pauseMs || 0 : options.pauseMs);
-	const storeRawJson = options.storeRawJson === undefined
-		? indexerConfig.storeRawJson !== false
-		: options.storeRawJson !== false;
+	const autoRollback = options.autoRollback !== false;
 
 	const bestHeight = await rpc.call("getblockcount");
 	let startHeight = options.startHeight === undefined
@@ -25,7 +31,6 @@ async function syncRange(options = {}) {
 		: Number(options.startHeight);
 	const requestedEndHeight = options.endHeight === undefined ? bestHeight : Number(options.endHeight);
 	const endHeight = Math.min(requestedEndHeight, bestHeight);
-	const autoRollback = options.autoRollback !== false;
 
 	if (Number.isNaN(startHeight) || Number.isNaN(endHeight)) {
 		throw new Error(`Invalid height range: start=${options.startHeight}, end=${options.endHeight}`);
@@ -37,7 +42,9 @@ async function syncRange(options = {}) {
 			bestHeight,
 			startHeight,
 			endHeight,
-			indexed: 0
+			indexed: 0,
+			indexOnly,
+			rpcBatchSize
 		};
 	}
 
@@ -58,54 +65,43 @@ async function syncRange(options = {}) {
 		}
 	}
 
+	const ingestOptions = {
+		db,
+		bestRpcHeight: bestHeight,
+		force: options.force === true,
+		storeRawJson,
+		indexOnly
+	};
+
 	let indexed = 0;
-	for (let height = startHeight; height <= endHeight; height++) {
-		const blockhash = await rpc.call("getblockhash", [height]);
-		const existingHash = getIndexedBlockHash(db, chainConfig.id, height);
 
-		if (autoRollback && existingHash && existingHash !== blockhash) {
-			const rollback = rollbackFromHeight(chainConfig.id, height, { db });
-
-			if (options.onProgress) {
-				options.onProgress({
-					chainId: chainConfig.id,
-					height,
-					endHeight,
-					hash: blockhash,
-					rolledBack: true,
-					rollback,
-					memory: getMemoryUsage()
-				});
-			}
-		}
-
-		const block = await rpc.call("getblock", [blockhash, 2]);
-		const result = ingestBlock(chainConfig.id, block, {
+	if (indexOnly && rpcBatchSize > 1) {
+		indexed = await syncRangeWithRpcBatch({
 			db,
-			bestRpcHeight: bestHeight,
-			force: options.force === true,
-			storeRawJson
+			rpc,
+			chainId: chainConfig.id,
+			startHeight,
+			endHeight,
+			rpcBatchSize,
+			autoRollback,
+			ingestOptions,
+			onProgress: options.onProgress,
+			batchSize,
+			pauseMs
 		});
-
-		if (!result.skipped) {
-			indexed++;
-		}
-
-		if (options.onProgress) {
-			options.onProgress({
-				chainId: chainConfig.id,
-				height,
-				endHeight,
-				hash: blockhash,
-				skipped: !!result.skipped,
-				rolledBack: false,
-				memory: getMemoryUsage()
-			});
-		}
-
-		if (batchSize > 0 && pauseMs > 0 && height < endHeight && indexed > 0 && indexed % batchSize === 0) {
-			await sleep(pauseMs);
-		}
+	} else {
+		indexed = await syncRangeSequential({
+			db,
+			rpc,
+			chainId: chainConfig.id,
+			startHeight,
+			endHeight,
+			autoRollback,
+			ingestOptions,
+			onProgress: options.onProgress,
+			batchSize,
+			pauseMs
+		});
 	}
 
 	return {
@@ -113,8 +109,116 @@ async function syncRange(options = {}) {
 		bestHeight,
 		startHeight,
 		endHeight,
-		indexed
+		indexed,
+		indexOnly,
+		rpcBatchSize: indexOnly ? rpcBatchSize : 1
 	};
+}
+
+async function syncRangeSequential(context) {
+	let indexed = 0;
+
+	for (let height = context.startHeight; height <= context.endHeight; height++) {
+		const blockhash = await context.rpc.call("getblockhash", [height]);
+		const block = await context.rpc.call("getblock", [blockhash, 2]);
+		const ingested = await ingestHeight(context, height, blockhash, block);
+		indexed += ingested;
+		await maybePause(context, height, indexed);
+	}
+
+	return indexed;
+}
+
+async function syncRangeWithRpcBatch(context) {
+	let indexed = 0;
+
+	for (let windowStart = context.startHeight; windowStart <= context.endHeight; windowStart += context.rpcBatchSize) {
+		const windowEnd = Math.min(windowStart + context.rpcBatchSize - 1, context.endHeight);
+		const heights = [];
+
+		for (let height = windowStart; height <= windowEnd; height++) {
+			heights.push(height);
+		}
+
+		const hashes = await context.rpc.batch(
+			heights.map((height) => ({
+				method: "getblockhash",
+				params: [height]
+			}))
+		);
+
+		const pending = [];
+
+		for (let i = 0; i < heights.length; i++) {
+			const height = heights[i];
+			const blockhash = hashes[i];
+			const existingHash = getIndexedBlockHash(context.db, context.chainId, height);
+
+			if (context.autoRollback && existingHash && existingHash !== blockhash) {
+				const rollback = rollbackFromHeight(context.chainId, height, { db: context.db });
+
+				if (context.onProgress) {
+					context.onProgress({
+						chainId: context.chainId,
+						height,
+						endHeight: context.endHeight,
+						hash: blockhash,
+						rolledBack: true,
+						rollback,
+						memory: getMemoryUsage()
+					});
+				}
+			}
+
+			pending.push({ height, blockhash });
+		}
+
+		const blocks = await context.rpc.batch(
+			pending.map((entry) => ({
+				method: "getblock",
+				params: [entry.blockhash, 2]
+			}))
+		);
+
+		for (let i = 0; i < pending.length; i++) {
+			const entry = pending[i];
+			const ingested = await ingestHeight(context, entry.height, entry.blockhash, blocks[i]);
+			indexed += ingested;
+		}
+
+		await maybePause(context, windowEnd, indexed);
+	}
+
+	return indexed;
+}
+
+async function ingestHeight(context, height, blockhash, block) {
+	if (!block) {
+		throw new Error(`Missing block payload for height ${height}`);
+	}
+
+	const result = ingestBlock(context.chainId, block, context.ingestOptions);
+	const ingested = result.skipped ? 0 : 1;
+
+	if (context.onProgress) {
+		context.onProgress({
+			chainId: context.chainId,
+			height,
+			endHeight: context.endHeight,
+			hash: blockhash,
+			skipped: !!result.skipped,
+			rolledBack: false,
+			memory: getMemoryUsage()
+		});
+	}
+
+	return ingested;
+}
+
+async function maybePause(context, height, indexed) {
+	if (context.batchSize > 0 && context.pauseMs > 0 && height < context.endHeight && indexed > 0 && indexed % context.batchSize === 0) {
+		await sleep(context.pauseMs);
+	}
 }
 
 async function ensureResumeOnMainChain(db, rpc, chainId, startHeight, bestHeight) {
@@ -213,5 +317,8 @@ function normalizeChainId(chain) {
 module.exports = {
 	syncRange,
 	getResumeHeight,
-	normalizeChainId
+	normalizeChainId,
+	resolveIndexOnly,
+	resolveRpcBatchSize,
+	resolveStoreRawJson
 };

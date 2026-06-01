@@ -24,6 +24,8 @@ syncRange({
 	pauseMs: args["pause-ms"] === undefined ? undefined : Number(args["pause-ms"]),
 	storeRawJson: parseStoreRawJson(args["store-raw-json"]),
 	autoRollback: parseAutoRollback(args["auto-rollback"]),
+	indexOnly: args["index-only"] === true,
+	rpcBatchSize: args["rpc-batch-size"] === undefined ? undefined : Number(args["rpc-batch-size"]),
 	onProgress: info => {
 		if (info.rolledBack) {
 			const rollback = info.rollback || {};
@@ -115,5 +117,7 @@ Options:
   --store-raw-json   true/false. Overrides the chain indexer.storeRawJson setting.
   --auto-rollback    true/false. Defaults to true; rolls back mismatched indexed heights.
   --log-every        Print progress every N heights. Defaults to 1.
+  --index-only       Fast catch-up: core chain data only; defer insights buckets/fees to backfill.
+  --rpc-batch-size   RPC batch window when --index-only is set. Default: 100.
 `);
 }

@@ -218,6 +218,7 @@ function ingestBlock(chainId, block, options = {}) {
 		throw new Error("Cannot ingest block: missing hash or height");
 	}
 
+	const indexOnly = options.indexOnly === true;
 	const db = options.db || dbModule.openDatabase();
 	const statements = createStatements(db);
 	const now = Date.now();
@@ -240,7 +241,7 @@ function ingestBlock(chainId, block, options = {}) {
 	}
 
 	const run = db.transaction(() => {
-		const periodStatements = createPeriodStatStatements(db);
+		const periodStatements = indexOnly ? null : createPeriodStatStatements(db);
 		const enrichment = computeBlockEnrichment(block);
 
 		statements.upsertBlock.run({
@@ -265,19 +266,22 @@ function ingestBlock(chainId, block, options = {}) {
 
 		for (let txIndex = 0; txIndex < txs.length; txIndex++) {
 			ingestTransaction(statements, periodStatements, chainId, block, txs[txIndex], txIndex, now, {
-				storeRawJson
+				storeRawJson,
+				indexOnly
 			});
 		}
 
-		const blockTotals = computeBlockTotalsRaw(db, chainId, block.height, txs.length);
-		statements.updateBlockTotals.run(
-			blockTotals.feeSats === null ? null : blockTotals.feeSats,
-			blockTotals.totalOutputSats,
-			chainId,
-			block.height
-		);
+		if (!indexOnly) {
+			const blockTotals = computeBlockTotalsRaw(db, chainId, block.height, txs.length);
+			statements.updateBlockTotals.run(
+				blockTotals.feeSats === null ? null : blockTotals.feeSats,
+				blockTotals.totalOutputSats,
+				chainId,
+				block.height
+			);
 
-		recordBlockActivity(periodStatements, chainId, block.time || block.blocktime || 0, now);
+			recordBlockActivity(periodStatements, chainId, block.time || block.blocktime || 0, now);
+		}
 
 		statements.upsertSyncState.run(
 			chainId,
@@ -325,19 +329,21 @@ function ingestTransaction(statements, periodStatements, chainId, block, tx, txI
 		indexed_at: now
 	});
 
-	processInputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now);
-	processOutputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now);
-	recordTransactionActivity(
-		periodStatements,
-		chainId,
-		block.time || block.blocktime || 0,
-		coinbase,
-		coinstake,
-		now
-	);
+	processInputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now, options.indexOnly === true);
+	processOutputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now, options.indexOnly === true);
+	if (!options.indexOnly) {
+		recordTransactionActivity(
+			periodStatements,
+			chainId,
+			block.time || block.blocktime || 0,
+			coinbase,
+			coinstake,
+			now
+		);
+	}
 }
 
-function processInputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now) {
+function processInputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now, indexOnly = false) {
 	const vins = Array.isArray(tx.vin) ? tx.vin : [];
 
 	for (let vinIndex = 0; vinIndex < vins.length; vinIndex++) {
@@ -393,30 +399,32 @@ function processInputs(statements, periodStatements, chainId, block, tx, txid, c
 				block.time || block.blocktime || 0,
 				now
 			);
-			recordAddressPeriodEvent(
-				periodStatements,
-				chainId,
-				address,
-				delta,
-				block.height,
-				block.time || block.blocktime || 0,
-				txCountIncrement,
-				now
-			);
-			recordAddressBalanceBucket(
-				periodStatements,
-				chainId,
-				address,
-				delta,
-				block.time || block.blocktime || 0,
-				"spent",
-				now
-			);
+			if (!indexOnly) {
+				recordAddressPeriodEvent(
+					periodStatements,
+					chainId,
+					address,
+					delta,
+					block.height,
+					block.time || block.blocktime || 0,
+					txCountIncrement,
+					now
+				);
+				recordAddressBalanceBucket(
+					periodStatements,
+					chainId,
+					address,
+					delta,
+					block.time || block.blocktime || 0,
+					"spent",
+					now
+				);
+			}
 		}
 	}
 }
 
-function processOutputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now) {
+function processOutputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now, indexOnly = false) {
 	const vouts = Array.isArray(tx.vout) ? tx.vout : [];
 
 	for (let outputIndex = 0; outputIndex < vouts.length; outputIndex++) {
@@ -455,25 +463,27 @@ function processOutputs(statements, periodStatements, chainId, block, tx, txid, 
 				now
 			);
 			const category = coinstake ? "staked" : coinbase ? "mined" : "received";
-			recordAddressPeriodEvent(
-				periodStatements,
-				chainId,
-				primaryAddress,
-				valueSats,
-				block.height,
-				block.time || block.blocktime || 0,
-				txCountIncrement,
-				now
-			);
-			recordAddressBalanceBucket(
-				periodStatements,
-				chainId,
-				primaryAddress,
-				valueSats,
-				block.time || block.blocktime || 0,
-				category,
-				now
-			);
+			if (!indexOnly) {
+				recordAddressPeriodEvent(
+					periodStatements,
+					chainId,
+					primaryAddress,
+					valueSats,
+					block.height,
+					block.time || block.blocktime || 0,
+					txCountIncrement,
+					now
+				);
+				recordAddressBalanceBucket(
+					periodStatements,
+					chainId,
+					primaryAddress,
+					valueSats,
+					block.time || block.blocktime || 0,
+					category,
+					now
+				);
+			}
 		}
 	}
 }

@@ -143,6 +143,31 @@ docker compose -f docker-compose.option-a.yml exec vrc-indexer npm run indexer:v
 docker compose -f docker-compose.option-a.yml logs -f vrc-indexer
 ```
 
+## 5a) Fast catch-up (`--index-only`)
+
+For initial sync, run the VRC indexer in **index-only** mode (default in `docker-compose.option-a.yml`):
+
+- Indexes blocks, txs, vins/vouts, address events, balances
+- **Skips** live insights buckets, period stats, and per-block fee totals
+- **Batches RPC** (100 blocks/window by default) for higher throughput
+- Forces `storeRawJson: false` unless overridden
+
+```bash
+docker compose -f docker-compose.option-a.yml --env-file .env.production up -d vrc-indexer
+docker compose -f docker-compose.option-a.yml --env-file .env.production logs -f vrc-indexer
+```
+
+One-off / manual:
+
+```bash
+docker compose -f docker-compose.option-a.yml --env-file .env.production run --rm vrc-indexer \
+  node ./bin/indexer-v2-loop.js --chain vrc --index-only --pause-ms 0 --log-every 1000
+```
+
+Tune RPC batch size: `VCEXP_INDEX_ONLY_RPC_BATCH=200` or `--rpc-batch-size 200`.
+
+**After fully synced to tip:** stop writers → run section 5b backfills → restart indexer **without** `--index-only` for live blocks (or keep index-only and backfill periodically).
+
 ## 5b) Insights chart backfills (Docker)
 
 One-off jobs use `docker compose run --rm` against the shared SQLite volume. Scripts live in `deploy/option-a/` (run from repo root on the VPS).

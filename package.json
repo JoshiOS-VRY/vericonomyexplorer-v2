@@ -14,7 +14,7 @@
 		"api:dev": "npm --prefix explorer-api run dev",
 		"api:rebuild-native": "npm rebuild better-sqlite3",
 		"api:bench": "npm --prefix explorer-api run bench",
-		"indexer:vrc": "node ./bin/indexer-v2-loop.js --chain vrc --pause-ms 0 --log-every 1000",
+		"indexer:vrc": "node ./bin/indexer-v2-loop.js --chain vrc --index-only --pause-ms 0 --log-every 1000",
 		"indexer:vrm": "node ./bin/indexer-v2-loop.js --chain vrm",
 		"indexer:v2": "node ./bin/indexer-v2.js",
 		"indexer:v2:repair": "node ./bin/indexer-repair.js",
