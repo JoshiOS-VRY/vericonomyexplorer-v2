@@ -8,7 +8,6 @@ const { backfillChain } = require("../app/indexerV2/backfillStats.js");
 
 const chainId = process.argv[2] ? String(process.argv[2]).toLowerCase() : null;
 const db = dbModule.openDatabase(undefined, {
-	skipHeavyBackfills: true,
 	skipSeed: true,
 	busyTimeoutMs: 120_000
 });

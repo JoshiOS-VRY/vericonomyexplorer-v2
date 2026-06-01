@@ -340,7 +340,6 @@ function backfillChain(db, chainId, options = {}) {
 function main() {
 	const chainId = process.argv[2];
 	const db = dbModule.openDatabase(undefined, {
-		skipHeavyBackfills: true,
 		skipSeed: true,
 		busyTimeoutMs: 120_000
 	});

@@ -44,6 +44,11 @@ function openDatabase(dbPath = getDatabasePath(), options = {}) {
 		fs.mkdirSync(dbDir, { recursive: true });
 	}
 
+	// Heavy schema backfills run once under a file lock, not on every connection open.
+	if (options.skipMigrations !== true) {
+		ensureDatabaseMigrations(dbPath);
+	}
+
 	db = new Database(dbPath);
 	db.defaultSafeIntegers(true);
 	db.pragma("journal_mode = WAL");
@@ -52,7 +57,7 @@ function openDatabase(dbPath = getDatabasePath(), options = {}) {
 	db.pragma(`busy_timeout = ${Number.isFinite(busyTimeoutMs) && busyTimeoutMs > 0 ? busyTimeoutMs : 10_000}`);
 	db.pragma("synchronous = NORMAL");
 
-	schema.applySchema(db, options);
+	schema.applySchema(db, Object.assign({}, options, { skipHeavyBackfills: true }));
 	if (options.skipSeed !== true) {
 		seedChains(db);
 	}

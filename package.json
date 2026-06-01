@@ -25,6 +25,7 @@
 		"indexer:v2:reorg-smoke": "node ./app/indexerV2/reorgAutoSmoke.js",
 		"indexer:v2:query-smoke": "node ./app/indexerV2/querySmoke.js",
 		"indexer:checkpoint": "node ./bin/indexer-checkpoint.js",
+		"indexer:migrate": "node ./bin/indexer-migrate.js",
 		"indexer:backfill-network-metrics": "node ./bin/backfill-network-metrics.js",
 		"indexer:backfill-address-growth": "node ./bin/backfill-address-growth.js",
 		"indexer:backfill-stats": "node ./bin/backfill-stats.js",
