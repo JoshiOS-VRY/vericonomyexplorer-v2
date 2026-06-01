@@ -5,15 +5,11 @@ import {
 import { VrmMinersPageClient } from "@/components/explorer/vrm/VrmMinersPageClient";
 import { getMinersLeaderboard } from "@/lib/api/indexer";
 import { formatExplorerUserMessage } from "@/lib/explorerCopy";
+import {
+  normalizeMinersPeriod,
+  type MinersPeriodId,
+} from "@/lib/minersPeriods";
 import { normalizeLimit, normalizeOffset } from "@/lib/utils";
-
-const PERIODS = ["week", "month", "year", "all"] as const;
-type MinersPeriod = (typeof PERIODS)[number];
-
-function normalizePeriod(value: string | undefined): MinersPeriod {
-  const period = (value || "month").trim().toLowerCase();
-  return PERIODS.includes(period as MinersPeriod) ? (period as MinersPeriod) : "month";
-}
 
 export default async function MinersPage({
   searchParams,
@@ -25,7 +21,7 @@ export default async function MinersPage({
   }>;
 }) {
   const params = await searchParams;
-  const period = normalizePeriod(params.period);
+  const period: MinersPeriodId = normalizeMinersPeriod(params.period, "month");
   const limit = normalizeLimit(params.limit, 50);
   const offset = normalizeOffset(params.offset);
 

@@ -216,10 +216,31 @@ export function hashPerSecToKhPerMin(hashPerSec: number): number {
   return (hashPerSec * 60) / 1000;
 }
 
+/** Matches wallet `resolveBlockTimeMinutes`: observed rate first, then RPC target. */
+export function resolveVrmBlockTimeMinutes(
+  blocksPerHour: number | null,
+  blockTimeMinTarget: number | null,
+): number | null {
+  if (blocksPerHour != null && blocksPerHour > 0) {
+    return 60 / blocksPerHour;
+  }
+
+  if (blockTimeMinTarget != null && blockTimeMinTarget > 0) {
+    return blockTimeMinTarget;
+  }
+
+  return null;
+}
+
 export async function fetchVrmHashrate(
   rpcCall: RpcCall,
   chainId: ChainId = "vrm",
-): Promise<{ currentHashPerSec: number | null; hashrate7dHashPerSec: number | null }> {
+): Promise<{
+  currentHashPerSec: number | null;
+  hashrate7dHashPerSec: number | null;
+  blocksPerHour: number | null;
+  blockTimeMinTarget: number | null;
+}> {
   const targetBlockTimeSeconds = getTargetBlockTimeSeconds(chainId);
   const blocksPerDay = Math.floor((24 * 60 * 60) / targetBlockTimeSeconds);
   const blocks7Days = blocksPerDay * 7;
@@ -235,12 +256,20 @@ export async function fetchVrmHashrate(
 
   let currentHashPerSec: number | null = null;
   let hashrate7dHashPerSec: number | null = null;
+  let blocksPerHour: number | null = null;
+  let blockTimeMinTarget: number | null = null;
 
   if (miningInfoResult.status === "fulfilled") {
-    const miningInfo = miningInfoResult.value as { networkhashps?: number };
+    const miningInfo = miningInfoResult.value as {
+      networkhashps?: number;
+      blocksperhour?: unknown;
+      blocktime?: unknown;
+    };
     if (miningInfo?.networkhashps && miningInfo.networkhashps > 0) {
       currentHashPerSec = miningInfo.networkhashps;
     }
+    blocksPerHour = parseRpcNumber(miningInfo?.blocksperhour);
+    blockTimeMinTarget = parseRpcNumber(miningInfo?.blocktime);
   }
 
   if (hashrate7dResult.status === "fulfilled") {
@@ -272,7 +301,12 @@ export async function fetchVrmHashrate(
     hashrate7dHashPerSec = currentHashPerSec;
   }
 
-  return { currentHashPerSec, hashrate7dHashPerSec };
+  return {
+    currentHashPerSec,
+    hashrate7dHashPerSec,
+    blocksPerHour,
+    blockTimeMinTarget,
+  };
 }
 
 async function safeNetworkHashrate(

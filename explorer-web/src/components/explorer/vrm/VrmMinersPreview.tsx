@@ -1,24 +1,18 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { BcPanel } from "@/components/explorer/BlockchairUi";
 import { RankList, formatHeight } from "@/components/explorer/ExplorerUi";
 import { ChainPanelLink } from "@/components/explorer/chain/ChainPanelLink";
-import { Button } from "@/components/ui/Button";
+import { MinersPeriodPicker } from "@/components/explorer/vrm/MinersPeriodPicker";
 import type { MinersLeaderboardResult } from "@/lib/api/types";
 import { fetchMinersLeaderboardClient } from "@/lib/api/client";
 import { formatExplorerUserMessage } from "@/lib/explorerCopy";
+import {
+  normalizeMinersPeriod,
+  type MinersPeriodId,
+} from "@/lib/minersPeriods";
 import { ellipsizeMiddle } from "@/lib/utils";
-
-const PERIODS = [
-  { id: "week", label: "Week" },
-  { id: "month", label: "Month" },
-  { id: "year", label: "Year" },
-  { id: "all", label: "All time" },
-] as const;
-
-type MinersPeriod = (typeof PERIODS)[number]["id"];
 
 export function VrmMinersPreview({
   miners: initialMiners,
@@ -26,14 +20,14 @@ export function VrmMinersPreview({
   miners: MinersLeaderboardResult;
 }) {
   const [miners, setMiners] = useState(initialMiners);
-  const [period, setPeriod] = useState<MinersPeriod>(
-    (initialMiners.period?.type as MinersPeriod) || "month",
+  const [period, setPeriod] = useState<MinersPeriodId>(
+    normalizeMinersPeriod(initialMiners.period?.type, "month"),
   );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const loadPeriod = useCallback(
-    async (nextPeriod: MinersPeriod) => {
+    async (nextPeriod: MinersPeriodId) => {
       if (nextPeriod === period || loading) {
         return;
       }
@@ -64,25 +58,12 @@ export function VrmMinersPreview({
         <ChainPanelLink href={`/vrm/miners?period=${period}`} label="Miners" />
       }
     >
-      <div className="mb-3 flex flex-wrap items-center gap-1.5">
-        {PERIODS.map((option) => (
-          <Button
-            key={option.id}
-            type="button"
-            variant={period === option.id ? "primary" : "secondary"}
-            size="sm"
-            disabled={loading}
-            onClick={() => void loadPeriod(option.id)}
-          >
-            {option.label}
-          </Button>
-        ))}
-        {loading ? (
-          <span className="inline-flex items-center gap-1.5 text-xs text-fg-muted">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-            Loading…
-          </span>
-        ) : null}
+      <div className="mb-3">
+        <MinersPeriodPicker
+          period={period}
+          loading={loading}
+          onSelect={(next) => void loadPeriod(next)}
+        />
       </div>
 
       {error ? (

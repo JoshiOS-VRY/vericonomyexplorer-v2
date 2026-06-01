@@ -79,8 +79,14 @@ export async function buildWalletStats(chainId: ChainId): Promise<WalletStats> {
   ]);
 
   const mining = miningResult ?? null;
-  const net = (network ? network[chainId] : null) as Record<string, unknown> | null;
-  const mkt = (market ? market[chainId] : null) as Record<string, unknown> | null;
+  const net = (network ? network[chainId] : null) as Record<
+    string,
+    unknown
+  > | null;
+  const mkt = (market ? market[chainId] : null) as Record<
+    string,
+    unknown
+  > | null;
   const { difficulty, pos, pow } = readPosPowDifficulty(chainId, mining);
 
   const networkHashPs =
@@ -103,13 +109,16 @@ export async function buildWalletStats(chainId: ChainId): Promise<WalletStats> {
     price_btc: toNumberOrNull(mkt?.btc),
     market_cap_usd: toNumberOrNull(mkt?.marketCap),
     volume_24h_usd: toNumberOrNull(mkt?.volume24h),
-    stake_interest: chainId === "vrc" ? toNumberOrNull(mining?.stakeinterest) : null,
-    stake_inflation: chainId === "vrc" ? toNumberOrNull(mining?.stakeinflation) : null,
-    net_stake_weight: chainId === "vrc" ? toNumberOrNull(mining?.netstakeweight) : null,
+    stake_interest:
+      chainId === "vrc" ? toNumberOrNull(mining?.stakeinterest) : null,
+    stake_inflation:
+      chainId === "vrc" ? toNumberOrNull(mining?.stakeinflation) : null,
+    net_stake_weight:
+      chainId === "vrc" ? toNumberOrNull(mining?.netstakeweight) : null,
     pos_difficulty: pos,
     pow_difficulty: pow,
     fetched_at: Math.floor(Date.now() / 1000),
-    source: "explorer-v2-wallet",
+    source: "",
   };
 }
 
@@ -150,7 +159,9 @@ function mapIndexedBlock(block: Record<string, unknown>): WalletBlock | null {
             : null,
     },
     strippedsize: toNumberOrNull(block.size),
-    outputT: toStringOrNull(block.outputTotal ?? block.outputValue ?? block.mint),
+    outputT: toStringOrNull(
+      block.outputTotal ?? block.outputValue ?? block.mint,
+    ),
     outputC: toNumberOrNull(block.outputCount),
   };
 }
@@ -162,7 +173,9 @@ export async function buildWalletBlocks(
   const blocks = (await fetchLatestBlocks(chainId)) as unknown[];
   if (!Array.isArray(blocks)) return [];
   return blocks
-    .filter((b): b is Record<string, unknown> => b != null && typeof b === "object")
+    .filter(
+      (b): b is Record<string, unknown> => b != null && typeof b === "object",
+    )
     .map(mapIndexedBlock)
     .filter((b): b is WalletBlock => b != null)
     .slice(0, limit);
@@ -186,7 +199,9 @@ function mapIndexedTransaction(
   if (txid == null) return null;
 
   const summary = (tx.summary ?? null) as Record<string, unknown> | null;
-  const totalOutput = summary?.totalOutput as Record<string, unknown> | undefined;
+  const totalOutput = summary?.totalOutput as
+    | Record<string, unknown>
+    | undefined;
   const fee = summary?.fee as Record<string, unknown> | undefined;
   const blockHeight = toNumberOrNull(tx.blockHeight);
   const blockHash = typeof tx.blockHash === "string" ? tx.blockHash : null;
@@ -197,7 +212,8 @@ function mapIndexedTransaction(
     time: toNumberOrNull(tx.time) ?? 0,
     fee: toStringOrNull(fee?.amount),
     outputT: toStringOrNull(totalOutput?.amount),
-    blocks: blockHeight != null ? [{ height: blockHeight, hash: blockHash }] : [],
+    blocks:
+      blockHeight != null ? [{ height: blockHeight, hash: blockHash }] : [],
   };
 }
 
@@ -211,7 +227,9 @@ export async function buildWalletTransactions(
   const txs = summary?.recentTransactions;
   if (!Array.isArray(txs)) return [];
   return txs
-    .filter((t): t is Record<string, unknown> => t != null && typeof t === "object")
+    .filter(
+      (t): t is Record<string, unknown> => t != null && typeof t === "object",
+    )
     .map(mapIndexedTransaction)
     .filter((t): t is WalletTransaction => t != null)
     .slice(0, limit);
@@ -227,14 +245,17 @@ export interface WalletExtractionEntry {
 export async function buildWalletExtraction(
   chainId: ChainId,
   limit: number,
+  period = "month",
 ): Promise<WalletExtractionEntry[]> {
-  const result = (await fetchMinedLeaderboard(chainId, { limit })) as {
+  const result = (await fetchMinedLeaderboard(chainId, { limit, period })) as {
     items?: unknown[];
   };
   const items = result?.items;
   if (!Array.isArray(items)) return [];
   return items
-    .filter((i): i is Record<string, unknown> => i != null && typeof i === "object")
+    .filter(
+      (i): i is Record<string, unknown> => i != null && typeof i === "object",
+    )
     .map((item) => {
       const address = typeof item.address === "string" ? item.address : null;
       if (address == null) return null;
@@ -265,7 +286,9 @@ export async function buildWalletChainTips(
     .catch(() => null);
   if (!Array.isArray(tips)) return [];
   return tips
-    .filter((t): t is Record<string, unknown> => t != null && typeof t === "object")
+    .filter(
+      (t): t is Record<string, unknown> => t != null && typeof t === "object",
+    )
     .map((tip, index) => {
       const height = toNumberOrNull(tip.height);
       const hash = typeof tip.hash === "string" ? tip.hash : null;
@@ -299,7 +322,10 @@ function splitHostPort(addr: string): { ip: string; port: number | null } {
   if (bracket) return { ip: bracket[1], port: Number(bracket[2]) };
   const lastColon = addr.lastIndexOf(":");
   if (lastColon > -1 && addr.indexOf(":") === lastColon) {
-    return { ip: addr.slice(0, lastColon), port: Number(addr.slice(lastColon + 1)) };
+    return {
+      ip: addr.slice(0, lastColon),
+      port: Number(addr.slice(lastColon + 1)),
+    };
   }
   return { ip: addr, port: null };
 }
@@ -330,7 +356,9 @@ export async function buildWalletPeers(
       connected_on_explorer: true,
       last_seen:
         toNumberOrNull(peer.lastrecv) != null
-          ? new Date((toNumberOrNull(peer.lastrecv) as number) * 1000).toISOString()
+          ? new Date(
+              (toNumberOrNull(peer.lastrecv) as number) * 1000,
+            ).toISOString()
           : null,
     });
   }

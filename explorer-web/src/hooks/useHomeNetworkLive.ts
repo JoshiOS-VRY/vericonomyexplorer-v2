@@ -12,6 +12,7 @@ const NETWORK_POLL_MS = 30_000;
 function vrmNetworkReceived(stats: VrmNetworkStats): boolean {
   return (
     stats.hashrateKhPerMin != null ||
+    stats.avgBlockTimeMin != null ||
     stats.difficulty != null ||
     stats.blocks != null ||
     stats.supply != null

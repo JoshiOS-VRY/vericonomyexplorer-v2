@@ -30,19 +30,10 @@ export function enrichVrmNetworkStats(
   const tip = summary.latestBlocks[0];
   const tipDifficulty = parseDifficulty(tip?.difficulty);
   const difficulty = tipDifficulty ?? network.difficulty;
-  const hashrateKhPerMin =
-    tipDifficulty != null
-      ? estimateVrmHashrateKhPerMin(tipDifficulty)
-      : network.hashrateKhPerMin;
-  const hashrate7dKhPerMin =
-    network.hashrate7dKhPerMin ??
-    (hashrateKhPerMin != null ? hashrateKhPerMin : null);
-
   return {
     ...network,
     difficulty,
-    hashrateKhPerMin,
-    hashrate7dKhPerMin,
+    hashrateKhPerMin: network.hashrateKhPerMin,
     blocks: network.blocks ?? chainHeight(summary),
     supply: network.supply,
   };
@@ -81,7 +72,8 @@ export function mergeVrmNetworkStats(
 ): VrmNetworkStats {
   return {
     hashrateKhPerMin: next.hashrateKhPerMin ?? prev.hashrateKhPerMin,
-    hashrate7dKhPerMin: next.hashrate7dKhPerMin ?? prev.hashrate7dKhPerMin,
+    avgBlockTimeMin: next.avgBlockTimeMin ?? prev.avgBlockTimeMin,
+    blocksPerHour: next.blocksPerHour ?? prev.blocksPerHour,
     difficulty: next.difficulty ?? prev.difficulty,
     blocks: next.blocks ?? prev.blocks,
     supply: next.supply ?? prev.supply,

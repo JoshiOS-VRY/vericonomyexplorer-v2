@@ -692,10 +692,20 @@ function getTxActivityCategory(row) {
 	return "received";
 }
 
-function resolveActivityBucketCount(since, maxPoints, firstTime, lastTime) {
+function resolveActivityTimeRange(since, firstTime, lastTime) {
 	const now = Math.floor(Date.now() / 1000);
-	const end = Math.max(lastTime || now, since || 0);
-	const start = since || firstTime || end;
+
+	if (since) {
+		return { start: since, end: now };
+	}
+
+	const end = Math.max(lastTime || now, firstTime || 0);
+	const start = firstTime || end;
+	return { start, end };
+}
+
+function resolveActivityBucketCount(since, maxPoints, firstTime, lastTime) {
+	const { start, end } = resolveActivityTimeRange(since, firstTime, lastTime);
 	const span = Math.max(end - start, 1);
 
 	if (!since) {
@@ -720,9 +730,7 @@ function resolveActivityBucketCount(since, maxPoints, firstTime, lastTime) {
 }
 
 function buildActivityBucketPlan(since, maxPoints, firstTime, lastTime) {
-	const now = Math.floor(Date.now() / 1000);
-	const end = Math.max(lastTime || now, since || 0, firstTime || 0);
-	const start = since || firstTime || end;
+	const { start, end } = resolveActivityTimeRange(since, firstTime, lastTime);
 	const bucketCount = Math.max(resolveActivityBucketCount(since, maxPoints, firstTime, lastTime), 1);
 	const span = Math.max(end - start, 1);
 	const step = Math.max(Math.floor(span / bucketCount), 1);
@@ -959,18 +967,6 @@ function getAddressBalanceHistoryFromBuckets(db, chain, cleanAddress, since, max
 	const rawPoints = [];
 	let running = priorBalance;
 
-	if (since && (priorBalance !== 0n || bucketRows.length > 0)) {
-		const balance = formatAtomic(chain, priorBalance);
-		rawPoints.push({
-			height: null,
-			time: since,
-			balanceAtomic: stringifyInteger(priorBalance),
-			balance,
-			balanceAmount: Number.parseFloat(balance.amount) || 0,
-			ticker: balance.ticker
-		});
-	}
-
 	for (const row of bucketRows) {
 		running += toBigInt(row.delta_sats);
 		const balance = formatAtomic(chain, running);
@@ -982,6 +978,11 @@ function getAddressBalanceHistoryFromBuckets(db, chain, cleanAddress, since, max
 			balanceAmount: Number.parseFloat(balance.amount) || 0,
 			ticker: balance.ticker
 		});
+	}
+
+	const currentBalance = balanceRow ? toBigInt(balanceRow.balance_sats) : running;
+	if (since) {
+		appendBalanceHistoryBookends(chain, rawPoints, since, priorBalance, currentBalance);
 	}
 
 	const eventCountRow = prepare(db, `
@@ -1710,18 +1711,6 @@ function buildCumulativeBalancePoints(chain, eventRows, since, maxPoints, priorB
 	let running = priorBalance;
 	const rawPoints = [];
 
-	if (since && (priorBalance !== 0n || eventRows.length > 0)) {
-		const balance = formatAtomic(chain, priorBalance);
-		rawPoints.push({
-			height: eventRows.length ? toNumber(eventRows[0].block_height) : null,
-			time: since,
-			balanceAtomic: stringifyInteger(priorBalance),
-			balance,
-			balanceAmount: Number.parseFloat(balance.amount) || 0,
-			ticker: balance.ticker
-		});
-	}
-
 	for (const row of eventRows) {
 		running += toBigInt(row.delta_sats);
 		const balance = formatAtomic(chain, running);
@@ -1735,7 +1724,49 @@ function buildCumulativeBalancePoints(chain, eventRows, since, maxPoints, priorB
 		});
 	}
 
+	if (since) {
+		appendBalanceHistoryBookends(chain, rawPoints, since, priorBalance, running);
+	}
+
 	return downsampleBalanceHistoryPoints(rawPoints, maxPoints);
+}
+
+function appendBalanceHistoryBookends(chain, rawPoints, since, priorBalance, currentBalance) {
+	if (!since) {
+		return rawPoints;
+	}
+
+	const now = Math.floor(Date.now() / 1000);
+	const hasOpening = rawPoints.some(point => point.time <= since);
+
+	if (!hasOpening) {
+		const opening = formatAtomic(chain, priorBalance);
+		rawPoints.unshift({
+			height: null,
+			time: since,
+			balanceAtomic: stringifyInteger(priorBalance),
+			balance: opening,
+			balanceAmount: Number.parseFloat(opening.amount) || 0,
+			ticker: opening.ticker
+		});
+	}
+
+	const closing = formatAtomic(chain, currentBalance);
+	const closingAtomic = stringifyInteger(currentBalance);
+	const lastPoint = rawPoints[rawPoints.length - 1];
+
+	if (!lastPoint || lastPoint.time < now - 1 || lastPoint.balanceAtomic !== closingAtomic) {
+		rawPoints.push({
+			height: null,
+			time: now,
+			balanceAtomic: closingAtomic,
+			balance: closing,
+			balanceAmount: Number.parseFloat(closing.amount) || 0,
+			ticker: closing.ticker
+		});
+	}
+
+	return rawPoints;
 }
 
 function downsampleBalanceHistoryPoints(points, maxPoints) {
@@ -1914,11 +1945,31 @@ function normalizePeriod(value) {
 function normalizeMinersPeriod(value) {
 	const period = String(value || "month").trim().toLowerCase();
 
-	if (["week", "month", "year", "all"].includes(period)) {
+	if (period === "7d") {
+		return "week";
+	}
+
+	if (period === "30d") {
+		return "month";
+	}
+
+	if (["week", "month", "year", "all", "90d"].includes(period)) {
 		return period;
 	}
 
 	return "month";
+}
+
+function getRollingPeriodBounds(days, nowSec) {
+	const since = nowSec - days * 86_400;
+
+	return {
+		start: since,
+		end: nowSec,
+		since,
+		startIso: new Date(since * 1000).toISOString(),
+		endIso: new Date(nowSec * 1000).toISOString()
+	};
 }
 
 function getMinersPeriodBounds(period, nowValue) {
@@ -1935,28 +1986,37 @@ function getMinersPeriodBounds(period, nowValue) {
 		};
 	}
 
-	if (period === "year") {
-		const since = nowSec - 365 * 86_400;
-
+	if (period === "week") {
 		return {
-			type: "year",
-			start: since,
-			end: nowSec,
-			since,
-			startIso: new Date(since * 1000).toISOString(),
-			endIso: new Date(nowSec * 1000).toISOString()
+			type: "week",
+			...getRollingPeriodBounds(7, nowSec)
 		};
 	}
 
-	const bounds = getPeriodBounds(period, nowValue);
+	if (period === "month") {
+		return {
+			type: "month",
+			...getRollingPeriodBounds(30, nowSec)
+		};
+	}
+
+	if (period === "year") {
+		return {
+			type: "year",
+			...getRollingPeriodBounds(365, nowSec)
+		};
+	}
+
+	if (period === "90d") {
+		return {
+			type: "90d",
+			...getRollingPeriodBounds(90, nowSec)
+		};
+	}
 
 	return {
-		type: bounds.type,
-		start: bounds.start,
-		end: bounds.end,
-		since: bounds.start,
-		startIso: bounds.startIso,
-		endIso: bounds.endIso
+		type: "month",
+		...getRollingPeriodBounds(30, nowSec)
 	};
 }
 

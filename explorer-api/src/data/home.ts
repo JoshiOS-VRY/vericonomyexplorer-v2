@@ -12,7 +12,8 @@ import { fetchLandingData } from "./legacy.js";
 
 const emptyVrmNetwork = (): VrmNetworkStats => ({
   hashrateKhPerMin: null,
-  hashrate7dKhPerMin: null,
+  avgBlockTimeMin: null,
+  blocksPerHour: null,
   difficulty: null,
   blocks: null,
   supply: null,

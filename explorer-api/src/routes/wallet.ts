@@ -50,13 +50,17 @@ const transactionsCache = createSwrCache({
 });
 
 const extractionCache = createSwrCache({
-  max: 16,
+  max: 32,
   ttlMs: 30_000,
   fetch: async (key, signal) => {
     if (signal.aborted) throw new Error("aborted");
-    const [chainId, limit] = key.split(":");
+    const [chainId, period, limit] = key.split(":");
     return {
-      value: await buildWalletExtraction(chainId as ChainId, Number(limit) || 20),
+      value: await buildWalletExtraction(
+        chainId as ChainId,
+        Number(limit) || 20,
+        period || "month",
+      ),
     } as CacheValue;
   },
 });
@@ -139,17 +143,18 @@ export async function registerWalletRoutes(app: FastifyInstance): Promise<void> 
     },
   );
 
-  app.get<{ Params: { chain: string }; Querystring: { limit?: string } }>(
+  app.get<{ Params: { chain: string }; Querystring: { limit?: string; period?: string } }>(
     "/v1/:chain/wallet/extraction",
     { ...heavyRateLimitRouteConfig },
     async (request, reply) => {
       const chainId = parseChainId(request.params.chain);
       if (!chainId) return reply.code(400).send({ error: "Invalid chain id" });
       const limit = clampLimit(request.query.limit, 20, 100);
+      const period = (request.query.period || "month").trim().toLowerCase();
       const result = await swrFetch(
         extractionCache,
-        cacheKey(chainId, "wallet-extraction", String(limit)),
-        () => buildWalletExtraction(chainId, limit).then((value) => ({ value })),
+        cacheKey(chainId, "wallet-extraction", `${period}:${limit}`),
+        () => buildWalletExtraction(chainId, limit, period).then((value) => ({ value })),
       );
       return (result as { value: unknown }).value;
     },

@@ -150,6 +150,16 @@ export function getTargetBlockTimeSeconds(chainId) {
 export function hashPerSecToKhPerMin(hashPerSec) {
     return (hashPerSec * 60) / 1000;
 }
+/** Matches wallet `resolveBlockTimeMinutes`: observed rate first, then RPC target. */
+export function resolveVrmBlockTimeMinutes(blocksPerHour, blockTimeMinTarget) {
+    if (blocksPerHour != null && blocksPerHour > 0) {
+        return 60 / blocksPerHour;
+    }
+    if (blockTimeMinTarget != null && blockTimeMinTarget > 0) {
+        return blockTimeMinTarget;
+    }
+    return null;
+}
 export async function fetchVrmHashrate(rpcCall, chainId = "vrm") {
     const targetBlockTimeSeconds = getTargetBlockTimeSeconds(chainId);
     const blocksPerDay = Math.floor((24 * 60 * 60) / targetBlockTimeSeconds);
@@ -163,11 +173,15 @@ export async function fetchVrmHashrate(rpcCall, chainId = "vrm") {
     ]);
     let currentHashPerSec = null;
     let hashrate7dHashPerSec = null;
+    let blocksPerHour = null;
+    let blockTimeMinTarget = null;
     if (miningInfoResult.status === "fulfilled") {
         const miningInfo = miningInfoResult.value;
         if (miningInfo?.networkhashps && miningInfo.networkhashps > 0) {
             currentHashPerSec = miningInfo.networkhashps;
         }
+        blocksPerHour = parseRpcNumber(miningInfo?.blocksperhour);
+        blockTimeMinTarget = parseRpcNumber(miningInfo?.blocktime);
     }
     if (hashrate7dResult.status === "fulfilled") {
         hashrate7dHashPerSec = hashrate7dResult.value;
@@ -192,7 +206,12 @@ export async function fetchVrmHashrate(rpcCall, chainId = "vrm") {
         currentHashPerSec > 0) {
         hashrate7dHashPerSec = currentHashPerSec;
     }
-    return { currentHashPerSec, hashrate7dHashPerSec };
+    return {
+        currentHashPerSec,
+        hashrate7dHashPerSec,
+        blocksPerHour,
+        blockTimeMinTarget,
+    };
 }
 async function safeNetworkHashrate(rpcCall, blockCount) {
     try {

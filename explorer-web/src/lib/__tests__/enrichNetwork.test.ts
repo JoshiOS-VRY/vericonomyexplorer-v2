@@ -2,7 +2,6 @@ import { describe, expect, it } from "@jest/globals";
 import {
   enrichHomeNetworkPayload,
   enrichVrmNetworkStats,
-  estimateVrmHashrateKhPerMin,
   mergeHomeNetworkPayload,
 } from "@/lib/enrichNetwork";
 import type { ChainSummary, HomeNetworkPayload } from "@/lib/api/types";
@@ -43,11 +42,12 @@ function summaryWithTip(
 }
 
 describe("enrichNetwork", () => {
-  it("prefers live tip difficulty and derives VRM hashrate from it", () => {
+  it("prefers live tip difficulty but keeps API hashrate", () => {
     const enriched = enrichVrmNetworkStats(
       {
-        hashrateKhPerMin: 80,
-        hashrate7dKhPerMin: null,
+        hashrateKhPerMin: 115.5,
+        avgBlockTimeMin: 4.8,
+        blocksPerHour: 12.5,
         difficulty: 0.0001,
         blocks: null,
         supply: null,
@@ -57,9 +57,7 @@ describe("enrichNetwork", () => {
     );
 
     expect(enriched.difficulty).toBeCloseTo(0.00009284);
-    expect(enriched.hashrateKhPerMin).toBeCloseTo(
-      estimateVrmHashrateKhPerMin(0.00009284),
-    );
+    expect(enriched.hashrateKhPerMin).toBe(115.5);
     expect(enriched.blocks).toBe(1098551);
   });
 
@@ -68,7 +66,8 @@ describe("enrichNetwork", () => {
       fetchedAt: "2026-01-01T00:00:00.000Z",
       vrm: {
         hashrateKhPerMin: 80,
-        hashrate7dKhPerMin: null,
+        avgBlockTimeMin: 5.0,
+        blocksPerHour: 12,
         difficulty: 0.0001,
         blocks: 100,
         supply: 3_712_086,
@@ -90,7 +89,8 @@ describe("enrichNetwork", () => {
       fetchedAt: "2026-01-01T00:01:00.000Z",
       vrm: {
         hashrateKhPerMin: 92,
-        hashrate7dKhPerMin: null,
+        avgBlockTimeMin: null,
+        blocksPerHour: null,
         difficulty: null,
         blocks: null,
         supply: null,
@@ -121,7 +121,8 @@ describe("enrichNetwork", () => {
         fetchedAt: "2026-01-01T00:00:00.000Z",
         vrm: {
           hashrateKhPerMin: 80,
-          hashrate7dKhPerMin: null,
+          avgBlockTimeMin: null,
+          blocksPerHour: null,
           difficulty: null,
           blocks: null,
           supply: null,

@@ -48,6 +48,11 @@ export function formatHashrateKhPerMin(value: number | null | undefined): string
   return `${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} KH/m`;
 }
 
+export function formatAvgBlockTimeMin(value: number | null | undefined): string {
+  if (value == null || !Number.isFinite(value)) return "—";
+  return `${new Intl.NumberFormat("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value)} min`;
+}
+
 export function formatPercentChange(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "—";
   const sign = value > 0 ? "+" : "";

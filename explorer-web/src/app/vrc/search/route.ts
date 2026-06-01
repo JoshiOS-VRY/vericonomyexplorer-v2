@@ -1,10 +1,11 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { searchChain } from "@/lib/api/indexer";
+import { sanitizeSearchQuery } from "@/lib/searchSuggestions";
 
 export async function POST(request: Request) {
   const formData = await request.formData();
-  const query = String(formData.get("query") || "").trim();
+  const query = sanitizeSearchQuery(String(formData.get("query") || ""));
 
   if (!query) {
     const cookieStore = await cookies();

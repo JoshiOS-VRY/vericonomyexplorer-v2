@@ -2,6 +2,7 @@ import { AnimatedStatValue } from "@/components/explorer/AnimatedStatValue";
 import type { VrcNetworkStats, VrmNetworkStats } from "@/lib/api/types";
 import { CHAIN_EXPLORERS } from "@/lib/chainDisplay";
 import {
+  formatAvgBlockTimeMin,
   formatHashrateKhPerMin,
   formatHubSupply,
   formatPercent,
@@ -69,10 +70,10 @@ export function ChainNetworkCard({
           }
         />
         <ChainHubStatCell
-          label="7d Hashrate"
-          value={formatHashrateKhPerMin(vrm.hashrate7dKhPerMin)}
-          numericValue={vrm.hashrate7dKhPerMin ?? undefined}
-          formatFn={(n) => formatHashrateKhPerMin(n)}
+          label="Avg block time"
+          value={formatAvgBlockTimeMin(vrm.avgBlockTimeMin)}
+          numericValue={vrm.avgBlockTimeMin ?? undefined}
+          formatFn={(n) => formatAvgBlockTimeMin(n)}
           animated={animated}
         />
       </ChainHubStatRow>
@@ -112,12 +113,12 @@ export function ChainNetworkCard({
             animated={animated}
           />
         ) : null}
-        {vrm.hashrate7dKhPerMin != null ? (
+        {vrm.avgBlockTimeMin != null ? (
           <NetworkStat
-            label="7d Hashrate"
-            value={formatHashrateKhPerMin(vrm.hashrate7dKhPerMin)}
-            numericValue={vrm.hashrate7dKhPerMin}
-            formatFn={(n) => formatHashrateKhPerMin(n)}
+            label="Avg Block Time"
+            value={formatAvgBlockTimeMin(vrm.avgBlockTimeMin)}
+            numericValue={vrm.avgBlockTimeMin}
+            formatFn={(n) => formatAvgBlockTimeMin(n)}
             animated={animated}
           />
         ) : null}

@@ -9,9 +9,9 @@ import type {
   VrmNetworkStats,
 } from "@/lib/api/types";
 import { CHAIN_EXPLORERS } from "@/lib/chainDisplay";
-import { formatSupply } from "@/lib/formatMarket";
+import { formatHashrateKhPerMin, formatSupply } from "@/lib/formatMarket";
 import { getChainAccentVar } from "@/lib/insightsChartConfig";
-import { formatDifficulty, formatNumber } from "@/lib/utils";
+import { formatDifficulty } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 export function InsightsKpiStrip({
@@ -49,10 +49,9 @@ export function InsightsKpiStrip({
     chainId === "vrm"
       ? {
           label: "Hashrate",
-          value:
-            (network as VrmNetworkStats).hashrateKhPerMin != null
-              ? `${formatNumber((network as VrmNetworkStats).hashrateKhPerMin!)} kH/min`
-              : "—",
+          value: formatHashrateKhPerMin(
+            (network as VrmNetworkStats).hashrateKhPerMin,
+          ),
         }
       : {
           label: "Interest",

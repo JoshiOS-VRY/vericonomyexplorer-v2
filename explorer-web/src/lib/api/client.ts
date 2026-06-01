@@ -128,11 +128,13 @@ export async function fetchMinersLeaderboardClient(
   );
 }
 
+import { sanitizeSearchQuery } from "@/lib/searchSuggestions";
+
 export async function searchChainClient(
   chainId: string,
   query: string,
 ): Promise<string | null> {
-  const trimmed = query.trim();
+  const trimmed = sanitizeSearchQuery(query);
   if (!trimmed) return null;
 
   const result = await clientApiFetch<{ path: string | null }>(

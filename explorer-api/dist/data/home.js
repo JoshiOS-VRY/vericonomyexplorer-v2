@@ -3,7 +3,8 @@ import { fetchVrcNetworkStats, fetchVrmNetworkStats } from "../network/index.js"
 import { fetchLandingData } from "./legacy.js";
 const emptyVrmNetwork = () => ({
     hashrateKhPerMin: null,
-    hashrate7dKhPerMin: null,
+    avgBlockTimeMin: null,
+    blocksPerHour: null,
     difficulty: null,
     blocks: null,
     supply: null,

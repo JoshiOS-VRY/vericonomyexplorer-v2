@@ -5,11 +5,22 @@ import {
   fallbackSuggestions,
   heightSuggestions,
   mergeSearchResults,
+  sanitizeSearchQuery,
 } from "@/lib/searchSuggestions";
+
+describe("sanitizeSearchQuery", () => {
+  it("removes commas, whitespace, labels, and tickers", () => {
+    expect(sanitizeSearchQuery("43,931")).toBe("43931");
+    expect(sanitizeSearchQuery("Balance 120756.46126255 VRC")).toBe("120756.46126255");
+    expect(sanitizeSearchQuery("  VSMqKZYWvnBZ6A577rAQCyrJRmyyeHuSPR  ")).toBe(
+      "VSMqKZYWvnBZ6A577rAQCyrJRmyyeHuSPR",
+    );
+  });
+});
 
 describe("classifySearchQuery", () => {
   it("classifies heights, hashes, and addresses", () => {
-    expect(classifySearchQuery("12345")).toBe("height");
+    expect(classifySearchQuery("12,345")).toBe("height");
     expect(classifySearchQuery("a".repeat(64))).toBe("hash");
     expect(classifySearchQuery("VRMabc")).toBe("address");
   });

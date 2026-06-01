@@ -2,8 +2,17 @@ export type SearchQueryKind = "height" | "hash" | "address" | "unknown";
 
 export type SearchEntityType = "block" | "tx" | "address";
 
+/** Strip formatting copied from UI stats (commas, spaces, labels, tickers). */
+export function sanitizeSearchQuery(raw: string): string {
+  let value = raw.trim();
+  value = value.replace(/,/g, "").replace(/\s+/g, "");
+  value = value.replace(/^(balance|received|sent|transactions)/i, "");
+  value = value.replace(/^(\d+(?:\.\d+)?)(?:VRC|VRM)$/i, "$1");
+  return value;
+}
+
 export function classifySearchQuery(query: string): SearchQueryKind {
-  const trimmed = query.trim();
+  const trimmed = sanitizeSearchQuery(query);
   if (!trimmed) return "unknown";
   if (/^\d+$/.test(trimmed)) return "height";
   if (/^[a-fA-F0-9]{64}$/.test(trimmed)) return "hash";
@@ -42,7 +51,7 @@ export function fallbackSuggestions(
   query: string,
   kind: SearchQueryKind,
 ): SearchSuggestion[] {
-  const trimmed = query.trim();
+  const trimmed = sanitizeSearchQuery(query);
   if (!trimmed) return [];
 
   return (["vrm", "vrc"] as const).map((chainId) => {
@@ -142,12 +151,12 @@ function suggestionLabelFromPath(
   query: string,
   kind: SearchQueryKind,
 ): string {
-  if (kind === "height") return `Block #${query.trim()}`;
+  if (kind === "height") return `Block #${sanitizeSearchQuery(query)}`;
   if (path.includes("/tx/")) return "Transaction";
   if (path.includes("/block/")) return "Block hash";
   if (path.includes("/address/")) {
-    const trimmed = query.trim();
+    const trimmed = sanitizeSearchQuery(query);
     return trimmed.length > 24 ? `${trimmed.slice(0, 12)}…${trimmed.slice(-8)}` : trimmed;
   }
-  return query.trim();
+  return sanitizeSearchQuery(query);
 }

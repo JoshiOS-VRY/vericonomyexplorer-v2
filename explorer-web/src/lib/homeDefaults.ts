@@ -24,7 +24,8 @@ export function emptyNetworkPayload(): HomeNetworkPayload {
   return {
     vrm: {
       hashrateKhPerMin: null,
-      hashrate7dKhPerMin: null,
+      avgBlockTimeMin: null,
+      blocksPerHour: null,
       difficulty: null,
       blocks: null,
       supply: null,

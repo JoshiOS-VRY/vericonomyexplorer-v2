@@ -6,6 +6,14 @@ import { fetchAddress, fetchBlock, fetchTransaction } from "../data/legacy.js";
 import { searchQueryTimeoutMs } from "../db/queryPool.js";
 import { parseChainId } from "../types.js";
 
+function sanitizeSearchQuery(raw: string): string {
+  let value = raw.trim();
+  value = value.replace(/,/g, "").replace(/\s+/g, "");
+  value = value.replace(/^(balance|received|sent|transactions)/i, "");
+  value = value.replace(/^(\d+(?:\.\d+)?)(?:VRC|VRM)$/i, "$1");
+  return value;
+}
+
 const searchLookupOptions = { timeoutMs: searchQueryTimeoutMs };
 
 const searchCache = createSwrCache({
@@ -77,7 +85,7 @@ export async function registerSearchRoutes(app: FastifyInstance): Promise<void> 
         return reply.code(400).send({ error: "Invalid chain id" });
       }
 
-      const query = (request.query.q ?? "").trim();
+      const query = sanitizeSearchQuery(request.query.q ?? "");
       if (!query) {
         return reply.code(400).send({ error: "Missing query" });
       }

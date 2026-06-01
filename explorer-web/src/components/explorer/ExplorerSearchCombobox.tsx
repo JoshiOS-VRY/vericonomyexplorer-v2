@@ -20,6 +20,7 @@ import {
   heightSuggestions,
   mergeSearchResults,
   recentBlockSuggestions,
+  sanitizeSearchQuery,
   type SearchEntityType,
   type SearchSuggestion,
 } from "@/lib/searchSuggestions";
@@ -93,7 +94,7 @@ export function ExplorerSearchCombobox({
   const [apiSuggestions, setApiSuggestions] = useState<SearchSuggestion[]>([]);
 
   const isBlockchair = variant === "blockchair";
-  const trimmed = query.trim();
+  const trimmed = sanitizeSearchQuery(query);
   const kind = classifySearchQuery(trimmed);
 
   const recentSuggestions = useMemo(() => {
@@ -302,7 +303,7 @@ export function ExplorerSearchCombobox({
             type="text"
             value={query}
             onChange={(event) => {
-              setQuery(event.target.value);
+              setQuery(sanitizeSearchQuery(event.target.value));
               setOpen(true);
               setSubmitError(null);
             }}
