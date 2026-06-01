@@ -1,19 +1,22 @@
 extends ../layout
 
+- const base = chainBasePath || "./vrm"
+- const meta = chainMeta || { name: "Verium", ticker: "VRM", logo: "./img/vericonomy/verium-logo.svg", pageTitle: "Verium Explorer" }
+
 block headContent
-	title Verium Explorer
+	title #{meta.pageTitle}
 
 block content
 	.vce-shell
 		section.vce-page-hero
 			.vce-page-title
-				img(src=assetUrl("./img/vericonomy/verium-logo.svg"), alt="")
+				img(src=assetUrl(meta.logo), alt="")
 				div
-					h1 Verium Explorer
-					p VRM proof-of-concept explorer powered by the trusted genesis index.
-			form.vce-search(method="post", action="./vrm/search")
+					h1 #{meta.name} Explorer
+					p #{meta.ticker} explorer powered by the trusted genesis index.
+			form.vce-search(method="post", action=`${base}/search`)
 				input(type="hidden", name="_csrf", value=csrfToken)
-				input(type="text", name="query", placeholder="Search VRM block, txid, or address", autocomplete="off", spellcheck="false")
+				input(type="text", name="query", placeholder=meta.searchPlaceholder, autocomplete="off", spellcheck="false")
 				button(type="submit")
 					i.bi-search
 					span Search
@@ -22,14 +25,16 @@ block content
 					span Current Block
 					strong #{summary.health.heights.maxIndexedHeight == null ? "N/A" : summary.health.heights.maxIndexedHeight.toLocaleString()}
 				div
-					span Indexed Addresses
-					strong #{summary.health.counts.addressCount.toLocaleString()}
+					span RPC Tip
+					strong #{summary.health.heights.bestRpcHeight == null ? "N/A" : summary.health.heights.bestRpcHeight.toLocaleString()}
 				div
 					span Blocks Behind
 					strong #{summary.health.heights.blocksBehind == null ? "N/A" : summary.health.heights.blocksBehind.toLocaleString()}
 				div
 					span Trust
 					strong #{summary.health.status}
+			if tipSync && tipSync.remainingBehind > 0
+				p.vce-sync-note Index caught up through block #{tipSync.endHeight.toLocaleString()}; #{tipSync.remainingBehind.toLocaleString()} block(s) still syncing in the background.
 
 		section.vce-section.vce-split
 			.vce-panel
@@ -48,9 +53,9 @@ block content
 							each block in summary.latestBlocks
 								tr
 									td
-										a(href=`./vrm/block/${block.height}`) #{block.height.toLocaleString()}
+										a(href=`${base}/block/${block.height}`) #{block.height.toLocaleString()}
 									td.vce-mono
-										a(href=`./vrm/block/${block.hash}`) #{utils.ellipsizeMiddle(block.hash, 26)}
+										a(href=`${base}/block/${block.hash}`) #{utils.ellipsizeMiddle(block.hash, 26)}
 									td #{block.txCount.toLocaleString()}
 									td
 										+timestamp(block.time, {agoOptions:{oneElement:true}})
@@ -58,16 +63,18 @@ block content
 			.vce-panel
 				.vce-panel-head
 					h2 Top Balances
-					a(href="./vrm/richlist") Full richlist
+					a(href=`${base}/richlist`) Full richlist
 				if (!richlist.enabled && richlist.message)
 					.vce-empty #{richlist.message}
-				else
+				else if richlist.items && richlist.items.length
 					.vce-rank-list
 						each item in richlist.items
-							a.vce-rank-row(href=`./vrm/address/${item.address}`)
+							a.vce-rank-row(href=`${base}/address/${item.address}`)
 								span ##{item.rank}
 								strong.vce-mono #{utils.ellipsizeMiddle(item.address, 20)}
 								em #{item.balance.amount} #{item.balance.ticker}
+				else
+					.vce-empty No indexed balances yet.
 
 		section.vce-section.vce-split
 			.vce-panel
@@ -86,9 +93,9 @@ block content
 							each tx in summary.recentTransactions
 								tr
 									td.vce-mono
-										a(href=`./vrm/tx/${tx.txid}`) #{utils.ellipsizeMiddle(tx.txid, 32)}
+										a(href=`${base}/tx/${tx.txid}`) #{utils.ellipsizeMiddle(tx.txid, 32)}
 									td
-										a(href=`./vrm/block/${tx.blockHeight}`) #{tx.blockHeight.toLocaleString()}
+										a(href=`${base}/block/${tx.blockHeight}`) #{tx.blockHeight.toLocaleString()}
 									td
 										if tx.isCoinbase
 											span.vce-chip coinbase
@@ -102,13 +109,15 @@ block content
 			.vce-panel
 				.vce-panel-head
 					h2 Monthly Activity
-					a(href="./vrm/leaderboard?period=month&sort=activity") Full leaderboard
+					a(href=`${base}/leaderboard?period=month&sort=activity`) Full leaderboard
 				if (!leaderboard.enabled && leaderboard.message)
 					.vce-empty #{leaderboard.message}
-				else
+				else if leaderboard.items && leaderboard.items.length
 					.vce-rank-list
 						each item in leaderboard.items
-							a.vce-rank-row(href=`./vrm/address/${item.address}`)
+							a.vce-rank-row(href=`${base}/address/${item.address}`)
 								span ##{item.rank}
 								strong.vce-mono #{utils.ellipsizeMiddle(item.address, 20)}
 								em #{item.txCount.toLocaleString()} tx
+				else
+					.vce-empty No leaderboard activity in this period.

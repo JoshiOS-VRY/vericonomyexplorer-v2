@@ -21,21 +21,26 @@ const chainUnits = {
 function getChainSummary(chainId, options = {}) {
 	const db = options.db || dbModule.openDatabase();
 	const chain = normalizeChainId(chainId);
-	const chainHealth = health.getChainHealth(chain, { db });
+	const blockLimit = normalizeSummaryLimit(options.blockLimit, 10);
+	const txLimit = normalizeSummaryLimit(options.txLimit, 25);
+	const useLiteHealth = options.liteHealth !== false;
+	const chainHealth = useLiteHealth
+		? health.getChainHealthLite(chain, { db })
+		: health.getChainHealth(chain, { db });
 	const latestBlocks = db.prepare(`
 		SELECT height, hash, previous_hash, time, tx_count, size, difficulty
 		FROM blocks
 		WHERE chain_id = ? AND status = 'main'
 		ORDER BY height DESC
-		LIMIT 10
-	`).all(chain).map(block => mapBlock(block));
+		LIMIT ?
+	`).all(chain, blockLimit).map(block => mapBlock(block));
 	const recentTransactions = db.prepare(`
 		SELECT txid, block_height, block_hash, tx_index, time, is_coinbase, is_coinstake
 		FROM transactions
 		WHERE chain_id = ?
 		ORDER BY block_height DESC, tx_index DESC
-		LIMIT 25
-	`).all(chain).map(tx => mapTransaction(tx));
+		LIMIT ?
+	`).all(chain, txLimit).map(tx => mapTransaction(tx));
 
 	return {
 		chainId: chain,
@@ -157,7 +162,9 @@ function getAddress(chainId, address, options = {}) {
 	const cleanAddress = normalizeAddress(address);
 	const limit = normalizeLimit(options.limit);
 	const offset = normalizeOffset(options.offset);
-	const chainHealth = health.getChainHealth(chain, { db });
+	const chainHealth = options.liteHealth === false
+		? health.getChainHealth(chain, { db })
+		: health.getChainHealthLite(chain, { db });
 	const balanceRow = db.prepare(`
 		SELECT address, balance_sats, total_received_sats, total_sent_sats, tx_count, last_seen_height
 		FROM address_balances
@@ -502,6 +509,16 @@ function normalizeLimit(value) {
 	}
 
 	return Math.min(Math.floor(limit), maxLimit);
+}
+
+function normalizeSummaryLimit(value, defaultValue) {
+	const limit = Number(value || defaultValue);
+
+	if (!Number.isFinite(limit) || limit < 1) {
+		return defaultValue;
+	}
+
+	return Math.min(Math.floor(limit), 50);
 }
 
 function normalizePeriod(value) {

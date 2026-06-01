@@ -39,6 +39,12 @@ function getIndexerHealth(options = {}) {
 
 function getChainHealth(chainId, options = {}) {
 	const db = options.db || dbModule.openDatabase();
+	const lite = options.lite === true;
+
+	if (lite) {
+		return getChainHealthLite(chainId, options);
+	}
+
 	const tipThreshold = getTipThreshold(options);
 	const chain = options.chain || getChainRow(db, chainId);
 	const blockStats = getBlockStats(db, chainId);
@@ -114,13 +120,7 @@ function getChainHealth(chainId, options = {}) {
 			updatedAt: toNullableNumber(chain ? chain.updated_at : null),
 			lastIndexedHash: chain ? chain.last_indexed_hash : null
 		},
-		sourceLabels: {
-			blocks: "rpc+index",
-			transactions: chainId === "vrm" ? "index-required" : "rpc-or-index",
-			addressBalances: classification.status === "trusted" ? "trusted-index" : "partial-index",
-			richlist: classification.status === "trusted" ? "trusted-index" : "disabled-until-trusted",
-			leaderboards: classification.status === "trusted" ? "trusted-index" : "disabled-until-trusted"
-		}
+		sourceLabels: getSourceLabels(chainId, classification.status)
 	};
 }
 
@@ -141,6 +141,93 @@ function getChainRow(db, chainId) {
 		LEFT JOIN sync_state ON sync_state.chain_id = chains.id
 		WHERE chains.id = ?
 	`).get(chainId);
+}
+
+function getChainHealthLite(chainId, options = {}) {
+	const db = options.db || dbModule.openDatabase();
+	const tipThreshold = getTipThreshold(options);
+	const chain = options.chain || getChainRow(db, chainId);
+	const maxIndexedHeight = toNullableNumber(db.prepare(`
+		SELECT MAX(height) AS max_height
+		FROM blocks
+		WHERE chain_id = ? AND status = 'main'
+	`).get(chainId).max_height);
+	const bestRpcHeight = toNullableNumber(chain ? chain.best_rpc_height : null);
+	const lastIndexedHeight = toNullableNumber(chain ? chain.last_indexed_height : null);
+	const blocksBehind = bestRpcHeight === null || lastIndexedHeight === null
+		? null
+		: Math.max(0, bestRpcHeight - lastIndexedHeight);
+	const nearTip = blocksBehind !== null && blocksBehind <= tipThreshold;
+
+	let status = "empty";
+	let trusted = false;
+	let trustLevel = "none";
+	let message = "No indexed blocks yet.";
+
+	if (maxIndexedHeight !== null) {
+		if (nearTip) {
+			status = "trusted";
+			trusted = true;
+			trustLevel = "full";
+			message = "Index is near the RPC tip.";
+		} else if (blocksBehind !== null && blocksBehind > 0) {
+			status = "syncing";
+			trustLevel = "historical";
+			message = "Index is catching up to the RPC tip.";
+		} else {
+			status = "partial";
+			trustLevel = "historical";
+			message = "Indexed history is available; full trust checks were skipped for speed.";
+		}
+	}
+
+	return {
+		id: chainId,
+		ticker: chain ? chain.ticker : chainId.toUpperCase(),
+		name: chain ? chain.name : chainId,
+		consensus: chain ? chain.consensus : null,
+		status,
+		trusted,
+		trustLevel,
+		message,
+		reasons: [],
+		checks: {
+			nearTip,
+			hasRpcTip: bestRpcHeight !== null
+		},
+		heights: {
+			bestRpcHeight,
+			minIndexedHeight: null,
+			maxIndexedHeight,
+			lastIndexedHeight,
+			blocksBehind,
+			tipThreshold
+		},
+		counts: {
+			indexedBlockCount: null,
+			expectedBlockCount: null,
+			gapCount: null,
+			unresolvedSpendCount: null,
+			addressCount: null
+		},
+		syncState: {
+			status: chain ? chain.status : null,
+			statusMessage: chain ? chain.status_message : null,
+			updatedAt: toNullableNumber(chain ? chain.updated_at : null),
+			lastIndexedHash: chain ? chain.last_indexed_hash : null
+		},
+		sourceLabels: getSourceLabels(chainId, status)
+	};
+}
+
+function getSourceLabels(chainId, status) {
+	return {
+		blocks: "rpc+index",
+		transactions: chainId === "vrm" ? "index-required" : "rpc-or-index",
+		addressBalances: status === "trusted" ? "trusted-index" : "partial-index",
+		richlist: status === "trusted" ? "trusted-index" : "disabled-until-trusted",
+		leaderboards: status === "trusted" ? "trusted-index" : "disabled-until-trusted"
+	};
 }
 
 function getBlockStats(db, chainId) {
@@ -254,5 +341,6 @@ function toNumber(value) {
 
 module.exports = {
 	getIndexerHealth,
-	getChainHealth
+	getChainHealth,
+	getChainHealthLite
 };

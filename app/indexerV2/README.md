@@ -67,6 +67,27 @@ npm run indexer:v2 -- --chain vrc --start 0 --end 10
 
 If `--start` is omitted, the worker resumes from the last indexed height in `sync_state`.
 
+## Live Tip Sync In The Explorer
+
+Indexer pages now call `app/indexerV2/tipSync.js` before serving chain summaries, blocks, and address history. That module:
+
+- refreshes the RPC tip height in `sync_state`
+- ingests missing blocks in small RPC chunks
+- deduplicates concurrent sync requests per chain
+
+Address pages keep syncing until they reach the RPC tip or hit the time budget. Chain and landing pages use a smaller block budget so the blocks list stays responsive.
+
+Useful environment variables:
+
+```text
+VCEXP_TIP_SYNC_ENABLED=true
+VCEXP_TIP_SYNC_MAX_BLOCKS=48
+VCEXP_TIP_SYNC_ADDRESS_MAX_MS=20000
+VCEXP_TIP_SYNC_CHUNK_SIZE=8
+```
+
+If RPC is unavailable, pages fall back to the last indexed state instead of failing.
+
 ## Resource Profile
 
 The worker processes one block at a time so long backfills do not need to hold a large height range in memory. Each chain can also tune the indexer in `configs/chains.json`:

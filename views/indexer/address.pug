@@ -1,15 +1,22 @@
 extends ../layout
 
+- const base = chainBasePath || "./vrm"
+- const meta = chainMeta || { name: "Verium", ticker: "VRM" }
+
 block headContent
-	title Verium Address #{addressResult.address}
+	title #{meta.name} Address #{addressResult.address}
 
 block content
-	+pageTitle("Verium Address", addressResult.address, true)
+	+pageTitle(`${meta.name} Address`, addressResult.address, true)
 
-	if (!addressResult.found)
+	if tipSync && tipSync.remainingBehind > 0
+		+warningAlert
+			| Showing indexed activity through block #{tipSync.endHeight.toLocaleString()}. #{tipSync.remainingBehind.toLocaleString()} newer block(s) are still syncing.
+
+	if !addressResult.found
 		+warningAlert
 			h6.mb-2 Address Not Found In Trusted Index
-			| This address has no indexed VRM balance or transaction history.
+			| This address has no indexed #{meta.ticker} balance or transaction history.
 
 	+contentSection("Balance")
 		+summaryRow(5)
@@ -41,9 +48,9 @@ block content
 						each tx in addressResult.transactions
 							tr
 								td.font-monospace
-									a(href=`./vrm/tx/${tx.txid}`) #{utils.ellipsizeMiddle(tx.txid, 36)}
+									a(href=`${base}/tx/${tx.txid}`) #{utils.ellipsizeMiddle(tx.txid, 36)}
 								td.text-end
-									a(href=`./vrm/block/${tx.blockHeight}`) #{tx.blockHeight.toLocaleString()}
+									a(href=`${base}/block/${tx.blockHeight}`) #{tx.blockHeight.toLocaleString()}
 								td.text-end(class=(tx.netDeltaAtomic.startsWith("-") ? "text-danger" : "text-success")) #{tx.netDelta.amount} #{tx.netDelta.ticker}
 								td.text-end
 									if tx.isCoinbase
@@ -58,7 +65,7 @@ block content
 			.d-flex.justify-content-between
 				div
 					if addressResult.paging.offset > 0
-						a.btn.btn-outline-primary.btn-sm(href=`./vrm/address/${addressResult.address}?limit=${limit}&offset=${Math.max(0, addressResult.paging.offset - limit)}`) Previous
+						a.btn.btn-outline-primary.btn-sm(href=`${base}/address/${addressResult.address}?limit=${limit}&offset=${Math.max(0, addressResult.paging.offset - limit)}`) Previous
 				div
 					if addressResult.paging.hasMore
-						a.btn.btn-outline-primary.btn-sm(href=`./vrm/address/${addressResult.address}?limit=${limit}&offset=${addressResult.paging.offset + limit}`) Next
+						a.btn.btn-outline-primary.btn-sm(href=`${base}/address/${addressResult.address}?limit=${limit}&offset=${addressResult.paging.offset + limit}`) Next

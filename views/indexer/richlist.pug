@@ -1,10 +1,13 @@
 extends ../layout
 
+- const base = chainBasePath || "./vrm"
+- const meta = chainMeta || { name: "Verium", ticker: "VRM" }
+
 block headContent
-	title Verium Richlist
+	title #{meta.name} Richlist
 
 block content
-	+pageTitle("Verium Richlist", "Trusted balances calculated from the VRM genesis index")
+	+pageTitle(`${meta.name} Richlist`, `Trusted balances calculated from the ${meta.ticker} genesis index`)
 
 	if (!richlist.enabled && richlist.message)
 		+warningAlert
@@ -39,21 +42,21 @@ block content
 							tr
 								td ##{item.rank}
 								td.font-monospace
-									a(href=`./vrm/address/${item.address}`) #{item.address}
+									a(href=`${base}/address/${item.address}`) #{item.address}
 								td.text-end #{item.balance.amount} #{item.balance.ticker}
 								td.text-end #{item.totalReceived.amount}
 								td.text-end #{item.totalSent.amount}
 								td.text-end #{item.txCount.toLocaleString()}
 								td.text-end
 									if item.lastSeenHeight != null
-										a(href=`./vrm/block/${item.lastSeenHeight}`) #{item.lastSeenHeight.toLocaleString()}
+										a(href=`${base}/block/${item.lastSeenHeight}`) #{item.lastSeenHeight.toLocaleString()}
 									else
 										| N/A
 
 			.d-flex.justify-content-between
 				div
 					if richlist.paging.offset > 0
-						a.btn.btn-outline-primary.btn-sm(href=`./vrm/richlist?limit=${limit}&offset=${Math.max(0, richlist.paging.offset - limit)}`) Previous
+						a.btn.btn-outline-primary.btn-sm(href=`${base}/richlist?limit=${limit}&offset=${Math.max(0, richlist.paging.offset - limit)}`) Previous
 				div
 					if richlist.paging.hasMore
-						a.btn.btn-outline-primary.btn-sm(href=`./vrm/richlist?limit=${limit}&offset=${richlist.paging.offset + limit}`) Next
+						a.btn.btn-outline-primary.btn-sm(href=`${base}/richlist?limit=${limit}&offset=${richlist.paging.offset + limit}`) Next

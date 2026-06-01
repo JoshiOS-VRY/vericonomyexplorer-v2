@@ -1,10 +1,13 @@
 extends ../layout
 
+- const base = chainBasePath || "./vrm"
+- const meta = chainMeta || { name: "Verium", ticker: "VRM" }
+
 block headContent
-	title Verium Leaderboard
+	title #{meta.name} Leaderboard
 
 block content
-	+pageTitle("Verium Leaderboard", "Indexed transfer activity, not guessed mining or staking identity")
+	+pageTitle(`${meta.name} Leaderboard`, "Indexed transfer activity, not guessed mining or staking identity")
 
 	if (!leaderboard.enabled && leaderboard.message)
 		+warningAlert
@@ -13,12 +16,12 @@ block content
 	else
 		+contentSection("Filters")
 			.d-flex.flex-wrap.gap-2
-				a.btn.btn-sm(href="./vrm/leaderboard?period=week&sort=net", class=(leaderboard.period.type == "week" && leaderboard.sort == "net" ? "btn-primary" : "btn-outline-primary")) Week Net
-				a.btn.btn-sm(href="./vrm/leaderboard?period=week&sort=received", class=(leaderboard.period.type == "week" && leaderboard.sort == "received" ? "btn-primary" : "btn-outline-primary")) Week Received
-				a.btn.btn-sm(href="./vrm/leaderboard?period=week&sort=activity", class=(leaderboard.period.type == "week" && leaderboard.sort == "activity" ? "btn-primary" : "btn-outline-primary")) Week Activity
-				a.btn.btn-sm(href="./vrm/leaderboard?period=month&sort=net", class=(leaderboard.period.type == "month" && leaderboard.sort == "net" ? "btn-primary" : "btn-outline-primary")) Month Net
-				a.btn.btn-sm(href="./vrm/leaderboard?period=month&sort=received", class=(leaderboard.period.type == "month" && leaderboard.sort == "received" ? "btn-primary" : "btn-outline-primary")) Month Received
-				a.btn.btn-sm(href="./vrm/leaderboard?period=month&sort=activity", class=(leaderboard.period.type == "month" && leaderboard.sort == "activity" ? "btn-primary" : "btn-outline-primary")) Month Activity
+				a.btn.btn-sm(href="${base}/leaderboard?period=week&sort=net", class=(leaderboard.period.type == "week" && leaderboard.sort == "net" ? "btn-primary" : "btn-outline-primary")) Week Net
+				a.btn.btn-sm(href="${base}/leaderboard?period=week&sort=received", class=(leaderboard.period.type == "week" && leaderboard.sort == "received" ? "btn-primary" : "btn-outline-primary")) Week Received
+				a.btn.btn-sm(href="${base}/leaderboard?period=week&sort=activity", class=(leaderboard.period.type == "week" && leaderboard.sort == "activity" ? "btn-primary" : "btn-outline-primary")) Week Activity
+				a.btn.btn-sm(href="${base}/leaderboard?period=month&sort=net", class=(leaderboard.period.type == "month" && leaderboard.sort == "net" ? "btn-primary" : "btn-outline-primary")) Month Net
+				a.btn.btn-sm(href="${base}/leaderboard?period=month&sort=received", class=(leaderboard.period.type == "month" && leaderboard.sort == "received" ? "btn-primary" : "btn-outline-primary")) Month Received
+				a.btn.btn-sm(href="${base}/leaderboard?period=month&sort=activity", class=(leaderboard.period.type == "month" && leaderboard.sort == "activity" ? "btn-primary" : "btn-outline-primary")) Month Activity
 
 		+contentSection("Source")
 			+summaryRow(4)
@@ -48,21 +51,21 @@ block content
 							tr
 								td ##{item.rank}
 								td.font-monospace
-									a(href=`./vrm/address/${item.address}`) #{item.address}
+									a(href=`${base}/address/${item.address}`) #{item.address}
 								td.text-end #{item.received.amount} #{item.received.ticker}
 								td.text-end #{item.sent.amount}
 								td.text-end(class=(item.netAtomic.startsWith("-") ? "text-danger" : "text-success")) #{item.net.amount}
 								td.text-end #{item.txCount.toLocaleString()}
 								td.text-end
 									if item.lastSeenHeight != null
-										a(href=`./vrm/block/${item.lastSeenHeight}`) #{item.lastSeenHeight.toLocaleString()}
+										a(href=`${base}/block/${item.lastSeenHeight}`) #{item.lastSeenHeight.toLocaleString()}
 									else
 										| N/A
 
 			.d-flex.justify-content-between
 				div
 					if leaderboard.paging.offset > 0
-						a.btn.btn-outline-primary.btn-sm(href=`./vrm/leaderboard?period=${leaderboard.period.type}&sort=${leaderboard.sort}&limit=${limit}&offset=${Math.max(0, leaderboard.paging.offset - limit)}`) Previous
+						a.btn.btn-outline-primary.btn-sm(href=`${base}/leaderboard?period=${leaderboard.period.type}&sort=${leaderboard.sort}&limit=${limit}&offset=${Math.max(0, leaderboard.paging.offset - limit)}`) Previous
 				div
 					if leaderboard.paging.hasMore
-						a.btn.btn-outline-primary.btn-sm(href=`./vrm/leaderboard?period=${leaderboard.period.type}&sort=${leaderboard.sort}&limit=${limit}&offset=${leaderboard.paging.offset + limit}`) Next
+						a.btn.btn-outline-primary.btn-sm(href=`${base}/leaderboard?period=${leaderboard.period.type}&sort=${leaderboard.sort}&limit=${limit}&offset=${leaderboard.paging.offset + limit}`) Next

@@ -45,13 +45,13 @@ block content
 								dt Tx Lookup
 								dd Index-required
 						a(href="./vrm") Open VRM
-					article.vce-live-card.is-muted(id="vrc-later")
+					article.vce-live-card(class=(vrcHealth.trusted ? "is-live" : ""))
 						.vce-live-head
 							img(src=assetUrl("./img/vericonomy/vericoin-logo.svg"), alt="")
 							div
 								strong VeriCoin
 								span VRC · PoST
-							em Coming later
+							em(class=(vrcHealth.trusted ? "is-live" : "")) #{vrcHealth.status}
 						dl
 							div
 								dt Index Status
@@ -65,7 +65,7 @@ block content
 							div
 								dt Launch Plan
 								dd VRC update
-						span.vce-disabled-link Plug-in ready
+						a(href="./vrc") Open VRC
 
 		section.vce-section
 			.vce-section-head
@@ -117,12 +117,15 @@ block content
 				.vce-panel-head
 					h2 Top VRM Balances
 					a(href="./vrm/richlist") Full list
-				.vce-rank-list
-					each item in landing.vrmRichlist.items
-						a.vce-rank-row(href=`./vrm/address/${item.address}`)
-							span ##{item.rank}
-							strong.vce-mono #{utils.ellipsizeMiddle(item.address, 18)}
-							em #{item.balance.amount} #{item.balance.ticker}
+				if landing.vrmRichlist.items && landing.vrmRichlist.items.length
+					.vce-rank-list
+						each item in landing.vrmRichlist.items
+							a.vce-rank-row(href=`./vrm/address/${item.address}`)
+								span ##{item.rank}
+								strong.vce-mono #{utils.ellipsizeMiddle(item.address, 18)}
+								em #{item.balance.amount} #{item.balance.ticker}
+				else
+					.vce-empty Richlist unavailable until the VRM index is trusted.
 
 		section.vce-section
 			.vce-section-head
@@ -162,4 +165,4 @@ block content
 						li
 							span Tx Query
 							strong Plug-in path ready
-					span.vce-button.vce-button-disabled VRC update later
+					a.vce-button.vce-button-primary(href="./vrc") Explore VRC

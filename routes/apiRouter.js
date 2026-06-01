@@ -27,6 +27,7 @@ const apiDocs = require("./../docs/api.js");
 const btcQuotes = require("./../app/coins/btcQuotes.js");
 const indexerHealth = require("./../app/indexerV2/health.js");
 const indexerQuery = require("./../app/indexerV2/query.js");
+const tipSync = require("./../app/indexerV2/tipSync.js");
 
 
 
@@ -82,16 +83,17 @@ router.get("/indexer/status", function(req, res, next) {
 	next();
 });
 
-router.get("/indexer/:chainId/summary", function(req, res, next) {
+router.get("/indexer/:chainId/summary", asyncHandler(async (req, res, next) => {
 	try {
-		res.json(indexerQuery.getChainSummary(req.params.chainId));
+		await tipSync.syncToTip(req.params.chainId, { pageType: "chain" });
+		res.json(indexerQuery.getChainSummary(req.params.chainId, { liteHealth: true }));
 
 	} catch (err) {
 		handleIndexerApiError(res, err);
 	}
 
 	next();
-});
+}));
 
 router.get("/indexer/:chainId/richlist", function(req, res, next) {
 	try {
@@ -125,8 +127,9 @@ router.get("/indexer/:chainId/leaderboard", function(req, res, next) {
 	next();
 });
 
-router.get("/indexer/:chainId/address/:address", function(req, res, next) {
+router.get("/indexer/:chainId/address/:address", asyncHandler(async (req, res, next) => {
 	try {
+		await tipSync.syncToTip(req.params.chainId, { pageType: "address" });
 		res.json(indexerQuery.getAddress(req.params.chainId, req.params.address, {
 			limit: req.query.limit,
 			offset: req.query.offset
@@ -137,7 +140,7 @@ router.get("/indexer/:chainId/address/:address", function(req, res, next) {
 	}
 
 	next();
-});
+}));
 
 router.get("/indexer/:chainId/tx/:txid", function(req, res, next) {
 	try {
@@ -150,8 +153,9 @@ router.get("/indexer/:chainId/tx/:txid", function(req, res, next) {
 	next();
 });
 
-router.get("/indexer/:chainId/block/:hashOrHeight", function(req, res, next) {
+router.get("/indexer/:chainId/block/:hashOrHeight", asyncHandler(async (req, res, next) => {
 	try {
+		await tipSync.syncToTip(req.params.chainId, { pageType: "chain" });
 		res.json(indexerQuery.getBlock(req.params.chainId, req.params.hashOrHeight, {
 			limit: req.query.limit,
 			offset: req.query.offset
@@ -162,7 +166,7 @@ router.get("/indexer/:chainId/block/:hashOrHeight", function(req, res, next) {
 	}
 
 	next();
-});
+}));
 
 function handleIndexerApiError(res, err) {
 	utils.logError("indexer-query-api", err);

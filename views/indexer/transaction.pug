@@ -1,21 +1,24 @@
 extends ../layout
 
+- const base = chainBasePath || "./vrm"
+- const meta = chainMeta || { name: "Verium", ticker: "VRM" }
+
 block headContent
-	title Verium Transaction #{txResult.txid || (txResult.transaction && txResult.transaction.txid)}
+	title #{meta.name} Transaction #{txResult.txid || (txResult.transaction && txResult.transaction.txid)}
 
 block content
 	if (!txResult.found)
-		+pageTitle("Verium Transaction", txResult.txid, true)
+		+pageTitle(`${meta.name} Transaction`, txResult.txid, true)
 		+warningAlert
 			h6.mb-2 Transaction Not Found In Index
-			| Verium transaction lookup uses the local trusted index because arbitrary RPC tx queries are not reliable in the current Verium codebase.
+			| #{meta.ticker} transaction lookup uses the local trusted index because arbitrary RPC tx queries are not always reliable.
 	else
-		+pageTitle("Verium Transaction", txResult.transaction.txid, true)
+		+pageTitle(`${meta.name} Transaction`, txResult.transaction.txid, true)
 
 		+contentSection("Summary")
 			+summaryRow(5)
 				+summaryItem("Block")
-					a(href=`./vrm/block/${txResult.transaction.blockHeight}`) #{txResult.transaction.blockHeight.toLocaleString()}
+					a(href=`${base}/block/${txResult.transaction.blockHeight}`) #{txResult.transaction.blockHeight.toLocaleString()}
 				+summaryItem("Index")
 					| #{txResult.transaction.txIndex.toLocaleString()}
 				+summaryItem("Type")
@@ -49,7 +52,7 @@ block content
 											td #{input.n}
 											td.font-monospace
 												if input.address
-													a(href=`./vrm/address/${input.address}`) #{utils.ellipsizeMiddle(input.address, 20)}
+													a(href=`${base}/address/${input.address}`) #{utils.ellipsizeMiddle(input.address, 20)}
 												else
 													span.text-muted coinbase
 											td.text-end
@@ -76,13 +79,13 @@ block content
 											td #{output.n}
 											td.font-monospace
 												if output.address
-													a(href=`./vrm/address/${output.address}`) #{utils.ellipsizeMiddle(output.address, 20)}
+													a(href=`${base}/address/${output.address}`) #{utils.ellipsizeMiddle(output.address, 20)}
 												else
 													span.text-muted #{output.scriptType || "unknown"}
 											td.text-end #{output.value.amount} #{output.value.ticker}
 											td.text-end
 												if output.isSpent
-													a(href=`./vrm/tx/${output.spentByTxid}`) yes
+													a(href=`${base}/tx/${output.spentByTxid}`) yes
 												else
 													span.text-success no
 
@@ -101,6 +104,6 @@ block content
 							each event in txResult.addressEvents
 								tr
 									td.font-monospace
-										a(href=`./vrm/address/${event.address}`) #{event.address}
+										a(href=`${base}/address/${event.address}`) #{event.address}
 									td #{event.eventType}
 									td.text-end(class=(event.deltaAtomic.startsWith("-") ? "text-danger" : "text-success")) #{event.delta.amount} #{event.delta.ticker}

@@ -1247,7 +1247,10 @@ function isIndexerOnlyRequest(req) {
 	return path === "/"
 		|| path === "/vrm"
 		|| path === "/verium"
+		|| path === "/vrc"
+		|| path === "/vericoin"
 		|| path.startsWith("/vrm/")
+		|| path.startsWith("/vrc/")
 		|| path.startsWith("/api/indexer/");
 }
 
