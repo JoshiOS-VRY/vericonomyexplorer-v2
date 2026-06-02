@@ -435,7 +435,11 @@ function getMinedLeaderboard(chainId, options = {}) {
 const MINERS_EXCLUDED_BLOCK_HEIGHT = 1;
 
 function queryMinedLeaderboardRows(db, chain, since, limit, offset) {
-	const timeFilter = since == null ? "" : " AND COALESCE(NULLIF(t.time, 0), b.time) >= ?";
+	// Filter on the authoritative block timestamp (blocks.time). Coinbase
+	// transactions.time is unreliable for VRM (it can be 0, null, or a stale
+	// non-zero value), which previously caused period filters to drop every
+	// row unless "all time" was selected.
+	const timeFilter = since == null ? "" : " AND b.time >= ?";
 	const countParams = since == null ? [chain] : [chain, since];
 	const rowParams = since == null
 		? [chain, limit, offset]
@@ -523,7 +527,7 @@ function enrichMinedBlockStats(db, chain, addresses, since) {
 	params.splice(1, 0, MINERS_EXCLUDED_BLOCK_HEIGHT);
 
 	if (since != null) {
-		sql += " AND COALESCE(NULLIF(t.time, 0), b.time) >= ?";
+		sql += " AND b.time >= ?";
 		params.push(since);
 	}
 

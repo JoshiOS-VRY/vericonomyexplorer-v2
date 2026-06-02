@@ -5,10 +5,15 @@ export function formatUsdPrice(value: number | null | undefined, digits?: number
   const resolvedDigits =
     digits ??
     (value < 0.000001 ? 10 : value < 0.0001 ? 8 : value < 0.01 ? 6 : value < 1 ? 4 : 2);
+  // When digits aren't explicitly requested, allow up to the tier precision but
+  // trim trailing zeros down to a 2-decimal floor (e.g. 0.07 -> "$0.07", not
+  // "$0.0700"), while still keeping significant digits for sub-cent prices.
+  const minimumFractionDigits =
+    digits != null ? resolvedDigits : Math.min(2, resolvedDigits);
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    minimumFractionDigits: resolvedDigits,
+    minimumFractionDigits,
     maximumFractionDigits: resolvedDigits,
   }).format(value);
 }
