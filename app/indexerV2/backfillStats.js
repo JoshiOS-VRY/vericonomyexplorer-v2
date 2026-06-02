@@ -11,10 +11,12 @@ const {
 	getPeriodBoundsForTime,
 	toSafeInteger
 } = require("./periodStats.js");
+const { yieldBetweenWrites, resolveYieldMs } = require("./yield.js");
+const writeLock = require("./writeLock.js");
 
 function getBackfillBatchSize() {
-	const configured = Number(process.env.VCEXP_BACKFILL_STATS_BATCH_SIZE ?? 5_000);
-	return Number.isFinite(configured) && configured > 0 ? Math.trunc(configured) : 5_000;
+	const configured = Number(process.env.VCEXP_BACKFILL_STATS_BATCH_SIZE ?? 500);
+	return Number.isFinite(configured) && configured > 0 ? Math.trunc(configured) : 500;
 }
 
 function toCount(value) {
@@ -103,6 +105,7 @@ function backfillTransactions(db, chainId, periodStatements, batchSize, now) {
 		lastTxIndex = toCount(last.tx_index) + 1;
 		processed += batch.length;
 		logProgress(`${chainId} transactions (chain activity)`, processed, transactionCount);
+		yieldBetweenWrites();
 	}
 
 	return transactionCount;
@@ -142,6 +145,7 @@ function backfillBlocks(db, chainId, periodStatements, batchSize, now) {
 		lastHeight = toCount(batch[batch.length - 1].height);
 		processed += batch.length;
 		logProgress(`${chainId} blocks (chain activity)`, processed, blockCount);
+		yieldBetweenWrites();
 	}
 
 	return blockCount;
@@ -198,6 +202,7 @@ function backfillAddressEvents(db, chainId, periodStatements, batchSize, now) {
 		lastEventId = toCount(batch[batch.length - 1].id);
 		processedEvents += batch.length;
 		logProgress(`${chainId} address events (balance buckets)`, processedEvents, eventCount);
+		yieldBetweenWrites();
 	}
 
 	return eventCount;
@@ -255,6 +260,7 @@ function backfillPeriodStats(db, chainId, periodStatements, batchSize, now, even
 		lastEventId = toCount(batch[batch.length - 1].id);
 		processedEvents += batch.length;
 		logProgress(`${chainId} period stats`, processedEvents, totalEvents);
+		yieldBetweenWrites();
 	}
 }
 
@@ -286,6 +292,38 @@ function logIndexedCoverage(db, chainId) {
 }
 
 function backfillChain(db, chainId, options = {}) {
+	const cooperative = options.cooperative !== false
+		&& parseTruthy(process.env.VCEXP_BACKFILL_COOPERATIVE) !== false;
+	const lockOwner = `backfill-stats:${chainId}`;
+	let lock = cooperative ? writeLock.tryAcquireWriteLock(lockOwner) : { skipped: false, fd: null };
+
+	if (cooperative && lock.skipped) {
+		return {
+			chainId,
+			skipped: true,
+			reason: "write-lock-held",
+			holder: lock.holder || null
+		};
+	}
+
+	try {
+		return backfillChainLocked(db, chainId, options);
+	} finally {
+		if (cooperative) {
+			writeLock.releaseWriteLock(lock);
+		}
+	}
+}
+
+function parseTruthy(value) {
+	if (value === undefined || value === null) {
+		return undefined;
+	}
+
+	return !["0", "false", "no", "off"].includes(String(value).toLowerCase());
+}
+
+function backfillChainLocked(db, chainId, options = {}) {
 	const now = Date.now();
 	const batchSize = options.batchSize ?? getBackfillBatchSize();
 	const periodStatements = createPeriodStatStatements(db);
@@ -305,7 +343,7 @@ function backfillChain(db, chainId, options = {}) {
 	process.stderr.write(
 		`[backfill-stats] starting ${chainId}: `
 		+ `${transactionCount} txs, ${blockCount} blocks, ${eventCount} address events `
-		+ `(batch size ${batchSize})\n`
+		+ `(batch size ${batchSize}, yield ${resolveYieldMs()}ms)\n`
 	);
 	process.stderr.write(
 		"[backfill-stats] chain_activity_buckets fill during transactions/blocks phases; "

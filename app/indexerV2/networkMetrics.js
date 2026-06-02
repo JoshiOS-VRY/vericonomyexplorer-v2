@@ -7,6 +7,7 @@ const {
 	resolveAddressGrowthRange,
 	addressCountAtBucketEnd
 } = require("./addressGrowth.js");
+const { yieldBetweenWrites } = require("./yield.js");
 const veriumCoin = require("../coins/verium.js");
 const Decimal = require("decimal.js");
 
@@ -38,6 +39,72 @@ function createNetworkMetricStatements(db) {
 				updated_at = excluded.updated_at
 		`)
 	};
+}
+
+function getBackfillWriteBatchSize() {
+	const configured = Number(process.env.VCEXP_BACKFILL_WRITE_BATCH ?? 250);
+	return Number.isFinite(configured) && configured > 0 ? Math.trunc(configured) : 250;
+}
+
+function writeBucketBatch(db, chainId, bucketEntries, options = {}) {
+	const {
+		supplySeries,
+		addressFirstSeenTimes,
+		sampleEveryHours,
+		statements
+	} = options;
+	let bucketsWritten = 0;
+
+	const run = db.transaction(() => {
+		for (const [bucketStart, bucket] of bucketEntries) {
+			if (sampleEveryHours > 1 && (bucketStart / HOUR_SECONDS) % sampleEveryHours !== 0) {
+				continue;
+			}
+
+			const metrics = {
+				bucketStart,
+				blockHeight: bucket.blockHeight,
+				difficulty: bucket.difficulty
+			};
+
+			if (supplySeries) {
+				const indexedSupply = supplyAtHeight(supplySeries, bucket.blockHeight);
+				if (indexedSupply != null) {
+					metrics.supply = indexedSupply;
+				}
+			}
+
+			if (addressFirstSeenTimes.length > 0) {
+				metrics.addressCount = addressCountAtBucketEnd(addressFirstSeenTimes, bucketStart);
+			}
+
+			if (chainId === "vrm" && bucket.difficulty != null) {
+				const hashPerSec = difficultyToHashPerSec(bucket.difficulty, chainId);
+				if (hashPerSec != null) {
+					metrics.hashrateKhPerMin = hashPerSecToKhPerMin(hashPerSec);
+				}
+			}
+
+			statements.upsertBucket.run({
+				chain_id: chainId,
+				bucket_start: metrics.bucketStart,
+				difficulty: metrics.difficulty,
+				block_height: metrics.blockHeight,
+				supply: metrics.supply ?? null,
+				hashrate_kh_per_min: metrics.hashrateKhPerMin ?? null,
+				interest_rate_percent: null,
+				net_stake_weight: null,
+				percent_staked: null,
+				expected_stake_time_seconds: null,
+				address_count: metrics.addressCount ?? null,
+				updated_at: Date.now()
+			});
+			bucketsWritten += 1;
+		}
+	});
+
+	run();
+	return bucketsWritten;
 }
 
 function upsertNetworkMetricBucket(db, chainId, metrics) {
@@ -125,7 +192,6 @@ function estimatedSupplyAtHeight(height) {
 function backfillFromBlocks(db, chainId, options = {}) {
 	const since = options.since ?? null;
 	const sampleEveryHours = Number(options.sampleEveryHours ?? 1);
-	const now = Math.floor(Date.now() / 1000);
 	const statements = createNetworkMetricStatements(db);
 
 	const rows = db.prepare(`
@@ -158,42 +224,20 @@ function backfillFromBlocks(db, chainId, options = {}) {
 	}
 
 	let bucketsWritten = 0;
-	const run = db.transaction(() => {
-		for (const [bucketStart, bucket] of buckets) {
-			if (sampleEveryHours > 1 && (bucketStart / HOUR_SECONDS) % sampleEveryHours !== 0) {
-				continue;
-			}
+	const bucketEntries = [...buckets.entries()];
+	const writeBatchSize = getBackfillWriteBatchSize();
 
-			const metrics = {
-				bucketStart,
-				blockHeight: bucket.blockHeight,
-				difficulty: bucket.difficulty
-			};
+	for (let index = 0; index < bucketEntries.length; index += writeBatchSize) {
+		const slice = bucketEntries.slice(index, index + writeBatchSize);
+		bucketsWritten += writeBucketBatch(db, chainId, slice, {
+			supplySeries,
+			addressFirstSeenTimes,
+			sampleEveryHours,
+			statements
+		});
+		yieldBetweenWrites();
+	}
 
-			if (supplySeries) {
-				const indexedSupply = supplyAtHeight(supplySeries, bucket.blockHeight);
-				if (indexedSupply != null) {
-					metrics.supply = indexedSupply;
-				}
-			}
-
-			if (addressFirstSeenTimes.length > 0) {
-				metrics.addressCount = addressCountAtBucketEnd(addressFirstSeenTimes, bucketStart);
-			}
-
-			if (chainId === "vrm" && bucket.difficulty != null) {
-				const hashPerSec = difficultyToHashPerSec(bucket.difficulty, chainId);
-				if (hashPerSec != null) {
-					metrics.hashrateKhPerMin = hashPerSecToKhPerMin(hashPerSec);
-				}
-			}
-
-			upsertNetworkMetricBucket(db, chainId, metrics);
-			bucketsWritten += 1;
-		}
-	});
-
-	run();
 	return {
 		chainId,
 		bucketsWritten,
@@ -222,21 +266,31 @@ function backfillAddressGrowth(db, chainId, options = {}) {
 	}
 
 	let bucketsWritten = 0;
-	const run = db.transaction(() => {
-		for (let bucketStart = startBucket; bucketStart <= rangeEnd; bucketStart += HOUR_SECONDS * sampleEveryHours) {
-			if (sampleEveryHours > 1 && (bucketStart / HOUR_SECONDS) % sampleEveryHours !== 0) {
-				continue;
-			}
+	const writeBatchSize = getBackfillWriteBatchSize();
+	const bucketStarts = [];
 
-			upsertNetworkMetricBucket(db, chainId, {
-				bucketStart,
-				addressCount: addressCountAtBucketEnd(addressFirstSeenTimes, bucketStart)
-			});
-			bucketsWritten += 1;
+	for (let bucketStart = startBucket; bucketStart <= rangeEnd; bucketStart += HOUR_SECONDS * sampleEveryHours) {
+		if (sampleEveryHours > 1 && (bucketStart / HOUR_SECONDS) % sampleEveryHours !== 0) {
+			continue;
 		}
-	});
+		bucketStarts.push(bucketStart);
+	}
 
-	run();
+	for (let index = 0; index < bucketStarts.length; index += writeBatchSize) {
+		const slice = bucketStarts.slice(index, index + writeBatchSize);
+		const run = db.transaction(() => {
+			for (const bucketStart of slice) {
+				upsertNetworkMetricBucket(db, chainId, {
+					bucketStart,
+					addressCount: addressCountAtBucketEnd(addressFirstSeenTimes, bucketStart)
+				});
+				bucketsWritten += 1;
+			}
+		});
+		run();
+		yieldBetweenWrites();
+	}
+
 	return {
 		chainId,
 		bucketsWritten,

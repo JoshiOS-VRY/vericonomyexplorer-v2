@@ -37,8 +37,8 @@ function resolveRpcBatchSize(options = {}, indexOnly = false) {
 		return 1;
 	}
 
-	const env = Number(process.env.VCEXP_INDEX_ONLY_RPC_BATCH ?? 100);
-	return Number.isFinite(env) && env > 0 ? Math.trunc(env) : 100;
+	const env = Number(process.env.VCEXP_INDEX_ONLY_RPC_BATCH ?? 25);
+	return Number.isFinite(env) && env > 0 ? Math.trunc(env) : 25;
 }
 
 function resolveStoreRawJson(options = {}, indexerConfig = {}, indexOnly = false) {

@@ -92,8 +92,10 @@ services:
       VCEXP_VRM_RPC_HOST: ${VCEXP_VRM_RPC_HOST:-172.18.0.1}
       VCEXP_VRC_RPC_HOST: ${VCEXP_VRC_RPC_HOST:-172.18.0.1}
       VCEXP_API_DB_WORKER_TIMEOUT_MS: ${VCEXP_API_DB_WORKER_TIMEOUT_MS:-120000}
-      VCEXP_API_DB_WORKERS: ${VCEXP_API_DB_WORKERS:-2}
+      VCEXP_API_DB_WORKERS: ${VCEXP_API_DB_WORKERS:-4}
       VCEXP_API_DB_FAST_WORKERS: ${VCEXP_API_DB_FAST_WORKERS:-2}
+      VCEXP_SQLITE_BUSY_RETRY_ATTEMPTS: ${VCEXP_SQLITE_BUSY_RETRY_ATTEMPTS:-6}
+      VCEXP_SQLITE_BUSY_RETRY_DELAY_MS: ${VCEXP_SQLITE_BUSY_RETRY_DELAY_MS:-100}
       VCEXP_API_TX_LOOKUP_TIMEOUT_MS: ${VCEXP_API_TX_LOOKUP_TIMEOUT_MS:-30000}
       VCEXP_SQLITE_CACHE_MB: ${VCEXP_SQLITE_CACHE_MB:-256}
       VCEXP_SQLITE_MMAP_MB: ${VCEXP_SQLITE_MMAP_MB:-256}
@@ -109,6 +111,7 @@ services:
       - private
 
   vrm-indexer:
+    profiles: ["vrm-catchup"]
     container_name: vericonomy-vrm-indexer
     build:
       context: .
@@ -122,6 +125,10 @@ services:
       VCEXP_INDEXER_SQLITE_PATH: ${VCEXP_INDEXER_SQLITE_PATH:-/app/database/vericonomy-index.sqlite}
       VCEXP_CHAINS_CONFIG: ${VCEXP_CHAINS_CONFIG:-/app/configs/chains.json}
       VCEXP_VRM_RPC_HOST: ${VCEXP_VRM_RPC_HOST:-172.18.0.1}
+      VCEXP_INDEXER_YIELD_MS: ${VCEXP_INDEXER_YIELD_MS:-50}
+      VCEXP_INDEXER_BLOCKS_PER_PASS: ${VCEXP_INDEXER_BLOCKS_PER_PASS:-50}
+      VCEXP_INDEX_ONLY_RPC_BATCH: ${VCEXP_INDEX_ONLY_RPC_BATCH:-25}
+      VCEXP_INDEXER_BUSY_TIMEOUT_MS: ${VCEXP_INDEXER_BUSY_TIMEOUT_MS:-30000}
     volumes:
       - vericonomy-database:/app/database
       - ./configs/chains.json:/app/configs/chains.json:ro
@@ -135,13 +142,31 @@ services:
       dockerfile: Dockerfile
     image: vericonomy-vrc-indexer:option-a
     restart: unless-stopped
-    command: ["node", "./bin/indexer-v2-loop.js", "--chain", "vrc", "--index-only", "--pause-ms", "0", "--log-every", "1000"]
+    command:
+      [
+        "node",
+        "./bin/indexer-v2-loop.js",
+        "--chain",
+        "vrc",
+        "--index-only",
+        "--batch-size",
+        "25",
+        "--pause-ms",
+        "50",
+        "--log-every",
+        "1000",
+      ]
     env_file:
       - ${ENV_FILE:-.env.production}
     environment:
       VCEXP_INDEXER_SQLITE_PATH: ${VCEXP_INDEXER_SQLITE_PATH:-/app/database/vericonomy-index.sqlite}
       VCEXP_CHAINS_CONFIG: ${VCEXP_CHAINS_CONFIG:-/app/configs/chains.json}
       VCEXP_VRC_RPC_HOST: ${VCEXP_VRC_RPC_HOST:-172.18.0.1}
+      VCEXP_INDEXER_YIELD_MS: ${VCEXP_INDEXER_YIELD_MS:-50}
+      VCEXP_INDEXER_BLOCKS_PER_PASS: ${VCEXP_INDEXER_BLOCKS_PER_PASS:-50}
+      VCEXP_INDEX_ONLY_RPC_BATCH: ${VCEXP_INDEX_ONLY_RPC_BATCH:-25}
+      VCEXP_INDEXER_BUSY_TIMEOUT_MS: ${VCEXP_INDEXER_BUSY_TIMEOUT_MS:-30000}
+      VCEXP_WAL_CHECKPOINT_MODE: ${VCEXP_WAL_CHECKPOINT_MODE:-PASSIVE}
     volumes:
       - vericonomy-database:/app/database
       - ./configs/chains.json:/app/configs/chains.json:ro

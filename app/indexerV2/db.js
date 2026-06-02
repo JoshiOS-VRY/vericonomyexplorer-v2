@@ -53,9 +53,13 @@ function openDatabase(dbPath = getDatabasePath(), options = {}) {
 	db.defaultSafeIntegers(true);
 	db.pragma("journal_mode = WAL");
 	db.pragma("foreign_keys = ON");
-	const busyTimeoutMs = Number(options.busyTimeoutMs ?? 10_000);
-	db.pragma(`busy_timeout = ${Number.isFinite(busyTimeoutMs) && busyTimeoutMs > 0 ? busyTimeoutMs : 10_000}`);
+	const busyTimeoutMs = Number(options.busyTimeoutMs ?? process.env.VCEXP_INDEXER_BUSY_TIMEOUT_MS ?? 30_000);
+	db.pragma(`busy_timeout = ${Number.isFinite(busyTimeoutMs) && busyTimeoutMs > 0 ? busyTimeoutMs : 30_000}`);
 	db.pragma("synchronous = NORMAL");
+	const walAutocheckpoint = Number(process.env.VCEXP_SQLITE_WAL_AUTOCHECKPOINT ?? 1000);
+	if (Number.isFinite(walAutocheckpoint) && walAutocheckpoint > 0) {
+		db.pragma(`wal_autocheckpoint = ${Math.trunc(walAutocheckpoint)}`);
+	}
 
 	schema.applySchema(db, Object.assign({}, options, { skipHeavyBackfills: true }));
 	if (options.skipSeed !== true) {
@@ -65,6 +69,14 @@ function openDatabase(dbPath = getDatabasePath(), options = {}) {
 	debugLog(`Indexer V2 database opened: ${dbPath}`);
 
 	return db;
+}
+
+function openDatabaseReadOnly(dbPath = getDatabasePath()) {
+	const readonlyDb = new Database(dbPath, { readonly: true });
+	readonlyDb.defaultSafeIntegers(true);
+	readonlyDb.pragma("foreign_keys = ON");
+	applyReadPragmas(readonlyDb);
+	return readonlyDb;
 }
 
 function seedChains(targetDb) {
@@ -153,7 +165,9 @@ function maybeCheckpointWal(targetDb = db, options = {}) {
 	}
 
 	const beforeMb = walSizeMb;
-	activeDb.pragma("wal_checkpoint(TRUNCATE)");
+	const mode = force ? "TRUNCATE" : String(process.env.VCEXP_WAL_CHECKPOINT_MODE ?? "PASSIVE").toUpperCase();
+	const checkpointMode = ["PASSIVE", "FULL", "RESTART", "TRUNCATE"].includes(mode) ? mode : "PASSIVE";
+	activeDb.pragma(`wal_checkpoint(${checkpointMode})`);
 	const afterMb = getWalSizeMb(dbPath);
 
 	debugLog(`WAL checkpoint complete: ${beforeMb.toFixed(1)}MB -> ${afterMb.toFixed(1)}MB`);
@@ -306,6 +320,7 @@ function getStatus() {
 
 module.exports = {
 	openDatabase,
+	openDatabaseReadOnly,
 	closeDatabase,
 	getDatabasePath,
 	applyReadPragmas,

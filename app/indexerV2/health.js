@@ -18,7 +18,7 @@ function cloneChainHealth(value) {
 }
 
 function getIndexerHealth(options = {}) {
-	const db = options.db || dbModule.openDatabase();
+	const db = options.db || dbModule.openDatabaseReadOnly();
 	const chains = db.prepare(`
 		SELECT
 			chains.id,
@@ -74,7 +74,7 @@ function getChainHealth(chainId, options = {}) {
 }
 
 function computeChainHealthLite(chainId, options = {}) {
-	const db = options.db || dbModule.openDatabase();
+	const db = options.db || dbModule.openDatabaseReadOnly();
 	const tipThreshold = getTipThreshold(options);
 	const chain = options.chain || getChainRow(db, chainId);
 	const syncStatus = chain ? chain.status : null;
@@ -170,7 +170,7 @@ function computeChainHealthLite(chainId, options = {}) {
 }
 
 function computeChainHealth(chainId, options = {}) {
-	const db = options.db || dbModule.openDatabase();
+	const db = options.db || dbModule.openDatabaseReadOnly();
 	const tipThreshold = getTipThreshold(options);
 	const chain = options.chain || getChainRow(db, chainId);
 	const blockStats = getBlockStats(db, chainId);

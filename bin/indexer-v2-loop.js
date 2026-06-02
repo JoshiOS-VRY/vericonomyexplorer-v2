@@ -18,6 +18,8 @@ if (!args.chain) {
 
 const { syncRange } = require("../app/indexerV2/worker.js");
 const dbModule = require("../app/indexerV2/db.js");
+const writeLock = require("../app/indexerV2/writeLock.js");
+const { yieldToReaders } = require("../app/indexerV2/yield.js");
 
 const idleMs = Number(args["idle-ms"] === undefined ? 5000 : args["idle-ms"]);
 const errorMs = Number(
@@ -58,6 +60,15 @@ async function runLoop() {
   }
 
   while (!stopping) {
+    const lock = writeLock.tryAcquireWriteLock(chain);
+    if (lock.skipped) {
+      console.log(
+        `[${chain}] waiting for SQLite write lock (held by ${lock.holder || "unknown"})`,
+      );
+      await sleep(Math.min(errorMs, 5000));
+      continue;
+    }
+
     try {
       const result = await syncRange(buildSyncOptions());
       console.log(JSON.stringify(result, null, 2));
@@ -67,7 +78,7 @@ async function runLoop() {
       }
 
       const waitMs = getIdleWaitMs(result);
-      if (waitMs > 0) {
+      if (waitMs > 0 && result.caughtUp) {
         console.log(
           `[${chain}] caught up at height ${result.endHeight}; waiting ${waitMs}ms`,
         );
@@ -78,6 +89,8 @@ async function runLoop() {
           );
         }
         await sleep(waitMs);
+      } else if (!result.caughtUp) {
+        await yieldToReaders();
       }
     } catch (err) {
       console.error(`[${chain}] sync failed: ${err.stack || err.message}`);
@@ -87,6 +100,8 @@ async function runLoop() {
 
       console.log(`[${chain}] retrying in ${errorMs}ms`);
       await sleep(errorMs);
+    } finally {
+      writeLock.releaseWriteLock(lock);
     }
   }
 

@@ -149,24 +149,21 @@ For initial sync, run the VRC indexer in **index-only** mode (default in `docker
 
 - Indexes blocks, txs, vins/vouts, address events, balances
 - **Skips** live insights buckets, period stats, and per-block fee totals
-- **Batches RPC** (100 blocks/window by default) for higher throughput
+- **Batches RPC** (25 blocks/window by default) with cooperative yields so the site stays responsive
 - Forces `storeRawJson: false` unless overridden
 
+Default production tuning (in compose / `.env.production`):
+
+- `VCEXP_INDEXER_YIELD_MS=50` — pause between write batches for API reads
+- `VCEXP_INDEXER_BLOCKS_PER_PASS=50` — release the write lock every 50 blocks
+- `VCEXP_INDEX_ONLY_RPC_BATCH=25` — RPC window size in index-only mode
+- `VCEXP_WAL_CHECKPOINT_MODE=PASSIVE` — avoid TRUNCATE checkpoints while live
+
+VRM catch-up is **off by default** (Compose profile `vrm-catchup`) so VRC tip sync and the web UI are not blocked by a multi-day VRM re-index:
+
 ```bash
-docker compose -f docker-compose.option-a.yml --env-file .env.production up -d vrc-indexer
-docker compose -f docker-compose.option-a.yml --env-file .env.production logs -f vrc-indexer
+docker compose -f docker-compose.option-a.yml --env-file .env.production --profile vrm-catchup up -d vrm-indexer
 ```
-
-One-off / manual:
-
-```bash
-docker compose -f docker-compose.option-a.yml --env-file .env.production run --rm vrc-indexer \
-  node ./bin/indexer-v2-loop.js --chain vrc --index-only --pause-ms 0 --log-every 1000
-```
-
-Tune RPC batch size: `VCEXP_INDEX_ONLY_RPC_BATCH=200` or `--rpc-batch-size 200`.
-
-**After fully synced to tip:** stop writers → run section 5b backfills → restart indexer **without** `--index-only` for live blocks (or keep index-only and backfill periodically).
 
 ## 5b) Insights chart backfills (Docker)
 
@@ -212,7 +209,14 @@ Optional: limit block scans to the last year:
 SINCE=$(date -d '365 days ago' +%s) ./deploy/option-a/backfill-vrc-insights.sh
 ```
 
-If the database is busy, pause all SQLite writers while backfilling:
+If the database is busy, use **cooperative** backfills (site + VRC indexer can stay up):
+
+```bash
+chmod +x deploy/option-a/backfill-insights-cooperative.sh
+VCEXP_BACKFILL_COOPERATIVE=1 ./deploy/option-a/backfill-insights-cooperative.sh
+```
+
+For fastest backfill (site/indexers paused), stop SQLite writers while backfilling:
 
 ```bash
 docker compose -f docker-compose.option-a.yml --env-file .env.production \

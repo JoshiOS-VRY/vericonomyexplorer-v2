@@ -5,6 +5,7 @@ const { getChainConfig, getRpcCredentials } = require("./chainConfig.js");
 const { createRpcClient } = require("./rpcClient.js");
 const { ingestBlock } = require("./ingest.js");
 const { rollbackFromHeight } = require("./reorg.js");
+const { resolveBlocksPerPass, yieldToReaders } = require("./yield.js");
 const {
 	resolveIndexOnly,
 	resolveRpcBatchSize,
@@ -30,7 +31,11 @@ async function syncRange(options = {}) {
 		? getResumeHeight(db, chainConfig.id)
 		: Number(options.startHeight);
 	const requestedEndHeight = options.endHeight === undefined ? bestHeight : Number(options.endHeight);
-	const endHeight = Math.min(requestedEndHeight, bestHeight);
+	let endHeight = Math.min(requestedEndHeight, bestHeight);
+	const maxBlocksPerPass = resolveBlocksPerPass(options);
+	if (maxBlocksPerPass > 0 && startHeight <= endHeight) {
+		endHeight = Math.min(endHeight, startHeight + maxBlocksPerPass - 1);
+	}
 
 	if (Number.isNaN(startHeight) || Number.isNaN(endHeight)) {
 		throw new Error(`Invalid height range: start=${options.startHeight}, end=${options.endHeight}`);
@@ -111,7 +116,9 @@ async function syncRange(options = {}) {
 		endHeight,
 		indexed,
 		indexOnly,
-		rpcBatchSize: indexOnly ? rpcBatchSize : 1
+		rpcBatchSize: indexOnly ? rpcBatchSize : 1,
+		maxBlocksPerPass: maxBlocksPerPass > 0 ? maxBlocksPerPass : null,
+		caughtUp: endHeight >= bestHeight
 	};
 }
 
@@ -124,6 +131,7 @@ async function syncRangeSequential(context) {
 		const ingested = await ingestHeight(context, height, blockhash, block);
 		indexed += ingested;
 		await maybePause(context, height, indexed);
+		await yieldToReaders();
 	}
 
 	return indexed;
@@ -187,6 +195,7 @@ async function syncRangeWithRpcBatch(context) {
 		}
 
 		await maybePause(context, windowEnd, indexed);
+		await yieldToReaders();
 	}
 
 	return indexed;
