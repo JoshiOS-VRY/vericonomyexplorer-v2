@@ -152,6 +152,7 @@ export async function getLeaderboard(
   const qs = search.toString();
   const data = await v1Fetch<unknown>(`/${chainId}/leaderboard${qs ? `?${qs}` : ""}`, {
     revalidate: SUMMARY_REVALIDATE_SECONDS,
+    timeoutMs: 5_000,
   });
   return parseOrThrow(leaderboardSchema, data) as unknown as LeaderboardResult;
 }
@@ -171,6 +172,7 @@ export async function getMinersLeaderboard(
   const qs = search.toString();
   const data = await v1Fetch<unknown>(`/${chainId}/miners${qs ? `?${qs}` : ""}`, {
     revalidate: SUMMARY_REVALIDATE_SECONDS,
+    timeoutMs: 5_000,
   });
   return parseOrThrow(minersSchema, data) as unknown as MinersLeaderboardResult;
 }
