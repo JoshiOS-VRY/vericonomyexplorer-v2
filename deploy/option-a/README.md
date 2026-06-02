@@ -194,6 +194,18 @@ chmod +x deploy/option-a/backfill-vrm-*.sh
 ./deploy/option-a/backfill-vrm-insights.sh
 ```
 
+Optional — fix coinbase `transactions.time` from block time (Top Miners week/month/year):
+
+```bash
+./deploy/option-a/backfill-vrm-tx-times.sh
+```
+
+Uses `node ./bin/backfill-tx-times.js` (not `npm run`). After pulling new code, rebuild the indexer image if the container reports a missing script or file:
+
+```bash
+docker compose -f docker-compose.option-a.yml --env-file .env.production build vrm-indexer
+```
+
 Optional: limit block scans to the last year:
 
 ```bash
