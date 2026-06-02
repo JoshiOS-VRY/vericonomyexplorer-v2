@@ -28,29 +28,45 @@ export function shouldApplyFetchedBlocks(
   return fetchedTop >= currentTop;
 }
 
+/** Merge by height so a live poll that only returns the tip block never wipes indexed history. */
 export function enrichBlocksFromPrevious(
   prevBlocks: IndexedBlock[],
   nextBlocks: IndexedBlock[],
   maxCount = MAX_LATEST_BLOCKS,
 ): IndexedBlock[] {
-  const prevByHash = new Map(prevBlocks.map((block) => [block.hash, block]));
+  const byHeight = new Map<number, IndexedBlock>();
 
-  return [...nextBlocks]
+  for (const block of prevBlocks) {
+    if (block.height != null) {
+      byHeight.set(block.height, block);
+    }
+  }
+
+  for (const block of nextBlocks) {
+    if (block.height == null) {
+      continue;
+    }
+
+    const height = block.height;
+    const prev = byHeight.get(height);
+    byHeight.set(
+      height,
+      prev
+        ? {
+            ...block,
+            extractedBy: block.extractedBy ?? prev.extractedBy ?? null,
+            extractedByAddress:
+              block.extractedByAddress ?? prev.extractedByAddress ?? null,
+            difficulty: block.difficulty ?? prev.difficulty,
+            size: block.size ?? prev.size,
+            interestRatePercent:
+              block.interestRatePercent ?? prev.interestRatePercent ?? null,
+          }
+        : block,
+    );
+  }
+
+  return [...byHeight.values()]
     .sort((a, b) => b.height - a.height)
-    .slice(0, maxCount)
-    .map((block) => {
-      const prev = prevByHash.get(block.hash);
-      if (!prev) {
-        return block;
-      }
-
-      return {
-        ...block,
-        extractedBy: block.extractedBy ?? prev.extractedBy ?? null,
-        extractedByAddress:
-          block.extractedByAddress ?? prev.extractedByAddress ?? null,
-        difficulty: block.difficulty ?? prev.difficulty,
-        size: block.size ?? prev.size,
-      };
-    });
+    .slice(0, maxCount);
 }

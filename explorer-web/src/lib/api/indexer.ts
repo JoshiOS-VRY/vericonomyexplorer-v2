@@ -88,6 +88,7 @@ export async function getHomeNetwork(): Promise<HomeNetworkPayload> {
 export async function getVrmDashboard(): Promise<VrmDashboardPayload> {
   const data = await v1Fetch<VrmDashboardPayload>("/vrm/dashboard", {
     revalidate: SUMMARY_REVALIDATE_SECONDS,
+    timeoutMs: 5_000,
   });
 
   return {

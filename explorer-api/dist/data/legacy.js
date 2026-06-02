@@ -64,10 +64,16 @@ export function fetchRichlist(chainId, options = {}) {
     return runIndexerQuery("getRichlist", [chainId], options);
 }
 export function fetchLeaderboard(chainId, options = {}) {
-    return runIndexerQuery("getLeaderboard", [chainId], options);
+    return runIndexerQuery("getLeaderboard", [chainId], options, {
+        timeoutMs: Number(process.env.VCEXP_API_LEADERBOARD_TIMEOUT_MS ?? 5_000),
+        priority: 1,
+    });
 }
 export function fetchMinedLeaderboard(chainId, options = {}) {
-    return runIndexerQuery("getMinedLeaderboard", [chainId], options);
+    return runIndexerQuery("getMinedLeaderboard", [chainId], options, {
+        timeoutMs: Number(process.env.VCEXP_API_MINERS_TIMEOUT_MS ?? 5_000),
+        priority: 1,
+    });
 }
 export function fetchAddressBalanceHistory(chainId, address, options = {}) {
     return runIndexerQuery("getAddressBalanceHistory", [chainId, address], options);

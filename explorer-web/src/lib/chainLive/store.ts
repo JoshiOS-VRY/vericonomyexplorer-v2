@@ -131,13 +131,11 @@ function mergeSummary(chainId: ChainId, next: ChainSummary): ChainLiveSnapshot {
   const prev = snapshots.get(chainId) ?? createSnapshot(next);
   const prevTopHeight = prev.summary.latestBlocks[0]?.height ?? null;
   const nextTopHeight = next.latestBlocks[0]?.height ?? null;
-  const usePrevBlocks =
-    prevTopHeight != null &&
-    (nextTopHeight == null || prevTopHeight > nextTopHeight);
 
-  const mergedBlocks = usePrevBlocks
-    ? prev.summary.latestBlocks
-    : enrichBlocksFromPrevious(prev.summary.latestBlocks, next.latestBlocks);
+  const mergedBlocks = enrichBlocksFromPrevious(
+    prev.summary.latestBlocks,
+    next.latestBlocks,
+  );
   const latestBlockHeight =
     mergedBlocks[0]?.height ?? nextTopHeight ?? prevTopHeight ?? null;
 

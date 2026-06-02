@@ -56,7 +56,6 @@ function getVrmDashboardBundle(options = {}) {
 	const shared = Object.assign({}, options, { db: workerDb, skipLiveBlocks: true, skipBlockEnrichment: true });
 	const vrmHealth = health.getChainHealth("vrm", shared);
 	const vrmOpts = Object.assign({}, shared, { chainHealth: vrmHealth });
-	const since30d = Math.floor(Date.now() / 1000) - 30 * 86_400;
 
 	return {
 		summary: query.getChainSummary("vrm", vrmOpts),
@@ -69,10 +68,6 @@ function getVrmDashboardBundle(options = {}) {
 		miners: query.getMinedLeaderboard("vrm", Object.assign({}, vrmOpts, {
 			period: "month",
 			limit: 5
-		})),
-		activityHistory: query.getChainActivityHistory("vrm", Object.assign({}, vrmOpts, {
-			since: since30d,
-			maxPoints: 100
 		}))
 	};
 }

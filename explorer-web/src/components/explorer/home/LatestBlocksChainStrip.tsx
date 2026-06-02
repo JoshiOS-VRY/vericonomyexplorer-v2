@@ -58,13 +58,14 @@ export function ChainHubSection({
   const config = CHAIN_EXPLORERS[chainId];
   const theme = CHAIN_THEME[chainId];
   const health = summary.health;
-  const tipBlock = blocks[0] ?? summary.latestBlocks[0];
+  const displayBlocks = blocks.length > 0 ? blocks : summary.latestBlocks;
+  const tipBlock = displayBlocks[0];
   const atTip = isChainAtTip(health, tipBlock?.height, chainHeight);
   const statusTone = getChainStatusTone(health, tipBlock?.height, chainHeight);
   const displayHeight = chainHeight ?? getChainTipHeight(health);
-  const stripBlocks = [...blocks.slice(0, STRIP_BLOCK_COUNT)].reverse();
+  const stripBlocks = [...displayBlocks.slice(0, STRIP_BLOCK_COUNT)].reverse();
   const tableRows = Array.from({ length: HUB_TABLE_ROW_COUNT }, (_, index) =>
-    blocks[index] ?? null,
+    displayBlocks[index] ?? null,
   );
   const producerColumnLabel = chainId === "vrm" ? "Extracted by" : "Interest";
 

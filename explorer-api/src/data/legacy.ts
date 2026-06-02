@@ -159,7 +159,10 @@ export function fetchLeaderboard(
     offset?: number;
   } = {},
 ) {
-  return runIndexerQuery("getLeaderboard", [chainId], options);
+  return runIndexerQuery("getLeaderboard", [chainId], options, {
+    timeoutMs: Number(process.env.VCEXP_API_LEADERBOARD_TIMEOUT_MS ?? 5_000),
+    priority: 1,
+  });
 }
 
 export function fetchMinedLeaderboard(
@@ -170,7 +173,10 @@ export function fetchMinedLeaderboard(
     offset?: number;
   } = {},
 ) {
-  return runIndexerQuery("getMinedLeaderboard", [chainId], options);
+  return runIndexerQuery("getMinedLeaderboard", [chainId], options, {
+    timeoutMs: Number(process.env.VCEXP_API_MINERS_TIMEOUT_MS ?? 5_000),
+    priority: 1,
+  });
 }
 
 export function fetchAddressBalanceHistory(

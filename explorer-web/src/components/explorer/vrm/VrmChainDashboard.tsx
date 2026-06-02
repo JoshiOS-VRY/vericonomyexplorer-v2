@@ -102,7 +102,7 @@ export function VrmChainDashboard({
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] xl:items-stretch">
         <ChainBlocksPanel
           chainId="vrm"
-          liveBlocks={latestBlocks}
+          liveBlocks={latestBlocks.length > 0 ? latestBlocks : summary.latestBlocks}
           chainHeight={chainHeight}
           maxIndexedHeight={summary.health.heights.maxIndexedHeight}
         />
