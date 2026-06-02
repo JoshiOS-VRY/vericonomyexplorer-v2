@@ -6,8 +6,12 @@ import {
   fetchHomeData,
   fetchHomeMarketOnly,
   fetchHomeNetwork,
+  fetchHomeNetworkLite,
   fetchHomeShell,
 } from "../data/home.js";
+import { withTimeout } from "../util/timeout.js";
+
+const homeNetworkRouteTimeoutMs = Number(process.env.VCEXP_HOME_NETWORK_ROUTE_TIMEOUT_MS ?? 5_000);
 
 const homeCache = createSwrCache({
   max: 4,
@@ -69,9 +73,25 @@ export async function registerHomeRoutes(app: FastifyInstance): Promise<void> {
 
   app.get("/v1/home/shell", async () => swrFetch(homeShellCache, "shell", fetchHomeShell));
 
-  app.get("/v1/home/network", async () =>
-    swrFetch(homeNetworkCache, "network", fetchHomeNetwork),
-  );
+  app.get("/v1/home/network", async () => {
+    const stale = homeNetworkCache.get("network", { allowStale: true }) as
+      | Record<string, unknown>
+      | undefined;
+
+    try {
+      return await withTimeout(
+        swrFetch(homeNetworkCache, "network", fetchHomeNetwork),
+        homeNetworkRouteTimeoutMs,
+        "home/network",
+      );
+    } catch {
+      if (stale) {
+        return stale;
+      }
+
+      return fetchHomeNetworkLite();
+    }
+  });
 
   app.get("/v1/home/market", async () =>
     swrFetch(homeMarketCache, "market", fetchHomeMarketOnly),

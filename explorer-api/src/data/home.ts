@@ -1,5 +1,12 @@
 import { fetchHomeMarket, applyOnChainMarketCap } from "../market/index.js";
-import { fetchVrcNetworkStats, fetchVrmNetworkStats } from "../network/index.js";
+import {
+  fetchVrcNetworkStats,
+  fetchVrmNetworkStats,
+} from "../network/index.js";
+import {
+  fetchVrcNetworkStatsLite,
+  fetchVrmNetworkStatsLite,
+} from "../network/lite.js";
 import type {
   HomeMarketPayload,
   HomeNetworkPayload,
@@ -9,6 +16,9 @@ import type {
   VrmNetworkStats,
 } from "../types/home.js";
 import { fetchLandingData } from "./legacy.js";
+import { withTimeout } from "../util/timeout.js";
+
+const homeNetworkTimeoutMs = Number(process.env.VCEXP_HOME_NETWORK_TIMEOUT_MS ?? 6_000);
 
 const emptyVrmNetwork = (): VrmNetworkStats => ({
   hashrateKhPerMin: null,
@@ -48,10 +58,10 @@ export async function fetchHomeShell(): Promise<HomeShellPayload> {
   };
 }
 
-export async function fetchHomeNetwork(): Promise<HomeNetworkPayload> {
+export async function fetchHomeNetworkLite(): Promise<HomeNetworkPayload> {
   const [vrmNetwork, vrcNetwork] = await Promise.all([
-    fetchVrmNetworkStats().catch(emptyVrmNetwork),
-    fetchVrcNetworkStats().catch(emptyVrcNetwork),
+    fetchVrmNetworkStatsLite().catch(emptyVrmNetwork),
+    fetchVrcNetworkStatsLite().catch(emptyVrcNetwork),
   ]);
 
   return {
@@ -59,6 +69,25 @@ export async function fetchHomeNetwork(): Promise<HomeNetworkPayload> {
     vrc: vrcNetwork,
     fetchedAt: new Date().toISOString(),
   };
+}
+
+export async function fetchHomeNetwork(): Promise<HomeNetworkPayload> {
+  return withTimeout(
+    (async () => {
+      const [vrmNetwork, vrcNetwork] = await Promise.all([
+        fetchVrmNetworkStatsLite().catch(emptyVrmNetwork),
+        fetchVrcNetworkStatsLite().catch(emptyVrcNetwork),
+      ]);
+
+      return {
+        vrm: vrmNetwork,
+        vrc: vrcNetwork,
+        fetchedAt: new Date().toISOString(),
+      };
+    })(),
+    homeNetworkTimeoutMs,
+    "fetchHomeNetwork",
+  );
 }
 
 export async function fetchHomeData(): Promise<HomePayload> {

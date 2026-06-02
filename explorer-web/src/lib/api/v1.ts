@@ -5,6 +5,10 @@ export type { getClientV1Url, getTipStreamUrl } from "@/lib/api/v1Urls";
 
 export type V1FetchOptions = CacheFetchOptions;
 
+const DEFAULT_V1_FETCH_TIMEOUT_MS = Number(
+  process.env.VCEXP_WEB_FETCH_TIMEOUT_MS ?? 8_000,
+);
+
 export class V1FetchError extends Error {
   status: number;
 
@@ -33,8 +37,14 @@ export async function v1Fetch<T>(path: string, options: V1FetchOptions = {}): Pr
   const init = buildFetchInit(options, {
     headers: { Accept: "application/json" },
   });
+  const timeoutMs = options.timeoutMs ?? DEFAULT_V1_FETCH_TIMEOUT_MS;
+  const signal =
+    init.signal ??
+    (typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
+      ? AbortSignal.timeout(timeoutMs)
+      : undefined);
 
-  const response = await fetch(url, init);
+  const response = await fetch(url, signal ? { ...init, signal } : init);
   if (!response.ok) {
     let message = `Request failed: ${response.status}`;
     try {

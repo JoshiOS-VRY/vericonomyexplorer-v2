@@ -88,7 +88,7 @@ function defaultFastWorkerCount(totalWorkers: number): number {
 const totalWorkerCount = defaultWorkerCount();
 const fastWorkerCount = defaultFastWorkerCount(totalWorkerCount);
 const mainWorkerCount = Math.max(1, totalWorkerCount - fastWorkerCount);
-const defaultWorkerTimeoutMs = Number(process.env.VCEXP_API_DB_WORKER_TIMEOUT_MS ?? 120_000);
+const defaultWorkerTimeoutMs = Number(process.env.VCEXP_API_DB_WORKER_TIMEOUT_MS ?? 45_000);
 const sqliteBusyRetryAttempts = Number(process.env.VCEXP_SQLITE_BUSY_RETRY_ATTEMPTS ?? 4);
 const sqliteBusyRetryDelayMs = Number(process.env.VCEXP_SQLITE_BUSY_RETRY_DELAY_MS ?? 75);
 const workerFile = path.join(repoRoot, "explorer-api", "src", "db", "queryWorker.cjs");

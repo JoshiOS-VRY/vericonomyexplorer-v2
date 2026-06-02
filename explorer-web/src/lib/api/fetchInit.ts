@@ -1,6 +1,7 @@
 export interface CacheFetchOptions {
   revalidate?: number | false;
   cache?: RequestCache;
+  timeoutMs?: number;
 }
 
 export type NextFetchInit = RequestInit & {

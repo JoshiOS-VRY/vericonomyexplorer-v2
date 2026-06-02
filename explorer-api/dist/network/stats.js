@@ -70,9 +70,9 @@ export function parseVrcMiningInfo(miningInfo) {
 }
 function utxoSetTimeoutMs(chainId) {
     if (chainId === "vrc") {
-        return Number(process.env.VCEXP_VRC_UTXO_SET_TIMEOUT_MS ?? 120_000);
+        return Number(process.env.VCEXP_VRC_UTXO_SET_TIMEOUT_MS ?? 15_000);
     }
-    return Number(process.env.VCEXP_UTXO_SET_TIMEOUT_MS ?? 120_000);
+    return Number(process.env.VCEXP_UTXO_SET_TIMEOUT_MS ?? 15_000);
 }
 export async function fetchOnChainSupply(chainId, rpcCall, blocks, blockchainInfo) {
     const fromChain = supplyFromBlockchainInfo(blockchainInfo);

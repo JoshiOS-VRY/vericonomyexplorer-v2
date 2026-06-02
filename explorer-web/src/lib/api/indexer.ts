@@ -81,6 +81,7 @@ export async function getHomeMarket(): Promise<HomeMarketPayload> {
 export async function getHomeNetwork(): Promise<HomeNetworkPayload> {
   return v1Fetch<HomeNetworkPayload>("/home/network", {
     revalidate: SUMMARY_REVALIDATE_SECONDS,
+    timeoutMs: Number(process.env.VCEXP_WEB_HOME_NETWORK_TIMEOUT_MS ?? 5_000),
   });
 }
 
