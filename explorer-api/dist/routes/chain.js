@@ -44,6 +44,19 @@ export const latestBlocksCache = createSwrCache({
         return { blocks };
     },
 });
+export const blocksPageCache = createSwrCache({
+    max: 64,
+    ttlMs: 5_000,
+    fetch: async (key, signal) => {
+        if (signal.aborted)
+            throw new Error("aborted");
+        const [chainId, , limit, offset] = key.split(":");
+        return (await fetchBlocksPage(chainId, {
+            limit,
+            offset,
+        }));
+    },
+});
 const landingCache = createSwrCache({
     max: 4,
     ttlMs: 60_000,
@@ -185,11 +198,8 @@ export async function registerChainRoutes(app) {
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });
         }
-        const limit = request.query.limit;
-        const offset = request.query.offset;
-        return fetchBlocksPage(chainId, {
-            limit,
-            offset,
-        });
+        const limit = request.query.limit ?? "";
+        const offset = request.query.offset ?? "";
+        return swrFetch(blocksPageCache, cacheKey(chainId, "blocks", `${limit}:${offset}`), () => fetchBlocksPage(chainId, { limit, offset }));
     });
 }

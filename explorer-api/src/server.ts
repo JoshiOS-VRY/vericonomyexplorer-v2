@@ -40,12 +40,10 @@ app.addHook("onSend", async (request, reply) => {
   applyCacheHeaders(request, reply);
 });
 
-app.addHook("preSerialization", async (_request, _reply, payload) => {
-  if (payload == null || typeof payload !== "object") {
-    return payload;
-  }
-  return JSON.parse(JSON.stringify(payload, jsonReplacer));
-});
+// Serialize JSON responses in a single pass with a BigInt-aware replacer.
+// (Previously a preSerialization hook did JSON.parse(JSON.stringify(...)) and
+// then Fastify serialized again — three passes per response; this does one.)
+app.setReplySerializer((payload) => JSON.stringify(payload, jsonReplacer));
 
 app.setErrorHandler((error, request, reply) => {
   const mapped = mapErrorToResponse(error);
