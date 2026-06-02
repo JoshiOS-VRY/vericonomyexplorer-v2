@@ -7,7 +7,7 @@ import { useDualChainLive } from "@/hooks/useDualChainLive";
 import { useHomeMarket } from "@/hooks/useHomeMarket";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useHomeNetworkLive } from "@/hooks/useHomeNetworkLive";
-import type { HomeShellPayload } from "@/lib/api/types";
+import type { HomeNetworkPayload, HomeShellPayload } from "@/lib/api/types";
 import { isChainLive } from "@/lib/chainDisplay";
 import { enrichHomeNetworkPayload } from "@/lib/enrichNetwork";
 import { applyOnChainMarketCap } from "@/lib/enrichMarket";
@@ -15,10 +15,12 @@ import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
 
 interface VericonomyHomeLiveBandProps {
   initialShell: HomeShellPayload;
+  initialNetwork?: HomeNetworkPayload;
 }
 
 export function VericonomyHomeLiveBand({
   initialShell,
+  initialNetwork,
 }: VericonomyHomeLiveBandProps) {
   const hydrated = useHydrated();
   const { vrmMarket, vrcMarket } = useHomeMarket(emptyMarketPayload());
@@ -26,7 +28,9 @@ export function VericonomyHomeLiveBand({
     initialShell.vrm.summary,
     initialShell.vrc.summary,
   );
-  const { network: liveNetwork } = useHomeNetworkLive(emptyNetworkPayload());
+  const { network: liveNetwork } = useHomeNetworkLive(
+    initialNetwork ?? emptyNetworkPayload(),
+  );
   const network = enrichHomeNetworkPayload(
     liveNetwork,
     live.vrm.summary,

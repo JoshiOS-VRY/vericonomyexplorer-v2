@@ -12,7 +12,7 @@ import type {
   RichlistResult,
 } from "@/lib/api/types";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function HomePage() {
   let shell: HomeShellPayload;
@@ -44,7 +44,10 @@ export default async function HomePage() {
   return (
     <div className="home-page space-y-10">
       <UserMessageBanner />
-      <VericonomyHomeLiveBand initialShell={normalized} />
+      <VericonomyHomeLiveBand
+        initialShell={normalized}
+        initialNetwork={network ?? undefined}
+      />
 
       <VericonomyHomeRichlists
         vrmRichlist={normalized.vrm.richlist}

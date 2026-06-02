@@ -32,7 +32,7 @@ function getWorkerDb() {
 
 function getLandingBundle(options = {}) {
 	const workerDb = getWorkerDb();
-	const shared = Object.assign({}, options, { db: workerDb, skipLiveBlocks: true });
+	const shared = Object.assign({}, options, { db: workerDb, skipLiveBlocks: true, skipBlockEnrichment: true });
 	const vrmHealth = health.getChainHealth("vrm", shared);
 	const vrcHealth = health.getChainHealth("vrc", shared);
 	const vrmOpts = Object.assign({}, shared, { chainHealth: vrmHealth });
@@ -53,7 +53,7 @@ function getLandingBundle(options = {}) {
 
 function getVrmDashboardBundle(options = {}) {
 	const workerDb = getWorkerDb();
-	const shared = Object.assign({}, options, { db: workerDb, skipLiveBlocks: true });
+	const shared = Object.assign({}, options, { db: workerDb, skipLiveBlocks: true, skipBlockEnrichment: true });
 	const vrmHealth = health.getChainHealth("vrm", shared);
 	const vrmOpts = Object.assign({}, shared, { chainHealth: vrmHealth });
 	const since30d = Math.floor(Date.now() / 1000) - 30 * 86_400;

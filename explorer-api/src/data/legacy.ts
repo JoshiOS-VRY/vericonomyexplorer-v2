@@ -14,18 +14,25 @@ const summaryQueryOptions = {
   skipBlockEnrichment: true,
 };
 
+/** Indexed-first enrichment; live RPC/block merge is handled by tip refresh + client polling. */
+const defaultSummaryEnrichOptions = {
+  skipLiveBlocks: true,
+  skipLiveRpc: true,
+};
+
 export async function fetchChainSummary(
   chainId: string,
   options: Record<string, unknown> = {},
 ) {
   const queryOptions = { ...summaryQueryOptions, ...options };
+  const enrichOptions = { ...defaultSummaryEnrichOptions, ...options };
   const summary = (await runIndexerQuery<Record<string, unknown>>(
     "getChainSummaryIndexed",
     [chainId],
     queryOptions,
   )) as Record<string, unknown>;
 
-  return enrichChainSummary(summary, chainId as ChainId, queryOptions);
+  return enrichChainSummary(summary, chainId as ChainId, enrichOptions);
 }
 
 export async function fetchChainSummaryLite(
@@ -33,13 +40,14 @@ export async function fetchChainSummaryLite(
   options: Record<string, unknown> = {},
 ) {
   const queryOptions = { ...summaryQueryOptions, ...options };
+  const enrichOptions = { ...defaultSummaryEnrichOptions, ...options };
   const summary = (await runIndexerQuery<Record<string, unknown>>(
     "getChainSummaryLiteIndexed",
     [chainId],
     queryOptions,
   )) as Record<string, unknown>;
 
-  return enrichChainSummary(summary, chainId as ChainId, queryOptions);
+  return enrichChainSummary(summary, chainId as ChainId, enrichOptions);
 }
 
 export async function fetchLatestBlocks(

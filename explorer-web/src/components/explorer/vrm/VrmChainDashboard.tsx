@@ -23,9 +23,18 @@ export function VrmChainDashboard({
   richlist: initialRichlist,
   leaderboard: initialLeaderboard,
   miners: initialMiners,
-}: VrmDashboardPayload) {
-  const [market, setMarket] = useState<ChainMarket>(emptyMarketPayload().vrm);
-  const [network, setNetwork] = useState<VrmNetworkStats>(emptyNetworkPayload().vrm);
+  initialMarket,
+  initialNetwork,
+}: VrmDashboardPayload & {
+  initialMarket?: ChainMarket;
+  initialNetwork?: VrmNetworkStats;
+}) {
+  const [market, setMarket] = useState<ChainMarket>(
+    initialMarket ?? emptyMarketPayload().vrm,
+  );
+  const [network, setNetwork] = useState<VrmNetworkStats>(
+    initialNetwork ?? emptyNetworkPayload().vrm,
+  );
   const live = useLiveChainSummary("vrm", initialSummary);
   const {
     summary,
@@ -36,6 +45,10 @@ export function VrmChainDashboard({
   } = live;
 
   useEffect(() => {
+    if (initialMarket && initialNetwork) {
+      return;
+    }
+
     let cancelled = false;
 
     void (async () => {
@@ -56,7 +69,7 @@ export function VrmChainDashboard({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialMarket, initialNetwork]);
 
   const tipBlock = latestBlocks[0];
   const tipBlockHref = tipBlock ? `/vrm/block/${tipBlock.height}` : null;

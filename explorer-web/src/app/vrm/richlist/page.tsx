@@ -8,6 +8,8 @@ import { getRichlist } from "@/lib/api/indexer";
 import { formatExplorerUserMessage } from "@/lib/explorerCopy";
 import { normalizeLimit, normalizeOffset } from "@/lib/utils";
 
+export const revalidate = 60;
+
 export default async function RichlistPage({
   searchParams,
 }: {

@@ -163,6 +163,7 @@ async function syncRangeWithRpcBatch(context) {
 			const existingHash = getIndexedBlockHash(context.db, context.chainId, height);
 
 			if (context.autoRollback && existingHash && existingHash !== blockhash) {
+				assertRollbackWithinLimit(context.chainId, height, context.db);
 				const rollback = rollbackFromHeight(context.chainId, height, { db: context.db });
 
 				if (context.onProgress) {
@@ -230,6 +231,42 @@ async function maybePause(context, height, indexed) {
 	}
 }
 
+function resolveMaxAutoRollbackBlocks() {
+	const configured = Number(process.env.VCEXP_INDEXER_MAX_AUTO_ROLLBACK_BLOCKS ?? 100);
+	return Number.isFinite(configured) && configured > 0 ? Math.trunc(configured) : 100;
+}
+
+function allowLargeRollback() {
+	return String(process.env.VCEXP_INDEXER_ALLOW_LARGE_ROLLBACK ?? "").toLowerCase() === "1"
+		|| String(process.env.VCEXP_INDEXER_ALLOW_LARGE_ROLLBACK ?? "").toLowerCase() === "true";
+}
+
+function assertRollbackWithinLimit(chainId, fromHeight, db) {
+	if (allowLargeRollback()) {
+		return;
+	}
+
+	const row = db.prepare(`
+		SELECT MAX(height) AS max_height
+		FROM blocks
+		WHERE chain_id = ? AND status = 'main'
+	`).get(chainId);
+
+	const maxHeight = row?.max_height == null ? null : Number(row.max_height);
+	if (maxHeight == null || maxHeight < fromHeight) {
+		return;
+	}
+
+	const blocksToRemove = maxHeight - fromHeight + 1;
+	const maxAllowed = resolveMaxAutoRollbackBlocks();
+	if (blocksToRemove > maxAllowed) {
+		throw new Error(
+			`Refusing auto-rollback of ${blocksToRemove} ${chainId} blocks from height ${fromHeight} `
+			+ `(limit ${maxAllowed}). Set VCEXP_INDEXER_ALLOW_LARGE_ROLLBACK=1 to override.`
+		);
+	}
+}
+
 async function ensureResumeOnMainChain(db, rpc, chainId, startHeight, bestHeight) {
 	const previousHeight = startHeight - 1;
 	const existingHash = getIndexedBlockHash(db, chainId, previousHeight);
@@ -265,6 +302,7 @@ async function ensureResumeOnMainChain(db, rpc, chainId, startHeight, bestHeight
 	}
 
 	const rollbackHeight = Math.max(0, commonHeight + 1);
+	assertRollbackWithinLimit(chainId, rollbackHeight, db);
 	const rollback = rollbackFromHeight(chainId, rollbackHeight, { db });
 
 	return {

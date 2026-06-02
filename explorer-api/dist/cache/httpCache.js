@@ -6,6 +6,8 @@ const CACHE_RULES = [
     { pattern: /^\/v1\/[^/]+\/leaderboard/, maxAge: 30, swr: 120 },
     { pattern: /^\/v1\/[^/]+\/peers/, maxAge: 30, swr: 60 },
     { pattern: /^\/v1\/[^/]+\/search/, maxAge: 15, swr: 30 },
+    { pattern: /^\/v1\/landing/, maxAge: 30, swr: 60 },
+    { pattern: /^\/v1\/vrm\/dashboard/, maxAge: 30, swr: 60 },
     { pattern: /^\/v1\/home\/shell/, maxAge: 30, swr: 60 },
     { pattern: /^\/v1\/home\/network/, maxAge: 120, swr: 300 },
     { pattern: /^\/v1\/home\/market/, maxAge: 120, swr: 300 },

@@ -4,15 +4,22 @@ import { enrichChainSummary, enrichLatestBlocksLive, enrichIndexerHealth, fetchB
 const summaryQueryOptions = {
     skipBlockEnrichment: true,
 };
+/** Indexed-first enrichment; live RPC/block merge is handled by tip refresh + client polling. */
+const defaultSummaryEnrichOptions = {
+    skipLiveBlocks: true,
+    skipLiveRpc: true,
+};
 export async function fetchChainSummary(chainId, options = {}) {
     const queryOptions = { ...summaryQueryOptions, ...options };
+    const enrichOptions = { ...defaultSummaryEnrichOptions, ...options };
     const summary = (await runIndexerQuery("getChainSummaryIndexed", [chainId], queryOptions));
-    return enrichChainSummary(summary, chainId, queryOptions);
+    return enrichChainSummary(summary, chainId, enrichOptions);
 }
 export async function fetchChainSummaryLite(chainId, options = {}) {
     const queryOptions = { ...summaryQueryOptions, ...options };
+    const enrichOptions = { ...defaultSummaryEnrichOptions, ...options };
     const summary = (await runIndexerQuery("getChainSummaryLiteIndexed", [chainId], queryOptions));
-    return enrichChainSummary(summary, chainId, queryOptions);
+    return enrichChainSummary(summary, chainId, enrichOptions);
 }
 export async function fetchLatestBlocks(chainId, options = {}) {
     const queryOptions = { ...summaryQueryOptions, ...options };

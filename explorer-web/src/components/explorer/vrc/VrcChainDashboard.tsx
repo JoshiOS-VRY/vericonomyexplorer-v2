@@ -19,12 +19,20 @@ import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
 export function VrcChainDashboard({
   summary: initialSummary,
   richlist: initialRichlist,
+  initialMarket,
+  initialNetwork,
 }: {
   summary: ChainSummary;
   richlist: RichlistResult;
+  initialMarket?: ChainMarket;
+  initialNetwork?: VrcNetworkStats;
 }) {
-  const [market, setMarket] = useState<ChainMarket>(emptyMarketPayload().vrc);
-  const [network, setNetwork] = useState<VrcNetworkStats>(emptyNetworkPayload().vrc);
+  const [market, setMarket] = useState<ChainMarket>(
+    initialMarket ?? emptyMarketPayload().vrc,
+  );
+  const [network, setNetwork] = useState<VrcNetworkStats>(
+    initialNetwork ?? emptyNetworkPayload().vrc,
+  );
   const live = useLiveChainSummary("vrc", initialSummary);
   const {
     summary,
@@ -35,6 +43,10 @@ export function VrcChainDashboard({
   } = live;
 
   useEffect(() => {
+    if (initialMarket && initialNetwork) {
+      return;
+    }
+
     let cancelled = false;
 
     void (async () => {
@@ -55,7 +67,7 @@ export function VrcChainDashboard({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialMarket, initialNetwork]);
 
   const tipBlock = latestBlocks[0];
   const tipBlockHref = tipBlock ? `/vrc/block/${tipBlock.height}` : null;

@@ -1,7 +1,11 @@
 import { Suspense } from "react";
 import { AlertBanner } from "@/components/explorer/ExplorerUi";
 import { InsightsDashboard } from "@/components/explorer/insights/InsightsDashboard";
-import { getChainSummary } from "@/lib/api/indexer";
+import { getChainSummary, getHomeMarket, getHomeNetwork } from "@/lib/api/indexer";
+import { applyOnChainMarketCap } from "@/lib/enrichMarket";
+import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
+
+export const revalidate = 30;
 
 function parseChainId(value?: string): "vrm" | "vrc" {
   return value === "vrc" ? "vrc" : "vrm";
@@ -16,11 +20,27 @@ export default async function InsightsPage({
   const chainId = parseChainId(params.chain);
 
   try {
-    const summary = await getChainSummary(chainId);
+    const [summary, marketPayload, networkPayload] = await Promise.all([
+      getChainSummary(chainId),
+      getHomeMarket().catch(() => emptyMarketPayload()),
+      getHomeNetwork().catch(() => emptyNetworkPayload()),
+    ]);
+
+    const network = chainId === "vrc" ? networkPayload.vrc : networkPayload.vrm;
+    const market = applyOnChainMarketCap(
+      chainId === "vrc" ? marketPayload.vrc : marketPayload.vrm,
+      chainId,
+      network.supply,
+    );
 
     return (
       <Suspense fallback={<p className="text-sm text-fg-muted">Loading insights…</p>}>
-        <InsightsDashboard chainId={chainId} summary={summary} />
+        <InsightsDashboard
+          chainId={chainId}
+          summary={summary}
+          initialMarket={market}
+          initialNetwork={network}
+        />
       </Suspense>
     );
   } catch {

@@ -21,21 +21,31 @@ import { cn } from "@/lib/utils";
 export function InsightsDashboard({
   chainId: initialChainId,
   summary,
+  initialMarket,
+  initialNetwork,
 }: {
   chainId: "vrm" | "vrc";
   summary: ChainSummary;
+  initialMarket?: ChainMarket;
+  initialNetwork?: VrmNetworkStats | VrcNetworkStats;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const chainId = searchParams.get("chain") === "vrc" ? "vrc" : initialChainId;
   const [network, setNetwork] = useState<VrmNetworkStats | VrcNetworkStats>(
-    chainId === "vrm" ? emptyNetworkPayload().vrm : emptyNetworkPayload().vrc,
+    initialNetwork
+      ?? (chainId === "vrm" ? emptyNetworkPayload().vrm : emptyNetworkPayload().vrc),
   );
   const [market, setMarket] = useState<ChainMarket>(
-    chainId === "vrm" ? emptyMarketPayload().vrm : emptyMarketPayload().vrc,
+    initialMarket
+      ?? (chainId === "vrm" ? emptyMarketPayload().vrm : emptyMarketPayload().vrc),
   );
 
   useEffect(() => {
+    if (initialMarket && initialNetwork && chainId === initialChainId) {
+      return;
+    }
+
     let cancelled = false;
     void (async () => {
       try {
@@ -54,7 +64,7 @@ export function InsightsDashboard({
     return () => {
       cancelled = true;
     };
-  }, [chainId]);
+  }, [chainId, initialChainId, initialMarket, initialNetwork]);
 
   const setChain = (next: "vrm" | "vrc") => {
     const params = new URLSearchParams(searchParams.toString());
