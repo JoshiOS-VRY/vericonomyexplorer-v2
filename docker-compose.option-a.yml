@@ -150,6 +150,14 @@ services:
       VCEXP_INDEXER_YIELD_MS: ${VCEXP_INDEXER_YIELD_MS:-50}
       VCEXP_INDEXER_BLOCKS_PER_PASS: ${VCEXP_INDEXER_BLOCKS_PER_PASS:-100}
       VCEXP_INDEX_ONLY_RPC_BATCH: ${VCEXP_INDEX_ONLY_RPC_BATCH:-25}
+      VCEXP_INDEXER_BUSY_TIMEOUT_MS: ${VCEXP_INDEXER_BUSY_TIMEOUT_MS:-30000}
+    volumes:
+      - vericonomy-database:/app/database
+      - ./configs/chains.json:/app/configs/chains.json:ro
+    networks:
+      - private
+
+  vrc-indexer:
     container_name: vericonomy-vrc-indexer
     build:
       context: .
