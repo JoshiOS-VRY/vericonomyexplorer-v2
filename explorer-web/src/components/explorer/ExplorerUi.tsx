@@ -319,15 +319,27 @@ export function DataTable({
   rows,
   compact = false,
   rowClassName,
+  stackOnMobile = true,
 }: {
   headers: string[];
   rows: React.ReactNode[][];
   compact?: boolean;
   rowClassName?: (rowIndex: number) => string | undefined;
+  /**
+   * On narrow viewports, render each row as a stacked label/value card instead
+   * of forcing horizontal scroll. Defaults to true; set false for tables whose
+   * cells already read well at small widths.
+   */
+  stackOnMobile?: boolean;
 }) {
   return (
-    <div className={cn("overflow-auto", compact ? "max-h-[360px]" : undefined)}>
-      <table className="data-table">
+    <div
+      className={cn(
+        "data-table-scroll overflow-x-auto",
+        compact ? "max-h-[360px] overflow-y-auto" : undefined,
+      )}
+    >
+      <table className={cn("data-table", stackOnMobile && "data-table--stack")}>
         <thead>
           <tr>
             {headers.map((header) => (
@@ -339,7 +351,9 @@ export function DataTable({
           {rows.map((row, index) => (
             <tr key={index} className={rowClassName?.(index)}>
               {row.map((cell, cellIndex) => (
-                <td key={cellIndex}>{cell}</td>
+                <td key={cellIndex} data-label={headers[cellIndex]}>
+                  {cell}
+                </td>
               ))}
             </tr>
           ))}
