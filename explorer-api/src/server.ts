@@ -78,12 +78,16 @@ app.log.info(`explorer-api listening on http://${host}:${port}`);
 
 void (async () => {
   const { fetchLandingData } = await import("./data/legacy.js");
-  const { fetchVrmDashboardBundle } = await import("./data/vrmDashboard.js");
+  const { withTimeout } = await import("./util/timeout.js");
+  const warmupTimeoutMs = Number(process.env.VCEXP_API_WARMUP_TIMEOUT_MS ?? 8_000);
 
   await Promise.all([
-    runIndexerQuery("getChainHealth", ["vrm"], {}, { coalesce: false, timeoutMs: 30_000 }),
-    fetchLandingData().catch(() => null),
-    fetchVrmDashboardBundle().catch(() => null),
+    withTimeout(
+      runIndexerQuery("getChainHealth", ["vrm"], {}, { coalesce: false, timeoutMs: 5_000 }),
+      warmupTimeoutMs,
+      "warmup-chain-health",
+    ).catch(() => null),
+    withTimeout(fetchLandingData(), warmupTimeoutMs, "warmup-landing").catch(() => null),
   ]);
   app.log.info("query worker pool and read caches warmed");
 })().catch((error: unknown) => {

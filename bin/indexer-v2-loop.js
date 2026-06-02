@@ -151,6 +151,11 @@ function buildSyncOptions() {
 }
 
 function getIdleWaitMs(result) {
+  if (result.caughtUp && Number(result.indexed) === 0) {
+    const caughtUpIdle = Number(process.env.VCEXP_INDEXER_CAUGHT_UP_IDLE_MS ?? 60_000);
+    return Number.isFinite(caughtUpIdle) && caughtUpIdle > 0 ? caughtUpIdle : idleMs;
+  }
+
   return idleMs;
 }
 

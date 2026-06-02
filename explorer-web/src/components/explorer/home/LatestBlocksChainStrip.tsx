@@ -266,7 +266,7 @@ export function ChainHubSection({
             </div>
 
             <div className="block-chain-table-wrap overflow-x-auto border-t border-border">
-              <table className="bc-table block-chain-table">
+              <table className="bc-table block-chain-table data-table data-table--stack">
                 <thead>
                   <tr>
                     <th>Height</th>
@@ -405,7 +405,7 @@ function BlockChainTableRow({
 
   return (
     <tr className="block-chain-table-row transition-colors hover:bg-bg-subtle/80">
-      <td>
+      <td data-label="Height">
         {blockHref ? (
           <BcTableLink href={blockHref} className="tabular-nums" prefetch>
             {formatHeight(block.height)}
@@ -416,7 +416,7 @@ function BlockChainTableRow({
           </span>
         )}
       </td>
-      <td>
+      <td data-label="Hash">
         {blockHref ? (
           <BcTableLink
             href={blockHref}
@@ -429,7 +429,7 @@ function BlockChainTableRow({
           <span className="text-sm text-fg-muted">{hashShort}</span>
         )}
       </td>
-      <td className="min-w-24 max-w-48 truncate">
+      <td data-label={chainId === "vrm" ? "Extracted by" : "Interest"} className="min-w-24 max-w-48 truncate">
         {chainId === "vrm" ? (
           <ExtractedByCell
             block={block}
@@ -445,16 +445,16 @@ function BlockChainTableRow({
           </span>
         )}
       </td>
-      <td className="bc-col-age text-fg-muted">
+      <td data-label="Mined" className="bc-col-age text-fg-muted">
         <LiveRelativeTime time={block.time} interval="second" fixedWidth />
       </td>
-      <td className="text-right tabular-nums text-fg-muted">
+      <td data-label="Txs" className="text-right tabular-nums text-fg-muted">
         {formatHeight(block.txCount)}
       </td>
-      <td className="text-right tabular-nums text-fg-muted">
+      <td data-label="Size" className="text-right tabular-nums text-fg-muted">
         {block.size != null ? `${formatHeight(block.size)} B` : "—"}
       </td>
-      <td className="text-right tabular-nums text-fg-muted">
+      <td data-label="Difficulty" className="text-right tabular-nums text-fg-muted">
         {block.difficulty ? formatDifficulty(block.difficulty) : "—"}
       </td>
     </tr>

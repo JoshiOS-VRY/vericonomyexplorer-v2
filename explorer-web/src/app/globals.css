@@ -1055,6 +1055,21 @@ html:not(.light)
 }
 
 @media (max-width: 640px) {
+  .home-page {
+    gap: 1.5rem;
+  }
+
+  .chain-hub-section__identity {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .block-chain-table-wrap {
+    overflow-x: visible;
+  }
+}
+
+@media (max-width: 640px) {
   .block-chain-strip-panel__meta {
     display: none;
   }

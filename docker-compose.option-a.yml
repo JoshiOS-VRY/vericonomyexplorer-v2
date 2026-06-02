@@ -91,9 +91,14 @@ services:
       VCEXP_CHAINS_CONFIG: ${VCEXP_CHAINS_CONFIG:-/app/configs/chains.json}
       VCEXP_VRM_RPC_HOST: ${VCEXP_VRM_RPC_HOST:-172.18.0.1}
       VCEXP_VRC_RPC_HOST: ${VCEXP_VRC_RPC_HOST:-172.18.0.1}
-      VCEXP_API_DB_WORKER_TIMEOUT_MS: ${VCEXP_API_DB_WORKER_TIMEOUT_MS:-120000}
-      VCEXP_API_DB_WORKERS: ${VCEXP_API_DB_WORKERS:-4}
-      VCEXP_API_DB_FAST_WORKERS: ${VCEXP_API_DB_FAST_WORKERS:-2}
+      VCEXP_API_DB_WORKER_TIMEOUT_MS: ${VCEXP_API_DB_WORKER_TIMEOUT_MS:-30000}
+      VCEXP_API_DB_WORKERS: ${VCEXP_API_DB_WORKERS:-3}
+      VCEXP_API_DB_FAST_WORKERS: ${VCEXP_API_DB_FAST_WORKERS:-1}
+      VCEXP_HOME_NETWORK_ROUTE_TIMEOUT_MS: ${VCEXP_HOME_NETWORK_ROUTE_TIMEOUT_MS:-4000}
+      VCEXP_HOME_NETWORK_TIMEOUT_MS: ${VCEXP_HOME_NETWORK_TIMEOUT_MS:-5000}
+      VCEXP_HOME_MARKET_ROUTE_TIMEOUT_MS: ${VCEXP_HOME_MARKET_ROUTE_TIMEOUT_MS:-4000}
+      VCEXP_MARKET_FETCH_TIMEOUT_MS: ${VCEXP_MARKET_FETCH_TIMEOUT_MS:-4000}
+      VCEXP_WEB_FETCH_TIMEOUT_MS: ${VCEXP_WEB_FETCH_TIMEOUT_MS:-5000}
       VCEXP_SQLITE_BUSY_RETRY_ATTEMPTS: ${VCEXP_SQLITE_BUSY_RETRY_ATTEMPTS:-6}
       VCEXP_SQLITE_BUSY_RETRY_DELAY_MS: ${VCEXP_SQLITE_BUSY_RETRY_DELAY_MS:-100}
       VCEXP_API_TX_LOOKUP_TIMEOUT_MS: ${VCEXP_API_TX_LOOKUP_TIMEOUT_MS:-30000}
@@ -118,7 +123,24 @@ services:
       dockerfile: Dockerfile
     image: vericonomy-vrm-indexer:option-a
     restart: unless-stopped
-    command: ["npm", "run", "indexer:vrm"]
+    healthcheck:
+      disable: true
+    command:
+      [
+        "node",
+        "./bin/indexer-v2-loop.js",
+        "--chain",
+        "vrm",
+        "--index-only",
+        "--batch-size",
+        "25",
+        "--pause-ms",
+        "50",
+        "--idle-ms",
+        "5000",
+        "--log-every",
+        "500",
+      ]
     env_file:
       - ${ENV_FILE:-.env.production}
     environment:
@@ -142,6 +164,8 @@ services:
       dockerfile: Dockerfile
     image: vericonomy-vrc-indexer:option-a
     restart: unless-stopped
+    healthcheck:
+      disable: true
     command:
       [
         "node",

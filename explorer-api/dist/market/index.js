@@ -1,4 +1,5 @@
 import { createSwrCache } from "../cache/swrCache.js";
+import { withTimeout } from "../util/timeout.js";
 import { fetchCoinGeckoBtcUsd, fetchCoinGeckoVericoin } from "./coingecko.js";
 import { fetchLcwHistory24h, fetchLcwSingle, mapLcwToMarket, } from "./livecoinwatch.js";
 function getMarketCacheTtlMs() {
@@ -8,6 +9,7 @@ function getMarketCacheTtlMs() {
     }
     return 120_000;
 }
+const marketFetchTimeoutMs = Number(process.env.VCEXP_MARKET_FETCH_TIMEOUT_MS ?? 4_000);
 const emptyMarket = () => ({
     usd: null,
     btc: null,
@@ -127,15 +129,21 @@ export async function fetchChainMarket(chainId, onChainSupply = null) {
     }
 }
 export async function fetchHomeMarket(vrmSupply, vrcSupply) {
-    const btcUsd = await getSharedBtcUsd();
-    const [vrm, vrc] = await Promise.all([
-        fetchChainMarketInternal("vrm", vrmSupply, btcUsd),
-        fetchChainMarketInternal("vrc", vrcSupply, btcUsd),
-    ]);
-    return {
-        vrm,
-        vrc,
+    return withTimeout((async () => {
+        const btcUsd = await getSharedBtcUsd();
+        const [vrm, vrc] = await Promise.all([
+            fetchChainMarketInternal("vrm", vrmSupply, btcUsd),
+            fetchChainMarketInternal("vrc", vrcSupply, btcUsd),
+        ]);
+        return {
+            vrm,
+            vrc,
+            fetchedAt: new Date().toISOString(),
+        };
+    })(), marketFetchTimeoutMs, "fetchHomeMarket").catch(() => ({
+        vrm: emptyMarket(),
+        vrc: emptyMarket(),
         fetchedAt: new Date().toISOString(),
-    };
+    }));
 }
 export { emptyMarket };

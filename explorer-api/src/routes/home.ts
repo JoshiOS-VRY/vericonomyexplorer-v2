@@ -11,7 +11,8 @@ import {
 } from "../data/home.js";
 import { withTimeout } from "../util/timeout.js";
 
-const homeNetworkRouteTimeoutMs = Number(process.env.VCEXP_HOME_NETWORK_ROUTE_TIMEOUT_MS ?? 5_000);
+const homeNetworkRouteTimeoutMs = Number(process.env.VCEXP_HOME_NETWORK_ROUTE_TIMEOUT_MS ?? 4_000);
+const homeMarketRouteTimeoutMs = Number(process.env.VCEXP_HOME_MARKET_ROUTE_TIMEOUT_MS ?? 4_000);
 
 const homeCache = createSwrCache({
   max: 4,
@@ -93,9 +94,30 @@ export async function registerHomeRoutes(app: FastifyInstance): Promise<void> {
     }
   });
 
-  app.get("/v1/home/market", async () =>
-    swrFetch(homeMarketCache, "market", fetchHomeMarketOnly),
-  );
+  app.get("/v1/home/market", async () => {
+    const stale = homeMarketCache.get("market", { allowStale: true }) as
+      | Record<string, unknown>
+      | undefined;
+
+    try {
+      return await withTimeout(
+        swrFetch(homeMarketCache, "market", fetchHomeMarketOnly),
+        homeMarketRouteTimeoutMs,
+        "home/market",
+      );
+    } catch {
+      if (stale) {
+        return stale;
+      }
+
+      const { emptyMarket } = await import("../market/index.js");
+      return {
+        vrm: emptyMarket(),
+        vrc: emptyMarket(),
+        fetchedAt: new Date().toISOString(),
+      };
+    }
+  });
 }
 
 export { homeCache, homeMarketCache, homeNetworkCache, homeShellCache };
