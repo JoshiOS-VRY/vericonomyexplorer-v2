@@ -404,8 +404,25 @@ function getMinedLeaderboard(chainId, options = {}) {
 
 	const periodBounds = getMinersPeriodBounds(period, options.now);
 	const since = periodBounds.since;
-	const { countRow, rows } = queryMinedLeaderboardRows(db, chain, since, limit, offset);
-	const blockStats = enrichMinedBlockStats(db, chain, rows.map(row => row.address), since);
+	// Translate the time cutoff into a block-height floor so the coinbase index
+	// can range-scan recent blocks instead of every coinbase tx ever mined.
+	const sinceHeight = since == null ? null : resolveMinedSinceHeight(db, chain, since);
+
+	// A bounded period with no qualifying blocks yields nothing — skip the scans.
+	if (since != null && sinceHeight == null) {
+		return {
+			chainId: chain,
+			trusted: chainHealth.trusted,
+			source: getSource(chainHealth, "leaderboards"),
+			period: periodBounds,
+			label: "Top miners",
+			paging: getPaging(limit, offset, 0),
+			items: []
+		};
+	}
+
+	const { countRow, rows } = queryMinedLeaderboardRows(db, chain, since, sinceHeight, limit, offset);
+	const blockStats = enrichMinedBlockStats(db, chain, rows.map(row => row.address), since, sinceHeight);
 
 	return {
 		chainId: chain,
@@ -434,16 +451,45 @@ function getMinedLeaderboard(chainId, options = {}) {
 
 const MINERS_EXCLUDED_BLOCK_HEIGHT = 1;
 
-function queryMinedLeaderboardRows(db, chain, since, limit, offset) {
-	// Filter on the authoritative block timestamp (blocks.time). Coinbase
-	// transactions.time is unreliable for VRM (it can be 0, null, or a stale
-	// non-zero value), which previously caused period filters to drop every
-	// row unless "all time" was selected.
-	const timeFilter = since == null ? "" : " AND b.time >= ?";
-	const countParams = since == null ? [chain] : [chain, since];
-	const rowParams = since == null
-		? [chain, limit, offset]
-		: [chain, since, limit, offset];
+/**
+ * Smallest main-chain block height at/after the given unix time. Lets the miner
+ * leaderboard prune by indexed block_height instead of scanning every coinbase
+ * tx. Returns null when no block falls inside the window.
+ */
+function resolveMinedSinceHeight(db, chain, since) {
+	const row = db.prepare(`
+		SELECT MIN(height) AS min_height
+		FROM blocks
+		WHERE chain_id = ? AND status = 'main' AND time >= ?
+	`).get(chain, since);
+
+	return row && row.min_height != null ? toNumber(row.min_height) : null;
+}
+
+/**
+ * Build the shared period predicate for the miner queries. The block-height
+ * floor prunes the coinbase index scan; the blocks.time bound keeps the window
+ * exact (block timestamps are not strictly monotonic with height). Coinbase
+ * transactions.time is unreliable for VRM, so it is never used here.
+ */
+function buildMinedPeriodFilter(since, sinceHeight) {
+	const clauses = [];
+	const params = [];
+
+	if (sinceHeight != null) {
+		clauses.push("AND t.block_height >= ?");
+		params.push(sinceHeight);
+	}
+	if (since != null) {
+		clauses.push("AND b.time >= ?");
+		params.push(since);
+	}
+
+	return { sql: clauses.join("\n\t\t\t\t"), params };
+}
+
+function queryMinedLeaderboardRows(db, chain, since, sinceHeight, limit, offset) {
+	const period = buildMinedPeriodFilter(since, sinceHeight);
 
 	const countRow = db.prepare(`
 		SELECT COUNT(*) AS count
@@ -462,11 +508,11 @@ function queryMinedLeaderboardRows(db, chain, since, limit, offset) {
 				AND t.block_height != ?
 				AND v.value_sats > 0
 				AND v.address IS NOT NULL
-				${timeFilter}
+				${period.sql}
 			GROUP BY v.address
 			HAVING SUM(v.value_sats) > 0
 		)
-	`).get(chain, MINERS_EXCLUDED_BLOCK_HEIGHT, ...countParams.slice(1));
+	`).get(chain, MINERS_EXCLUDED_BLOCK_HEIGHT, ...period.params);
 
 	const rows = db.prepare(`
 		SELECT
@@ -485,17 +531,17 @@ function queryMinedLeaderboardRows(db, chain, since, limit, offset) {
 			AND t.block_height != ?
 			AND v.value_sats > 0
 			AND v.address IS NOT NULL
-			${timeFilter}
+			${period.sql}
 		GROUP BY v.address
 		HAVING SUM(v.value_sats) > 0
 		ORDER BY mined_sats DESC, address ASC
 		LIMIT ? OFFSET ?
-	`).all(chain, MINERS_EXCLUDED_BLOCK_HEIGHT, ...rowParams.slice(1));
+	`).all(chain, MINERS_EXCLUDED_BLOCK_HEIGHT, ...period.params, limit, offset);
 
 	return { countRow, rows };
 }
 
-function enrichMinedBlockStats(db, chain, addresses, since) {
+function enrichMinedBlockStats(db, chain, addresses, since, sinceHeight) {
 	const stats = new Map();
 
 	if (!addresses.length) {
@@ -503,8 +549,10 @@ function enrichMinedBlockStats(db, chain, addresses, since) {
 	}
 
 	const placeholders = addresses.map(() => "?").join(",");
-	const params = [chain, ...addresses];
-	let sql = `
+	const period = buildMinedPeriodFilter(since, sinceHeight);
+	const params = [chain, MINERS_EXCLUDED_BLOCK_HEIGHT, ...addresses, ...period.params];
+
+	const sql = `
 		SELECT
 			v.address AS address,
 			COUNT(DISTINCT t.txid) AS block_count,
@@ -522,16 +570,9 @@ function enrichMinedBlockStats(db, chain, addresses, since) {
 			AND t.block_height != ?
 			AND v.address IN (${placeholders})
 			AND v.value_sats > 0
+			${period.sql}
+		GROUP BY v.address
 	`;
-
-	params.splice(1, 0, MINERS_EXCLUDED_BLOCK_HEIGHT);
-
-	if (since != null) {
-		sql += " AND b.time >= ?";
-		params.push(since);
-	}
-
-	sql += " GROUP BY v.address";
 
 	for (const row of db.prepare(sql).all(...params)) {
 		stats.set(row.address, {
