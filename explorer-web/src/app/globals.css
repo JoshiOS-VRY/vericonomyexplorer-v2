@@ -163,6 +163,13 @@
   word-break: break-all;
 }
 
+/* Horizontal-scroll container with momentum + an edge fade affordance so it is
+   obvious there's more content off-screen on touch devices. */
+.data-table-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -201,6 +208,79 @@
 .data-table td {
   padding: 0.5rem 1rem;
   vertical-align: middle;
+}
+
+/* Mobile: turn stackable data tables into label/value cards so wide blockchain
+   tables (addresses, hashes, amounts) stay readable without horizontal scroll. */
+@media (max-width: 640px) {
+  .data-table--stack {
+    font-size: 0.8125rem;
+  }
+
+  .data-table--stack thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .data-table--stack tbody tr {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem 0.875rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .data-table--stack tbody tr:first-child {
+    border-top: 0;
+  }
+
+  .data-table--stack td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    min-width: 0;
+    padding: 0.125rem 0;
+    gap: 0.75rem;
+  }
+
+  .data-table--stack td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    min-width: 5.5rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--fg-subtle);
+  }
+
+  /* Cells with no header label span the full row (e.g. action rows). */
+  .data-table--stack td[data-label=""]::before,
+  .data-table--stack td:not([data-label])::before {
+    content: none;
+  }
+
+  /* The value side fills remaining space and aligns right against the label. */
+  .data-table--stack td > * {
+    min-width: 0;
+    text-align: right;
+  }
+
+  .data-table--stack td .hash-mono,
+  .data-table--stack td a.hash-mono {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    word-break: normal;
+  }
 }
 
 .copy-btn[data-copy-state="copied"] {
@@ -326,6 +406,22 @@
 
 .bc-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+/* Mobile: tighten padding so the (horizontally scrollable) blockchain tables
+   fit more columns on screen before scrolling kicks in. */
+@media (max-width: 640px) {
+  .bc-table {
+    font-size: 0.8125rem;
+  }
+
+  .bc-table th {
+    padding: 0.5rem 0.625rem;
+  }
+
+  .bc-table td {
+    padding: 0.5625rem 0.625rem;
+  }
 }
 
 .bc-hash-link {

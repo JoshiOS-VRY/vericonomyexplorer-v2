@@ -3,6 +3,9 @@ import { getHost, getPort, loadEnv } from "./env.js";
 import { mapErrorToResponse } from "./errors.js";
 import { jsonReplacer } from "./util/json.js";
 loadEnv();
+const { createRequire } = await import("node:module");
+const require = createRequire(import.meta.url);
+require("../../app/indexerV2/miningPoolConfigs.js").loadAllMiningPoolConfigs();
 const { default: cors } = await import("@fastify/cors");
 const { default: Fastify } = await import("fastify");
 const { applyCacheHeaders } = await import("./cache/httpCache.js");
@@ -29,12 +32,10 @@ await app.register(cors, {
 app.addHook("onSend", async (request, reply) => {
     applyCacheHeaders(request, reply);
 });
-app.addHook("preSerialization", async (_request, _reply, payload) => {
-    if (payload == null || typeof payload !== "object") {
-        return payload;
-    }
-    return JSON.parse(JSON.stringify(payload, jsonReplacer));
-});
+// Serialize JSON responses in a single pass with a BigInt-aware replacer.
+// (Previously a preSerialization hook did JSON.parse(JSON.stringify(...)) and
+// then Fastify serialized again — three passes per response; this does one.)
+app.setReplySerializer((payload) => JSON.stringify(payload, jsonReplacer));
 app.setErrorHandler((error, request, reply) => {
     const mapped = mapErrorToResponse(error);
     request.log.error({ err: error, requestId: request.id }, mapped.error);

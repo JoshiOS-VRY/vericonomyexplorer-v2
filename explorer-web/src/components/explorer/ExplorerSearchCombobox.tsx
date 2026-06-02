@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Coins, Hash, Loader2, Wallet } from "lucide-react";
+import { Box, Coins, Hash, Loader2, Wallet, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
@@ -24,6 +24,12 @@ import {
   type SearchEntityType,
   type SearchSuggestion,
 } from "@/lib/searchSuggestions";
+import {
+  clearSearchHistory,
+  loadSearchHistory,
+  recordSearch,
+  type SearchHistoryEntry,
+} from "@/lib/searchHistory";
 import { cn } from "@/lib/utils";
 
 const DEBOUNCE_MS = 250;
@@ -92,18 +98,37 @@ export function ExplorerSearchCombobox({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [apiSuggestions, setApiSuggestions] = useState<SearchSuggestion[]>([]);
+  const [history, setHistory] = useState<SearchHistoryEntry[]>([]);
 
   const isBlockchair = variant === "blockchair";
   const trimmed = sanitizeSearchQuery(query);
   const kind = classifySearchQuery(trimmed);
 
+  useEffect(() => {
+    setHistory(loadSearchHistory());
+  }, []);
+
+  const historySuggestions = useMemo<SearchSuggestion[]>(() => {
+    if (trimmed) return [];
+    return history.map((entry) => ({
+      id: `history-${entry.path}`,
+      label: entry.label,
+      sublabel: "recent search",
+      path: entry.path,
+      chainId: entry.chainId,
+      entityType: entry.entityType,
+    }));
+  }, [history, trimmed]);
+
   const recentSuggestions = useMemo(() => {
-    if (!recentBlocks || trimmed) return [];
+    if (trimmed) return [];
+    if (historySuggestions.length > 0) return historySuggestions;
+    if (!recentBlocks) return [];
     return [
       ...recentBlockSuggestions("vrm", recentBlocks.vrm),
       ...recentBlockSuggestions("vrc", recentBlocks.vrc),
     ];
-  }, [recentBlocks, trimmed]);
+  }, [historySuggestions, recentBlocks, trimmed]);
 
   const suggestions = useMemo(() => {
     if (!trimmed) return recentSuggestions;
@@ -180,15 +205,57 @@ export function ExplorerSearchCombobox({
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
+  // Global "/" (or Ctrl/Cmd+K) shortcut focuses the search input, the way most
+  // explorers do. Ignored while typing in another field.
+  useEffect(() => {
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const typingElsewhere =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+      const isSlash = event.key === "/" && !event.metaKey && !event.ctrlKey && !event.altKey;
+      const isCmdK = event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey);
+      if ((isSlash && !typingElsewhere) || isCmdK) {
+        event.preventDefault();
+        inputRef.current?.focus();
+        inputRef.current?.select();
+        setOpen(true);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
   const navigate = useCallback(
-    (path: string) => {
+    (target: string | SearchSuggestion) => {
+      const suggestion = typeof target === "string" ? null : target;
+      const path = typeof target === "string" ? target : target.path;
       setOpen(false);
       setQuery("");
       setSubmitError(null);
+      // Persist confirmed, non-tentative lookups as recent searches.
+      if (suggestion && !suggestion.tentative && !suggestion.id.startsWith("history-")) {
+        setHistory(
+          recordSearch({
+            query: suggestion.label,
+            label: suggestion.label,
+            path: suggestion.path,
+            chainId: suggestion.chainId,
+            entityType: suggestion.entityType,
+          }),
+        );
+      }
       router.push(path);
     },
     [router],
   );
+
+  const onClearHistory = useCallback(() => {
+    clearSearchHistory();
+    setHistory([]);
+  }, []);
 
   const resolveTarget = useCallback(async (): Promise<SearchSuggestion | null> => {
     if (suggestions.length > 0) {
@@ -224,7 +291,7 @@ export function ExplorerSearchCombobox({
     void (async () => {
       const target = await resolveTarget();
       if (target) {
-        navigate(target.path);
+        navigate(target);
         return;
       }
 
@@ -339,6 +406,24 @@ export function ExplorerSearchCombobox({
               )}
               aria-hidden
             />
+          ) : query ? (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={() => {
+                setQuery("");
+                setSubmitError(null);
+                setApiSuggestions([]);
+                setLookupDone(false);
+                inputRef.current?.focus();
+              }}
+              className={cn(
+                "absolute top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full text-fg-subtle transition-colors hover:bg-bg-subtle hover:text-fg",
+                isBlockchair ? "right-3.5" : "right-2.5",
+              )}
+            >
+              <X className="h-3.5 w-3.5" aria-hidden />
+            </button>
           ) : null}
         </label>
         <button
@@ -390,8 +475,17 @@ export function ExplorerSearchCombobox({
           ) : null}
 
           {showRecentHeader ? (
-            <li className="search-dropdown-section px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">
-              Recent blocks
+            <li className="search-dropdown-section flex items-center justify-between px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">
+              <span>{historySuggestions.length > 0 ? "Recent searches" : "Recent blocks"}</span>
+              {historySuggestions.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={onClearHistory}
+                  className="font-medium normal-case tracking-normal text-fg-subtle transition-colors hover:text-fg"
+                >
+                  Clear
+                </button>
+              ) : null}
             </li>
           ) : null}
 
@@ -417,7 +511,7 @@ export function ExplorerSearchCombobox({
                     item.primary && "font-semibold",
                   )}
                   onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => navigate(item.path)}
+                  onClick={() => navigate(item)}
                 >
                   <Icon
                     className="h-4 w-4 shrink-0 text-fg-subtle"
