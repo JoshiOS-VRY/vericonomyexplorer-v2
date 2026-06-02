@@ -97,11 +97,14 @@ export async function fetchAddress(chainId, address, options = {}, queryOptions 
     });
 }
 export async function fetchBlock(chainId, hashOrHeight, options = {}) {
-    const indexed = (await runIndexerQuery("getBlockIndexed", [chainId, hashOrHeight], {
+    const queryOptions = {
         skipAddressCount: true,
+        skipBlockEnrichment: true,
+        skipHeavyTotals: true,
         ...options,
-    }, { priority: 0 }));
-    return fetchBlockWithRpcFallback(chainId, hashOrHeight, indexed, options);
+    };
+    const indexed = (await runIndexerQuery("getBlockIndexed", [chainId, hashOrHeight], queryOptions, { priority: 0 }));
+    return fetchBlockWithRpcFallback(chainId, hashOrHeight, indexed, queryOptions);
 }
 export function fetchChainHealth(chainId) {
     return runIndexerQuery("getChainHealth", [chainId], { fullHealth: true });

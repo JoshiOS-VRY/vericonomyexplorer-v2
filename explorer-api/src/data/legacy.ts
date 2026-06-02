@@ -243,17 +243,20 @@ export async function fetchBlock(
   hashOrHeight: string,
   options: { limit?: number; offset?: number } = {},
 ) {
+  const queryOptions = {
+    skipAddressCount: true,
+    skipBlockEnrichment: true,
+    skipHeavyTotals: true,
+    ...options,
+  };
   const indexed = (await runIndexerQuery<Record<string, unknown>>(
     "getBlockIndexed",
     [chainId, hashOrHeight],
-    {
-      skipAddressCount: true,
-      ...options,
-    },
+    queryOptions,
     { priority: 0 },
   )) as Record<string, unknown>;
 
-  return fetchBlockWithRpcFallback(chainId as ChainId, hashOrHeight, indexed, options);
+  return fetchBlockWithRpcFallback(chainId as ChainId, hashOrHeight, indexed, queryOptions);
 }
 
 export function fetchChainHealth(chainId: string) {

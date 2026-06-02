@@ -1496,7 +1496,9 @@ function getBlock(chainId, hashOrHeight, options = {}) {
 		ORDER BY tx_index ASC
 		LIMIT ? OFFSET ?
 	`).all(chain, block.height, limit, offset);
-	const mappedBlock = enrichLatestBlocks(db, chain, [mapBlock(block, chain)])[0];
+	const mappedBlock = options.skipBlockEnrichment === true
+		? mapBlock(block, chain)
+		: enrichLatestBlocks(db, chain, [mapBlock(block, chain)])[0];
 	const transactions = attachTransactionSummaries(
 		db,
 		chain,
@@ -1514,11 +1516,11 @@ function getBlock(chainId, hashOrHeight, options = {}) {
 		transactions,
 		confirmations: computeConfirmations(chainHealth, mappedBlock.height),
 		coinbase: getCoinbaseSummary(db, chain, mappedBlock.height),
-		totals: formatBlockTotals(db, chain, block)
+		totals: formatBlockTotals(db, chain, block, options)
 	};
 }
 
-function formatBlockTotals(db, chainId, blockRow) {
+function formatBlockTotals(db, chainId, blockRow, options = {}) {
 	if (blockRow.total_output_sats != null) {
 		const outputValueAtomic = toBigInt(blockRow.total_output_sats);
 		const feeAtomic = blockRow.fee_sats === null || blockRow.fee_sats === undefined
@@ -1530,6 +1532,15 @@ function formatBlockTotals(db, chainId, blockRow) {
 			fee: feeAtomic === null ? null : formatAtomic(chainId, feeAtomic),
 			outputValueAtomic: stringifyInteger(outputValueAtomic),
 			outputValue: formatAtomic(chainId, outputValueAtomic)
+		};
+	}
+
+	if (options.skipHeavyTotals === true) {
+		return {
+			feeAtomic: null,
+			fee: null,
+			outputValueAtomic: null,
+			outputValue: null
 		};
 	}
 

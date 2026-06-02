@@ -3,6 +3,8 @@ import {
   blockDetailSearchParams,
 } from "@/components/explorer/pages/BlockDetailPage";
 
+export const revalidate = 60;
+
 export default async function VrcBlockPage({
   params,
   searchParams,
