@@ -21,7 +21,11 @@ export function VrmLeaderboardPreview({ leaderboard }: { leaderboard: Leaderboar
           {formatExplorerUserMessage(leaderboard.message)}
         </p>
       ) : leaderboard.items.length === 0 ? (
-        <p className="text-sm text-fg-muted">No activity rankings yet.</p>
+        <p className="text-sm text-fg-muted">
+          {leaderboard.backfillRequired
+            ? "Transfer activity is still being collected."
+            : "No activity rankings yet."}
+        </p>
       ) : (
         <RankList
           items={leaderboard.items.map((item) => ({

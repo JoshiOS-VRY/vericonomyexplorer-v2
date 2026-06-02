@@ -72,12 +72,22 @@ export function ChainBlocksPanel({
   chainId,
   liveBlocks,
   chainHeight,
+  maxIndexedHeight,
 }: {
   chainId: ChainId;
   liveBlocks: IndexedBlock[];
   chainHeight: number | null;
+  maxIndexedHeight?: number | null;
 }) {
   const producerLabel = chainId === "vrm" ? "Extracted by" : "Interest";
+  // When the indexer trails the chain tip by more than a page, the indexed
+  // `/blocks` rows are far older than the live tip. In that state we show only
+  // the live (RPC-merged) blocks and disable indexed pagination so the table
+  // never displays stale heights.
+  const behindTip =
+    chainHeight != null &&
+    maxIndexedHeight != null &&
+    chainHeight - maxIndexedHeight > MAX_PAGE_SIZE;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [pageSize, setPageSize] = useState(MIN_PAGE_SIZE);
   const [offset, setOffset] = useState(0);
@@ -93,8 +103,9 @@ export function ChainBlocksPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const totalBlocks =
-    chainHeight != null
+  const totalBlocks = behindTip
+    ? liveBlocks.length
+    : chainHeight != null
       ? chainHeight + 1
       : Math.max(paging.total, liveBlocks.length);
 
@@ -128,6 +139,18 @@ export function ChainBlocksPanel({
       return;
     }
 
+    if (behindTip) {
+      setFilledPage(null);
+      setBlocks(liveBlocks.slice(0, pageSize));
+      setPaging({
+        limit: pageSize,
+        offset: 0,
+        total: liveBlocks.length,
+        hasMore: false,
+      });
+      return;
+    }
+
     if (liveBlocks.length >= pageSize) {
       setFilledPage(null);
       setBlocks(liveBlocks.slice(0, pageSize));
@@ -155,9 +178,13 @@ export function ChainBlocksPanel({
       total: totalBlocks || merged.length,
       hasMore: pageSize < (totalBlocks || merged.length),
     });
-  }, [filledPage, liveBlocks, offset, pageSize, totalBlocks]);
+  }, [behindTip, filledPage, liveBlocks, offset, pageSize, totalBlocks]);
 
   useEffect(() => {
+    if (behindTip) {
+      return;
+    }
+
     if (offset !== 0 || liveBlocks.length >= pageSize) {
       if (offset === 0 && liveBlocks.length >= pageSize) {
         setFilledPage(null);
@@ -200,7 +227,7 @@ export function ChainBlocksPanel({
     return () => {
       cancelled = true;
     };
-  }, [chainId, filledPageCount, liveBlocks.length, offset, pageSize]);
+  }, [behindTip, chainId, filledPageCount, liveBlocks.length, offset, pageSize]);
 
   useEffect(() => {
     if (offset === 0) {
@@ -278,6 +305,14 @@ export function ChainBlocksPanel({
       bodyClassName="flex min-h-0 flex-1 flex-col"
     >
       <div className="flex min-h-0 flex-1 flex-col">
+        {behindTip ? (
+          <p className="border-b border-border bg-bg-subtle px-4 py-2 text-xs text-fg-muted">
+            Indexer is{" "}
+            {formatHeight((chainHeight ?? 0) - (maxIndexedHeight ?? 0))} blocks
+            behind. Showing the latest blocks from the live node; older blocks
+            appear once syncing completes.
+          </p>
+        ) : null}
         {error ? (
           <p className="border-b border-border px-4 py-2 text-sm text-danger">
             {error}

@@ -7,11 +7,18 @@ function block(height: number): IndexedBlock {
 }
 
 describe("pickBlockPageBase", () => {
-  it("prefers a non-empty filled page over live blocks", () => {
+  it("prefers a filled page that reaches the live tip", () => {
     const filled = [block(100), block(99)];
     const live = [block(100)];
 
     expect(pickBlockPageBase(filled, live)).toBe(filled);
+  });
+
+  it("prefers live blocks when the filled page lags behind the tip", () => {
+    const filled = [block(18_678), block(18_677)];
+    const live = [block(1_100_219), block(1_100_218)];
+
+    expect(pickBlockPageBase(filled, live)).toBe(live);
   });
 
   it("falls back to live blocks when filled page is empty", () => {

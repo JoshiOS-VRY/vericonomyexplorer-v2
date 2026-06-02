@@ -91,6 +91,7 @@ export function VrcChainDashboard({
           chainId="vrc"
           liveBlocks={latestBlocks}
           chainHeight={chainHeight}
+          maxIndexedHeight={summary.health.heights.maxIndexedHeight}
         />
         <ChainRichlistPreview
           chainId="vrc"

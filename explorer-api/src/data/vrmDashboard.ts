@@ -30,10 +30,9 @@ async function fetchVrmDashboardIndexed() {
 
 export async function fetchVrmDashboardBundle() {
   const indexed = await fetchVrmDashboardIndexed();
-  const summary = await enrichChainSummary(indexed.summary, "vrm", {
-    skipLiveBlocks: true,
-    skipLiveRpc: true,
-  });
+  // Merge the live chain tip and latest RPC blocks so the dashboard hero and
+  // blocks panel reflect the current height on first paint, matching VRC.
+  const summary = await enrichChainSummary(indexed.summary, "vrm", {});
 
   return {
     summary,

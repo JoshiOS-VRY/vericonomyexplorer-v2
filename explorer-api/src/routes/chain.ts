@@ -140,6 +140,32 @@ export const latestBlocksCache = createSwrCache({
 
 
 
+export const blocksPageCache = createSwrCache({
+
+  max: 64,
+
+  ttlMs: 5_000,
+
+  fetch: async (key, signal) => {
+
+    if (signal.aborted) throw new Error("aborted");
+
+    const [chainId, , limit, offset] = key.split(":");
+
+    return (await fetchBlocksPage(chainId as ChainId, {
+
+      limit,
+
+      offset,
+
+    })) as CacheValue;
+
+  },
+
+});
+
+
+
 const landingCache = createSwrCache({
 
   max: 4,
@@ -487,13 +513,14 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(400).send({ error: "Invalid chain id" });
     }
 
-    const limit = request.query.limit;
-    const offset = request.query.offset;
+    const limit = request.query.limit ?? "";
+    const offset = request.query.offset ?? "";
 
-    return fetchBlocksPage(chainId, {
-      limit,
-      offset,
-    });
+    return swrFetch(
+      blocksPageCache,
+      cacheKey(chainId, "blocks", `${limit}:${offset}`),
+      () => fetchBlocksPage(chainId, { limit, offset }),
+    );
   });
 
 }

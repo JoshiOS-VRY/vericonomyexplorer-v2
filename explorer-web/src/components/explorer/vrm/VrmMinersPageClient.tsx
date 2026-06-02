@@ -89,7 +89,9 @@ export function VrmMinersPageClient({
             </div>
           ) : miners.items.length === 0 ? (
             <p className="py-8 text-sm text-fg-muted">
-              No mining rewards recorded for this period.
+              {period === "all"
+                ? "No mining rewards recorded yet."
+                : "No mining rewards recorded for this period. Recent blocks appear here as the indexer catches up to the chain tip."}
             </p>
           ) : (
             <div className={cn(loading && "pointer-events-none opacity-60")}>

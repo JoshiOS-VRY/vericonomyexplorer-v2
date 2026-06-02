@@ -94,7 +94,9 @@ export function ChainActivityInsightsChart({ chainId }: { chainId: "vrm" | "vrc"
       error={error}
       empty={
         !loading && history && !hasData
-          ? `No ${view === "blocks" ? "blocks" : "transactions"} in the ${periodMeta?.label ?? "selected"} period.`
+          ? history.backfillRequired
+            ? "Historical chain activity is still being collected."
+            : `No ${view === "blocks" ? "blocks" : "transactions"} in the ${periodMeta?.label ?? "selected"} period.`
           : null
       }
       footer={

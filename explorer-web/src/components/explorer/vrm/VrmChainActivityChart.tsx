@@ -121,7 +121,9 @@ export function VrmChainActivityChart() {
       error={error}
       empty={
         !loading && !hasData
-          ? `No ${view === "blocks" ? "blocks" : "transactions"} in the ${periodMeta?.label ?? "selected"} period.`
+          ? history.backfillRequired
+            ? "Historical chain activity is still being collected."
+            : `No ${view === "blocks" ? "blocks" : "transactions"} in the ${periodMeta?.label ?? "selected"} period.`
           : !history.buckets.length && !loading
             ? "No chain activity data available yet."
             : null

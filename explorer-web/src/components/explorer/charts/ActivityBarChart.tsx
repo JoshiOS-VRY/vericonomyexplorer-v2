@@ -80,8 +80,14 @@ export function ActivityBarChart({
             <YAxis {...yAxis} />
             <Tooltip content={<CountChartTooltip colors={colors} unit="tx" accentColor={accentColor} />} />
             <Legend wrapperStyle={{ fontSize: 11, color: tickFill, paddingTop: 8 }} iconType="circle" iconSize={8} />
-            <Bar dataKey="mined" name="Mined" stackId="a" fill={colors.success || "#359b37"} animationDuration={CHART_ANIMATION.duration} />
-            <Bar dataKey="staked" name="Staked" stackId="a" fill={colors.warning || "#f59e0b"} animationDuration={CHART_ANIMATION.duration} />
+            {/* VeriCoin (PoST) blocks pair a coinbase + coinstake, so mining and
+                staking are the same event. Show one production bar per chain to
+                avoid double-counting: "Staked" for VRC, "Mined" for VRM. */}
+            {chainId === "vrc" ? (
+              <Bar dataKey="staked" name="Staked" stackId="a" fill={colors.success || "#359b37"} animationDuration={CHART_ANIMATION.duration} />
+            ) : (
+              <Bar dataKey="mined" name="Mined" stackId="a" fill={colors.success || "#359b37"} animationDuration={CHART_ANIMATION.duration} />
+            )}
             <Bar dataKey="received" name="Transfers" stackId="a" fill={colors.accent || "#418bca"} radius={[4, 4, 0, 0]} animationDuration={CHART_ANIMATION.duration} />
           </BarChart>
         )}

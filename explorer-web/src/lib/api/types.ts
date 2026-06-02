@@ -168,6 +168,7 @@ export interface LeaderboardResult {
   trusted: boolean;
   enabled?: boolean;
   message?: string;
+  backfillRequired?: boolean;
   source: SourceInfo;
   health?: ChainHealth;
   label?: string;
@@ -302,6 +303,7 @@ export type ChainActivityChartView = "activity" | "blocks";
 export interface ChainActivityHistoryResult {
   chainId: string;
   trusted?: boolean;
+  backfillRequired?: boolean;
   source: SourceInfo;
   since?: number | null;
   categories: ChainActivityCategory[];

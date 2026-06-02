@@ -435,7 +435,7 @@ function getMinedLeaderboard(chainId, options = {}) {
 const MINERS_EXCLUDED_BLOCK_HEIGHT = 1;
 
 function queryMinedLeaderboardRows(db, chain, since, limit, offset) {
-	const timeFilter = since == null ? "" : " AND t.time >= ?";
+	const timeFilter = since == null ? "" : " AND COALESCE(NULLIF(t.time, 0), b.time) >= ?";
 	const countParams = since == null ? [chain] : [chain, since];
 	const rowParams = since == null
 		? [chain, limit, offset]
@@ -523,7 +523,7 @@ function enrichMinedBlockStats(db, chain, addresses, since) {
 	params.splice(1, 0, MINERS_EXCLUDED_BLOCK_HEIGHT);
 
 	if (since != null) {
-		sql += " AND t.time >= ?";
+		sql += " AND COALESCE(NULLIF(t.time, 0), b.time) >= ?";
 		params.push(since);
 	}
 

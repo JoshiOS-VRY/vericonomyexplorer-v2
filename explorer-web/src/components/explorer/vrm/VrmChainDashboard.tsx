@@ -91,6 +91,7 @@ export function VrmChainDashboard({
           chainId="vrm"
           liveBlocks={latestBlocks}
           chainHeight={chainHeight}
+          maxIndexedHeight={summary.health.heights.maxIndexedHeight}
         />
         <div className="flex flex-col gap-6">
           <ChainRichlistPreview

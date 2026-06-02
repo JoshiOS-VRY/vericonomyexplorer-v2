@@ -90,6 +90,14 @@ export default async function LeaderboardPage({
           <CardTitle>Activity</CardTitle>
         </CardHeader>
         <CardContent>
+          {leaderboard.items.length === 0 ? (
+            <p className="px-1 py-6 text-sm text-fg-muted">
+              {leaderboard.backfillRequired
+                ? "Historical transfer activity is still being collected."
+                : "No transfer activity in this period yet."}
+            </p>
+          ) : (
+          <>
           <DataTable
             headers={[
               "Rank",
@@ -138,6 +146,8 @@ export default async function LeaderboardPage({
             }
             extraParams={{ period, sort }}
           />
+          </>
+          )}
         </CardContent>
       </Card>
     </div>

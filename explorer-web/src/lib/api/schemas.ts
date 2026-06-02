@@ -91,6 +91,7 @@ export const leaderboardSchema = z.object({
   trusted: z.boolean(),
   enabled: z.boolean().optional(),
   message: z.string().optional(),
+  backfillRequired: z.boolean().optional(),
   source: sourceSchema,
   health: chainHealthSchema.optional(),
   label: z.string().optional(),
