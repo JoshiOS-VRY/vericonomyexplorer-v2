@@ -56,8 +56,6 @@ export function VericonomyHomeLiveBand({
 
   return (
     <div className="space-y-8">
-      <BinaryChainHero vrmLive={vrmLive} vrcLive={vrcLive} />
-
       <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <ChainHubSection
           chainId="vrm"
@@ -65,8 +63,8 @@ export function VericonomyHomeLiveBand({
           chainHeight={
             hydrated
               ? live.vrm.chainHeight
-              : initialShell.vrm.summary.health.heights.bestRpcHeight ??
-                initialShell.vrm.summary.health.heights.maxIndexedHeight
+              : (initialShell.vrm.summary.health.heights.bestRpcHeight ??
+                initialShell.vrm.summary.health.heights.maxIndexedHeight)
           }
           heightPulse={hydrated && live.vrm.heightPulse}
           market={market.vrm}
@@ -83,8 +81,8 @@ export function VericonomyHomeLiveBand({
           chainHeight={
             hydrated
               ? live.vrc.chainHeight
-              : initialShell.vrc.summary.health.heights.bestRpcHeight ??
-                initialShell.vrc.summary.health.heights.maxIndexedHeight
+              : (initialShell.vrc.summary.health.heights.bestRpcHeight ??
+                initialShell.vrc.summary.health.heights.maxIndexedHeight)
           }
           heightPulse={hydrated && live.vrc.heightPulse}
           market={market.vrc}
