@@ -60,9 +60,7 @@ export function VericonomyHomeDashboard({
   );
 
   return (
-    <div className="space-y-8">
-      <BinaryChainHero vrmLive={vrmLive} vrcLive={vrcLive} />
-
+    <div className="space-y-6">
       <div className="grid gap-4 xl:grid-cols-2">
         <ChainOverviewPanel
           chainId="vrm"
@@ -89,14 +87,8 @@ export function VericonomyHomeDashboard({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <LiveBlocksFeed
-          chainId="vrm"
-          seedBlocks={live.vrm.latestBlocks}
-        />
-        <LiveBlocksFeed
-          chainId="vrc"
-          seedBlocks={live.vrc.latestBlocks}
-        />
+        <LiveBlocksFeed chainId="vrm" seedBlocks={live.vrm.latestBlocks} />
+        <LiveBlocksFeed chainId="vrc" seedBlocks={live.vrc.latestBlocks} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
