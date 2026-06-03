@@ -9,7 +9,8 @@ services:
     image: postgres:16
     container_name: vericonomy-postgres
     restart: unless-stopped
-    shm_size: "1gb"
+    # shared_buffers must fit in shm; 8GB buffers + 1gb shm caused "No space left on device" under load.
+    shm_size: "2gb"
     environment:
       POSTGRES_USER: ${VCEXP_PG_USER:-vericonomy}
       POSTGRES_PASSWORD: ${VCEXP_PG_PASSWORD:?set VCEXP_PG_PASSWORD in .env.production}
@@ -19,7 +20,7 @@ services:
     command:
       - "postgres"
       - "-c"
-      - "shared_buffers=8GB"
+      - "shared_buffers=1536MB"
       - "-c"
       - "effective_cache_size=20GB"
       - "-c"
@@ -67,7 +68,9 @@ services:
     environment:
       ACME_EMAIL: ${ACME_EMAIL}
       PUBLIC_DOMAIN: ${PUBLIC_DOMAIN}
+      STAGING_DOMAIN: ${STAGING_DOMAIN}
       LEGACY_PUBLIC_DOMAIN: ${LEGACY_PUBLIC_DOMAIN}
+      LEGACY_STAGING_DOMAIN: ${LEGACY_STAGING_DOMAIN}
     ports:
       - "80:80"
       - "443:443"

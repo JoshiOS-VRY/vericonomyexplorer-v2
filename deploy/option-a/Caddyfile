@@ -3,7 +3,8 @@
   admin off
 }
 
-{$PUBLIC_DOMAIN} {
+# Production + staging share the same Next.js + FastAPI stack.
+{$PUBLIC_DOMAIN}, {$STAGING_DOMAIN} {
   # API + SSE: bypass Next.js (rewrites are build-time) and avoid compressing event streams.
   # Application rate limits live in explorer-api (VCEXP_RATE_LIMIT_*). Optional coarse edge
   # limiting: https://caddyserver.com/docs/modules/http.handlers.rate_limit
@@ -27,7 +28,7 @@
 }
 
 # Keep legacy Express routes public on a dedicated hostname.
-{$LEGACY_PUBLIC_DOMAIN} {
+{$LEGACY_PUBLIC_DOMAIN}, {$LEGACY_STAGING_DOMAIN} {
   encode zstd gzip
   reverse_proxy explorer-express:3002
 }
