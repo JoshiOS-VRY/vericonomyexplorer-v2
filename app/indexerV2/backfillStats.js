@@ -11,7 +11,7 @@ const {
 	getPeriodBoundsForTime,
 	toSafeInteger
 } = require("./periodStats.js");
-const { yieldBetweenWrites, resolveYieldMs } = require("./yield.js");
+const { yieldToReaders, resolveYieldMs } = require("./yield.js");
 const writeLock = require("./writeLock.js");
 
 function getBackfillBatchSize() {
@@ -46,27 +46,27 @@ function getAddressActivityCategory(row) {
 	return "received";
 }
 
-function runBatchTransaction(db, rows, fn) {
+async function runBatchTransaction(db, rows, fn) {
 	if (rows.length === 0) {
 		return;
 	}
 
-	const run = db.transaction(() => {
+	await db.runTransaction(async (txdb) => {
+		const statements = createPeriodStatStatements(txdb);
 		for (const row of rows) {
-			fn(row);
+			await fn(statements, row);
 		}
 	});
-	run();
 }
 
-function backfillTransactions(db, chainId, periodStatements, batchSize, now) {
-	const transactionCount = toCount(db.prepare(`
+async function backfillTransactions(db, chainId, batchSize, now) {
+	const transactionCount = toCount((await db.get(`
 		SELECT COUNT(*) AS count
 		FROM transactions
 		WHERE chain_id = ? AND time IS NOT NULL
-	`).get(chainId).count);
+	`, [chainId])).count);
 
-	const selectTransactions = db.prepare(`
+	const selectTransactions = `
 		SELECT time, is_coinbase, is_coinstake, block_height, tx_index
 		FROM transactions
 		WHERE chain_id = ?
@@ -77,48 +77,46 @@ function backfillTransactions(db, chainId, periodStatements, batchSize, now) {
 			)
 		ORDER BY block_height ASC, tx_index ASC
 		LIMIT ?
-	`);
+	`;
 
 	let lastHeight = -1;
 	let lastTxIndex = 0;
 	let processed = 0;
 
 	while (true) {
-		const batch = selectTransactions.all(chainId, lastHeight, lastHeight, lastTxIndex, batchSize);
+		const batch = await db.all(selectTransactions, [chainId, lastHeight, lastHeight, lastTxIndex, batchSize]);
 		if (batch.length === 0) {
 			break;
 		}
 
-		runBatchTransaction(db, batch, (tx) => {
-			recordTransactionActivity(
-				periodStatements,
-				chainId,
-				tx.time,
-				Number(tx.is_coinbase),
-				Number(tx.is_coinstake),
-				now
-			);
-		});
+		await runBatchTransaction(db, batch, (statements, tx) => recordTransactionActivity(
+			statements,
+			chainId,
+			tx.time,
+			Number(tx.is_coinbase),
+			Number(tx.is_coinstake),
+			now
+		));
 
 		const last = batch[batch.length - 1];
 		lastHeight = toCount(last.block_height);
 		lastTxIndex = toCount(last.tx_index) + 1;
 		processed += batch.length;
 		logProgress(`${chainId} transactions (chain activity)`, processed, transactionCount);
-		yieldBetweenWrites();
+		await yieldToReaders();
 	}
 
 	return transactionCount;
 }
 
-function backfillBlocks(db, chainId, periodStatements, batchSize, now) {
-	const blockCount = toCount(db.prepare(`
+async function backfillBlocks(db, chainId, batchSize, now) {
+	const blockCount = toCount((await db.get(`
 		SELECT COUNT(*) AS count
 		FROM blocks
 		WHERE chain_id = ? AND status = 'main' AND time IS NOT NULL
-	`).get(chainId).count);
+	`, [chainId])).count);
 
-	const selectBlocks = db.prepare(`
+	const selectBlocks = `
 		SELECT time, height
 		FROM blocks
 		WHERE chain_id = ?
@@ -127,38 +125,36 @@ function backfillBlocks(db, chainId, periodStatements, batchSize, now) {
 			AND height > ?
 		ORDER BY height ASC
 		LIMIT ?
-	`);
+	`;
 
 	let lastHeight = -1;
 	let processed = 0;
 
 	while (true) {
-		const batch = selectBlocks.all(chainId, lastHeight, batchSize);
+		const batch = await db.all(selectBlocks, [chainId, lastHeight, batchSize]);
 		if (batch.length === 0) {
 			break;
 		}
 
-		runBatchTransaction(db, batch, (block) => {
-			recordBlockActivity(periodStatements, chainId, block.time, now);
-		});
+		await runBatchTransaction(db, batch, (statements, block) => recordBlockActivity(statements, chainId, block.time, now));
 
 		lastHeight = toCount(batch[batch.length - 1].height);
 		processed += batch.length;
 		logProgress(`${chainId} blocks (chain activity)`, processed, blockCount);
-		yieldBetweenWrites();
+		await yieldToReaders();
 	}
 
 	return blockCount;
 }
 
-function backfillAddressEvents(db, chainId, periodStatements, batchSize, now) {
-	const eventCount = toCount(db.prepare(`
+async function backfillAddressEvents(db, chainId, batchSize, now) {
+	const eventCount = toCount((await db.get(`
 		SELECT COUNT(*) AS count
 		FROM address_events
 		WHERE chain_id = ?
-	`).get(chainId).count);
+	`, [chainId])).count);
 
-	const selectEvents = db.prepare(`
+	const selectEvents = `
 		SELECT
 			address_events.id,
 			address_events.address,
@@ -176,41 +172,39 @@ function backfillAddressEvents(db, chainId, periodStatements, batchSize, now) {
 			AND address_events.id > ?
 		ORDER BY address_events.id ASC
 		LIMIT ?
-	`);
+	`;
 
 	let lastEventId = 0;
 	let processedEvents = 0;
 
 	while (true) {
-		const batch = selectEvents.all(chainId, lastEventId, batchSize);
+		const batch = await db.all(selectEvents, [chainId, lastEventId, batchSize]);
 		if (batch.length === 0) {
 			break;
 		}
 
-		runBatchTransaction(db, batch, (row) => {
-			recordAddressBalanceBucket(
-				periodStatements,
-				chainId,
-				row.address,
-				row.delta_sats,
-				row.time,
-				getAddressActivityCategory(row),
-				now
-			);
-		});
+		await runBatchTransaction(db, batch, (statements, row) => recordAddressBalanceBucket(
+			statements,
+			chainId,
+			row.address,
+			row.delta_sats,
+			row.time,
+			getAddressActivityCategory(row),
+			now
+		));
 
 		lastEventId = toCount(batch[batch.length - 1].id);
 		processedEvents += batch.length;
 		logProgress(`${chainId} address events (balance buckets)`, processedEvents, eventCount);
-		yieldBetweenWrites();
+		await yieldToReaders();
 	}
 
 	return eventCount;
 }
 
-function backfillPeriodStats(db, chainId, periodStatements, batchSize, now, eventCount) {
+async function backfillPeriodStats(db, chainId, batchSize, now, eventCount) {
 	const totalEvents = toCount(eventCount);
-	const selectPeriodRows = db.prepare(`
+	const selectPeriodRows = `
 		SELECT
 			id,
 			address,
@@ -223,19 +217,19 @@ function backfillPeriodStats(db, chainId, periodStatements, batchSize, now, even
 			AND id > ?
 		ORDER BY id ASC
 		LIMIT ?
-	`);
+	`;
 
 	const seenTxByPeriod = new Set();
 	let lastEventId = 0;
 	let processedEvents = 0;
 
 	while (true) {
-		const batch = selectPeriodRows.all(chainId, lastEventId, batchSize);
+		const batch = await db.all(selectPeriodRows, [chainId, lastEventId, batchSize]);
 		if (batch.length === 0) {
 			break;
 		}
 
-		runBatchTransaction(db, batch, (row) => {
+		await runBatchTransaction(db, batch, async (statements, row) => {
 			for (const period of ["week", "month"]) {
 				const bounds = getPeriodBoundsForTime(period, row.time);
 				const txKey = `${bounds.periodStart}:${row.address}:${row.txid}`;
@@ -244,8 +238,8 @@ function backfillPeriodStats(db, chainId, periodStatements, batchSize, now, even
 					seenTxByPeriod.add(txKey);
 				}
 
-				recordAddressPeriodEvent(
-					periodStatements,
+				await recordAddressPeriodEvent(
+					statements,
 					chainId,
 					row.address,
 					row.delta_sats,
@@ -260,18 +254,18 @@ function backfillPeriodStats(db, chainId, periodStatements, batchSize, now, even
 		lastEventId = toCount(batch[batch.length - 1].id);
 		processedEvents += batch.length;
 		logProgress(`${chainId} period stats`, processedEvents, totalEvents);
-		yieldBetweenWrites();
+		await yieldToReaders();
 	}
 }
 
-function logIndexedCoverage(db, chainId) {
-	const coverage = db.prepare(`
+async function logIndexedCoverage(db, chainId) {
+	const coverage = await db.get(`
 		SELECT
 			(SELECT COUNT(*) FROM blocks WHERE chain_id = ? AND status = 'main') AS main_blocks,
 			(SELECT MAX(height) FROM blocks WHERE chain_id = ? AND status = 'main') AS max_indexed_height,
 			(SELECT last_indexed_height FROM sync_state WHERE chain_id = ?) AS last_indexed_height,
 			(SELECT best_rpc_height FROM sync_state WHERE chain_id = ?) AS best_rpc_height
-	`).get(chainId, chainId, chainId, chainId);
+	`, [chainId, chainId, chainId, chainId]);
 
 	const mainBlocks = toCount(coverage.main_blocks);
 	const maxHeight = toCount(coverage.max_indexed_height);
@@ -291,8 +285,11 @@ function logIndexedCoverage(db, chainId) {
 	}
 }
 
-function backfillChain(db, chainId, options = {}) {
-	const cooperative = options.cooperative !== false
+async function backfillChain(db, chainId, options = {}) {
+	// Postgres handles writer concurrency natively; the SQLite file write-lock is
+	// only meaningful on the sqlite backend.
+	const cooperative = dbModule.getBackend() !== "postgres"
+		&& options.cooperative !== false
 		&& parseTruthy(process.env.VCEXP_BACKFILL_COOPERATIVE) !== false;
 	const lockOwner = `backfill-stats:${chainId}`;
 	let lock = cooperative ? writeLock.tryAcquireWriteLock(lockOwner) : { skipped: false, fd: null };
@@ -307,7 +304,7 @@ function backfillChain(db, chainId, options = {}) {
 	}
 
 	try {
-		return backfillChainLocked(db, chainId, options);
+		return await backfillChainLocked(db, chainId, options);
 	} finally {
 		if (cooperative) {
 			writeLock.releaseWriteLock(lock);
@@ -323,22 +320,21 @@ function parseTruthy(value) {
 	return !["0", "false", "no", "off"].includes(String(value).toLowerCase());
 }
 
-function backfillChainLocked(db, chainId, options = {}) {
+async function backfillChainLocked(db, chainId, options = {}) {
 	const now = Date.now();
 	const batchSize = options.batchSize ?? getBackfillBatchSize();
-	const periodStatements = createPeriodStatStatements(db);
 
-	logIndexedCoverage(db, chainId);
+	await logIndexedCoverage(db, chainId);
 
-	const eventCount = toCount(db.prepare(`
+	const eventCount = toCount((await db.get(`
 		SELECT COUNT(*) AS count FROM address_events WHERE chain_id = ?
-	`).get(chainId).count);
-	const transactionCount = toCount(db.prepare(`
+	`, [chainId])).count);
+	const transactionCount = toCount((await db.get(`
 		SELECT COUNT(*) AS count FROM transactions WHERE chain_id = ? AND time IS NOT NULL
-	`).get(chainId).count);
-	const blockCount = toCount(db.prepare(`
+	`, [chainId])).count);
+	const blockCount = toCount((await db.get(`
 		SELECT COUNT(*) AS count FROM blocks WHERE chain_id = ? AND status = 'main' AND time IS NOT NULL
-	`).get(chainId).count);
+	`, [chainId])).count);
 
 	process.stderr.write(
 		`[backfill-stats] starting ${chainId}: `
@@ -350,22 +346,14 @@ function backfillChainLocked(db, chainId, options = {}) {
 		+ "address_balance_buckets fill during address-events phase\n"
 	);
 
-	db.prepare(`
-		DELETE FROM address_balance_buckets WHERE chain_id = ?
-	`).run(chainId);
+	await db.run(`DELETE FROM address_balance_buckets WHERE chain_id = ?`, [chainId]);
+	await db.run(`DELETE FROM chain_activity_buckets WHERE chain_id = ?`, [chainId]);
+	await db.run(`DELETE FROM address_period_stats WHERE chain_id = ?`, [chainId]);
 
-	db.prepare(`
-		DELETE FROM chain_activity_buckets WHERE chain_id = ?
-	`).run(chainId);
-
-	db.prepare(`
-		DELETE FROM address_period_stats WHERE chain_id = ?
-	`).run(chainId);
-
-	const transactions = backfillTransactions(db, chainId, periodStatements, batchSize, now);
-	const blocks = backfillBlocks(db, chainId, periodStatements, batchSize, now);
-	const events = backfillAddressEvents(db, chainId, periodStatements, batchSize, now);
-	backfillPeriodStats(db, chainId, periodStatements, batchSize, now, events);
+	const transactions = await backfillTransactions(db, chainId, batchSize, now);
+	const blocks = await backfillBlocks(db, chainId, batchSize, now);
+	const events = await backfillAddressEvents(db, chainId, batchSize, now);
+	await backfillPeriodStats(db, chainId, batchSize, now, events);
 
 	return {
 		chainId,
@@ -375,7 +363,7 @@ function backfillChainLocked(db, chainId, options = {}) {
 	};
 }
 
-function main() {
+async function main() {
 	const chainId = process.argv[2];
 	const db = dbModule.openDatabase(undefined, {
 		skipSeed: true,
@@ -383,17 +371,23 @@ function main() {
 	});
 
 	if (chainId) {
-		const result = backfillChain(db, chainId);
+		const result = await backfillChain(db, chainId);
 		console.log(JSON.stringify(result, null, 2));
 		return;
 	}
 
-	const results = ["vrm", "vrc"].map(id => backfillChain(db, id));
+	const results = [];
+	for (const id of ["vrm", "vrc"]) {
+		results.push(await backfillChain(db, id));
+	}
 	console.log(JSON.stringify(results, null, 2));
 }
 
 if (require.main === module) {
-	main();
+	main().catch((err) => {
+		console.error(err);
+		process.exit(1);
+	});
 }
 
 module.exports = {

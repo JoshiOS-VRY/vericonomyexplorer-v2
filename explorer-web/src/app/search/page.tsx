@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
 import { SearchForm } from "@/components/explorer/SearchForm";
+import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = pageMetadata(staticPageSeo.search);
 import { Card, CardContent } from "@/components/ui/Card";
 
 export default function SearchPage() {

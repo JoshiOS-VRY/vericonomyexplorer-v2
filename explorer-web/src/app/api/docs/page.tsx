@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
 import { LegacyJsonView, loadLegacy } from "@/components/legacy/LegacyViews";
+import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = pageMetadata(staticPageSeo.apiDocs);
 import { getApiVersion } from "@/lib/api/legacy";
 
 export default async function ApiDocsPage() {

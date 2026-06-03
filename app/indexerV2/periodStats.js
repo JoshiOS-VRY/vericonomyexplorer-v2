@@ -52,10 +52,10 @@ function createPeriodStatStatements(db) {
 				last_seen_height, last_seen_time, updated_at
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT(chain_id, period, period_start, address) DO UPDATE SET
-				received_sats = received_sats + excluded.received_sats,
-				sent_sats = sent_sats + excluded.sent_sats,
-				net_sats = net_sats + excluded.net_sats,
-				tx_count = tx_count + excluded.tx_count,
+				received_sats = address_period_stats.received_sats + excluded.received_sats,
+				sent_sats = address_period_stats.sent_sats + excluded.sent_sats,
+				net_sats = address_period_stats.net_sats + excluded.net_sats,
+				tx_count = address_period_stats.tx_count + excluded.tx_count,
 				last_seen_height = excluded.last_seen_height,
 				last_seen_time = excluded.last_seen_time,
 				updated_at = excluded.updated_at
@@ -66,10 +66,10 @@ function createPeriodStatStatements(db) {
 				chain_id, bucket_start, mined_count, staked_count, received_count, block_count, updated_at
 			) VALUES (?, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT(chain_id, bucket_start) DO UPDATE SET
-				mined_count = mined_count + excluded.mined_count,
-				staked_count = staked_count + excluded.staked_count,
-				received_count = received_count + excluded.received_count,
-				block_count = block_count + excluded.block_count,
+				mined_count = chain_activity_buckets.mined_count + excluded.mined_count,
+				staked_count = chain_activity_buckets.staked_count + excluded.staked_count,
+				received_count = chain_activity_buckets.received_count + excluded.received_count,
+				block_count = chain_activity_buckets.block_count + excluded.block_count,
 				updated_at = excluded.updated_at
 		`),
 
@@ -79,17 +79,17 @@ function createPeriodStatStatements(db) {
 				mined_sats, staked_sats, received_sats, spent_sats, delta_sats, updated_at
 			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT(chain_id, address, bucket_start) DO UPDATE SET
-				mined_sats = mined_sats + excluded.mined_sats,
-				staked_sats = staked_sats + excluded.staked_sats,
-				received_sats = received_sats + excluded.received_sats,
-				spent_sats = spent_sats + excluded.spent_sats,
-				delta_sats = delta_sats + excluded.delta_sats,
+				mined_sats = address_balance_buckets.mined_sats + excluded.mined_sats,
+				staked_sats = address_balance_buckets.staked_sats + excluded.staked_sats,
+				received_sats = address_balance_buckets.received_sats + excluded.received_sats,
+				spent_sats = address_balance_buckets.spent_sats + excluded.spent_sats,
+				delta_sats = address_balance_buckets.delta_sats + excluded.delta_sats,
 				updated_at = excluded.updated_at
 		`)
 	};
 }
 
-function recordAddressPeriodEvent(statements, chainId, address, deltaSats, blockHeight, blockTime, txCountIncrement, now) {
+async function recordAddressPeriodEvent(statements, chainId, address, deltaSats, blockHeight, blockTime, txCountIncrement, now) {
 	if (!address) {
 		return;
 	}
@@ -101,7 +101,7 @@ function recordAddressPeriodEvent(statements, chainId, address, deltaSats, block
 
 	for (const period of periods) {
 		const bounds = getPeriodBoundsForTime(period, blockTime || Math.floor(now / 1000));
-		statements.upsertPeriodStat.run(
+		await statements.upsertPeriodStat.run(
 			chainId,
 			bounds.period,
 			bounds.periodStart,
@@ -118,7 +118,7 @@ function recordAddressPeriodEvent(statements, chainId, address, deltaSats, block
 	}
 }
 
-function recordTransactionActivity(statements, chainId, blockTime, isCoinbase, isCoinstake, now) {
+async function recordTransactionActivity(statements, chainId, blockTime, isCoinbase, isCoinstake, now) {
 	const bucketStart = hourBucketStart(blockTime);
 	if (!bucketStart) {
 		return;
@@ -136,7 +136,7 @@ function recordTransactionActivity(statements, chainId, blockTime, isCoinbase, i
 		receivedCount = 1;
 	}
 
-	statements.upsertActivityBucket.run(
+	await statements.upsertActivityBucket.run(
 		chainId,
 		bucketStart,
 		minedCount,
@@ -147,16 +147,16 @@ function recordTransactionActivity(statements, chainId, blockTime, isCoinbase, i
 	);
 }
 
-function recordBlockActivity(statements, chainId, blockTime, now) {
+async function recordBlockActivity(statements, chainId, blockTime, now) {
 	const bucketStart = hourBucketStart(blockTime);
 	if (!bucketStart) {
 		return;
 	}
 
-	statements.upsertActivityBucket.run(chainId, bucketStart, 0, 0, 0, 1, now);
+	await statements.upsertActivityBucket.run(chainId, bucketStart, 0, 0, 0, 1, now);
 }
 
-function recordAddressBalanceBucket(statements, chainId, address, deltaSats, blockTime, category, now) {
+async function recordAddressBalanceBucket(statements, chainId, address, deltaSats, blockTime, category, now) {
 	if (!address) {
 		return;
 	}
@@ -173,7 +173,7 @@ function recordAddressBalanceBucket(statements, chainId, address, deltaSats, blo
 	const received = category === "received" ? magnitude : 0n;
 	const spent = category === "spent" ? magnitude : 0n;
 
-	statements.upsertAddressBalanceBucket.run(
+	await statements.upsertAddressBalanceBucket.run(
 		chainId,
 		address,
 		bucketStart,

@@ -1,23 +1,21 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Loader2, Radio } from "lucide-react";
+import { useEffect, useState } from "react";
 import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
 import { BcPanel, BcTableLink } from "@/components/explorer/BlockchairUi";
 import { ExtractedByCell } from "@/components/explorer/block/ExtractedByCell";
 import { formatHeight } from "@/components/explorer/ExplorerUi";
 import { Button } from "@/components/ui/Button";
+import { useLatestBlocksPoll } from "@/hooks/useLatestBlocksPoll";
 import type { IndexedBlock, Paging } from "@/lib/api/types";
 import { fetchBlocksPageClient } from "@/lib/api/client";
+import { LATEST_BLOCKS_COUNT } from "@/lib/chainBlocksDisplay";
 import type { ChainId } from "@/lib/chainDisplay";
-import { pickBlockPageBase } from "@/lib/chainBlocksPage";
 import { formatPercent } from "@/lib/formatMarket";
 import { cn, formatDifficulty } from "@/lib/utils";
 
-const MIN_PAGE_SIZE = 8;
-const MAX_PAGE_SIZE = 24;
-const ROW_HEIGHT_PX = 44;
-const TABLE_HEAD_PX = 41;
+const PAGE_SIZE = LATEST_BLOCKS_COUNT;
 
 function BlockTableRow({
   block,
@@ -80,26 +78,25 @@ export function ChainBlocksPanel({
   maxIndexedHeight?: number | null;
 }) {
   const producerLabel = chainId === "vrm" ? "Extracted by" : "Interest";
-  // When the indexer trails the chain tip by more than a page, the indexed
-  // `/blocks` rows are far older than the live tip. In that state we show only
-  // the live (RPC-merged) blocks and disable indexed pagination so the table
-  // never displays stale heights.
   const behindTip =
     chainHeight != null &&
     maxIndexedHeight != null &&
-    chainHeight - maxIndexedHeight > MAX_PAGE_SIZE;
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [pageSize, setPageSize] = useState(MIN_PAGE_SIZE);
+    chainHeight - maxIndexedHeight > PAGE_SIZE;
+
+  const {
+    blocks: polledBlocks,
+    isRefreshing: isPolling,
+    error: pollError,
+  } = useLatestBlocksPoll(chainId, liveBlocks);
+
   const [offset, setOffset] = useState(0);
-  const [blocks, setBlocks] = useState<IndexedBlock[]>(liveBlocks);
+  const [blocks, setBlocks] = useState<IndexedBlock[]>([]);
   const [paging, setPaging] = useState<Paging>({
-    limit: MIN_PAGE_SIZE,
+    limit: PAGE_SIZE,
     offset: 0,
     total: chainHeight != null ? chainHeight + 1 : liveBlocks.length,
     hasMore: false,
   });
-  const [filledPage, setFilledPage] = useState<IndexedBlock[] | null>(null);
-  const filledPageCount = filledPage?.length ?? 0;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,127 +104,25 @@ export function ChainBlocksPanel({
     ? liveBlocks.length
     : chainHeight != null
       ? chainHeight + 1
-      : Math.max(paging.total, liveBlocks.length);
+      : Math.max(paging.total, polledBlocks.length);
 
-  const updatePageSize = useCallback((height: number) => {
-    const rows = Math.floor((height - TABLE_HEAD_PX) / ROW_HEIGHT_PX);
-    const next = Math.max(MIN_PAGE_SIZE, Math.min(MAX_PAGE_SIZE, rows));
-    setPageSize((current) => (current === next ? current : next));
-  }, []);
-
-  useEffect(() => {
-    const element = scrollRef.current;
-    if (!element) {
-      return;
-    }
-
-    updatePageSize(element.clientHeight);
-
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (entry) {
-        updatePageSize(entry.contentRect.height);
-      }
-    });
-
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [updatePageSize]);
+  const latestPageBlocks = behindTip
+    ? liveBlocks.slice(0, PAGE_SIZE)
+    : polledBlocks.slice(0, PAGE_SIZE);
 
   useEffect(() => {
     if (offset !== 0) {
       return;
     }
 
-    if (behindTip) {
-      setFilledPage(null);
-      setBlocks(liveBlocks.slice(0, pageSize));
-      setPaging({
-        limit: pageSize,
-        offset: 0,
-        total: liveBlocks.length,
-        hasMore: false,
-      });
-      return;
-    }
-
-    if (liveBlocks.length >= pageSize) {
-      setFilledPage(null);
-      setBlocks(liveBlocks.slice(0, pageSize));
-      setPaging({
-        limit: pageSize,
-        offset: 0,
-        total: totalBlocks,
-        hasMore: pageSize < totalBlocks,
-      });
-      return;
-    }
-
-    const base = pickBlockPageBase(filledPage, liveBlocks);
-    const liveByHeight = new Map(
-      liveBlocks.map((block) => [block.height, block]),
-    );
-    const merged = base
-      .slice(0, pageSize)
-      .map((block) => liveByHeight.get(block.height) ?? block);
-
-    setBlocks(merged);
+    setBlocks(latestPageBlocks);
     setPaging({
-      limit: pageSize,
+      limit: PAGE_SIZE,
       offset: 0,
-      total: totalBlocks || merged.length,
-      hasMore: pageSize < (totalBlocks || merged.length),
+      total: behindTip ? liveBlocks.length : totalBlocks,
+      hasMore: PAGE_SIZE < (behindTip ? liveBlocks.length : totalBlocks),
     });
-  }, [behindTip, filledPage, liveBlocks, offset, pageSize, totalBlocks]);
-
-  useEffect(() => {
-    if (behindTip) {
-      return;
-    }
-
-    if (offset !== 0 || liveBlocks.length >= pageSize) {
-      if (offset === 0 && liveBlocks.length >= pageSize) {
-        setFilledPage(null);
-      }
-      return;
-    }
-
-    if (filledPageCount >= pageSize) {
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    void (async () => {
-      try {
-        const result = await fetchBlocksPageClient(chainId, {
-          limit: pageSize,
-          offset: 0,
-        });
-        if (cancelled) {
-          return;
-        }
-        if (result.items.length > 0) {
-          setFilledPage(result.items);
-          setPaging(result.paging);
-        }
-      } catch {
-        if (!cancelled) {
-          setError("Unable to load blocks for this page.");
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [behindTip, chainId, filledPageCount, liveBlocks.length, offset, pageSize]);
+  }, [behindTip, latestPageBlocks, offset, totalBlocks, liveBlocks.length]);
 
   useEffect(() => {
     if (offset === 0) {
@@ -241,7 +136,7 @@ export function ChainBlocksPanel({
     void (async () => {
       try {
         const result = await fetchBlocksPageClient(chainId, {
-          limit: pageSize,
+          limit: PAGE_SIZE,
           offset,
         });
         if (cancelled) {
@@ -263,7 +158,7 @@ export function ChainBlocksPanel({
     return () => {
       cancelled = true;
     };
-  }, [chainId, offset, pageSize]);
+  }, [chainId, offset]);
 
   const goToOffset = (nextOffset: number) => {
     if (loading || nextOffset < 0 || nextOffset === offset) {
@@ -272,9 +167,6 @@ export function ChainBlocksPanel({
     if (nextOffset >= paging.total) {
       return;
     }
-    if (nextOffset === 0) {
-      setFilledPage(null);
-    }
     setOffset(nextOffset);
   };
 
@@ -282,8 +174,12 @@ export function ChainBlocksPanel({
   const rangeEnd = Math.min(offset + blocks.length, paging.total);
   const canGoPrev = offset > 0 && !loading;
   const canGoNext = paging.hasMore && !loading;
+  const displayError = error ?? (offset === 0 ? pollError : null);
+  const isLivePage = offset === 0 && !behindTip;
+  const showLoading =
+    loading || (isLivePage && isPolling && blocks.length === 0);
 
-  if (liveBlocks.length === 0 && offset === 0 && !loading) {
+  if (liveBlocks.length === 0 && offset === 0 && !showLoading) {
     return (
       <BcPanel
         title="Blocks"
@@ -303,6 +199,17 @@ export function ChainBlocksPanel({
       flush
       className="flex h-full min-h-[28rem] flex-col"
       bodyClassName="flex min-h-0 flex-1 flex-col"
+      action={
+        isLivePage ? (
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-success">
+            <Radio
+              className={cn("h-3 w-3", isPolling && "animate-pulse")}
+              aria-hidden
+            />
+            Live
+          </span>
+        ) : null
+      }
     >
       <div className="flex min-h-0 flex-1 flex-col">
         {behindTip ? (
@@ -313,16 +220,15 @@ export function ChainBlocksPanel({
             appear once syncing completes.
           </p>
         ) : null}
-        {error ? (
+        {displayError ? (
           <p className="border-b border-border px-4 py-2 text-sm text-danger">
-            {error}
+            {displayError}
           </p>
         ) : null}
         <div
-          ref={scrollRef}
           className={cn(
             "min-h-0 flex-1 overflow-auto",
-            loading && "pointer-events-none opacity-60",
+            showLoading && "pointer-events-none opacity-60",
           )}
         >
           <table className="bc-table">
@@ -347,7 +253,7 @@ export function ChainBlocksPanel({
               ))}
             </tbody>
           </table>
-          {loading && blocks.length === 0 ? (
+          {showLoading && blocks.length === 0 ? (
             <div className="flex items-center justify-center gap-2 py-10 text-sm text-fg-muted">
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               Loading blocks…
@@ -357,7 +263,7 @@ export function ChainBlocksPanel({
 
         <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border px-4 py-2.5">
           <p className="text-xs text-fg-muted">
-            {loading ? (
+            {showLoading ? (
               <span className="inline-flex items-center gap-1.5">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                 Loading…
@@ -378,7 +284,7 @@ export function ChainBlocksPanel({
               size="sm"
               disabled={!canGoPrev}
               aria-label="Previous blocks page"
-              onClick={() => goToOffset(Math.max(0, offset - pageSize))}
+              onClick={() => goToOffset(Math.max(0, offset - PAGE_SIZE))}
             >
               <ChevronLeft className="h-4 w-4" aria-hidden />
             </Button>
@@ -388,7 +294,7 @@ export function ChainBlocksPanel({
               size="sm"
               disabled={!canGoNext}
               aria-label="Next blocks page"
-              onClick={() => goToOffset(offset + pageSize)}
+              onClick={() => goToOffset(offset + PAGE_SIZE)}
             >
               <ChevronRight className="h-4 w-4" aria-hidden />
             </Button>

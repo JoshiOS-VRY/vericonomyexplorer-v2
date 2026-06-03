@@ -90,11 +90,11 @@ export function VericonomyHomeDashboard({
       <div className="grid gap-6 xl:grid-cols-2">
         <LiveBlocksFeed
           chainId="vrm"
-          blocks={live.vrm.latestBlocks}
+          seedBlocks={live.vrm.latestBlocks}
         />
         <LiveBlocksFeed
           chainId="vrc"
-          blocks={live.vrc.latestBlocks}
+          seedBlocks={live.vrc.latestBlocks}
         />
       </div>
 

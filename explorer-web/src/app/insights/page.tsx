@@ -1,9 +1,13 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AlertBanner } from "@/components/explorer/ExplorerUi";
 import { InsightsDashboard } from "@/components/explorer/insights/InsightsDashboard";
 import { getChainSummary, getHomeMarket, getHomeNetwork } from "@/lib/api/indexer";
 import { applyOnChainMarketCap } from "@/lib/enrichMarket";
 import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
+import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = pageMetadata(staticPageSeo.insights);
 
 export const revalidate = 30;
 

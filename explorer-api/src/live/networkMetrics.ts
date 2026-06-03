@@ -12,7 +12,7 @@ const networkMetrics = requireRoot("./app/indexerV2/networkMetrics.js") as {
     db: unknown,
     chainId: string,
     metrics: Record<string, unknown>,
-  ) => void;
+  ) => Promise<void>;
 };
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const supplyHistory = requireRoot("./app/indexerV2/supplyHistory.js") as {
@@ -20,8 +20,25 @@ const supplyHistory = requireRoot("./app/indexerV2/supplyHistory.js") as {
     db: unknown,
     chainId: string,
     height: number,
-  ) => number | null;
+  ) => Promise<number | null>;
 };
+
+async function safeIndexedSupply(
+  db: unknown,
+  chainId: ChainId,
+  height: number | null,
+): Promise<number | null> {
+  if (height == null) {
+    return null;
+  }
+  try {
+    return await supplyHistory.indexedSupplyAtHeight(db, chainId, height);
+  } catch {
+    // Heavy supply-series build can exceed statement timeout (esp. VRC); the
+    // RPC-derived supply is used as the fallback for the bucket.
+    return null;
+  }
+}
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const periodStats = requireRoot("./app/indexerV2/periodStats.js") as {
   hourBucketStart: (time: number) => number;
@@ -38,16 +55,13 @@ export async function recordNetworkMetricSnapshot(chainId: ChainId): Promise<voi
     return;
   }
 
-  const addressCount = getAddressCount(chainId);
+  const addressCount = await getAddressCount(chainId);
   const db = getWritableDb();
 
   if (chainId === "vrm") {
     const stats = await fetchVrmNetworkStats();
-    const indexedSupply =
-      stats.blocks != null
-        ? supplyHistory.indexedSupplyAtHeight(db, chainId, stats.blocks)
-        : null;
-    networkMetrics.upsertNetworkMetricBucket(db, chainId, {
+    const indexedSupply = await safeIndexedSupply(db, chainId, stats.blocks);
+    await networkMetrics.upsertNetworkMetricBucket(db, chainId, {
       bucketStart,
       difficulty: stats.difficulty,
       blockHeight: stats.blocks,
@@ -57,11 +71,8 @@ export async function recordNetworkMetricSnapshot(chainId: ChainId): Promise<voi
     });
   } else {
     const stats = await fetchVrcNetworkStats();
-    const indexedSupply =
-      stats.blocks != null
-        ? supplyHistory.indexedSupplyAtHeight(db, chainId, stats.blocks)
-        : null;
-    networkMetrics.upsertNetworkMetricBucket(db, chainId, {
+    const indexedSupply = await safeIndexedSupply(db, chainId, stats.blocks);
+    await networkMetrics.upsertNetworkMetricBucket(db, chainId, {
       bucketStart,
       difficulty: stats.difficulty,
       blockHeight: stats.blocks,

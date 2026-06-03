@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
 import { StaticInfoPage } from "@/components/legacy/LegacyViews";
+import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = pageMetadata(staticPageSeo.about);
 
 export default function AboutPage() {
   return (

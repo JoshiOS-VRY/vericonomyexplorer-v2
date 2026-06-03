@@ -11,6 +11,72 @@ const debugLog = debug("btcexp:indexer-v2-db");
 
 let db = null;
 
+function getBackend() {
+	return String(process.env.VCEXP_DB_BACKEND || "sqlite").toLowerCase() === "postgres"
+		? "postgres"
+		: "sqlite";
+}
+
+// Augment a better-sqlite3 instance with the unified async-compatible interface
+// (get/all/run/runTransaction) used by the ported query/ingest code. Methods
+// return values synchronously, so `await db.get(...)` resolves immediately and
+// existing `db.prepare(sql).get(...)` call sites keep working unchanged.
+function augmentSqlite(target) {
+	if (target.__unified) {
+		return target;
+	}
+
+	const stmtCache = new Map();
+	const prepareCached = (sql) => {
+		let stmt = stmtCache.get(sql);
+		if (!stmt) {
+			stmt = target.prepare(sql);
+			stmtCache.set(sql, stmt);
+		}
+		return stmt;
+	};
+	const toArgs = (params) => {
+		if (params === undefined) return [];
+		return Array.isArray(params) ? params : [params];
+	};
+
+	target.backend = "sqlite";
+	target.get = (sql, params) => prepareCached(sql).get(...toArgs(params));
+	target.all = (sql, params) => prepareCached(sql).all(...toArgs(params));
+	target.run = (sql, params) => prepareCached(sql).run(...toArgs(params));
+	target.runTransaction = (fn) => {
+		target.exec("BEGIN");
+		try {
+			const value = fn(target);
+			const settle = (resolved) => {
+				target.exec("COMMIT");
+				return resolved;
+			};
+			if (value && typeof value.then === "function") {
+				return value.then(settle, (err) => {
+					try {
+						target.exec("ROLLBACK");
+					} catch {
+						/* ignore */
+					}
+					throw err;
+				});
+			}
+			return settle(value);
+		} catch (err) {
+			try {
+				target.exec("ROLLBACK");
+			} catch {
+				/* ignore */
+			}
+			throw err;
+		}
+	};
+
+	Object.defineProperty(target, "__unified", { value: true, enumerable: false });
+	return target;
+}
+
 function getDefaultPath() {
 	return path.join(process.cwd(), "database", "vericonomy-index.sqlite");
 }
@@ -35,6 +101,10 @@ function applyReadPragmas(targetDb) {
 }
 
 function openDatabase(dbPath = getDatabasePath(), options = {}) {
+	if (getBackend() === "postgres") {
+		return require("./pgClient.js").openPostgres();
+	}
+
 	if (db) {
 		return db;
 	}
@@ -66,16 +136,22 @@ function openDatabase(dbPath = getDatabasePath(), options = {}) {
 		seedChains(db);
 	}
 
+	augmentSqlite(db);
 	debugLog(`Indexer V2 database opened: ${dbPath}`);
 
 	return db;
 }
 
 function openDatabaseReadOnly(dbPath = getDatabasePath()) {
+	if (getBackend() === "postgres") {
+		return require("./pgClient.js").openPostgres();
+	}
+
 	const readonlyDb = new Database(dbPath, { readonly: true });
 	readonlyDb.defaultSafeIntegers(true);
 	readonlyDb.pragma("foreign_keys = ON");
 	applyReadPragmas(readonlyDb);
+	augmentSqlite(readonlyDb);
 	return readonlyDb;
 }
 
@@ -323,6 +399,8 @@ module.exports = {
 	openDatabaseReadOnly,
 	closeDatabase,
 	getDatabasePath,
+	getBackend,
+	augmentSqlite,
 	applyReadPragmas,
 	ensureDatabaseMigrations,
 	getWalSizeMb,

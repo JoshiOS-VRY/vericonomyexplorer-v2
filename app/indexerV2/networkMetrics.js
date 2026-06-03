@@ -7,7 +7,7 @@ const {
 	resolveAddressGrowthRange,
 	addressCountAtBucketEnd
 } = require("./addressGrowth.js");
-const { yieldBetweenWrites } = require("./yield.js");
+const { yieldToReaders } = require("./yield.js");
 const veriumCoin = require("../coins/verium.js");
 const Decimal = require("decimal.js");
 
@@ -46,16 +46,16 @@ function getBackfillWriteBatchSize() {
 	return Number.isFinite(configured) && configured > 0 ? Math.trunc(configured) : 250;
 }
 
-function writeBucketBatch(db, chainId, bucketEntries, options = {}) {
+async function writeBucketBatch(db, chainId, bucketEntries, options = {}) {
 	const {
 		supplySeries,
 		addressFirstSeenTimes,
-		sampleEveryHours,
-		statements
+		sampleEveryHours
 	} = options;
 	let bucketsWritten = 0;
 
-	const run = db.transaction(() => {
+	await db.runTransaction(async (txdb) => {
+		const statements = createNetworkMetricStatements(txdb);
 		for (const [bucketStart, bucket] of bucketEntries) {
 			if (sampleEveryHours > 1 && (bucketStart / HOUR_SECONDS) % sampleEveryHours !== 0) {
 				continue;
@@ -85,7 +85,7 @@ function writeBucketBatch(db, chainId, bucketEntries, options = {}) {
 				}
 			}
 
-			statements.upsertBucket.run({
+			await statements.upsertBucket.run({
 				chain_id: chainId,
 				bucket_start: metrics.bucketStart,
 				difficulty: metrics.difficulty,
@@ -103,16 +103,15 @@ function writeBucketBatch(db, chainId, bucketEntries, options = {}) {
 		}
 	});
 
-	run();
 	return bucketsWritten;
 }
 
-function upsertNetworkMetricBucket(db, chainId, metrics) {
+async function upsertNetworkMetricBucket(db, chainId, metrics) {
 	const statements = createNetworkMetricStatements(db);
 	const now = Date.now();
 	const bucketStart = metrics.bucketStart ?? hourBucketStart(Math.floor(now / 1000));
 
-	statements.upsertBucket.run({
+	await statements.upsertBucket.run({
 		chain_id: chainId,
 		bucket_start: bucketStart,
 		difficulty: metrics.difficulty ?? null,
@@ -189,25 +188,24 @@ function estimatedSupplyAtHeight(height) {
 	return Number(supply.toString());
 }
 
-function backfillFromBlocks(db, chainId, options = {}) {
+async function backfillFromBlocks(db, chainId, options = {}) {
 	const since = options.since ?? null;
 	const sampleEveryHours = Number(options.sampleEveryHours ?? 1);
-	const statements = createNetworkMetricStatements(db);
 
-	const rows = db.prepare(`
+	const rows = await db.all(`
 		SELECT height, time, difficulty
 		FROM blocks
 		WHERE chain_id = ? AND status = 'main'
 			AND (? IS NULL OR time >= ?)
 		ORDER BY height ASC
-	`).all(chainId, since, since);
+	`, [chainId, since, since]);
 
 	if (!rows.length) {
 		return { chainId, bucketsWritten: 0 };
 	}
 
-	const supplySeries = options.skipSupplySeries === true ? null : buildSupplySeries(db, chainId);
-	const addressFirstSeenTimes = loadAddressFirstSeenTimes(db, chainId);
+	const supplySeries = options.skipSupplySeries === true ? null : await buildSupplySeries(db, chainId);
+	const addressFirstSeenTimes = await loadAddressFirstSeenTimes(db, chainId);
 	const buckets = new Map();
 	for (const row of rows) {
 		const bucketStart = hourBucketStart(toSafeNumber(row.time));
@@ -229,13 +227,12 @@ function backfillFromBlocks(db, chainId, options = {}) {
 
 	for (let index = 0; index < bucketEntries.length; index += writeBatchSize) {
 		const slice = bucketEntries.slice(index, index + writeBatchSize);
-		bucketsWritten += writeBucketBatch(db, chainId, slice, {
+		bucketsWritten += await writeBucketBatch(db, chainId, slice, {
 			supplySeries,
 			addressFirstSeenTimes,
-			sampleEveryHours,
-			statements
+			sampleEveryHours
 		});
-		yieldBetweenWrites();
+		await yieldToReaders();
 	}
 
 	return {
@@ -250,16 +247,16 @@ function backfillFromBlocks(db, chainId, options = {}) {
  * Backfill cumulative address_count into network_metric_buckets (historical growth curve).
  * Does not require block scans or supply recomputation.
  */
-function backfillAddressGrowth(db, chainId, options = {}) {
+async function backfillAddressGrowth(db, chainId, options = {}) {
 	const since = options.since ?? null;
 	const sampleEveryHours = Number(options.sampleEveryHours ?? 1);
-	const addressFirstSeenTimes = loadAddressFirstSeenTimes(db, chainId);
+	const addressFirstSeenTimes = await loadAddressFirstSeenTimes(db, chainId);
 
 	if (!addressFirstSeenTimes.length) {
 		return { chainId, bucketsWritten: 0, addressesTracked: 0 };
 	}
 
-	const { rangeStart, rangeEnd } = resolveAddressGrowthRange(db, chainId, options);
+	const { rangeStart, rangeEnd } = await resolveAddressGrowthRange(db, chainId, options);
 	let startBucket = rangeStart;
 	if (since != null) {
 		startBucket = Math.max(startBucket, hourBucketStart(since));
@@ -278,17 +275,16 @@ function backfillAddressGrowth(db, chainId, options = {}) {
 
 	for (let index = 0; index < bucketStarts.length; index += writeBatchSize) {
 		const slice = bucketStarts.slice(index, index + writeBatchSize);
-		const run = db.transaction(() => {
+		await db.runTransaction(async (txdb) => {
 			for (const bucketStart of slice) {
-				upsertNetworkMetricBucket(db, chainId, {
+				await upsertNetworkMetricBucket(txdb, chainId, {
 					bucketStart,
 					addressCount: addressCountAtBucketEnd(addressFirstSeenTimes, bucketStart)
 				});
 				bucketsWritten += 1;
 			}
 		});
-		run();
-		yieldBetweenWrites();
+		await yieldToReaders();
 	}
 
 	return {

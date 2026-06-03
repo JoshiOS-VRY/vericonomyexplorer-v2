@@ -5,6 +5,61 @@ networks:
     driver: bridge
 
 services:
+  postgres:
+    image: postgres:16
+    container_name: vericonomy-postgres
+    restart: unless-stopped
+    shm_size: "1gb"
+    environment:
+      POSTGRES_USER: ${VCEXP_PG_USER:-vericonomy}
+      POSTGRES_PASSWORD: ${VCEXP_PG_PASSWORD:?set VCEXP_PG_PASSWORD in .env.production}
+      POSTGRES_DB: ${VCEXP_PG_DB:-vericonomy}
+      # Initialize the cluster with C collation for fast text comparisons.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=8GB"
+      - "-c"
+      - "effective_cache_size=20GB"
+      - "-c"
+      - "maintenance_work_mem=2GB"
+      - "-c"
+      - "work_mem=96MB"
+      - "-c"
+      - "max_wal_size=12GB"
+      - "-c"
+      - "min_wal_size=2GB"
+      - "-c"
+      - "checkpoint_completion_target=0.9"
+      - "-c"
+      - "wal_compression=on"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+      - "-c"
+      - "max_connections=120"
+      - "-c"
+      - "max_worker_processes=8"
+      - "-c"
+      - "max_parallel_workers=8"
+      - "-c"
+      - "max_parallel_workers_per_gather=4"
+      - "-c"
+      - "max_parallel_maintenance_workers=4"
+      - "-c"
+      - "synchronous_commit=off"
+    volumes:
+      - vericonomy-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${VCEXP_PG_USER:-vericonomy} -d ${VCEXP_PG_DB:-vericonomy}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - private
+
   caddy:
     image: caddy:2.9
     container_name: vericonomy-caddy
@@ -66,6 +121,8 @@ services:
     environment:
       BTCEXP_HOST: 0.0.0.0
       BTCEXP_PORT: ${EXPRESS_PORT:-3002}
+      VCEXP_DB_BACKEND: ${VCEXP_DB_BACKEND:-sqlite}
+      VCEXP_PG_URL: ${VCEXP_PG_URL:-postgres://vericonomy:@postgres:5432/vericonomy}
     expose:
       - "${EXPRESS_PORT:-3002}"
     volumes:
@@ -87,6 +144,8 @@ services:
     environment:
       VCEXP_FAST_API_HOST: 0.0.0.0
       VCEXP_FAST_API_PORT: ${FAST_API_PORT:-3003}
+      VCEXP_DB_BACKEND: ${VCEXP_DB_BACKEND:-sqlite}
+      VCEXP_PG_URL: ${VCEXP_PG_URL:-postgres://vericonomy:@postgres:5432/vericonomy}
       VCEXP_INDEXER_SQLITE_PATH: ${VCEXP_INDEXER_SQLITE_PATH:-/app/database/vericonomy-index.sqlite}
       VCEXP_CHAINS_CONFIG: ${VCEXP_CHAINS_CONFIG:-/app/configs/chains.json}
       VCEXP_VRM_RPC_HOST: ${VCEXP_VRM_RPC_HOST:-172.18.0.1}
@@ -112,6 +171,7 @@ services:
       - ./configs/chains.json:/app/configs/chains.json:ro
     depends_on:
       - explorer-express
+      - postgres
     networks:
       - private
 
@@ -144,6 +204,8 @@ services:
     env_file:
       - ${ENV_FILE:-.env.production}
     environment:
+      VCEXP_DB_BACKEND: ${VCEXP_DB_BACKEND:-sqlite}
+      VCEXP_PG_URL: ${VCEXP_PG_URL:-postgres://vericonomy:@postgres:5432/vericonomy}
       VCEXP_INDEXER_SQLITE_PATH: ${VCEXP_INDEXER_SQLITE_PATH:-/app/database/vericonomy-index.sqlite}
       VCEXP_CHAINS_CONFIG: ${VCEXP_CHAINS_CONFIG:-/app/configs/chains.json}
       VCEXP_VRM_RPC_HOST: ${VCEXP_VRM_RPC_HOST:-172.18.0.1}
@@ -183,6 +245,8 @@ services:
     env_file:
       - ${ENV_FILE:-.env.production}
     environment:
+      VCEXP_DB_BACKEND: ${VCEXP_DB_BACKEND:-sqlite}
+      VCEXP_PG_URL: ${VCEXP_PG_URL:-postgres://vericonomy:@postgres:5432/vericonomy}
       VCEXP_INDEXER_SQLITE_PATH: ${VCEXP_INDEXER_SQLITE_PATH:-/app/database/vericonomy-index.sqlite}
       VCEXP_CHAINS_CONFIG: ${VCEXP_CHAINS_CONFIG:-/app/configs/chains.json}
       VCEXP_VRC_RPC_HOST: ${VCEXP_VRC_RPC_HOST:-172.18.0.1}
@@ -202,3 +266,4 @@ volumes:
   caddy_config:
   vericonomy-cache:
   vericonomy-database:
+  vericonomy-pg:

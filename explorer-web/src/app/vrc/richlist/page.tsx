@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   AlertBanner,
   PaginationLinks,
@@ -7,6 +8,9 @@ import { BcPageHeader, BcPanel } from "@/components/explorer/BlockchairUi";
 import { getRichlist } from "@/lib/api/indexer";
 import { formatExplorerUserMessage } from "@/lib/explorerCopy";
 import { normalizeLimit, normalizeOffset } from "@/lib/utils";
+import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = pageMetadata(staticPageSeo.vrcRichlist);
 
 export const revalidate = 60;
 

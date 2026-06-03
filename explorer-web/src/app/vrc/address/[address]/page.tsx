@@ -1,7 +1,18 @@
+import type { Metadata } from "next";
 import {
   AddressDetailPage,
   addressDetailSearchParams,
 } from "@/components/explorer/pages/AddressDetailPage";
+import { addressPageMetadata } from "@/lib/seo/dynamic";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ address: string }>;
+}): Promise<Metadata> {
+  const { address } = await params;
+  return addressPageMetadata("vrc", address);
+}
 
 export default async function VrcAddressPage({
   params,

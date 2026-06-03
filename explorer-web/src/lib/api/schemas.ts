@@ -191,8 +191,8 @@ export const blockResultSchema = z.object({
     .optional(),
   totals: z
     .object({
-      feeAtomic: z.string(),
-      fee: amountSchema,
+      feeAtomic: z.string().optional(),
+      fee: amountSchema.optional(),
       outputValueAtomic: z.string(),
       outputValue: amountSchema,
     })

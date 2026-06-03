@@ -28,7 +28,7 @@ async function syncRange(options = {}) {
 
 	const bestHeight = await rpc.call("getblockcount");
 	let startHeight = options.startHeight === undefined
-		? getResumeHeight(db, chainConfig.id)
+		? await getResumeHeight(db, chainConfig.id)
 		: Number(options.startHeight);
 	const requestedEndHeight = options.endHeight === undefined ? bestHeight : Number(options.endHeight);
 	let endHeight = Math.min(requestedEndHeight, bestHeight);
@@ -160,11 +160,11 @@ async function syncRangeWithRpcBatch(context) {
 		for (let i = 0; i < heights.length; i++) {
 			const height = heights[i];
 			const blockhash = hashes[i];
-			const existingHash = getIndexedBlockHash(context.db, context.chainId, height);
+			const existingHash = await getIndexedBlockHash(context.db, context.chainId, height);
 
 			if (context.autoRollback && existingHash && existingHash !== blockhash) {
-				assertRollbackWithinLimit(context.chainId, height, context.db);
-				const rollback = rollbackFromHeight(context.chainId, height, { db: context.db });
+				await assertRollbackWithinLimit(context.chainId, height, context.db);
+				const rollback = await rollbackFromHeight(context.chainId, height, { db: context.db });
 
 				if (context.onProgress) {
 					context.onProgress({
@@ -207,7 +207,7 @@ async function ingestHeight(context, height, blockhash, block) {
 		throw new Error(`Missing block payload for height ${height}`);
 	}
 
-	const result = ingestBlock(context.chainId, block, context.ingestOptions);
+	const result = await ingestBlock(context.chainId, block, context.ingestOptions);
 	const ingested = result.skipped ? 0 : 1;
 
 	if (context.onProgress) {
@@ -241,16 +241,16 @@ function allowLargeRollback() {
 		|| String(process.env.VCEXP_INDEXER_ALLOW_LARGE_ROLLBACK ?? "").toLowerCase() === "true";
 }
 
-function assertRollbackWithinLimit(chainId, fromHeight, db) {
+async function assertRollbackWithinLimit(chainId, fromHeight, db) {
 	if (allowLargeRollback()) {
 		return;
 	}
 
-	const row = db.prepare(`
+	const row = await db.get(`
 		SELECT MAX(height) AS max_height
 		FROM blocks
 		WHERE chain_id = ? AND status = 'main'
-	`).get(chainId);
+	`, [chainId]);
 
 	const maxHeight = row?.max_height == null ? null : Number(row.max_height);
 	if (maxHeight == null || maxHeight < fromHeight) {
@@ -269,7 +269,7 @@ function assertRollbackWithinLimit(chainId, fromHeight, db) {
 
 async function ensureResumeOnMainChain(db, rpc, chainId, startHeight, bestHeight) {
 	const previousHeight = startHeight - 1;
-	const existingHash = getIndexedBlockHash(db, chainId, previousHeight);
+	const existingHash = await getIndexedBlockHash(db, chainId, previousHeight);
 
 	if (!existingHash || previousHeight > bestHeight) {
 		return {
@@ -286,7 +286,7 @@ async function ensureResumeOnMainChain(db, rpc, chainId, startHeight, bestHeight
 
 	let commonHeight = previousHeight - 1;
 	while (commonHeight >= 0) {
-		const indexedHash = getIndexedBlockHash(db, chainId, commonHeight);
+		const indexedHash = await getIndexedBlockHash(db, chainId, commonHeight);
 
 		if (!indexedHash) {
 			commonHeight--;
@@ -302,8 +302,8 @@ async function ensureResumeOnMainChain(db, rpc, chainId, startHeight, bestHeight
 	}
 
 	const rollbackHeight = Math.max(0, commonHeight + 1);
-	assertRollbackWithinLimit(chainId, rollbackHeight, db);
-	const rollback = rollbackFromHeight(chainId, rollbackHeight, { db });
+	await assertRollbackWithinLimit(chainId, rollbackHeight, db);
+	const rollback = await rollbackFromHeight(chainId, rollbackHeight, { db });
 
 	return {
 		startHeight: rollbackHeight,
@@ -311,12 +311,12 @@ async function ensureResumeOnMainChain(db, rpc, chainId, startHeight, bestHeight
 	};
 }
 
-function getIndexedBlockHash(db, chainId, height) {
-	const row = db.prepare(`
+async function getIndexedBlockHash(db, chainId, height) {
+	const row = await db.get(`
 		SELECT hash
 		FROM blocks
 		WHERE chain_id = ? AND height = ? AND status = 'main'
-	`).get(chainId, height);
+	`, [chainId, height]);
 
 	return row ? row.hash : null;
 }
@@ -334,12 +334,12 @@ function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function getResumeHeight(db, chainId) {
-	const row = db.prepare(`
+async function getResumeHeight(db, chainId) {
+	const row = await db.get(`
 		SELECT last_indexed_height
 		FROM sync_state
 		WHERE chain_id = ?
-	`).get(chainId);
+	`, [chainId]);
 
 	if (!row || row.last_indexed_height === null || row.last_indexed_height === undefined) {
 		return 0;

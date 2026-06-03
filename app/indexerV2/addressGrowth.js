@@ -6,8 +6,8 @@ const { hourBucketStart } = require("./periodStats.js");
  * Cumulative indexed address count at a point in time (matches live snapshot semantics:
  * rows in address_balances that have appeared on-chain by that time).
  */
-function loadAddressFirstSeenTimes(db, chainId) {
-	const rows = db.prepare(`
+async function loadAddressFirstSeenTimes(db, chainId) {
+	const rows = await db.all(`
 		SELECT
 			ab.address,
 			COALESCE(
@@ -20,7 +20,7 @@ function loadAddressFirstSeenTimes(db, chainId) {
 			) AS first_seen_time
 		FROM address_balances ab
 		WHERE ab.chain_id = ?
-	`).all(chainId);
+	`, [chainId]);
 
 	const times = [];
 	for (const row of rows) {
@@ -53,13 +53,13 @@ function countAddressesFirstSeenBefore(sortedTimes, endTimeExclusive) {
 	return lo;
 }
 
-function resolveAddressGrowthRange(db, chainId, options = {}) {
+async function resolveAddressGrowthRange(db, chainId, options = {}) {
 	const since = options.since ?? null;
-	const blockBounds = db.prepare(`
+	const blockBounds = await db.get(`
 		SELECT MIN(time) AS min_time, MAX(time) AS max_time
 		FROM blocks
 		WHERE chain_id = ? AND status = 'main'
-	`).get(chainId);
+	`, [chainId]);
 
 	const minBlockTime = blockBounds?.min_time != null ? Number(blockBounds.min_time) : null;
 	const maxBlockTime = blockBounds?.max_time != null ? Number(blockBounds.max_time) : null;

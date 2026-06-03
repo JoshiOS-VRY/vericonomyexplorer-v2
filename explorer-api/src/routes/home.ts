@@ -9,10 +9,12 @@ import {
   fetchHomeNetworkLite,
   fetchHomeShell,
 } from "../data/home.js";
+import { fetchLandingData } from "../data/legacy.js";
 import { withTimeout } from "../util/timeout.js";
 
 const homeNetworkRouteTimeoutMs = Number(process.env.VCEXP_HOME_NETWORK_ROUTE_TIMEOUT_MS ?? 4_000);
 const homeMarketRouteTimeoutMs = Number(process.env.VCEXP_HOME_MARKET_ROUTE_TIMEOUT_MS ?? 4_000);
+const homeShellRouteTimeoutMs = Number(process.env.VCEXP_HOME_SHELL_ROUTE_TIMEOUT_MS ?? 5_000);
 
 const homeCache = createSwrCache({
   max: 4,
@@ -72,7 +74,41 @@ export function registerHomeCacheInvalidation(): void {
 export async function registerHomeRoutes(app: FastifyInstance): Promise<void> {
   app.get("/v1/home", async () => swrFetch(homeCache, "home", fetchHomeData));
 
-  app.get("/v1/home/shell", async () => swrFetch(homeShellCache, "shell", fetchHomeShell));
+  app.get("/v1/home/shell", async () => {
+    const stale = homeShellCache.get("shell", { allowStale: true }) as
+      | Record<string, unknown>
+      | undefined;
+
+    try {
+      return await withTimeout(
+        swrFetch(homeShellCache, "shell", fetchHomeShell),
+        homeShellRouteTimeoutMs,
+        "home/shell",
+      );
+    } catch {
+      if (stale) {
+        return stale;
+      }
+
+      const landing = await fetchLandingData().catch(() => null);
+      if (landing) {
+        return {
+          vrm: {
+            summary: landing.vrmSummary,
+            richlist: landing.vrmRichlist,
+          },
+          vrc: {
+            summary: landing.vrcSummary,
+            richlist: landing.vrcRichlist,
+          },
+          vrmLeaderboard: landing.vrmLeaderboard,
+          fetchedAt: new Date().toISOString(),
+        };
+      }
+
+      throw new Error("home/shell unavailable");
+    }
+  });
 
   app.get("/v1/home/network", async () => {
     const stale = homeNetworkCache.get("network", { allowStale: true }) as

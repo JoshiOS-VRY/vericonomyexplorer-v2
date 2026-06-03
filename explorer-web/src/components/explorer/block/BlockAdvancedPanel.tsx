@@ -79,14 +79,16 @@ export function BlockAdvancedPanel({
           </div>
           {result.totals ? (
             <>
-              <div>
-                <dt className="text-[10px] font-medium uppercase tracking-wide text-fg-subtle">
-                  Total fees
-                </dt>
-                <dd className="mt-1 tabular-nums text-fg">
-                  {formatAmountPair(result.totals.fee)}
-                </dd>
-              </div>
+              {result.totals.fee ? (
+                <div>
+                  <dt className="text-[10px] font-medium uppercase tracking-wide text-fg-subtle">
+                    Total fees
+                  </dt>
+                  <dd className="mt-1 tabular-nums text-fg">
+                    {formatAmountPair(result.totals.fee)}
+                  </dd>
+                </div>
+              ) : null}
               <div>
                 <dt className="text-[10px] font-medium uppercase tracking-wide text-fg-subtle">
                   Total output value

@@ -17,6 +17,11 @@ function getWorkerDb() {
 		return db;
 	}
 
+	if (dbModule.getBackend && dbModule.getBackend() === "postgres") {
+		db = require(path.join(__dirname, "..", "..", "..", "app", "indexerV2", "pgClient.js")).openPostgres();
+		return db;
+	}
+
 	const dbPath =
 		process.env.VCEXP_INDEXER_SQLITE_PATH ??
 		process.env.BTCEXP_INDEXER_SQLITE_PATH ??
@@ -26,24 +31,27 @@ function getWorkerDb() {
 	db.defaultSafeIntegers(true);
 	db.pragma("foreign_keys = ON");
 	dbModule.applyReadPragmas(db);
+	if (dbModule.augmentSqlite) {
+		dbModule.augmentSqlite(db);
+	}
 
 	return db;
 }
 
-function getLandingBundle(options = {}) {
+async function getLandingBundle(options = {}) {
 	const workerDb = getWorkerDb();
 	const shared = Object.assign({}, options, { db: workerDb, skipLiveBlocks: true, skipBlockEnrichment: true });
-	const vrmHealth = health.getChainHealth("vrm", shared);
-	const vrcHealth = health.getChainHealth("vrc", shared);
+	const vrmHealth = await health.getChainHealth("vrm", shared);
+	const vrcHealth = await health.getChainHealth("vrc", shared);
 	const vrmOpts = Object.assign({}, shared, { chainHealth: vrmHealth });
 	const vrcOpts = Object.assign({}, shared, { chainHealth: vrcHealth });
 
 	return {
-		vrmSummary: query.getChainSummary("vrm", vrmOpts),
-		vrcSummary: query.getChainSummary("vrc", vrcOpts),
-		vrmRichlist: query.getRichlist("vrm", Object.assign({}, vrmOpts, { limit: 5 })),
-		vrcRichlist: query.getRichlist("vrc", Object.assign({}, vrcOpts, { limit: 5 })),
-		vrmLeaderboard: query.getLeaderboard("vrm", Object.assign({}, vrmOpts, {
+		vrmSummary: await query.getChainSummary("vrm", vrmOpts),
+		vrcSummary: await query.getChainSummary("vrc", vrcOpts),
+		vrmRichlist: await query.getRichlist("vrm", Object.assign({}, vrmOpts, { limit: 5 })),
+		vrcRichlist: await query.getRichlist("vrc", Object.assign({}, vrcOpts, { limit: 5 })),
+		vrmLeaderboard: await query.getLeaderboard("vrm", Object.assign({}, vrmOpts, {
 			period: "month",
 			sort: "activity",
 			limit: 5
@@ -51,21 +59,21 @@ function getLandingBundle(options = {}) {
 	};
 }
 
-function getVrmDashboardBundle(options = {}) {
+async function getVrmDashboardBundle(options = {}) {
 	const workerDb = getWorkerDb();
 	const shared = Object.assign({}, options, { db: workerDb, skipLiveBlocks: true, skipBlockEnrichment: true });
-	const vrmHealth = health.getChainHealth("vrm", shared);
+	const vrmHealth = await health.getChainHealth("vrm", shared);
 	const vrmOpts = Object.assign({}, shared, { chainHealth: vrmHealth });
 
 	return {
-		summary: query.getChainSummary("vrm", vrmOpts),
-		richlist: query.getRichlist("vrm", Object.assign({}, vrmOpts, { limit: 5 })),
-		leaderboard: query.getLeaderboard("vrm", Object.assign({}, vrmOpts, {
+		summary: await query.getChainSummary("vrm", vrmOpts),
+		richlist: await query.getRichlist("vrm", Object.assign({}, vrmOpts, { limit: 5 })),
+		leaderboard: await query.getLeaderboard("vrm", Object.assign({}, vrmOpts, {
 			period: "month",
 			sort: "activity",
 			limit: 5
 		})),
-		miners: query.getMinedLeaderboard("vrm", Object.assign({}, vrmOpts, {
+		miners: await query.getMinedLeaderboard("vrm", Object.assign({}, vrmOpts, {
 			period: "month",
 			limit: 5
 		}))
@@ -107,8 +115,12 @@ parentPort.on("message", (message) => {
 		}
 
 		const workerDb = getWorkerDb();
-		const result = handler(...args, { ...(options || {}), db: workerDb });
-		parentPort.postMessage({ id, result });
+		Promise.resolve(handler(...args, { ...(options || {}), db: workerDb }))
+			.then((result) => parentPort.postMessage({ id, result }))
+			.catch((error) => parentPort.postMessage({
+				id,
+				error: error instanceof Error ? error.message : String(error),
+			}));
 	} catch (error) {
 		parentPort.postMessage({
 			id,

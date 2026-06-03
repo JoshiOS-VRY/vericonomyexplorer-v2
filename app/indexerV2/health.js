@@ -17,9 +17,9 @@ function cloneChainHealth(value) {
 	return JSON.parse(JSON.stringify(value));
 }
 
-function getIndexerHealth(options = {}) {
+async function getIndexerHealth(options = {}) {
 	const db = options.db || dbModule.openDatabaseReadOnly();
-	const chains = db.prepare(`
+	const chains = await db.all(`
 		SELECT
 			chains.id,
 			chains.ticker,
@@ -34,22 +34,22 @@ function getIndexerHealth(options = {}) {
 		FROM chains
 		LEFT JOIN sync_state ON sync_state.chain_id = chains.id
 		ORDER BY chains.id
-	`).all();
+	`);
 
 	return {
 		path: dbModule.getDatabasePath(),
 		generatedAt: Date.now(),
 		tipThreshold: getTipThreshold(options),
-		chains: chains.map(chain => getChainHealth(chain.id, {
+		chains: await Promise.all(chains.map(chain => getChainHealth(chain.id, {
 			db,
 			chain,
 			tipThreshold: getTipThreshold(options),
 			fullHealth: true
-		}))
+		})))
 	};
 }
 
-function getChainHealth(chainId, options = {}) {
+async function getChainHealth(chainId, options = {}) {
 	const lite = options.fullHealth !== true;
 	const cacheKey = `${chainId}:${lite ? "lite" : "full"}`;
 	const bypassCache = options.bypassHealthCache === true;
@@ -63,8 +63,8 @@ function getChainHealth(chainId, options = {}) {
 	}
 
 	const value = lite
-		? computeChainHealthLite(chainId, options)
-		: computeChainHealth(chainId, options);
+		? await computeChainHealthLite(chainId, options)
+		: await computeChainHealth(chainId, options);
 
 	if (!bypassCache) {
 		chainHealthCache.set(cacheKey, { at: Date.now(), value });
@@ -73,10 +73,10 @@ function getChainHealth(chainId, options = {}) {
 	return cloneChainHealth(value);
 }
 
-function computeChainHealthLite(chainId, options = {}) {
+async function computeChainHealthLite(chainId, options = {}) {
 	const db = options.db || dbModule.openDatabaseReadOnly();
 	const tipThreshold = getTipThreshold(options);
-	const chain = options.chain || getChainRow(db, chainId);
+	const chain = options.chain || await getChainRow(db, chainId);
 	const syncStatus = chain ? chain.status : null;
 	const indexed = syncStatus === "indexed";
 
@@ -91,11 +91,11 @@ function computeChainHealthLite(chainId, options = {}) {
 		: Math.max(0, bestRpcHeight - lastIndexedHeight);
 	const addressCount = options.skipAddressCount === true
 		? null
-		: toNumber(db.prepare(`
+		: toNumber((await db.get(`
 		SELECT COUNT(*) AS count
 		FROM address_balances
 		WHERE chain_id = ?
-	`).get(chainId).count);
+	`, [chainId])).count);
 
 	const checks = {
 		hasBlocks: indexedBlockCount > 0,
@@ -169,21 +169,21 @@ function computeChainHealthLite(chainId, options = {}) {
 	};
 }
 
-function computeChainHealth(chainId, options = {}) {
+async function computeChainHealth(chainId, options = {}) {
 	const db = options.db || dbModule.openDatabaseReadOnly();
 	const tipThreshold = getTipThreshold(options);
-	const chain = options.chain || getChainRow(db, chainId);
-	const blockStats = getBlockStats(db, chainId);
-	const unresolvedSpendCount = toNumber(db.prepare(`
+	const chain = options.chain || await getChainRow(db, chainId);
+	const blockStats = await getBlockStats(db, chainId);
+	const unresolvedSpendCount = toNumber((await db.get(`
 		SELECT COUNT(*) AS count
 		FROM vins
 		WHERE chain_id = ? AND resolved = 0 AND source != 'coinbase'
-	`).get(chainId).count);
-	const addressCount = toNumber(db.prepare(`
+	`, [chainId])).count);
+	const addressCount = toNumber((await db.get(`
 		SELECT COUNT(*) AS count
 		FROM address_balances
 		WHERE chain_id = ?
-	`).get(chainId).count);
+	`, [chainId])).count);
 
 	const bestRpcHeight = toNullableNumber(chain ? chain.best_rpc_height : null);
 	const lastIndexedHeight = toNullableNumber(chain ? chain.last_indexed_height : null);
@@ -256,8 +256,8 @@ function computeChainHealth(chainId, options = {}) {
 	};
 }
 
-function getChainRow(db, chainId) {
-	return db.prepare(`
+async function getChainRow(db, chainId) {
+	return db.get(`
 		SELECT
 			chains.id,
 			chains.ticker,
@@ -272,15 +272,15 @@ function getChainRow(db, chainId) {
 		FROM chains
 		LEFT JOIN sync_state ON sync_state.chain_id = chains.id
 		WHERE chains.id = ?
-	`).get(chainId);
+	`, [chainId]);
 }
 
-function getBlockStats(db, chainId) {
-	const bounds = db.prepare(`
+async function getBlockStats(db, chainId) {
+	const bounds = await db.get(`
 		SELECT MIN(height) AS min_height, MAX(height) AS max_height
 		FROM blocks
 		WHERE chain_id = ? AND status = 'main'
-	`).get(chainId);
+	`, [chainId]);
 
 	const minHeight = toNullableNumber(bounds.min_height);
 	const maxHeight = toNullableNumber(bounds.max_height);
@@ -297,11 +297,11 @@ function getBlockStats(db, chainId) {
 	if (minHeight === 0) {
 		blockCount = maxHeight + 1;
 	} else {
-		blockCount = toNumber(db.prepare(`
+		blockCount = toNumber((await db.get(`
 			SELECT COUNT(*) AS block_count
 			FROM blocks
 			WHERE chain_id = ? AND status = 'main'
-		`).get(chainId).block_count);
+		`, [chainId])).block_count);
 	}
 
 	return {

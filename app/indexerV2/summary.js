@@ -6,7 +6,7 @@ const liveChain = require("./liveChain.js");
 const indexerQuery = require("./query.js");
 
 async function getChainSummary(chainId, options = {}) {
-  const summary = indexerQuery.getChainSummary(chainId, options);
+  const summary = await indexerQuery.getChainSummary(chainId, options);
   let tip = options.tip ?? null;
 
   if (!tip) {
@@ -100,33 +100,32 @@ async function getVrmDashboard(options = {}) {
   const db = options.db || dbModule.openDatabase();
   const shared = Object.assign({}, options, { db });
   const since30d = Math.floor(Date.now() / 1000) - 30 * 86_400;
-  const richlist = indexerQuery.getRichlist(
-    "vrm",
-    Object.assign({}, shared, { limit: 5 }),
-  );
-  const leaderboard = indexerQuery.getLeaderboard(
-    "vrm",
-    Object.assign({}, shared, {
-      period: "month",
-      sort: "activity",
-      limit: 5,
-    }),
-  );
-  const activityHistory = indexerQuery.getChainActivityHistory(
-    "vrm",
-    Object.assign({}, shared, {
-      since: since30d,
-      maxPoints: 100,
-    }),
-  );
-  const summary = await getChainSummary("vrm", shared);
+  const [richlist, leaderboard, activityHistory, summary] = await Promise.all([
+    indexerQuery.getRichlist("vrm", Object.assign({}, shared, { limit: 5 })),
+    indexerQuery.getLeaderboard(
+      "vrm",
+      Object.assign({}, shared, {
+        period: "month",
+        sort: "activity",
+        limit: 5,
+      }),
+    ),
+    indexerQuery.getChainActivityHistory(
+      "vrm",
+      Object.assign({}, shared, {
+        since: since30d,
+        maxPoints: 100,
+      }),
+    ),
+    getChainSummary("vrm", shared),
+  ]);
 
   return { summary, richlist, leaderboard, activityHistory };
 }
 
 async function getIndexerHealth(options = {}) {
   const db = options.db || dbModule.openDatabase();
-  const baseHealth = health.getIndexerHealth(
+  const baseHealth = await health.getIndexerHealth(
     Object.assign({}, options, { db }),
   );
   const chains = await Promise.all(
@@ -150,7 +149,7 @@ async function getIndexerHealth(options = {}) {
 }
 
 async function getBlock(chainId, hashOrHeight, options = {}) {
-  const indexed = indexerQuery.getBlock(chainId, hashOrHeight, options);
+  const indexed = await indexerQuery.getBlock(chainId, hashOrHeight, options);
 
   if (indexed.found) {
     return indexed;

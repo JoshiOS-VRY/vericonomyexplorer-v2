@@ -2,7 +2,7 @@
 
 const utils = require("../utils.js");
 const dbModule = require("./db.js");
-const { computeBlockTotalsRaw } = require("./blockTotals.js");
+const { computeBlockTotalsRawAsync } = require("./blockTotals.js");
 const {
 	createPeriodStatStatements,
 	recordAddressPeriodEvent,
@@ -121,9 +121,10 @@ function createStatements(db) {
 		`),
 
 		insertVoutAddress: db.prepare(`
-			INSERT OR IGNORE INTO vout_addresses (
+			INSERT INTO vout_addresses (
 				chain_id, txid, n, address, address_index
 			) VALUES (?, ?, ?, ?, ?)
+			ON CONFLICT (chain_id, txid, n, address) DO NOTHING
 		`),
 
 		findVout: db.prepare(`
@@ -160,9 +161,10 @@ function createStatements(db) {
 		`),
 
 		insertAddressTransaction: db.prepare(`
-			INSERT OR IGNORE INTO address_transactions (
+			INSERT INTO address_transactions (
 				chain_id, address, txid, first_seen_height, first_seen_time, created_at, net_delta_sats
 			) VALUES (?, ?, ?, ?, ?, ?, 0)
+			ON CONFLICT (chain_id, address, txid) DO NOTHING
 		`),
 
 		addAddressTransactionDelta: db.prepare(`
@@ -177,9 +179,9 @@ function createStatements(db) {
 				tx_count, last_seen_height, first_seen_height, first_seen_time, updated_at
 			) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
 			ON CONFLICT(chain_id, address) DO UPDATE SET
-				balance_sats = balance_sats + excluded.balance_sats,
-				total_received_sats = total_received_sats + excluded.total_received_sats,
-				tx_count = tx_count + excluded.tx_count,
+				balance_sats = address_balances.balance_sats + excluded.balance_sats,
+				total_received_sats = address_balances.total_received_sats + excluded.total_received_sats,
+				tx_count = address_balances.tx_count + excluded.tx_count,
 				last_seen_height = excluded.last_seen_height,
 				first_seen_height = COALESCE(address_balances.first_seen_height, excluded.first_seen_height),
 				first_seen_time = COALESCE(address_balances.first_seen_time, excluded.first_seen_time),
@@ -192,9 +194,9 @@ function createStatements(db) {
 				tx_count, last_seen_height, first_seen_height, first_seen_time, updated_at
 			) VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?)
 			ON CONFLICT(chain_id, address) DO UPDATE SET
-				balance_sats = balance_sats + excluded.balance_sats,
-				total_sent_sats = total_sent_sats + excluded.total_sent_sats,
-				tx_count = tx_count + excluded.tx_count,
+				balance_sats = address_balances.balance_sats + excluded.balance_sats,
+				total_sent_sats = address_balances.total_sent_sats + excluded.total_sent_sats,
+				tx_count = address_balances.tx_count + excluded.tx_count,
 				last_seen_height = excluded.last_seen_height,
 				first_seen_height = COALESCE(address_balances.first_seen_height, excluded.first_seen_height),
 				first_seen_time = COALESCE(address_balances.first_seen_time, excluded.first_seen_time),
@@ -218,18 +220,20 @@ function createStatements(db) {
 	};
 }
 
-function ingestBlock(chainId, block, options = {}) {
+async function ingestBlock(chainId, block, options = {}) {
 	if (!block || !block.hash || block.height === undefined) {
 		throw new Error("Cannot ingest block: missing hash or height");
 	}
 
 	const indexOnly = options.indexOnly === true;
 	const db = options.db || dbModule.openDatabase();
-	const statements = createStatements(db);
 	const now = Date.now();
 	const txs = Array.isArray(block.tx) ? block.tx : [];
-	const existingBlock = statements.findBlockByHeight.get(chainId, block.height);
 	const storeRawJson = options.storeRawJson !== false;
+	const existingBlock = await db.get(
+		`SELECT hash FROM blocks WHERE chain_id = ? AND height = ?`,
+		[chainId, block.height],
+	);
 
 	if (existingBlock && existingBlock.hash === block.hash && !options.force) {
 		return {
@@ -245,11 +249,12 @@ function ingestBlock(chainId, block, options = {}) {
 		throw new Error(`Refusing to ingest block ${block.height}: indexed hash ${existingBlock.hash} differs from ${block.hash}. Reorg handling must run first.`);
 	}
 
-	const run = db.transaction(() => {
-		const periodStatements = indexOnly ? null : createPeriodStatStatements(db);
+	await db.runTransaction(async (txdb) => {
+		const statements = createStatements(txdb);
+		const periodStatements = indexOnly ? null : createPeriodStatStatements(txdb);
 		const enrichment = computeBlockEnrichment(block, chainId);
 
-		statements.upsertBlock.run({
+		await statements.upsertBlock.run({
 			chain_id: chainId,
 			height: block.height,
 			hash: block.hash,
@@ -270,25 +275,25 @@ function ingestBlock(chainId, block, options = {}) {
 		});
 
 		for (let txIndex = 0; txIndex < txs.length; txIndex++) {
-			ingestTransaction(statements, periodStatements, chainId, block, txs[txIndex], txIndex, now, {
+			await ingestTransaction(statements, periodStatements, chainId, block, txs[txIndex], txIndex, now, {
 				storeRawJson,
 				indexOnly
 			});
 		}
 
 		if (!indexOnly) {
-			const blockTotals = computeBlockTotalsRaw(db, chainId, block.height, txs.length);
-			statements.updateBlockTotals.run(
+			const blockTotals = await computeBlockTotalsRawAsync(txdb, chainId, block.height, txs.length);
+			await statements.updateBlockTotals.run(
 				blockTotals.feeSats === null ? null : blockTotals.feeSats,
 				blockTotals.totalOutputSats,
 				chainId,
 				block.height
 			);
 
-			recordBlockActivity(periodStatements, chainId, block.time || block.blocktime || 0, now);
+			await recordBlockActivity(periodStatements, chainId, block.time || block.blocktime || 0, now);
 		}
 
-		statements.upsertSyncState.run(
+		await statements.upsertSyncState.run(
 			chainId,
 			options.bestRpcHeight === undefined ? block.height : options.bestRpcHeight,
 			block.height,
@@ -300,8 +305,6 @@ function ingestBlock(chainId, block, options = {}) {
 		);
 	});
 
-	run();
-
 	return {
 		chainId,
 		height: block.height,
@@ -310,7 +313,7 @@ function ingestBlock(chainId, block, options = {}) {
 	};
 }
 
-function ingestTransaction(statements, periodStatements, chainId, block, tx, txIndex, now, options = {}) {
+async function ingestTransaction(statements, periodStatements, chainId, block, tx, txIndex, now, options = {}) {
 	const coinbase = isCoinbaseTx(tx);
 	const coinstake = isCoinstakeTx(tx);
 	const txid = tx.txid || tx.hash;
@@ -319,7 +322,7 @@ function ingestTransaction(statements, periodStatements, chainId, block, tx, txI
 		throw new Error(`Cannot ingest transaction at block ${block.height} index ${txIndex}: missing txid`);
 	}
 
-	statements.upsertTransaction.run({
+	await statements.upsertTransaction.run({
 		chain_id: chainId,
 		txid,
 		block_height: block.height,
@@ -334,10 +337,10 @@ function ingestTransaction(statements, periodStatements, chainId, block, tx, txI
 		indexed_at: now
 	});
 
-	processInputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now, options.indexOnly === true);
-	processOutputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now, options.indexOnly === true);
+	await processInputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now, options.indexOnly === true);
+	await processOutputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now, options.indexOnly === true);
 	if (!options.indexOnly) {
-		recordTransactionActivity(
+		await recordTransactionActivity(
 			periodStatements,
 			chainId,
 			block.time || block.blocktime || 0,
@@ -348,14 +351,14 @@ function ingestTransaction(statements, periodStatements, chainId, block, tx, txI
 	}
 }
 
-function processInputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now, indexOnly = false) {
+async function processInputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now, indexOnly = false) {
 	const vins = Array.isArray(tx.vin) ? tx.vin : [];
 
 	for (let vinIndex = 0; vinIndex < vins.length; vinIndex++) {
 		const vin = vins[vinIndex];
 
 		if (coinbase || vin.coinbase) {
-			statements.insertVin.run({
+			await statements.insertVin.run({
 				chain_id: chainId,
 				txid,
 				n: vinIndex,
@@ -370,13 +373,13 @@ function processInputs(statements, periodStatements, chainId, block, tx, txid, c
 		}
 
 		const previous = vin.txid && vin.vout !== undefined
-			? statements.findVout.get(chainId, vin.txid, vin.vout)
+			? await statements.findVout.get(chainId, vin.txid, vin.vout)
 			: null;
 
 		const valueSats = previous ? BigInt(previous.value_sats) : null;
 		const address = previous ? previous.address : null;
 
-		statements.insertVin.run({
+		await statements.insertVin.run({
 			chain_id: chainId,
 			txid,
 			n: vinIndex,
@@ -389,11 +392,11 @@ function processInputs(statements, periodStatements, chainId, block, tx, txid, c
 		});
 
 		if (previous && address && Number(previous.is_spent) === 0) {
-			statements.markVoutSpent.run(txid, vinIndex, block.height, chainId, vin.txid, vin.vout);
+			await statements.markVoutSpent.run(txid, vinIndex, block.height, chainId, vin.txid, vin.vout);
 			const delta = -valueSats;
-			const txCountIncrement = recordAddressTransaction(statements, chainId, address, txid, block, now, delta);
-			statements.insertAddressEvent.run(chainId, address, txid, block.height, block.time || 0, delta, "spend", now);
-			statements.upsertSpendBalance.run(
+			const txCountIncrement = await recordAddressTransaction(statements, chainId, address, txid, block, now, delta);
+			await statements.insertAddressEvent.run(chainId, address, txid, block.height, block.time || 0, delta, "spend", now);
+			await statements.upsertSpendBalance.run(
 				chainId,
 				address,
 				delta,
@@ -405,7 +408,7 @@ function processInputs(statements, periodStatements, chainId, block, tx, txid, c
 				now
 			);
 			if (!indexOnly) {
-				recordAddressPeriodEvent(
+				await recordAddressPeriodEvent(
 					periodStatements,
 					chainId,
 					address,
@@ -415,7 +418,7 @@ function processInputs(statements, periodStatements, chainId, block, tx, txid, c
 					txCountIncrement,
 					now
 				);
-				recordAddressBalanceBucket(
+				await recordAddressBalanceBucket(
 					periodStatements,
 					chainId,
 					address,
@@ -429,7 +432,7 @@ function processInputs(statements, periodStatements, chainId, block, tx, txid, c
 	}
 }
 
-function processOutputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now, indexOnly = false) {
+async function processOutputs(statements, periodStatements, chainId, block, tx, txid, coinbase, coinstake, now, indexOnly = false) {
 	const vouts = Array.isArray(tx.vout) ? tx.vout : [];
 
 	for (let outputIndex = 0; outputIndex < vouts.length; outputIndex++) {
@@ -439,7 +442,7 @@ function processOutputs(statements, periodStatements, chainId, block, tx, txid, 
 		const valueSats = decimalToAtomicUnits(vout.value || 0);
 		const n = vout.n === undefined ? outputIndex : vout.n;
 
-		statements.insertVout.run({
+		await statements.insertVout.run({
 			chain_id: chainId,
 			txid,
 			n,
@@ -450,13 +453,13 @@ function processOutputs(statements, periodStatements, chainId, block, tx, txid, 
 		});
 
 		for (let addressIndex = 0; addressIndex < addresses.length; addressIndex++) {
-			statements.insertVoutAddress.run(chainId, txid, n, addresses[addressIndex], addressIndex);
+			await statements.insertVoutAddress.run(chainId, txid, n, addresses[addressIndex], addressIndex);
 		}
 
 		if (primaryAddress && valueSats > 0n) {
-			const txCountIncrement = recordAddressTransaction(statements, chainId, primaryAddress, txid, block, now, valueSats);
-			statements.insertAddressEvent.run(chainId, primaryAddress, txid, block.height, block.time || 0, valueSats, "receive", now);
-			statements.upsertReceiveBalance.run(
+			const txCountIncrement = await recordAddressTransaction(statements, chainId, primaryAddress, txid, block, now, valueSats);
+			await statements.insertAddressEvent.run(chainId, primaryAddress, txid, block.height, block.time || 0, valueSats, "receive", now);
+			await statements.upsertReceiveBalance.run(
 				chainId,
 				primaryAddress,
 				valueSats,
@@ -469,7 +472,7 @@ function processOutputs(statements, periodStatements, chainId, block, tx, txid, 
 			);
 			const category = coinstake ? "staked" : coinbase ? "mined" : "received";
 			if (!indexOnly) {
-				recordAddressPeriodEvent(
+				await recordAddressPeriodEvent(
 					periodStatements,
 					chainId,
 					primaryAddress,
@@ -479,7 +482,7 @@ function processOutputs(statements, periodStatements, chainId, block, tx, txid, 
 					txCountIncrement,
 					now
 				);
-				recordAddressBalanceBucket(
+				await recordAddressBalanceBucket(
 					periodStatements,
 					chainId,
 					primaryAddress,
@@ -493,9 +496,9 @@ function processOutputs(statements, periodStatements, chainId, block, tx, txid, 
 	}
 }
 
-function recordAddressTransaction(statements, chainId, address, txid, block, now, deltaSats) {
+async function recordAddressTransaction(statements, chainId, address, txid, block, now, deltaSats) {
 	const firstSeenTime = block.time || block.blocktime || 0;
-	const insertResult = statements.insertAddressTransaction.run(
+	const insertResult = await statements.insertAddressTransaction.run(
 		chainId,
 		address,
 		txid,
@@ -503,7 +506,7 @@ function recordAddressTransaction(statements, chainId, address, txid, block, now
 		firstSeenTime,
 		now
 	);
-	statements.addAddressTransactionDelta.run(deltaSats, chainId, address, txid);
+	await statements.addAddressTransactionDelta.run(deltaSats, chainId, address, txid);
 
 	return insertResult.changes > 0 ? 1 : 0;
 }

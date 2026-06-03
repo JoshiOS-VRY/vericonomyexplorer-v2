@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   AlertBanner,
@@ -11,6 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getLeaderboard } from "@/lib/api/indexer";
 import { formatExplorerUserMessage } from "@/lib/explorerCopy";
 import { normalizeLimit, normalizeOffset } from "@/lib/utils";
+import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = pageMetadata(staticPageSeo.vrmLeaderboard);
 
 const filters = [
   { period: "week", sort: "net", label: "Week Net" },

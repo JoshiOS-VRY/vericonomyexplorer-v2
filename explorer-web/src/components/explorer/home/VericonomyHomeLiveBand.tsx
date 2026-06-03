@@ -66,7 +66,7 @@ export function VericonomyHomeLiveBand({
           heightPulse={live.vrm.heightPulse}
           market={market.vrm}
           network={network.vrm}
-          blocks={live.vrm.latestBlocks}
+          seedBlocks={live.vrm.latestBlocks}
         />
         <ChainHubSection
           chainId="vrc"
@@ -75,7 +75,7 @@ export function VericonomyHomeLiveBand({
           heightPulse={live.vrc.heightPulse}
           market={market.vrc}
           network={network.vrc}
-          blocks={live.vrc.latestBlocks}
+          seedBlocks={live.vrc.latestBlocks}
         />
       </div>
     </div>

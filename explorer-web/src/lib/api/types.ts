@@ -103,8 +103,8 @@ export interface BlockCoinbaseSummary {
 }
 
 export interface BlockTotals {
-  feeAtomic: string;
-  fee: AmountDisplay;
+  feeAtomic?: string;
+  fee?: AmountDisplay;
   outputValueAtomic: string;
   outputValue: AmountDisplay;
 }

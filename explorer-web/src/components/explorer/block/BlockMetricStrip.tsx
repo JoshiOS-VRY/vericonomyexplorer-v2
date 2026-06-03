@@ -26,7 +26,7 @@ export function BlockMetricStrip({ result }: { result: BlockResult }) {
           },
           {
             label: "Fees",
-            value: totals ? formatAmountPair(totals.fee) : "—",
+            value: totals?.fee ? formatAmountPair(totals.fee) : "—",
           },
         ]}
       />

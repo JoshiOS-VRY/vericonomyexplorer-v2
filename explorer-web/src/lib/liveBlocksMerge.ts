@@ -1,6 +1,5 @@
 import type { IndexedBlock } from "@/lib/api/types";
-
-const MAX_LATEST_BLOCKS = 10;
+import { LATEST_BLOCKS_COUNT } from "@/lib/chainBlocksDisplay";
 
 export function shouldApplyOptimisticTip(
   tipHeight: number,
@@ -32,7 +31,7 @@ export function shouldApplyFetchedBlocks(
 export function enrichBlocksFromPrevious(
   prevBlocks: IndexedBlock[],
   nextBlocks: IndexedBlock[],
-  maxCount = MAX_LATEST_BLOCKS,
+  maxCount = LATEST_BLOCKS_COUNT,
 ): IndexedBlock[] {
   const byHeight = new Map<number, IndexedBlock>();
 

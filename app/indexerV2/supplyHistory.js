@@ -8,19 +8,19 @@ function toSafeInteger(value) {
 	return Number.isFinite(parsed) ? Math.trunc(parsed) : 0;
 }
 
-function loadBlockMintRows(db, chainId) {
+async function loadBlockMintRows(db, chainId) {
 	if (chainId === "vrm") {
-		return db.prepare(`
+		return db.all(`
 			SELECT t.block_height AS height, COALESCE(SUM(v.value_sats), 0) AS mint_sats
 			FROM transactions t
 			INNER JOIN vouts v ON v.chain_id = t.chain_id AND v.txid = t.txid
 			WHERE t.chain_id = ? AND t.is_coinbase = 1
 			GROUP BY t.block_height
 			ORDER BY t.block_height ASC
-		`).all(chainId);
+		`, [chainId]);
 	}
 
-	return db.prepare(`
+	return db.all(`
 		WITH tx_values AS (
 			SELECT
 				t.block_height AS height,
@@ -55,10 +55,10 @@ function loadBlockMintRows(db, chainId) {
 		WHERE mint_sats > 0
 		GROUP BY height
 		ORDER BY height ASC
-	`).all(chainId);
+	`, [chainId]);
 }
 
-function buildSupplySeries(db, chainId) {
+async function buildSupplySeries(db, chainId) {
 	let byChain = seriesCache.get(db);
 	if (!byChain) {
 		byChain = new Map();
@@ -69,7 +69,7 @@ function buildSupplySeries(db, chainId) {
 		return byChain.get(chainId);
 	}
 
-	const mintRows = loadBlockMintRows(db, chainId);
+	const mintRows = await loadBlockMintRows(db, chainId);
 	let cumulativeSats = 0n;
 	const entries = [];
 
@@ -119,8 +119,8 @@ function supplyAtHeight(series, height) {
 	return entries[lo].supply;
 }
 
-function indexedSupplyAtHeight(db, chainId, height) {
-	const series = buildSupplySeries(db, chainId);
+async function indexedSupplyAtHeight(db, chainId, height) {
+	const series = await buildSupplySeries(db, chainId);
 	return supplyAtHeight(series, height);
 }
 

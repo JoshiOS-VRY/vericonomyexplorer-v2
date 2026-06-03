@@ -27,6 +27,11 @@ const errorMs = Number(
 );
 const logEvery = getLogEvery(args["log-every"]);
 const chain = args.chain;
+// The SQLite file write-lock serializes writers against one shared file. On
+// Postgres each chain writes its own partitions with MVCC, so the lock is not
+// needed and would needlessly serialize the per-chain indexers.
+const usesWriteLock =
+  String(process.env.VCEXP_DB_BACKEND || "sqlite").toLowerCase() !== "postgres";
 
 let stopping = false;
 
@@ -60,7 +65,9 @@ async function runLoop() {
   }
 
   while (!stopping) {
-    const lock = writeLock.tryAcquireWriteLock(chain);
+    const lock = usesWriteLock
+      ? writeLock.tryAcquireWriteLock(chain)
+      : { skipped: false, fd: null };
     if (lock.skipped) {
       console.log(
         `[${chain}] waiting for SQLite write lock (held by ${lock.holder || "unknown"})`,
@@ -101,7 +108,9 @@ async function runLoop() {
       console.log(`[${chain}] retrying in ${errorMs}ms`);
       await sleep(errorMs);
     } finally {
-      writeLock.releaseWriteLock(lock);
+      if (usesWriteLock) {
+        writeLock.releaseWriteLock(lock);
+      }
     }
   }
 

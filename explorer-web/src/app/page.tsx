@@ -1,9 +1,11 @@
+import type { Metadata } from "next";
+import { HomeJsonLd } from "@/components/seo/HomeJsonLd";
 import { AlertBanner } from "@/components/explorer/ExplorerUi";
 import { UserMessageBanner } from "@/components/explorer/UserMessageBanner";
 import { VericonomyHomeLiveBand } from "@/components/explorer/home/VericonomyHomeLiveBand";
 import { VericonomyHomeRichlists } from "@/components/explorer/home/VericonomyHomeRichlists";
 import { VericonomyHomeStatic } from "@/components/explorer/home/VericonomyHomeSections";
-import { getHomeNetwork, getHomeShell } from "@/lib/api/indexer";
+import { getHomeNetwork, getHomeShell, getLandingData } from "@/lib/api/indexer";
 import type {
   ChainSummary,
   HomeNetworkPayload,
@@ -11,6 +13,9 @@ import type {
   LeaderboardResult,
   RichlistResult,
 } from "@/lib/api/types";
+import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = pageMetadata(staticPageSeo.home);
 
 export const revalidate = 30;
 
@@ -24,11 +29,21 @@ export default async function HomePage() {
       getHomeNetwork().catch(() => null),
     ]);
   } catch {
-    return (
-      <AlertBanner title="Explorer Unavailable">
-        Unable to load chain data. Ensure the API server is running.
-      </AlertBanner>
-    );
+    try {
+      const landing = await getLandingData();
+      shell = {
+        vrm: { summary: landing.vrmSummary, richlist: landing.vrmRichlist },
+        vrc: { summary: landing.vrcSummary, richlist: landing.vrcRichlist },
+        vrmLeaderboard: landing.vrmLeaderboard,
+        fetchedAt: new Date().toISOString(),
+      };
+    } catch {
+      return (
+        <AlertBanner title="Explorer Unavailable">
+          Unable to load chain data. Ensure the API server is running.
+        </AlertBanner>
+      );
+    }
   }
 
   if (!shell.vrm?.summary && !shell.vrc?.summary) {
@@ -43,6 +58,7 @@ export default async function HomePage() {
 
   return (
     <div className="home-page space-y-10">
+      <HomeJsonLd />
       <UserMessageBanner />
       <VericonomyHomeLiveBand
         initialShell={normalized}

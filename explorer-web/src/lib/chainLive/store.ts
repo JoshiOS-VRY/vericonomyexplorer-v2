@@ -5,6 +5,7 @@ import {
   enrichBlocksFromPrevious,
   shouldApplyOptimisticTip,
 } from "@/lib/liveBlocksMerge";
+import { LATEST_BLOCKS_COUNT } from "@/lib/chainBlocksDisplay";
 
 export type ChainId = "vrm" | "vrc";
 
@@ -28,7 +29,6 @@ export interface ChainLiveSnapshot {
 const CHAINS: ChainId[] = ["vrm", "vrc"];
 const POLL_MS = 30_000;
 const REFRESH_DEBOUNCE_MS = 2_000;
-const MAX_LATEST_BLOCKS = 10;
 
 const listeners = new Map<ChainId, Set<() => void>>();
 const snapshots = new Map<ChainId, ChainLiveSnapshot>();
@@ -218,7 +218,7 @@ function applyOptimisticTip(chainId: ChainId, tip: TipEvent): void {
           txCount: 0,
         } satisfies IndexedBlock,
         ...current.summary.latestBlocks,
-      ].slice(0, MAX_LATEST_BLOCKS)
+      ].slice(0, LATEST_BLOCKS_COUNT)
     : current.summary.latestBlocks;
 
   const hashes = knownHashes.get(chainId) ?? new Set<string>();

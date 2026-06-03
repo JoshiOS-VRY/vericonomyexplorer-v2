@@ -90,7 +90,7 @@ function createStatements(db) {
 	};
 }
 
-function rollbackFromHeight(chainId, fromHeight, options = {}) {
+async function rollbackFromHeight(chainId, fromHeight, options = {}) {
 	const db = options.db || dbModule.openDatabase();
 	const height = Number(fromHeight);
 
@@ -98,10 +98,10 @@ function rollbackFromHeight(chainId, fromHeight, options = {}) {
 		throw new Error(`Invalid rollback height: ${fromHeight}`);
 	}
 
-	const statements = createStatements(db);
-	const blocks = statements.findBlocks.all(chainId, height);
-	const txids = statements.findRollbackTxids.all(chainId, height).map(row => row.txid);
-	const affectedAddresses = statements.findAffectedAddresses.all(chainId, height).map(row => row.address);
+	const readStatements = createStatements(db);
+	const blocks = await readStatements.findBlocks.all(chainId, height);
+	const txids = (await readStatements.findRollbackTxids.all(chainId, height)).map(row => row.txid);
+	const affectedAddresses = (await readStatements.findAffectedAddresses.all(chainId, height)).map(row => row.address);
 	const now = Date.now();
 	const summary = {
 		chainId,
@@ -114,23 +114,25 @@ function rollbackFromHeight(chainId, fromHeight, options = {}) {
 		newTipHash: null
 	};
 
-	const run = db.transaction(() => {
+	await db.runTransaction(async (txdb) => {
+		const statements = createStatements(txdb);
+
 		for (const txid of txids) {
-			const result = statements.clearSpentMarkersForTxids.run(chainId, txid);
+			const result = await statements.clearSpentMarkersForTxids.run(chainId, txid);
 			summary.spentMarkersCleared += Number(result.changes || 0);
 		}
 
-		statements.deleteBlocksFromHeight.run(chainId, height);
+		await statements.deleteBlocksFromHeight.run(chainId, height);
 
 		for (const address of affectedAddresses) {
-			rebuildAddressBalance(statements, chainId, address, now);
+			await rebuildAddressBalance(statements, chainId, address, now);
 		}
 
-		const previousTip = statements.findPreviousTip.get(chainId);
+		const previousTip = await statements.findPreviousTip.get(chainId);
 		summary.newTipHeight = previousTip ? Number(previousTip.height) : null;
 		summary.newTipHash = previousTip ? previousTip.hash : null;
 
-		statements.upsertSyncState.run(
+		await statements.upsertSyncState.run(
 			chainId,
 			null,
 			summary.newTipHeight,
@@ -142,22 +144,20 @@ function rollbackFromHeight(chainId, fromHeight, options = {}) {
 		);
 	});
 
-	run();
-
 	return summary;
 }
 
-function rebuildAddressBalance(statements, chainId, address, now) {
-	statements.deleteAddressBalance.run(chainId, address);
+async function rebuildAddressBalance(statements, chainId, address, now) {
+	await statements.deleteAddressBalance.run(chainId, address);
 
-	const aggregate = statements.findAddressAggregate.get(chainId, address);
-	const txCount = statements.findAddressTxCount.get(chainId, address).tx_count;
+	const aggregate = await statements.findAddressAggregate.get(chainId, address);
+	const txCount = (await statements.findAddressTxCount.get(chainId, address)).tx_count;
 
 	if (!aggregate.last_seen_height && Number(txCount) === 0) {
 		return;
 	}
 
-	statements.insertAddressBalance.run(
+	await statements.insertAddressBalance.run(
 		chainId,
 		address,
 		aggregate.balance_sats,

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   AlertBanner,
   PageHero,
@@ -10,6 +11,9 @@ import {
   type MinersPeriodId,
 } from "@/lib/minersPeriods";
 import { normalizeLimit, normalizeOffset } from "@/lib/utils";
+import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = pageMetadata(staticPageSeo.vrmMiners);
 
 export default async function MinersPage({
   searchParams,

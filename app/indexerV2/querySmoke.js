@@ -82,8 +82,10 @@ function run() {
 			assert.ok(block.confirmations >= 1);
 		}
 		if (block.totals) {
-			assert.ok(block.totals.fee);
 			assert.ok(block.totals.outputValue);
+			if (block.totals.fee) {
+				assert.ok(typeof block.totals.feeAtomic === "string");
+			}
 		}
 		if (block.coinbase) {
 			assert.ok(block.coinbase.txid);

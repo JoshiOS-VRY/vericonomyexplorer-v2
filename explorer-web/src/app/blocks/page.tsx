@@ -1,4 +1,8 @@
+import type { Metadata } from "next";
 import { BlocksPageClient } from "@/components/legacy/BlocksPageClient";
+import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
+
+export const metadata: Metadata = pageMetadata(staticPageSeo.blocks);
 import { normalizeLimit, normalizeOffset } from "@/lib/utils";
 
 const DEFAULT_LIMIT = 25;
