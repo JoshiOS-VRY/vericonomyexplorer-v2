@@ -200,6 +200,7 @@
     initCopyButtons();
     initThemeControls();
     hookHistoryForNav();
+    markActiveNav();
   }
 
   if (document.readyState === "loading") {

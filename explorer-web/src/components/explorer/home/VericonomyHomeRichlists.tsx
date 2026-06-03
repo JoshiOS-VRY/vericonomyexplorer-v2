@@ -6,6 +6,7 @@ import { BcPanel } from "@/components/explorer/BlockchairUi";
 import { RichlistBalanceList } from "@/components/explorer/home/RichlistBalanceList";
 import { useHomeNetworkLive } from "@/hooks/useHomeNetworkLive";
 import type {
+  ChainMarket,
   ChainSummary,
   HomeNetworkPayload,
   RichlistResult,
@@ -14,6 +15,7 @@ import { CHAIN_EXPLORERS, chainAddressPath } from "@/lib/chainDisplay";
 import { enrichHomeNetworkPayload } from "@/lib/enrichNetwork";
 import { formatExplorerUserMessage } from "@/lib/explorerCopy";
 import { emptyNetworkPayload } from "@/lib/homeDefaults";
+import { resolveRichlistTotalSupply } from "@/lib/richlistSupply";
 import { cn } from "@/lib/utils";
 
 interface VericonomyHomeRichlistsProps {
@@ -22,6 +24,8 @@ interface VericonomyHomeRichlistsProps {
   vrmSummary: ChainSummary;
   vrcSummary: ChainSummary;
   initialNetwork?: HomeNetworkPayload;
+  vrmMarket?: ChainMarket;
+  vrcMarket?: ChainMarket;
 }
 
 function resolveRichlistSupply(
@@ -41,6 +45,8 @@ export function VericonomyHomeRichlists({
   vrmSummary,
   vrcSummary,
   initialNetwork,
+  vrmMarket,
+  vrcMarket,
 }: VericonomyHomeRichlistsProps) {
   const { network } = useHomeNetworkLive(initialNetwork ?? emptyNetworkPayload());
   const enrichedNetwork = useMemo(
@@ -48,8 +54,14 @@ export function VericonomyHomeRichlists({
     [network, vrmSummary, vrcSummary],
   );
 
-  const vrmSupply = resolveRichlistSupply("vrm", enrichedNetwork, initialNetwork);
-  const vrcSupply = resolveRichlistSupply("vrc", enrichedNetwork, initialNetwork);
+  const vrmSupply = resolveRichlistTotalSupply(
+    resolveRichlistSupply("vrm", enrichedNetwork, initialNetwork),
+    vrmMarket,
+  );
+  const vrcSupply = resolveRichlistTotalSupply(
+    resolveRichlistSupply("vrc", enrichedNetwork, initialNetwork),
+    vrcMarket,
+  );
 
   return (
     <div className="grid gap-6 xl:grid-cols-2">

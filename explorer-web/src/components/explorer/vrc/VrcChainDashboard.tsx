@@ -15,6 +15,7 @@ import type { ChainMarket, ChainSummary, RichlistResult, VrcNetworkStats } from 
 import { fetchHomeMarket, fetchHomeNetwork } from "@/lib/api/client";
 import { applyOnChainMarketCap } from "@/lib/enrichMarket";
 import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
+import { resolveRichlistTotalSupply } from "@/lib/richlistSupply";
 
 export function VrcChainDashboard({
   summary: initialSummary,
@@ -71,6 +72,7 @@ export function VrcChainDashboard({
 
   const tipBlock = latestBlocks[0];
   const tipBlockHref = tipBlock ? `/vrc/block/${tipBlock.height}` : null;
+  const richlistSupply = resolveRichlistTotalSupply(network.supply, market);
 
   return (
     <div className="space-y-6">
@@ -108,7 +110,7 @@ export function VrcChainDashboard({
         <ChainRichlistPreview
           chainId="vrc"
           richlist={initialRichlist}
-          totalSupply={network.supply}
+          totalSupply={richlistSupply}
         />
       </div>
 

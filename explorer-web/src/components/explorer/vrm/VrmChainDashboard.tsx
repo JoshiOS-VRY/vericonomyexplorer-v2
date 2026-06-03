@@ -17,6 +17,7 @@ import type { ChainMarket, VrmDashboardPayload, VrmNetworkStats } from "@/lib/ap
 import { fetchHomeMarket, fetchHomeNetwork } from "@/lib/api/client";
 import { applyOnChainMarketCap } from "@/lib/enrichMarket";
 import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
+import { resolveRichlistTotalSupply } from "@/lib/richlistSupply";
 
 export function VrmChainDashboard({
   summary: initialSummary,
@@ -73,6 +74,7 @@ export function VrmChainDashboard({
 
   const tipBlock = latestBlocks[0];
   const tipBlockHref = tipBlock ? `/vrm/block/${tipBlock.height}` : null;
+  const richlistSupply = resolveRichlistTotalSupply(network.supply, market);
 
   return (
     <div className="space-y-6">
@@ -110,7 +112,7 @@ export function VrmChainDashboard({
           <ChainRichlistPreview
             chainId="vrm"
             richlist={initialRichlist}
-            totalSupply={network.supply}
+            totalSupply={richlistSupply}
           />
           <VrmMinersPreview miners={initialMiners} />
           <VrmLeaderboardPreview leaderboard={initialLeaderboard} />

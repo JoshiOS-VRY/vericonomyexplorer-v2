@@ -98,7 +98,7 @@ function HeaderNavDropdownMenu({
       role="menu"
       style={style}
       className={cn(
-        "z-50 min-w-[10rem] rounded-md border border-border bg-bg-panel py-1 shadow-lg",
+        "z-[60] min-w-[10rem] rounded-md border border-border bg-bg-panel py-1 shadow-lg",
         className,
       )}
     >
@@ -234,12 +234,16 @@ function HeaderNavDropdown({
           ▾
         </span>
       </button>
-      {usePortalMenu && menu
-        ? createPortal(
-            <div ref={menuRef}>{menu}</div>,
-            document.body,
-          )
-        : menu}
+      {menu
+        ? usePortalMenu
+          ? createPortal(
+              <div ref={menuRef}>{menu}</div>,
+              document.body,
+            )
+          : (
+              <div ref={menuRef}>{menu}</div>
+            )
+        : null}
     </div>
   );
 }

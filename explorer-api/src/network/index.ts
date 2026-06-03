@@ -11,6 +11,7 @@ import {
   parseRpcNumber,
   parseVrcMiningInfo,
   resolveVrmBlockTimeMinutes,
+  supplyFromBlockchainInfo,
   type RpcCall,
 } from "./stats.js";
 
@@ -103,6 +104,28 @@ async function resolveVrmSupply(
   // Do not use estimatedSupplyAtHeight for VRM: Verium PoWT rewards are not approximated
   // by the placeholder blockRewardFunction and would skew supply (~275K vs ~3.7M).
   return fetchIndexedSupply("vrm", blocks);
+}
+
+async function resolveVrcSupply(
+  call: RpcCall,
+  blocks: number | null,
+  blockchainInfo: unknown,
+): Promise<number | null> {
+  if (blocks == null) {
+    return null;
+  }
+
+  const fromChain = supplyFromBlockchainInfo(blockchainInfo);
+  if (fromChain != null && fromChain > 0) {
+    return fromChain;
+  }
+
+  const rpcSupply = await fetchOnChainSupply("vrc", call, blocks, blockchainInfo);
+  if (rpcSupply != null && rpcSupply > 0) {
+    return rpcSupply;
+  }
+
+  return fetchIndexedSupply("vrc", blocks);
 }
 
 function difficultyToHashrateKhPerMin(
@@ -204,15 +227,14 @@ export async function fetchVrcNetworkStats(): Promise<VrcNetworkStats> {
     const blockchainInfo = (await call("getblockchaininfo").catch(() => null)) as {
       blocks?: unknown;
       difficulty?: unknown;
+      totalsupply?: unknown;
     } | null;
 
     const blocks = parseRpcNumber(blockchainInfo?.blocks);
     let difficulty = parseRpcNumber(blockchainInfo?.difficulty);
 
     const [supply, miningInfo] = await Promise.all([
-      blocks != null
-        ? fetchOnChainSupply("vrc", call, blocks, blockchainInfo)
-        : Promise.resolve(null),
+      resolveVrcSupply(call, blocks, blockchainInfo),
       call("getmininginfo").catch(() => null),
     ]);
 
