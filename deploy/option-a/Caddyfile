@@ -27,8 +27,13 @@
   }
 }
 
-# Keep legacy Express routes public on a dedicated hostname.
-{$LEGACY_PUBLIC_DOMAIN}, {$LEGACY_STAGING_DOMAIN} {
+# Legacy Express (separate blocks — comma-separated labels break if LEGACY_STAGING_DOMAIN is unset).
+{$LEGACY_PUBLIC_DOMAIN} {
+  encode zstd gzip
+  reverse_proxy explorer-express:3002
+}
+
+{$LEGACY_STAGING_DOMAIN} {
   encode zstd gzip
   reverse_proxy explorer-express:3002
 }
