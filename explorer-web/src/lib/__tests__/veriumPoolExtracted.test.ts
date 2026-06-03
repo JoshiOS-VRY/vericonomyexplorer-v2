@@ -1,13 +1,33 @@
 import { describe, expect, it } from "@jest/globals";
 import {
-  isVeriumPoolExtracted,
   VERIUM_POOL_DISPLAY_NAME,
+  VERIUM_POOL_PAYOUT_ADDRESS,
+  isVeriumPoolExtracted,
+  isVeriumPoolPayoutAddress,
 } from "@/lib/veriumPoolExtracted";
+
+describe("isVeriumPoolPayoutAddress", () => {
+  it("matches the Vericonomy pool payout address", () => {
+    expect(isVeriumPoolPayoutAddress(VERIUM_POOL_PAYOUT_ADDRESS)).toBe(true);
+  });
+
+  it("rejects other addresses", () => {
+    expect(isVeriumPoolPayoutAddress("VRotherAddress")).toBe(false);
+  });
+});
 
 describe("isVeriumPoolExtracted", () => {
   it("matches the Vericonomy pool display name", () => {
     expect(
       isVeriumPoolExtracted({ extractedBy: VERIUM_POOL_DISPLAY_NAME }),
+    ).toBe(true);
+  });
+
+  it("matches pool payout address without display name", () => {
+    expect(
+      isVeriumPoolExtracted({
+        extractedByAddress: VERIUM_POOL_PAYOUT_ADDRESS,
+      }),
     ).toBe(true);
   });
 

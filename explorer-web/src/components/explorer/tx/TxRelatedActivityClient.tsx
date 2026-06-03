@@ -1,16 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { ChainAddressLink } from "@/components/explorer/address/ChainAddressLink";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { TimeCell } from "@/components/explorer/ExplorerUi";
 import { clientApiFetch } from "@/lib/api/client";
 import type { TransactionRelatedAddressesResult } from "@/lib/api/types";
-import {
-  chainAddressPath,
-  chainTxPath,
-  type ChainId,
-} from "@/lib/chainDisplay";
+import { chainTxPath, type ChainId } from "@/lib/chainDisplay";
 import {
   mapTransactionRelatedGroups,
   type TxRelatedActivityGroup,
@@ -101,13 +98,13 @@ export function TxRelatedActivityClient({
         {groups.map((group) => (
           <div key={group.address} className="px-5 py-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <Link
-                href={chainAddressPath(chainId, group.address)}
-                className="text-sm text-accent hover:underline"
+              <ChainAddressLink
+                chainId={chainId}
+                address={group.address}
+                maxLength={32}
                 prefetch
-              >
-                {ellipsizeMiddle(group.address, 32)}
-              </Link>
+                className="text-sm"
+              />
               <span className="text-xs text-fg-subtle">
                 Recent transactions
               </span>

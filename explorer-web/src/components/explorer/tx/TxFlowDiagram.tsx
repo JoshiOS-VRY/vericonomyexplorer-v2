@@ -69,6 +69,7 @@ function FlowNode({
             href={chainAddressPath(chainId, address)}
             value={address}
             maxLength={18}
+            chainId={chainId}
           />
         </div>
       ) : (

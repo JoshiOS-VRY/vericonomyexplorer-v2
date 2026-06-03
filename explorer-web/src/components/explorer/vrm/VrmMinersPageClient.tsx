@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { VrmAddressLink } from "@/components/explorer/address/VrmAddressLink";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import {
@@ -99,13 +100,12 @@ export function VrmMinersPageClient({
                 headers={["Rank", "Address", "Mined", "Blocks", "Last block"]}
                 rows={miners.items.map((item) => [
                   `#${item.rank}`,
-                  <Link
+                  <VrmAddressLink
                     key="a"
-                    href={`/vrm/address/${item.address}`}
-                    className="text-xs text-accent hover:underline"
-                  >
-                    {item.address}
-                  </Link>,
+                    address={item.address}
+                    showFullAddress
+                    className="text-xs"
+                  />,
                   `${item.mined.amount} ${item.mined.ticker}`,
                   formatHeight(item.blockCount),
                   item.lastMinedHeight != null ? (

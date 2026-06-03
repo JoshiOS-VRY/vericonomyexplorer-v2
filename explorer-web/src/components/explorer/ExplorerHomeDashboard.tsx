@@ -7,6 +7,7 @@ import {
   BcStatGrid,
   BcTableLink,
 } from "@/components/explorer/BlockchairUi";
+import { VrmAddressLabel } from "@/components/explorer/address/VrmAddressLink";
 import {
   FeatureTile,
   PageHero,
@@ -313,7 +314,7 @@ function ChainRichlistPanel({ richlist }: { richlist: RichlistResult }) {
           items={richlist.items.map((item) => ({
             href: `/vrm/address/${item.address}`,
             rank: item.rank,
-            label: ellipsizeMiddle(item.address, 18),
+            label: <VrmAddressLabel address={item.address} maxLength={18} />,
             value: `${item.balance.amount} ${item.balance.ticker}`,
           }))}
         />
@@ -328,7 +329,7 @@ function ChainRichlistPanel({ richlist }: { richlist: RichlistResult }) {
                 {item.rank}
               </span>
               <strong className="flex-1 truncate text-xs text-fg">
-                {ellipsizeMiddle(item.address, 18)}
+                <VrmAddressLabel address={item.address} maxLength={18} />
               </strong>
               <em className="text-sm not-italic tabular-nums text-fg-muted">
                 {item.balance.amount} {item.balance.ticker}

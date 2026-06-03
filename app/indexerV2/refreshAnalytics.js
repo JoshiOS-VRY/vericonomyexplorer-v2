@@ -7,35 +7,39 @@
 // transactions, vouts, vins, address_events, address_balances) but NOT the
 // derived analytics (block totals, chain-activity buckets, address period
 // stats, address balance buckets, miner rollup). This script folds only the
-// rows newer than each rollup's persisted watermark into those tables, so a
-// cron tick is cheap and the first run seeds full history.
+// rows newer than each rollup's persisted height watermark into those tables,
+// so a cron tick is cheap and the first run seeds full history.
 //
-// It is the single canonical owner of these rollups. Semantics match the live
-// ingest path (app/indexerV2/ingest.js):
-//   * period stats / balance buckets are applied ONCE per address_event
-//     (recordAddressPeriodEvent already writes both week+month buckets),
-//   * tx_count increments only on the first event of an (address, txid).
-// (The legacy backfillStats.js double-counts period amounts; it is not used on
-// the Postgres backend.)
+// Everything except the block-totals tail is set-based SQL chunked by height
+// with ON CONFLICT (...) DO UPDATE += , which is exact-once per source row
+// (each block height is processed in exactly one chunk) and produces identical
+// results to the live ingest path (app/indexerV2/ingest.js):
+//   * period received/sent/net are summed per address per calendar week/month,
+//     tx_count = COUNT(DISTINCT txid) (== live's first-event-per-(addr,txid)),
+//   * balance buckets sum magnitudes per category per hour,
+//   * chain activity counts mined/staked/received txs + blocks per hour,
+//   * miner_stats sums coinbase outputs per address per day.
+// (The legacy backfillStats.js double-counts period amounts and is row-by-row;
+// it is not used on the Postgres backend.)
 //
 // Usage: node app/indexerV2/refreshAnalytics.js vrm|vrc
 
 require("./loadEnv.js");
 
 const dbModule = require("./db.js");
-const {
-	createPeriodStatStatements,
-	recordTransactionActivity,
-	recordBlockActivity,
-	recordAddressBalanceBucket,
-	recordAddressPeriodEvent,
-	toSafeInteger
-} = require("./periodStats.js");
+const { toSafeInteger } = require("./periodStats.js");
 const { computeBlockTotalsRawAsync } = require("./blockTotals.js");
 
-const HEIGHT_CHUNK = Number(process.env.VCEXP_REFRESH_HEIGHT_CHUNK ?? 20000);
-const EVENT_BATCH = Number(process.env.VCEXP_REFRESH_EVENT_BATCH ?? 5000);
+const HEIGHT_CHUNK = Number(process.env.VCEXP_REFRESH_HEIGHT_CHUNK ?? 100000);
 const BLOCK_TOTALS_BATCH = Number(process.env.VCEXP_REFRESH_TOTALS_BATCH ?? 2000);
+
+// Unix timestamp (seconds) of the UTC week (Monday)/month start of a block
+// time. AT TIME ZONE 'UTC' makes the truncation independent of session TZ and
+// matches periodStats.getPeriodBoundsForTime.
+const WEEK_START = "extract(epoch FROM date_trunc('week', to_timestamp(time) AT TIME ZONE 'UTC'))::bigint";
+const WEEK_END = "extract(epoch FROM date_trunc('week', to_timestamp(time) AT TIME ZONE 'UTC') + interval '7 days')::bigint";
+const MONTH_START = "extract(epoch FROM date_trunc('month', to_timestamp(time) AT TIME ZONE 'UTC'))::bigint";
+const MONTH_END = "extract(epoch FROM date_trunc('month', to_timestamp(time) AT TIME ZONE 'UTC') + interval '1 month')::bigint";
 
 function num(value) {
 	return toSafeInteger(value);
@@ -43,19 +47,6 @@ function num(value) {
 
 function log(message) {
 	process.stderr.write(`[refresh-analytics] ${message}\n`);
-}
-
-function activityCategory(row) {
-	if (row.event_type === "spend") {
-		return "spent";
-	}
-	if (Number(row.is_coinstake)) {
-		return "staked";
-	}
-	if (Number(row.is_coinbase)) {
-		return "mined";
-	}
-	return "received";
 }
 
 async function getMaxHeight(db, chain) {
@@ -66,30 +57,22 @@ async function getMaxHeight(db, chain) {
 	return row && row.h != null ? num(row.h) : -1;
 }
 
-async function getState(db, chain, rollup) {
-	return db.get(
-		"SELECT last_height, last_event_id, last_time FROM rollup_state WHERE chain_id = ? AND rollup = ?",
+async function getWatermark(db, chain, rollup) {
+	const row = await db.get(
+		"SELECT last_height FROM rollup_state WHERE chain_id = ? AND rollup = ?",
 		[chain, rollup]
 	);
+	return row && row.last_height != null ? num(row.last_height) : -1;
 }
 
-async function advanceState(db, chain, rollup, fields) {
+async function setWatermark(db, chain, rollup, lastHeight) {
 	await db.run(
-		`INSERT INTO rollup_state (chain_id, rollup, last_height, last_event_id, last_time, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?)
+		`INSERT INTO rollup_state (chain_id, rollup, last_height, updated_at)
+		 VALUES (?, ?, ?, ?)
 		 ON CONFLICT (chain_id, rollup) DO UPDATE SET
 			last_height = excluded.last_height,
-			last_event_id = excluded.last_event_id,
-			last_time = excluded.last_time,
 			updated_at = excluded.updated_at`,
-		[
-			chain,
-			rollup,
-			fields.lastHeight ?? -1,
-			fields.lastEventId ?? 0,
-			fields.lastTime ?? 0,
-			Date.now()
-		]
+		[chain, rollup, lastHeight, Date.now()]
 	);
 }
 
@@ -97,8 +80,7 @@ async function advanceState(db, chain, rollup, fields) {
 // --index-only mode (NULL totals). The one-time bulk seed is the set-based
 // backfill-block-totals.sql; here we only compute the NULL tail.
 async function refreshBlockTotals(db, chain, maxHeight) {
-	const state = await getState(db, chain, "block_totals");
-	let wm = state ? num(state.last_height) : -1;
+	let wm = await getWatermark(db, chain, "block_totals");
 	let processed = 0;
 
 	while (wm < maxHeight) {
@@ -111,7 +93,6 @@ async function refreshBlockTotals(db, chain, maxHeight) {
 		);
 
 		if (rows.length === 0) {
-			wm = maxHeight;
 			break;
 		}
 
@@ -132,123 +113,160 @@ async function refreshBlockTotals(db, chain, maxHeight) {
 
 		wm = num(rows[rows.length - 1].height);
 		processed += rows.length;
-		await advanceState(db, chain, "block_totals", { lastHeight: wm });
+		await setWatermark(db, chain, "block_totals", wm);
 	}
 
-	await advanceState(db, chain, "block_totals", { lastHeight: maxHeight });
+	await setWatermark(db, chain, "block_totals", maxHeight);
 	return processed;
 }
 
 // chain_activity_buckets: per-hour mined/staked/received tx counts + block_count.
 async function refreshChainActivity(db, chain, maxHeight) {
-	const state = await getState(db, chain, "chain_activity");
-	let wm = state ? num(state.last_height) : -1;
-	let processed = 0;
+	let wm = await getWatermark(db, chain, "chain_activity");
+	let chunks = 0;
 
 	while (wm < maxHeight) {
 		const hi = Math.min(wm + HEIGHT_CHUNK, maxHeight);
-		const txs = await db.all(
-			`SELECT time, is_coinbase, is_coinstake FROM transactions
-			 WHERE chain_id = ? AND block_height > ? AND block_height <= ? AND time IS NOT NULL`,
-			[chain, wm, hi]
-		);
-		const blocks = await db.all(
-			`SELECT time FROM blocks
-			 WHERE chain_id = ? AND status = 'main' AND height > ? AND height <= ? AND time IS NOT NULL`,
-			[chain, wm, hi]
+		const now = Date.now();
+
+		await db.run(
+			`INSERT INTO chain_activity_buckets
+				(chain_id, bucket_start, mined_count, staked_count, received_count, block_count, updated_at)
+			 SELECT chain_id,
+					(time / 3600) * 3600,
+					SUM(CASE WHEN is_coinbase = 1 THEN 1 ELSE 0 END),
+					SUM(CASE WHEN is_coinbase = 0 AND is_coinstake = 1 THEN 1 ELSE 0 END),
+					SUM(CASE WHEN is_coinbase = 0 AND is_coinstake = 0 THEN 1 ELSE 0 END),
+					0,
+					?
+			 FROM transactions
+			 WHERE chain_id = ? AND block_height > ? AND block_height <= ? AND time IS NOT NULL
+			 GROUP BY chain_id, (time / 3600) * 3600
+			 ON CONFLICT (chain_id, bucket_start) DO UPDATE SET
+				mined_count = chain_activity_buckets.mined_count + excluded.mined_count,
+				staked_count = chain_activity_buckets.staked_count + excluded.staked_count,
+				received_count = chain_activity_buckets.received_count + excluded.received_count,
+				updated_at = excluded.updated_at`,
+			[now, chain, wm, hi]
 		);
 
-		await db.runTransaction(async (txdb) => {
-			const statements = createPeriodStatStatements(txdb);
-			const now = Date.now();
-			for (const tx of txs) {
-				await recordTransactionActivity(
-					statements,
-					chain,
-					num(tx.time),
-					Number(tx.is_coinbase),
-					Number(tx.is_coinstake),
-					now
-				);
-			}
-			for (const block of blocks) {
-				await recordBlockActivity(statements, chain, num(block.time), now);
-			}
-		});
+		await db.run(
+			`INSERT INTO chain_activity_buckets
+				(chain_id, bucket_start, mined_count, staked_count, received_count, block_count, updated_at)
+			 SELECT chain_id, (time / 3600) * 3600, 0, 0, 0, COUNT(*), ?
+			 FROM blocks
+			 WHERE chain_id = ? AND status = 'main' AND height > ? AND height <= ? AND time IS NOT NULL
+			 GROUP BY chain_id, (time / 3600) * 3600
+			 ON CONFLICT (chain_id, bucket_start) DO UPDATE SET
+				block_count = chain_activity_buckets.block_count + excluded.block_count,
+				updated_at = excluded.updated_at`,
+			[now, chain, wm, hi]
+		);
 
 		wm = hi;
-		processed += txs.length + blocks.length;
-		await advanceState(db, chain, "chain_activity", { lastHeight: wm });
+		chunks += 1;
+		await setWatermark(db, chain, "chain_activity", wm);
 		log(`${chain} chain_activity: heights<=${wm}/${maxHeight}`);
 	}
 
-	return processed;
+	return chunks;
 }
 
-// address_period_stats (week/month) + address_balance_buckets from new events.
+// address_period_stats (week+month) + address_balance_buckets (hourly) from
+// new events. A txid lives in exactly one block height, so COUNT(DISTINCT txid)
+// per chunk sums exactly across chunks.
 async function refreshAddressStats(db, chain, maxHeight) {
-	const state = await getState(db, chain, "address_stats");
-	let wm = state ? num(state.last_event_id) : 0;
-	let processed = 0;
+	let wm = await getWatermark(db, chain, "address_stats");
+	let chunks = 0;
 
-	while (true) {
-		const batch = await db.all(
-			`SELECT ae.id, ae.address, ae.delta_sats, ae.block_height, ae.time, ae.txid, ae.event_type,
-				t.is_coinbase, t.is_coinstake,
-				(ae.id = (
-					SELECT MIN(e2.id) FROM address_events e2
-					WHERE e2.chain_id = ae.chain_id AND e2.address = ae.address AND e2.txid = ae.txid
-				)) AS is_first
-			 FROM address_events ae
-			 JOIN transactions t ON t.chain_id = ae.chain_id AND t.txid = ae.txid
-			 WHERE ae.chain_id = ? AND ae.id > ? AND ae.block_height <= ?
-			 ORDER BY ae.id ASC LIMIT ?`,
-			[chain, wm, maxHeight, EVENT_BATCH]
-		);
+	while (wm < maxHeight) {
+		const hi = Math.min(wm + HEIGHT_CHUNK, maxHeight);
+		const now = Date.now();
 
-		if (batch.length === 0) {
-			break;
+		for (const period of [
+			{ name: "week", start: WEEK_START, end: WEEK_END },
+			{ name: "month", start: MONTH_START, end: MONTH_END }
+		]) {
+			await db.run(
+				`INSERT INTO address_period_stats
+					(chain_id, period, period_start, period_end, address,
+					 received_sats, sent_sats, net_sats, tx_count,
+					 last_seen_height, last_seen_time, updated_at)
+				 SELECT chain_id,
+						'${period.name}',
+						${period.start},
+						${period.end},
+						address,
+						SUM(CASE WHEN delta_sats > 0 THEN delta_sats ELSE 0 END),
+						SUM(CASE WHEN delta_sats < 0 THEN -delta_sats ELSE 0 END),
+						SUM(delta_sats),
+						COUNT(DISTINCT txid),
+						MAX(block_height),
+						MAX(time),
+						?
+				 FROM address_events
+				 WHERE chain_id = ? AND block_height > ? AND block_height <= ?
+				 GROUP BY chain_id, address, ${period.start}, ${period.end}
+				 ON CONFLICT (chain_id, period, period_start, address) DO UPDATE SET
+					received_sats = address_period_stats.received_sats + excluded.received_sats,
+					sent_sats = address_period_stats.sent_sats + excluded.sent_sats,
+					net_sats = address_period_stats.net_sats + excluded.net_sats,
+					tx_count = address_period_stats.tx_count + excluded.tx_count,
+					last_seen_height = GREATEST(address_period_stats.last_seen_height, excluded.last_seen_height),
+					last_seen_time = GREATEST(address_period_stats.last_seen_time, excluded.last_seen_time),
+					updated_at = excluded.updated_at`,
+				[now, chain, wm, hi]
+			);
 		}
 
-		await db.runTransaction(async (txdb) => {
-			const statements = createPeriodStatStatements(txdb);
-			const now = Date.now();
-			for (const row of batch) {
-				await recordAddressBalanceBucket(
-					statements,
-					chain,
-					row.address,
-					row.delta_sats,
-					num(row.time),
-					activityCategory(row),
-					now
-				);
-				await recordAddressPeriodEvent(
-					statements,
-					chain,
-					row.address,
-					row.delta_sats,
-					num(row.block_height),
-					num(row.time),
-					Boolean(row.is_first),
-					now
-				);
-			}
-		});
+		await db.run(
+			`INSERT INTO address_balance_buckets
+				(chain_id, address, bucket_start, mined_sats, staked_sats, received_sats, spent_sats, delta_sats, updated_at)
+			 SELECT e.chain_id,
+					e.address,
+					(e.time / 3600) * 3600,
+					SUM(CASE WHEN e.cat = 'mined' THEN e.mag ELSE 0 END),
+					SUM(CASE WHEN e.cat = 'staked' THEN e.mag ELSE 0 END),
+					SUM(CASE WHEN e.cat = 'received' THEN e.mag ELSE 0 END),
+					SUM(CASE WHEN e.cat = 'spent' THEN e.mag ELSE 0 END),
+					SUM(e.delta_sats),
+					?
+			 FROM (
+				SELECT ae.chain_id, ae.address, ae.time, ae.delta_sats,
+					ABS(ae.delta_sats) AS mag,
+					CASE
+						WHEN ae.event_type = 'spend' THEN 'spent'
+						WHEN t.is_coinstake = 1 THEN 'staked'
+						WHEN t.is_coinbase = 1 THEN 'mined'
+						ELSE 'received'
+					END AS cat
+				FROM address_events ae
+				JOIN transactions t ON t.chain_id = ae.chain_id AND t.txid = ae.txid
+				WHERE ae.chain_id = ? AND ae.block_height > ? AND ae.block_height <= ?
+			 ) e
+			 GROUP BY e.chain_id, e.address, (e.time / 3600) * 3600
+			 ON CONFLICT (chain_id, address, bucket_start) DO UPDATE SET
+				mined_sats = address_balance_buckets.mined_sats + excluded.mined_sats,
+				staked_sats = address_balance_buckets.staked_sats + excluded.staked_sats,
+				received_sats = address_balance_buckets.received_sats + excluded.received_sats,
+				spent_sats = address_balance_buckets.spent_sats + excluded.spent_sats,
+				delta_sats = address_balance_buckets.delta_sats + excluded.delta_sats,
+				updated_at = excluded.updated_at`,
+			[now, chain, wm, hi]
+		);
 
-		wm = num(batch[batch.length - 1].id);
-		processed += batch.length;
-		await advanceState(db, chain, "address_stats", { lastEventId: wm });
-		log(`${chain} address_stats: event_id<=${wm} (+${processed})`);
+		wm = hi;
+		chunks += 1;
+		await setWatermark(db, chain, "address_stats", wm);
+		log(`${chain} address_stats: heights<=${wm}/${maxHeight}`);
 	}
 
-	return processed;
+	return chunks;
 }
 
 // miner_stats: daily per-miner blocks_mined / mined_sats from coinbase outputs.
 async function refreshMinerStats(db, chain, maxHeight) {
-	const state = await getState(db, chain, "miner_stats");
-	let wm = state ? num(state.last_height) : -1;
+	let wm = await getWatermark(db, chain, "miner_stats");
 	let chunks = 0;
 
 	while (wm < maxHeight) {
@@ -282,7 +300,7 @@ async function refreshMinerStats(db, chain, maxHeight) {
 
 		wm = hi;
 		chunks += 1;
-		await advanceState(db, chain, "miner_stats", { lastHeight: wm });
+		await setWatermark(db, chain, "miner_stats", wm);
 		log(`${chain} miner_stats: heights<=${wm}/${maxHeight}`);
 	}
 
@@ -318,8 +336,8 @@ async function main() {
 
 	log(
 		`${chain}: done in ${((Date.now() - startedAt) / 1000).toFixed(1)}s `
-		+ `(block_totals=${totals}, chain_activity_rows=${activity}, `
-		+ `address_events=${addressStats}, miner_chunks=${miners})`
+		+ `(block_totals=${totals}, chain_activity_chunks=${activity}, `
+		+ `address_chunks=${addressStats}, miner_chunks=${miners})`
 	);
 }
 

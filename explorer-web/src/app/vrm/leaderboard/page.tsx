@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { VrmAddressLink } from "@/components/explorer/address/VrmAddressLink";
 import {
   AlertBanner,
   DataTable,
@@ -114,13 +115,12 @@ export default async function LeaderboardPage({
             ]}
             rows={leaderboard.items.map((item) => [
               `#${item.rank}`,
-              <Link
+              <VrmAddressLink
                 key="a"
-                href={`/vrm/address/${item.address}`}
-                className="text-xs text-accent hover:underline"
-              >
-                {item.address}
-              </Link>,
+                address={item.address}
+                showFullAddress
+                className="text-xs"
+              />,
               `${item.received.amount} ${item.received.ticker}`,
               item.sent.amount,
               <span

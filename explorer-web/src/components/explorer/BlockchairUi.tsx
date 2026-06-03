@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { ChainAddressLink } from "@/components/explorer/address/ChainAddressLink";
 import { AnimatedStatValue } from "@/components/explorer/AnimatedStatValue";
+import { parseAddressFromExplorerHref } from "@/lib/explorerAddressHref";
+import { isVeriumPoolPayoutAddress } from "@/lib/veriumPoolExtracted";
 import { cn } from "@/lib/utils";
 export function BcPageHeader({
   title,
@@ -159,6 +162,22 @@ export function BcHashLink({
   value: string;
   prefetch?: boolean;
 }) {
+  const parsed = parseAddressFromExplorerHref(href);
+  const address = parsed?.address ?? (isVeriumPoolPayoutAddress(value) ? value : null);
+
+  if (parsed && address) {
+    return (
+      <ChainAddressLink
+        chainId={parsed.chainId}
+        address={address}
+        maxLength={value.length}
+        prefetch={prefetch}
+        showFullAddress={value === address}
+        className="bc-hash-link text-[13px]"
+      />
+    );
+  }
+
   return (
     <Link
       href={href}

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { VrmAddressLabel } from "@/components/explorer/address/VrmAddressLink";
 import type { RichlistItem } from "@/lib/api/types";
 import { CHAIN_THEME, type ChainId } from "@/lib/chainDisplay";
 import {
@@ -94,7 +95,11 @@ export function RichlistBalanceList({
                     className="richlist-balance-list__addr block truncate font-mono text-sm font-semibold text-fg sm:text-[15px]"
                     title={item.address}
                   >
-                    {ellipsizeMiddle(item.address, 22)}
+                    {chainId === "vrm" ? (
+                      <VrmAddressLabel address={item.address} maxLength={22} />
+                    ) : (
+                      ellipsizeMiddle(item.address, 22)
+                    )}
                   </strong>
                   {sharePct != null && shareLabel ? (
                     <div

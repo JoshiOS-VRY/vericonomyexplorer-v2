@@ -214,7 +214,7 @@ export function EntityHero({
   footer,
 }: {
   eyebrow: string;
-  title: string;
+  title: React.ReactNode;
   hash?: string;
   meta?: React.ReactNode;
   badges?: React.ReactNode;

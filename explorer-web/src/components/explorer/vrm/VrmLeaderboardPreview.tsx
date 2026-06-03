@@ -3,7 +3,7 @@ import { RankList, formatHeight } from "@/components/explorer/ExplorerUi";
 import { ChainPanelLink } from "@/components/explorer/chain/ChainPanelLink";
 import type { LeaderboardResult } from "@/lib/api/types";
 import { formatExplorerUserMessage } from "@/lib/explorerCopy";
-import { ellipsizeMiddle } from "@/lib/utils";
+import { VrmAddressLabel } from "@/components/explorer/address/VrmAddressLink";
 
 export function VrmLeaderboardPreview({ leaderboard }: { leaderboard: LeaderboardResult }) {
   return (
@@ -31,7 +31,7 @@ export function VrmLeaderboardPreview({ leaderboard }: { leaderboard: Leaderboar
           items={leaderboard.items.map((item) => ({
             href: `/vrm/address/${item.address}`,
             rank: item.rank,
-            label: ellipsizeMiddle(item.address, 18),
+            label: <VrmAddressLabel address={item.address} maxLength={18} />,
             value: `${formatHeight(item.txCount)} tx`,
           }))}
         />

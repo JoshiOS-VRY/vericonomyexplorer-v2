@@ -1,12 +1,11 @@
 import Link from "next/link";
+import { ChainAddressLink } from "@/components/explorer/address/ChainAddressLink";
 import type { IndexedBlock } from "@/lib/api/types";
-import { chainAddressPath, type ChainId } from "@/lib/chainDisplay";
-import { isVeriumPoolExtracted } from "@/lib/veriumPoolExtracted";
-import { cn, ellipsizeMiddle } from "@/lib/utils";
-
-function veriumPoolPillClass(className?: string) {
-  return cn("extracted-by-verium-pool", className);
-}
+import { type ChainId } from "@/lib/chainDisplay";
+import {
+  isVeriumPoolExtracted,
+  veriumPoolPillClassName,
+} from "@/lib/veriumPoolExtracted";
 
 export function ExtractedByCell({
   block,
@@ -27,7 +26,7 @@ export function ExtractedByCell({
         title={block.extractedBy}
         className={
           showVeriumPoolPill
-            ? veriumPoolPillClass(className)
+            ? veriumPoolPillClassName(className)
             : (className ?? "text-sm font-medium text-accent hover:underline")
         }
         target="_blank"
@@ -43,7 +42,7 @@ export function ExtractedByCell({
       <span
         className={
           showVeriumPoolPill
-            ? veriumPoolPillClass(className)
+            ? veriumPoolPillClassName(className)
             : (className ?? "text-sm font-medium text-fg")
         }
         title={block.extractedBy}
@@ -55,13 +54,12 @@ export function ExtractedByCell({
 
   if (block.extractedByAddress) {
     return (
-      <Link
-        href={chainAddressPath(chainId, block.extractedByAddress)}
-        title={block.extractedByAddress}
-        className={className ?? "text-sm font-medium text-accent hover:underline"}
-      >
-        {ellipsizeMiddle(block.extractedByAddress, 24)}
-      </Link>
+      <ChainAddressLink
+        chainId={chainId}
+        address={block.extractedByAddress}
+        maxLength={24}
+        className={className}
+      />
     );
   }
 

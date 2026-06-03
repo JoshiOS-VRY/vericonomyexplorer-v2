@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { VrmAddressLabel } from "@/components/explorer/address/VrmAddressLink";
 import { EntityHero } from "@/components/explorer/BlockDetail";
 import { TimeCell, formatHeight } from "@/components/explorer/ExplorerUi";
 import { AddressRichlistBadge } from "@/components/explorer/address/AddressRichlistBadge";
 import { AddressShareActions } from "@/components/explorer/address/AddressShareActions";
 import type { AddressResult } from "@/lib/api/types";
 import { CHAIN_EXPLORERS, chainBlockPath, type ChainId } from "@/lib/chainDisplay";
+import { isVeriumPoolPayoutAddress } from "@/lib/veriumPoolExtracted";
 import { ellipsizeMiddle } from "@/lib/utils";
 
 export function AddressHero({
@@ -20,7 +22,13 @@ export function AddressHero({
   return (
     <EntityHero
       eyebrow={`${chain.name} address`}
-      title={ellipsizeMiddle(result.address, 28)}
+      title={
+        chainId === "vrm" && isVeriumPoolPayoutAddress(result.address) ? (
+          <VrmAddressLabel address={result.address} maxLength={28} />
+        ) : (
+          ellipsizeMiddle(result.address, 28)
+        )
+      }
       hash={result.address}
       badges={
         <div className="flex w-full flex-wrap items-center gap-2">

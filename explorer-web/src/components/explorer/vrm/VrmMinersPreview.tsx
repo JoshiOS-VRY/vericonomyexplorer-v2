@@ -12,7 +12,7 @@ import {
   normalizeMinersPeriod,
   type MinersPeriodId,
 } from "@/lib/minersPeriods";
-import { ellipsizeMiddle } from "@/lib/utils";
+import { VrmAddressLabel } from "@/components/explorer/address/VrmAddressLink";
 
 export function VrmMinersPreview({
   miners: initialMiners,
@@ -81,7 +81,7 @@ export function VrmMinersPreview({
           items={miners.items.map((item) => ({
             href: `/vrm/address/${item.address}`,
             rank: item.rank,
-            label: ellipsizeMiddle(item.address, 18),
+            label: <VrmAddressLabel address={item.address} maxLength={18} />,
             value:
               item.blockCount > 0
                 ? `${item.mined.amount} ${item.mined.ticker} · ${formatHeight(item.blockCount)} blk`

@@ -1,11 +1,8 @@
 import Link from "next/link";
+import { ChainAddressLink } from "@/components/explorer/address/ChainAddressLink";
 import { TimeCell } from "@/components/explorer/ExplorerUi";
 import { getTransactionRelatedAddresses } from "@/lib/api/indexer";
-import {
-  chainAddressPath,
-  chainTxPath,
-  type ChainId,
-} from "@/lib/chainDisplay";
+import { chainTxPath, type ChainId } from "@/lib/chainDisplay";
 import { mapTransactionRelatedGroups } from "@/lib/txRelatedActivity";
 import { ellipsizeMiddle } from "@/lib/utils";
 
@@ -43,13 +40,13 @@ export async function TxRelatedActivitySection({
         {groups.map((group) => (
           <div key={group.address} className="px-5 py-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <Link
-                href={chainAddressPath(chainId, group.address)}
-                className="text-sm text-accent hover:underline"
+              <ChainAddressLink
+                chainId={chainId}
+                address={group.address}
+                maxLength={32}
                 prefetch
-              >
-                {ellipsizeMiddle(group.address, 32)}
-              </Link>
+                className="text-sm"
+              />
               <span className="text-xs text-fg-subtle">
                 Recent transactions
               </span>

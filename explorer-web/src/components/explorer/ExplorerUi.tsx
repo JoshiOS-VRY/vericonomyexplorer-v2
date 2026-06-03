@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { ChainAddressLink } from "@/components/explorer/address/ChainAddressLink";
 import { Badge } from "@/components/ui/Badge";
+import { parseAddressFromExplorerHref } from "@/lib/explorerAddressHref";
+import type { ChainId } from "@/lib/chainDisplay";
 import {
   cn,
   ellipsizeMiddle,
@@ -368,12 +371,31 @@ export function MonoLink({
   value,
   maxLength = 24,
   prefetch,
+  chainId,
 }: {
   href: string;
   value: string;
   maxLength?: number;
   prefetch?: boolean;
+  /** When set (or parsed from `/vrm/address/…`), pool payout uses the Verium Pool pill. */
+  chainId?: ChainId;
 }) {
+  const parsed = chainId
+    ? { chainId, address: value }
+    : parseAddressFromExplorerHref(href);
+
+  if (parsed) {
+    return (
+      <ChainAddressLink
+        chainId={parsed.chainId}
+        address={parsed.address}
+        maxLength={maxLength}
+        prefetch={prefetch}
+        className="hash-mono underline-offset-2"
+      />
+    );
+  }
+
   return (
     <Link
       href={href}
@@ -411,7 +433,7 @@ export function RankList({
   items: {
     href: string;
     rank: number;
-    label: string;
+    label: React.ReactNode;
     value: string;
   }[];
 }) {

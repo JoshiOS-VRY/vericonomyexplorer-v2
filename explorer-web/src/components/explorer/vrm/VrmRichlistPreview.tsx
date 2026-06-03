@@ -3,7 +3,7 @@ import { RankList } from "@/components/explorer/ExplorerUi";
 import { VrmPanelLink } from "@/components/explorer/vrm/VrmBlocksPanel";
 import type { RichlistResult } from "@/lib/api/types";
 import { formatExplorerUserMessage } from "@/lib/explorerCopy";
-import { ellipsizeMiddle } from "@/lib/utils";
+import { VrmAddressLabel } from "@/components/explorer/address/VrmAddressLink";
 
 export function VrmRichlistPreview({ richlist }: { richlist: RichlistResult }) {
   return (
@@ -19,7 +19,7 @@ export function VrmRichlistPreview({ richlist }: { richlist: RichlistResult }) {
           items={richlist.items.map((item) => ({
             href: `/vrm/address/${item.address}`,
             rank: item.rank,
-            label: ellipsizeMiddle(item.address, 18),
+            label: <VrmAddressLabel address={item.address} maxLength={18} />,
             value: `${item.balance.amount} ${item.balance.ticker}`,
           }))}
         />

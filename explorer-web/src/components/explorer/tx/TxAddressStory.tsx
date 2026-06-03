@@ -1,12 +1,12 @@
-import Link from "next/link";
 import type { AddressEvent } from "@/lib/api/types";
-import { chainAddressPath, type ChainId } from "@/lib/chainDisplay";
+import { ChainAddressLink } from "@/components/explorer/address/ChainAddressLink";
+import { type ChainId } from "@/lib/chainDisplay";
 import {
   addressEventRole,
   aggregateAddressEvents,
   type AggregatedAddressEvent,
 } from "@/lib/txLabels";
-import { cn, ellipsizeMiddle, formatNumber } from "@/lib/utils";
+import { cn, formatNumber } from "@/lib/utils";
 
 const ADDRESS_ACTIVITY_COMPACT_RAW_THRESHOLD = 24;
 
@@ -61,12 +61,14 @@ function AddressActivityCard({
           </div>
         ) : null}
       </div>
-      <Link
-        href={chainAddressPath(chainId, entry.address)}
-        className="mt-1 block text-xs text-accent hover:underline"
-      >
-        {ellipsizeMiddle(entry.address, 28)}
-      </Link>
+      <div className="mt-1">
+        <ChainAddressLink
+          chainId={chainId}
+          address={entry.address}
+          maxLength={28}
+          className="text-xs"
+        />
+      </div>
       <div
         className={cn(
           "mt-2 text-sm font-semibold tabular-nums",

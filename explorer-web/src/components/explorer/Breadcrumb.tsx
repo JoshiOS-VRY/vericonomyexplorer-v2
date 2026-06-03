@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export function Breadcrumb({
   items,
 }: {
-  items: { label: string; href?: string }[];
+  items: { label: React.ReactNode; href?: string }[];
 }) {
   return (
     <nav aria-label="Breadcrumb" className="text-xs text-fg-subtle">

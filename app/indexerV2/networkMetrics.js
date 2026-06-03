@@ -192,13 +192,19 @@ async function backfillFromBlocks(db, chainId, options = {}) {
 	const since = options.since ?? null;
 	const sampleEveryHours = Number(options.sampleEveryHours ?? 1);
 
-	const rows = await db.all(`
+	const blockParams = [chainId];
+	let blockSql = `
 		SELECT height, time, difficulty
 		FROM blocks
 		WHERE chain_id = ? AND status = 'main'
-			AND (? IS NULL OR time >= ?)
-		ORDER BY height ASC
-	`, [chainId, since, since]);
+	`;
+	if (since != null) {
+		blockSql += " AND time >= ?";
+		blockParams.push(since);
+	}
+	blockSql += " ORDER BY height ASC";
+
+	const rows = await db.all(blockSql, blockParams);
 
 	if (!rows.length) {
 		return { chainId, bucketsWritten: 0 };

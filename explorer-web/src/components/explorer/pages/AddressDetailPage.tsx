@@ -23,6 +23,8 @@ import {
   type ChainId,
 } from "@/lib/chainDisplay";
 import { ADDRESS_UTXOS_ENABLED } from "@/lib/featureFlags";
+import { VrmAddressLabel } from "@/components/explorer/address/VrmAddressLink";
+import { isVeriumPoolPayoutAddress } from "@/lib/veriumPoolExtracted";
 import { ellipsizeMiddle, normalizeLimit, normalizeOffset } from "@/lib/utils";
 
 export async function AddressDetailPage({
@@ -58,7 +60,14 @@ export async function AddressDetailPage({
         items={[
           { label: chain.name, href: chain.exploreHref! },
           { label: "Rich list", href: chain.richlistHref! },
-          { label: ellipsizeMiddle(result.address, 16) },
+          {
+            label:
+              chainId === "vrm" && isVeriumPoolPayoutAddress(result.address) ? (
+                <VrmAddressLabel address={result.address} maxLength={16} />
+              ) : (
+                ellipsizeMiddle(result.address, 16)
+              ),
+          },
         ]}
       />
 

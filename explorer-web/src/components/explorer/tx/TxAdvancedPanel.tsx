@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ChainAddressLink } from "@/components/explorer/address/ChainAddressLink";
 import { DataTable, MonoLink } from "@/components/explorer/ExplorerUi";
 import { CopyButton } from "@/components/explorer/BlockDetail";
 import type { TransactionResult } from "@/lib/api/types";
@@ -53,6 +54,7 @@ export function TxAdvancedPanel({
                     href={chainAddressPath(chainId, input.address)}
                     value={input.address}
                     maxLength={20}
+                    chainId={chainId}
                   />
                 ) : (
                   <span className="text-fg-muted">coinbase</span>
@@ -97,6 +99,7 @@ export function TxAdvancedPanel({
                     href={chainAddressPath(chainId, output.address)}
                     value={output.address}
                     maxLength={20}
+                    chainId={chainId}
                   />
                 ) : (
                   <span className="text-fg-muted">
@@ -148,13 +151,13 @@ export function TxAdvancedPanel({
             <DataTable
               headers={["Address", "Event", "Delta"]}
               rows={result.addressEvents.map((event) => [
-                <Link
+                <ChainAddressLink
                   key="a"
-                  href={chainAddressPath(chainId, event.address)}
-                  className="hash-mono text-accent hover:underline"
-                >
-                  {ellipsizeMiddle(event.address, 24)}
-                </Link>,
+                  chainId={chainId}
+                  address={event.address}
+                  maxLength={24}
+                  className="hash-mono"
+                />,
                 event.eventType,
                 <span
                   key="d"
