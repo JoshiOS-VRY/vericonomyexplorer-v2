@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { SearchForm } from "@/components/explorer/SearchForm";
@@ -279,7 +280,7 @@ function HeaderSearch() {
 }
 
 export function BlockchairHeader({
-  pathname,
+  pathname: pathnameProp,
   initialVrmSummary,
   initialVrcSummary,
 }: {
@@ -287,6 +288,9 @@ export function BlockchairHeader({
   initialVrmSummary?: ChainSummary | null;
   initialVrcSummary?: ChainSummary | null;
 }) {
+  const pathnameFromRouter = usePathname();
+  const pathname = pathnameFromRouter ?? pathnameProp;
+
   return (
     <header className="bc-header sticky top-0 z-40 border-b border-border bg-bg-panel shadow-sm">
       <div className="mx-auto flex max-w-[1720px] flex-wrap items-center gap-x-4 gap-y-2 px-5 py-2.5 sm:px-8">

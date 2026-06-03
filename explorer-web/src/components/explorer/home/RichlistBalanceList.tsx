@@ -129,20 +129,17 @@ export function RichlistBalanceList({
           const podiumLabel = PODIUM_LABELS[item.rank];
 
           return (
-            <li
-              key={item.address}
-              className={cn(
-                "richlist-balance-list__row",
-                isPodium && "richlist-balance-list__row--podium",
-                item.rank === 1 && "richlist-balance-list__row--first",
-              )}
-            >
+            <li key={item.address}>
               <Link
                 href={href}
                 prefetch
-                className="richlist-balance-list__overlay"
                 aria-label={`${item.address}, rank ${item.rank}, ${item.balance.amount} ${item.balance.ticker}`}
-              />
+                className={cn(
+                  "richlist-balance-list__row",
+                  isPodium && "richlist-balance-list__row--podium",
+                  item.rank === 1 && "richlist-balance-list__row--first",
+                )}
+              >
               <RankBadge rank={item.rank} />
 
               <div className="richlist-balance-list__address min-w-0">
@@ -170,7 +167,11 @@ export function RichlistBalanceList({
                     type="button"
                     data-copy-value={item.address}
                     data-copy-label="Copy"
-                    className="richlist-balance-list__copy copy-btn pointer-events-auto shrink-0 rounded-md border border-transparent p-1.5 text-fg-subtle transition hover:border-border hover:bg-bg-subtle hover:text-fg"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
+                    className="richlist-balance-list__copy copy-btn relative z-10 shrink-0 rounded-md border border-transparent p-1.5 text-fg-subtle transition hover:border-border hover:bg-bg-subtle hover:text-fg"
                     aria-label={`Copy address ${item.address}`}
                     title="Copy address"
                   >
@@ -231,6 +232,7 @@ export function RichlistBalanceList({
                 className="richlist-balance-list__arrow h-4 w-4 shrink-0 text-fg-subtle"
                 aria-hidden
               />
+              </Link>
             </li>
           );
         })}

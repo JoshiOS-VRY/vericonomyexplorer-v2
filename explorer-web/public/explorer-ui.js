@@ -89,72 +89,6 @@
     });
   }
 
-  function isActiveNav(pathname, href, exact, prefix) {
-    if (exact) return pathname === href;
-    if (prefix) return pathname === href || pathname.indexOf(href + "/") === 0;
-    return pathname === href || pathname.indexOf(href + "/") === 0;
-  }
-
-  function markActiveNav() {
-    var pathname = window.location.pathname.replace(/\/$/, "") || "/";
-    var links = document.querySelectorAll("[data-nav-link]");
-    var dropdowns = document.querySelectorAll("[data-nav-dropdown]");
-
-    for (var i = 0; i < links.length; i++) {
-      var link = links[i];
-      var href = link.getAttribute("href") || "/";
-      var exact = link.getAttribute("data-nav-exact") === "true";
-      var prefix = link.getAttribute("data-nav-prefix") === "true";
-      var active = isActiveNav(pathname, href, exact, prefix);
-
-      link.classList.toggle("nav-link-active", active);
-      if (active) {
-        link.setAttribute("aria-current", "page");
-      } else {
-        link.removeAttribute("aria-current");
-      }
-    }
-
-    for (var j = 0; j < dropdowns.length; j++) {
-      var dropdown = dropdowns[j];
-      var menu = dropdown.parentElement && dropdown.parentElement.querySelector("[role='menu']");
-      var childLinks = menu ? menu.querySelectorAll("[data-nav-link]") : [];
-      var dropdownActive = false;
-
-      for (var k = 0; k < childLinks.length; k++) {
-        var childHref = childLinks[k].getAttribute("href") || "/";
-        var childPrefix = childLinks[k].getAttribute("data-nav-prefix") === "true";
-        if (isActiveNav(pathname, childHref, false, childPrefix)) {
-          dropdownActive = true;
-          break;
-        }
-      }
-
-      dropdown.classList.toggle("nav-link-active", dropdownActive);
-      if (dropdownActive) {
-        dropdown.setAttribute("aria-current", "page");
-      } else {
-        dropdown.removeAttribute("aria-current");
-      }
-    }
-  }
-
-  function hookHistoryForNav() {
-    var pushState = history.pushState;
-    history.pushState = function () {
-      pushState.apply(history, arguments);
-      markActiveNav();
-    };
-
-    var replaceState = history.replaceState;
-    history.replaceState = function () {
-      replaceState.apply(history, arguments);
-      markActiveNav();
-    };
-
-    window.addEventListener("popstate", markActiveNav);
-  }
-
   function initCopyButtons() {
     function showCopied(button) {
       var label = button.getAttribute("data-copy-label") || "Copy";
@@ -199,8 +133,6 @@
   function init() {
     initCopyButtons();
     initThemeControls();
-    hookHistoryForNav();
-    markActiveNav();
   }
 
   if (document.readyState === "loading") {
