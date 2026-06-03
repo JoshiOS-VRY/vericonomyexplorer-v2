@@ -233,4 +233,36 @@ CREATE TABLE IF NOT EXISTS network_metric_buckets (
     PRIMARY KEY (chain_id, bucket_start)
 ) PARTITION BY LIST (chain_id);
 
+-- ---------------------------------------------------------------------------
+-- Incremental analytics rollup layer (maintained by refreshAnalytics.js)
+-- ---------------------------------------------------------------------------
+
+-- Per-(chain, rollup) watermark so the cron refresher advances only new data
+-- instead of rebuilding from scratch. `last_height` / `last_event_id` are the
+-- high-water marks of the source rows already folded into each rollup.
+CREATE TABLE IF NOT EXISTS rollup_state (
+    chain_id      TEXT NOT NULL,
+    rollup        TEXT NOT NULL,
+    last_height   BIGINT NOT NULL DEFAULT -1,
+    last_event_id BIGINT NOT NULL DEFAULT 0,
+    last_time     BIGINT NOT NULL DEFAULT 0,
+    extra_json    TEXT,
+    updated_at    BIGINT NOT NULL DEFAULT 0,
+    PRIMARY KEY (chain_id, rollup)
+);
+
+-- Daily per-miner rollup powering the top-miners leaderboard. Rolling windows
+-- (7d/30d/90d/year/all) are served by summing day buckets >= the cutoff day,
+-- replacing the all-coinbase scan with an indexed top-N over a tiny table.
+CREATE TABLE IF NOT EXISTS miner_stats (
+    chain_id     TEXT NOT NULL,
+    address      TEXT NOT NULL,
+    day_start    BIGINT NOT NULL,
+    blocks_mined BIGINT NOT NULL DEFAULT 0,
+    mined_sats   BIGINT NOT NULL DEFAULT 0,
+    last_height  BIGINT NOT NULL DEFAULT 0,
+    updated_at   BIGINT NOT NULL,
+    PRIMARY KEY (chain_id, address, day_start)
+) PARTITION BY LIST (chain_id);
+
 COMMIT;

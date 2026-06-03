@@ -43,4 +43,7 @@ CREATE TABLE IF NOT EXISTS address_balance_buckets_vrc PARTITION OF address_bala
 CREATE TABLE IF NOT EXISTS network_metric_buckets_vrm PARTITION OF network_metric_buckets FOR VALUES IN ('vrm');
 CREATE TABLE IF NOT EXISTS network_metric_buckets_vrc PARTITION OF network_metric_buckets FOR VALUES IN ('vrc');
 
+CREATE TABLE IF NOT EXISTS miner_stats_vrm PARTITION OF miner_stats FOR VALUES IN ('vrm');
+CREATE TABLE IF NOT EXISTS miner_stats_vrc PARTITION OF miner_stats FOR VALUES IN ('vrc');
+
 COMMIT;

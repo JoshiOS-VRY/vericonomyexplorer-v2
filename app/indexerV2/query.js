@@ -404,8 +404,66 @@ async function getMinedLeaderboard(chainId, options = {}) {
 
 	const periodBounds = getMinersPeriodBounds(period, options.now);
 	const since = periodBounds.since;
-	// Translate the time cutoff into a block-height floor so the coinbase index
-	// can range-scan recent blocks instead of every coinbase tx ever mined.
+
+	// Fast path: the daily miner_stats rollup (maintained by refreshAnalytics.js).
+	// Rolling windows are served by summing day buckets at/after the cutoff day.
+	const hasRollup = await db.get(
+		"SELECT 1 AS present FROM miner_stats WHERE chain_id = ? LIMIT 1",
+		[chain]
+	);
+
+	if (hasRollup) {
+		const sinceDay = since == null ? null : Math.floor(since / 86400) * 86400;
+		const filterSql = sinceDay == null
+			? "chain_id = ?"
+			: "chain_id = ? AND day_start >= ?";
+		const filterParams = sinceDay == null ? [chain] : [chain, sinceDay];
+
+		const countRow = await db.get(`
+			SELECT COUNT(*) AS count FROM (
+				SELECT address
+				FROM miner_stats
+				WHERE ${filterSql}
+				GROUP BY address
+				HAVING SUM(mined_sats) > 0
+			) AS miners
+		`, filterParams);
+
+		const rows = await db.all(`
+			SELECT
+				address,
+				SUM(mined_sats) AS mined_sats,
+				SUM(blocks_mined) AS block_count,
+				MAX(last_height) AS last_mined_height
+			FROM miner_stats
+			WHERE ${filterSql}
+			GROUP BY address
+			HAVING SUM(mined_sats) > 0
+			ORDER BY mined_sats DESC, address ASC
+			LIMIT ? OFFSET ?
+		`, [...filterParams, limit, offset]);
+
+		return {
+			chainId: chain,
+			trusted: chainHealth.trusted,
+			source: getSource(chainHealth, "leaderboards"),
+			period: periodBounds,
+			label: "Top miners",
+			paging: getPaging(limit, offset, countRow.count),
+			items: rows.map((row, index) => ({
+				rank: offset + index + 1,
+				address: row.address,
+				minedAtomic: stringifyInteger(row.mined_sats),
+				mined: formatAtomic(chain, row.mined_sats),
+				blockCount: toNumber(row.block_count),
+				lastMinedHeight: toNullableNumber(row.last_mined_height)
+			}))
+		};
+	}
+
+	// Fallback (rollup not seeded yet): scan coinbase outputs directly. Translate
+	// the time cutoff into a block-height floor so the coinbase index can
+	// range-scan recent blocks instead of every coinbase tx ever mined.
 	const sinceHeight = since == null ? null : await resolveMinedSinceHeight(db, chain, since);
 
 	// A bounded period with no qualifying blocks yields nothing — skip the scans.

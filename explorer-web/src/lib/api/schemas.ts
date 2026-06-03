@@ -191,11 +191,12 @@ export const blockResultSchema = z.object({
     .optional(),
   totals: z
     .object({
-      feeAtomic: z.string().optional(),
-      fee: amountSchema.optional(),
-      outputValueAtomic: z.string(),
-      outputValue: amountSchema,
+      feeAtomic: z.string().nullable().optional(),
+      fee: amountSchema.nullable().optional(),
+      outputValueAtomic: z.string().nullable().optional(),
+      outputValue: amountSchema.nullable().optional(),
     })
+    .nullable()
     .optional(),
   source: sourceSchema,
 });

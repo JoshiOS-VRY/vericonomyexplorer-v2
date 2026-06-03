@@ -31,6 +31,8 @@ CREATE INDEX IF NOT EXISTS idx_transactions_chain_block_coinbase ON transactions
 CREATE INDEX IF NOT EXISTS idx_address_balance_buckets_chain_address_start ON address_balance_buckets (chain_id, address, bucket_start ASC);
 CREATE INDEX IF NOT EXISTS idx_network_metric_buckets_chain_start ON network_metric_buckets (chain_id, bucket_start ASC);
 CREATE INDEX IF NOT EXISTS idx_network_metric_buckets_chain_start_desc ON network_metric_buckets (chain_id, bucket_start DESC);
+CREATE INDEX IF NOT EXISTS idx_miner_stats_chain_day ON miner_stats (chain_id, day_start ASC);
+CREATE INDEX IF NOT EXISTS idx_miner_stats_chain_day_sats ON miner_stats (chain_id, day_start, mined_sats DESC);
 
 -- BRIN indexes for very large append-only tables (cheap, range-scan friendly).
 CREATE INDEX IF NOT EXISTS brin_blocks_time ON blocks USING brin (time) WITH (pages_per_range = 64);

@@ -33,7 +33,7 @@ function parseArgs(argv) {
 	return result;
 }
 
-function main() {
+async function main() {
 	const args = parseArgs(process.argv.slice(2));
 	if (!args.chain) {
 		console.error(
@@ -48,11 +48,11 @@ function main() {
 	});
 
 	const result = args.addressGrowthOnly
-		? backfillAddressGrowth(db, args.chain, {
+		? await backfillAddressGrowth(db, args.chain, {
 			since: args.since,
 			sampleEveryHours: args.sampleEveryHours
 		})
-		: backfillFromBlocks(db, args.chain, {
+		: await backfillFromBlocks(db, args.chain, {
 			since: args.since,
 			sampleEveryHours: args.sampleEveryHours,
 			skipSupplySeries: args.since != null
@@ -62,4 +62,7 @@ function main() {
 	dbModule.closeDatabase();
 }
 
-main();
+main().catch((err) => {
+	console.error(err);
+	process.exit(1);
+});

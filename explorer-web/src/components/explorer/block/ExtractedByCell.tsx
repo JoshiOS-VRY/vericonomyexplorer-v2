@@ -1,7 +1,12 @@
 import Link from "next/link";
 import type { IndexedBlock } from "@/lib/api/types";
 import { chainAddressPath, type ChainId } from "@/lib/chainDisplay";
-import { ellipsizeMiddle } from "@/lib/utils";
+import { isVeriumPoolExtracted } from "@/lib/veriumPoolExtracted";
+import { cn, ellipsizeMiddle } from "@/lib/utils";
+
+function veriumPoolPillClass(className?: string) {
+  return cn("extracted-by-verium-pool", className);
+}
 
 export function ExtractedByCell({
   block,
@@ -12,12 +17,19 @@ export function ExtractedByCell({
   chainId: ChainId;
   className?: string;
 }) {
+  const showVeriumPoolPill =
+    chainId === "vrm" && isVeriumPoolExtracted(block);
+
   if (block.extractedBy && block.extractedByLink) {
     return (
       <Link
         href={block.extractedByLink}
         title={block.extractedBy}
-        className={className ?? "text-sm font-medium text-accent hover:underline"}
+        className={
+          showVeriumPoolPill
+            ? veriumPoolPillClass(className)
+            : (className ?? "text-sm font-medium text-accent hover:underline")
+        }
         target="_blank"
         rel="noreferrer"
       >
@@ -28,7 +40,14 @@ export function ExtractedByCell({
 
   if (block.extractedBy) {
     return (
-      <span className={className ?? "text-sm font-medium text-fg"} title={block.extractedBy}>
+      <span
+        className={
+          showVeriumPoolPill
+            ? veriumPoolPillClass(className)
+            : (className ?? "text-sm font-medium text-fg")
+        }
+        title={block.extractedBy}
+      >
         {block.extractedBy}
       </span>
     );
