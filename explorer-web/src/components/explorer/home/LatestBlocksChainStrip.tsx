@@ -23,6 +23,7 @@ import type {
 } from "@/lib/api/types";
 import {
   LATEST_BLOCKS_COUNT,
+  LATEST_BLOCKS_POLL_MS,
   LATEST_BLOCKS_STRIP_COUNT,
 } from "@/lib/chainBlocksDisplay";
 import {
@@ -33,6 +34,10 @@ import {
   type ChainId,
 } from "@/lib/chainDisplay";
 import { formatPercent } from "@/lib/formatMarket";
+import {
+  isIndexedBlockTableReady,
+  isOptimisticTipBlock,
+} from "@/lib/liveBlocksMerge";
 import { cn, formatDifficulty } from "@/lib/utils";
 
 export interface ChainHubSectionProps {
@@ -156,7 +161,9 @@ export function ChainHubSection({
               </div>
               <p className="text-xs text-fg-subtle">
                 {tableRows.length > 0
-                  ? `${tableRows.length} most recent · updates every 5s`
+                  ? tipBlock && !isIndexedBlockTableReady(tipBlock, chainId)
+                    ? `${tableRows.length} most recent · indexing new block…`
+                    : `${tableRows.length} most recent · updates every ${LATEST_BLOCKS_POLL_MS / 1000}s`
                   : "Loading recent blocks…"}
               </p>
             </div>
@@ -219,6 +226,10 @@ export function ChainHubSection({
                         blockHref={config.blockHref?.(block.height)}
                         isTip={index === stripBlocks.length - 1}
                         tipLive={atTip && index === stripBlocks.length - 1}
+                        indexing={
+                          index === stripBlocks.length - 1 &&
+                          isOptimisticTipBlock(block, chainId)
+                        }
                         ageIndex={index}
                         totalCount={stripBlocks.length}
                       />
@@ -316,6 +327,7 @@ function BlockChainStripCell({
   blockHref,
   isTip,
   tipLive = false,
+  indexing = false,
   ageIndex,
   totalCount,
 }: {
@@ -324,13 +336,16 @@ function BlockChainStripCell({
   blockHref?: string;
   isTip: boolean;
   tipLive?: boolean;
+  indexing?: boolean;
   ageIndex: number;
   totalCount: number;
 }) {
   const recency = totalCount > 1 ? ageIndex / (totalCount - 1) : 1;
-  const tooltip = `Block #${formatHeight(block.height)} · ${block.txCount} transaction${
-    block.txCount === 1 ? "" : "s"
-  }`;
+  const tooltip = indexing
+    ? `Block #${formatHeight(block.height)} · indexing…`
+    : `Block #${formatHeight(block.height)} · ${block.txCount} transaction${
+        block.txCount === 1 ? "" : "s"
+      }`;
 
   const nodeSlot = (
     <span
@@ -347,6 +362,7 @@ function BlockChainStripCell({
           "block-chain-strip__node",
           isTip && "block-chain-strip__node--tip",
           tipLive && "block-chain-strip__node--live",
+          indexing && "block-chain-strip__node--indexing",
         )}
         title={tooltip}
       >
@@ -395,7 +411,11 @@ function BlockChainStripCell({
         </span>
       </span>
       <span className="block-chain-strip__txs tabular-nums" aria-hidden>
-        {block.txCount} tx
+        {indexing ? (
+          <span className="block-field-loading block-field-loading--xs" />
+        ) : (
+          `${block.txCount} tx`
+        )}
       </span>
     </div>
   );
@@ -411,9 +431,16 @@ function BlockChainTableRow({
   blockHref?: string;
 }) {
   const hashShort = formatBlockHashShort(block.hash);
+  const indexing = isOptimisticTipBlock(block, chainId);
 
   return (
-    <tr className="block-chain-table-row transition-colors hover:bg-bg-subtle/80">
+    <tr
+      className={cn(
+        "block-chain-table-row transition-colors hover:bg-bg-subtle/80",
+        indexing && "block-chain-table-row--indexing",
+      )}
+      aria-busy={indexing}
+    >
       <td data-label="Height">
         {blockHref ? (
           <BcTableLink href={blockHref} className="tabular-nums" prefetch>
@@ -443,14 +470,20 @@ function BlockChainTableRow({
         className="min-w-24 max-w-48 truncate"
       >
         {chainId === "vrm" ? (
-          <ExtractedByCell
-            block={block}
-            chainId={chainId}
-            className={cn(
-              "text-sm font-medium hover:underline",
-              "text-[var(--chain-vrm)]",
-            )}
-          />
+          indexing ? (
+            <BlockFieldLoading label="Extracted by" />
+          ) : (
+            <ExtractedByCell
+              block={block}
+              chainId={chainId}
+              className={cn(
+                "text-sm font-medium hover:underline",
+                "text-[var(--chain-vrm)]",
+              )}
+            />
+          )
+        ) : indexing ? (
+          <BlockFieldLoading label="Interest" />
         ) : (
           <span className="text-sm tabular-nums text-fg-muted">
             {formatPercent(block.interestRatePercent)}
@@ -461,18 +494,51 @@ function BlockChainTableRow({
         <LiveRelativeTime time={block.time} interval="second" fixedWidth />
       </td>
       <td data-label="Txs" className="text-right tabular-nums text-fg-muted">
-        {formatHeight(block.txCount)}
+        {indexing ? (
+          <BlockFieldLoading align="right" />
+        ) : (
+          formatHeight(block.txCount)
+        )}
       </td>
       <td data-label="Size" className="text-right tabular-nums text-fg-muted">
-        {block.size != null ? `${formatHeight(block.size)} B` : "—"}
+        {block.size != null ? (
+          `${formatHeight(block.size)} B`
+        ) : (
+          <BlockFieldLoading align="right" />
+        )}
       </td>
       <td
         data-label="Difficulty"
         className="text-right tabular-nums text-fg-muted"
       >
-        {block.difficulty ? formatDifficulty(block.difficulty) : "—"}
+        {block.difficulty ? (
+          formatDifficulty(block.difficulty)
+        ) : (
+          <BlockFieldLoading align="right" />
+        )}
       </td>
     </tr>
+  );
+}
+
+function BlockFieldLoading({
+  label,
+  align = "left",
+}: {
+  label?: string;
+  align?: "left" | "right";
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center",
+        align === "right" && "ml-auto",
+      )}
+      role="status"
+      aria-label={label ? `${label} loading` : "Loading"}
+    >
+      <span className="block-field-loading" />
+    </span>
   );
 }
 

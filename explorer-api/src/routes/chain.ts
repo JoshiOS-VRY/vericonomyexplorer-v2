@@ -104,7 +104,7 @@ export const latestBlocksCache = createSwrCache({
 
   max: 32,
 
-  ttlMs: 5_000,
+  ttlMs: 2_000,
 
   fetch: async (key, signal) => {
 

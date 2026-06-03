@@ -2,8 +2,10 @@ import { fetchChainSummary } from "@/lib/api/client";
 import type { ChainSummary, IndexedBlock } from "@/lib/api/types";
 import { getChainTipHeight, mergeChainHealth } from "@/lib/chainDisplay";
 import {
+  createOptimisticTipBlock,
   enrichBlocksFromPrevious,
-  filterTableReadyBlocks,
+  mergeBlocksForDisplay,
+  shouldApplyOptimisticTip,
 } from "@/lib/liveBlocksMerge";
 import { LATEST_BLOCKS_COUNT } from "@/lib/chainBlocksDisplay";
 
@@ -144,7 +146,7 @@ function mergeSummary(chainId: ChainId, next: ChainSummary): ChainLiveSnapshot {
   const prevTopHeight = prev.summary.latestBlocks[0]?.height ?? null;
   const nextTopHeight = next.latestBlocks[0]?.height ?? null;
 
-  const mergedBlocks = filterTableReadyBlocks(
+  const mergedBlocks = mergeBlocksForDisplay(
     enrichBlocksFromPrevious(prev.summary.latestBlocks, next.latestBlocks),
     chainId,
   );
@@ -221,9 +223,17 @@ function applyOptimisticTip(chainId: ChainId, tip: TipEvent): void {
     return;
   }
 
-  // Do not prepend a stub row: tables require enriched fields (miner, size, difficulty).
-  // chainHeight still advances from the tip; blocks/latest + summary refresh fill the list.
-  const nextBlocks = current.summary.latestBlocks;
+  const topHeight = top?.height ?? null;
+  const nextBlocks = shouldApplyOptimisticTip(tip.height, topHeight)
+    ? mergeBlocksForDisplay(
+        [
+          createOptimisticTipBlock(tip),
+          ...current.summary.latestBlocks,
+        ],
+        chainId,
+        LATEST_BLOCKS_COUNT,
+      )
+    : current.summary.latestBlocks;
 
   const hashes = knownHashes.get(chainId) ?? new Set<string>();
   if (!hashes.has(tip.hash)) {

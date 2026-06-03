@@ -38,6 +38,60 @@ export function filterTableReadyBlocks(
   return blocks.filter((block) => isIndexedBlockTableReady(block, chainId));
 }
 
+/** Tip-stream row: height/hash/time only until the indexer enriches the block. */
+export function isOptimisticTipBlock(
+  block: IndexedBlock,
+  chainId: ChainId,
+): boolean {
+  return (
+    !isIndexedBlockTableReady(block, chainId) &&
+    Number.isFinite(block.height) &&
+    !!block.hash?.trim() &&
+    block.time != null &&
+    Number.isFinite(block.time)
+  );
+}
+
+export function createOptimisticTipBlock(tip: {
+  height: number;
+  hash: string;
+  time: number;
+}): IndexedBlock {
+  return {
+    height: tip.height,
+    hash: tip.hash,
+    time: tip.time,
+    txCount: 0,
+  };
+}
+
+/** Latest-blocks UI: full rows plus at most one optimistic tip stub at the top. */
+export function mergeBlocksForDisplay(
+  blocks: IndexedBlock[],
+  chainId: ChainId,
+  maxCount = LATEST_BLOCKS_COUNT,
+): IndexedBlock[] {
+  const sorted = [...blocks]
+    .filter((block) => block.height != null)
+    .sort((a, b) => b.height - a.height);
+
+  const result: IndexedBlock[] = [];
+  for (const block of sorted) {
+    if (result.length >= maxCount) {
+      break;
+    }
+    if (isIndexedBlockTableReady(block, chainId)) {
+      result.push(block);
+      continue;
+    }
+    if (result.length === 0 && isOptimisticTipBlock(block, chainId)) {
+      result.push(block);
+    }
+  }
+
+  return result;
+}
+
 export function shouldApplyOptimisticTip(
   tipHeight: number,
   topHeight: number | null,

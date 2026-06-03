@@ -10,6 +10,7 @@ import {
 import type { RecentBlocksByChain } from "@/components/explorer/ExplorerSearchCombobox";
 import { chainLiveStore, snapshotFromSummary } from "@/lib/chainLive/store";
 import type { ChainSummary, IndexedBlock } from "@/lib/api/types";
+import { filterTableReadyBlocks } from "@/lib/liveBlocksMerge";
 
 const SearchRecentBlocksContext = createContext<RecentBlocksByChain | null>(null);
 
@@ -37,8 +38,14 @@ function recentBlocksFromSummaries(
 }
 
 function getRecentBlocksSnapshot(): RecentBlocksByChain {
-  const vrm = chainLiveStore.getSnapshot("vrm").latestBlocks;
-  const vrc = chainLiveStore.getSnapshot("vrc").latestBlocks;
+  const vrm = filterTableReadyBlocks(
+    chainLiveStore.getSnapshot("vrm").latestBlocks,
+    "vrm",
+  );
+  const vrc = filterTableReadyBlocks(
+    chainLiveStore.getSnapshot("vrc").latestBlocks,
+    "vrc",
+  );
 
   if (
     cachedRecentBlocks &&

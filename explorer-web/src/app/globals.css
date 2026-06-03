@@ -902,6 +902,53 @@ html:not(.light)
     inset 0 1px 0 rgb(255 255 255 / 0.25);
 }
 
+.block-chain-strip__node--indexing {
+  animation: block-strip-indexing-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes block-strip-indexing-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+
+.block-chain-table-row--indexing {
+  background: color-mix(in srgb, var(--block-chain-accent) 6%, transparent);
+}
+
+.block-field-loading {
+  display: inline-block;
+  height: 0.875rem;
+  min-width: 2.75rem;
+  border-radius: 0.25rem;
+  background: linear-gradient(
+    90deg,
+    var(--bg-subtle) 0%,
+    color-mix(in srgb, var(--fg-subtle) 18%, var(--bg-subtle)) 50%,
+    var(--bg-subtle) 100%
+  );
+  background-size: 200% 100%;
+  animation: block-field-loading-shimmer 1.2s ease-in-out infinite;
+}
+
+.block-field-loading--xs {
+  height: 0.625rem;
+  min-width: 1.75rem;
+}
+
+@keyframes block-field-loading-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
 .block-chain-strip__label {
   display: inline-flex;
   align-items: center;

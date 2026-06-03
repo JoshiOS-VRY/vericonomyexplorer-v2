@@ -1,7 +1,10 @@
 import { describe, expect, it } from "@jest/globals";
 import {
+  createOptimisticTipBlock,
   enrichBlocksFromPrevious,
   isIndexedBlockTableReady,
+  isOptimisticTipBlock,
+  mergeBlocksForDisplay,
   shouldApplyFetchedBlocks,
   shouldApplyOptimisticTip,
 } from "@/lib/liveBlocksMerge";
@@ -46,7 +49,7 @@ describe("liveBlocksMerge", () => {
     expect(merged[0]?.extractedBy).toBe("miner");
   });
 
-  it("rejects tip-stream stub rows for table display", () => {
+  it("rejects tip-stream stub rows for full table readiness", () => {
     expect(isIndexedBlockTableReady(tipStub(101), "vrm")).toBe(false);
     expect(isIndexedBlockTableReady(block(101), "vrm")).toBe(true);
     expect(isIndexedBlockTableReady(block(101), "vrc")).toBe(true);
@@ -56,5 +59,30 @@ describe("liveBlocksMerge", () => {
         "vrc",
       ),
     ).toBe(false);
+  });
+
+  it("keeps an optimistic tip stub at the top for home display", () => {
+    const stub = createOptimisticTipBlock({
+      height: 101,
+      hash: "tip-hash",
+      time: 1_700_000_000,
+    });
+    expect(isOptimisticTipBlock(stub, "vrm")).toBe(true);
+
+    const displayed = mergeBlocksForDisplay(
+      [stub, block(100), block(99)],
+      "vrm",
+    );
+    expect(displayed.map((entry) => entry.height)).toEqual([101, 100, 99]);
+    expect(isIndexedBlockTableReady(displayed[0]!, "vrm")).toBe(false);
+  });
+
+  it("drops non-tip optimistic rows from display", () => {
+    const staleStub = { ...tipStub(98), time: 98 };
+    const displayed = mergeBlocksForDisplay(
+      [block(100), staleStub, block(99)],
+      "vrm",
+    );
+    expect(displayed.map((entry) => entry.height)).toEqual([100, 99]);
   });
 });

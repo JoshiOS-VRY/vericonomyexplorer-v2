@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTipStream } from "@/components/explorer/TipStreamProvider";
 import { fetchLatestBlocks } from "@/lib/api/client";
 import { usePageVisible } from "@/hooks/usePageVisible";
 import type { IndexedBlock } from "@/lib/api/types";
@@ -10,9 +11,11 @@ import {
 } from "@/lib/chainBlocksDisplay";
 import type { ChainId } from "@/lib/chainDisplay";
 import {
+  createOptimisticTipBlock,
   enrichBlocksFromPrevious,
-  filterTableReadyBlocks,
   isIndexedBlockTableReady,
+  mergeBlocksForDisplay,
+  shouldApplyOptimisticTip,
 } from "@/lib/liveBlocksMerge";
 
 export function useLatestBlocksPoll(
@@ -21,8 +24,9 @@ export function useLatestBlocksPoll(
   chainHeight?: number | null,
 ) {
   const visible = usePageVisible();
+  const { subscribe } = useTipStream(chainId);
   const [blocks, setBlocks] = useState<IndexedBlock[]>(() =>
-    filterTableReadyBlocks(
+    mergeBlocksForDisplay(
       seedBlocks.slice(0, LATEST_BLOCKS_COUNT),
       chainId,
     ),
@@ -40,23 +44,42 @@ export function useLatestBlocksPoll(
     [seedBlocks],
   );
 
-  useEffect(() => {
-    setBlocks((prev) => {
-      const merged = enrichBlocksFromPrevious(
-        prev,
-        seedBlocks,
-        LATEST_BLOCKS_COUNT,
+  const applyDisplayBlocks = useCallback(
+    (prev: IndexedBlock[], incoming: IndexedBlock[]) => {
+      const merged = mergeBlocksForDisplay(
+        enrichBlocksFromPrevious(prev, incoming, LATEST_BLOCKS_COUNT),
+        chainId,
       );
-      const next = filterTableReadyBlocks(merged, chainId);
       if (
-        next.length === prev.length &&
-        next.every((block, index) => block.hash === prev[index]?.hash)
+        merged.length === prev.length &&
+        merged.every((block, index) => block.hash === prev[index]?.hash)
       ) {
         return prev;
       }
-      return next;
+      return merged;
+    },
+    [chainId],
+  );
+
+  useEffect(() => {
+    setBlocks((prev) => applyDisplayBlocks(prev, seedBlocks));
+  }, [applyDisplayBlocks, seedBlocks, seedSignature]);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    return subscribe(chainId, (tip) => {
+      setBlocks((prev) => {
+        const topHeight = prev[0]?.height ?? null;
+        if (!shouldApplyOptimisticTip(tip.height, topHeight)) {
+          return prev;
+        }
+        return applyDisplayBlocks(prev, [createOptimisticTipBlock(tip)]);
+      });
     });
-  }, [chainId, seedBlocks, seedSignature]);
+  }, [applyDisplayBlocks, chainId, subscribe, visible]);
 
   const refresh = useCallback(async () => {
     if (!visible || inFlightRef.current) {
@@ -67,12 +90,7 @@ export function useLatestBlocksPoll(
     setIsRefreshing(true);
     try {
       const next = await fetchLatestBlocks(chainId);
-      setBlocks((prev) =>
-        filterTableReadyBlocks(
-          enrichBlocksFromPrevious(prev, next, LATEST_BLOCKS_COUNT),
-          chainId,
-        ),
-      );
+      setBlocks((prev) => applyDisplayBlocks(prev, next));
       setError(null);
     } catch (err) {
       setError(
@@ -82,7 +100,7 @@ export function useLatestBlocksPoll(
       inFlightRef.current = false;
       setIsRefreshing(false);
     }
-  }, [chainId, visible]);
+  }, [applyDisplayBlocks, chainId, visible]);
 
   useEffect(() => {
     const top = seedBlocks[0];
