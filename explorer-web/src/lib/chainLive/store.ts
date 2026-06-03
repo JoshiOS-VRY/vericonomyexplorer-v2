@@ -27,6 +27,8 @@ export interface ChainLiveSnapshot {
 }
 
 const CHAINS: ChainId[] = ["vrm", "vrc"];
+const EMPTY_BLOCKS: IndexedBlock[] = [];
+const EMPTY_TRANSACTIONS: ChainSummary["recentTransactions"] = [];
 const POLL_MS = 30_000;
 const REFRESH_DEBOUNCE_MS = 2_000;
 
@@ -93,20 +95,30 @@ function emptySummary(chainId: ChainId): ChainSummary {
         leaderboards: "index",
       },
     },
-    latestBlocks: [],
-    recentTransactions: [],
+    latestBlocks: EMPTY_BLOCKS,
+    recentTransactions: EMPTY_TRANSACTIONS,
     source: { label: "index", type: "index" },
   };
 }
 
 function createSnapshot(summary: ChainSummary): ChainLiveSnapshot {
+  const snapshot = snapshotFromSummary(summary.chainId as ChainId, summary);
+  return { ...snapshot, lastUpdated: Date.now() };
+}
+
+/** Stable snapshot for SSR / hydration (no Date.now(), uses props only). */
+export function snapshotFromSummary(
+  chainId: ChainId,
+  summary?: ChainSummary | null,
+): ChainLiveSnapshot {
+  const resolved = summary ?? emptySummary(chainId);
   return {
-    summary,
-    chainHeight: getChainTipHeight(summary.health),
-    addressCount: summary.health.counts.addressCount,
-    latestBlocks: summary.latestBlocks,
+    summary: resolved,
+    chainHeight: getChainTipHeight(resolved.health),
+    addressCount: resolved.health.counts.addressCount,
+    latestBlocks: resolved.latestBlocks,
     heightPulse: false,
-    lastUpdated: Date.now(),
+    lastUpdated: 0,
     isRefreshing: false,
     error: null,
   };

@@ -30,7 +30,7 @@ export function InsightsChartPanel({
       title={title}
       action={action}
       className={cn(
-        "insights-chart-panel overflow-visible!",
+        "insights-chart-panel overflow-visible",
         chainId === "vrm" && "insights-chart-panel-vrm",
         chainId === "vrc" && "insights-chart-panel-vrc",
         className,

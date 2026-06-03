@@ -3,11 +3,12 @@
 import {
   createContext,
   useContext,
+  useMemo,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
 import type { RecentBlocksByChain } from "@/components/explorer/ExplorerSearchCombobox";
-import { chainLiveStore } from "@/lib/chainLive/store";
+import { chainLiveStore, snapshotFromSummary } from "@/lib/chainLive/store";
 import type { ChainSummary, IndexedBlock } from "@/lib/api/types";
 
 const SearchRecentBlocksContext = createContext<RecentBlocksByChain | null>(null);
@@ -22,6 +23,16 @@ function subscribeRecentBlocks(listener: () => void): () => void {
   );
   return () => {
     unsubs.forEach((unsub) => unsub());
+  };
+}
+
+function recentBlocksFromSummaries(
+  initialVrm?: ChainSummary | null,
+  initialVrc?: ChainSummary | null,
+): RecentBlocksByChain {
+  return {
+    vrm: snapshotFromSummary("vrm", initialVrm).latestBlocks,
+    vrc: snapshotFromSummary("vrc", initialVrc).latestBlocks,
   };
 }
 
@@ -55,10 +66,26 @@ export function SearchRecentBlocksProvider({
   chainLiveStore.ensureChain("vrm", initialVrmSummary);
   chainLiveStore.ensureChain("vrc", initialVrcSummary);
 
+  const serverSnapshot = useMemo(
+    () => recentBlocksFromSummaries(initialVrmSummary, initialVrcSummary),
+    [initialVrmSummary, initialVrcSummary],
+  );
+
+  const getClientSnapshot = () => {
+    const live = getRecentBlocksSnapshot();
+    if (
+      live.vrm === serverSnapshot.vrm &&
+      live.vrc === serverSnapshot.vrc
+    ) {
+      return serverSnapshot;
+    }
+    return live;
+  };
+
   const recentBlocks = useSyncExternalStore(
     subscribeRecentBlocks,
-    getRecentBlocksSnapshot,
-    getRecentBlocksSnapshot,
+    getClientSnapshot,
+    () => serverSnapshot,
   );
 
   return (

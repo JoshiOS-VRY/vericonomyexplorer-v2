@@ -1,6 +1,9 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+/** Fixed locale so SSR and client hydration render identical number/date text. */
+export const EXPLORER_LOCALE = "en-US";
+
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
@@ -13,7 +16,7 @@ export function ellipsizeMiddle(value: string, maxLength = 24): string {
 
 export function formatNumber(value: number | null | undefined): string {
   if (value == null || !Number.isFinite(value)) return "N/A";
-  return value.toLocaleString();
+  return value.toLocaleString(EXPLORER_LOCALE);
 }
 
 /** Compact coin balance for tables (e.g. 264.27K, 2.20M). */
@@ -28,9 +31,9 @@ export function formatCompactBalance(amount: string | number): string {
   if (abs >= 1_000_000) return `${(num / 1_000_000).toFixed(2)}M`;
   if (abs >= 1_000) return `${(num / 1_000).toFixed(2)}K`;
   if (abs >= 100) {
-    return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    return num.toLocaleString(EXPLORER_LOCALE, { maximumFractionDigits: 2 });
   }
-  return num.toLocaleString(undefined, {
+  return num.toLocaleString(EXPLORER_LOCALE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 8,
   });
@@ -42,7 +45,9 @@ export function formatDifficulty(value: number | string | null | undefined): str
   if (!Number.isFinite(num)) return String(value);
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(2)}M`;
   if (num >= 1_000) return `${(num / 1_000).toFixed(2)}K`;
-  if (num >= 1) return num.toLocaleString(undefined, { maximumFractionDigits: 4 });
+  if (num >= 1) {
+    return num.toLocaleString(EXPLORER_LOCALE, { maximumFractionDigits: 4 });
+  }
   return num.toPrecision(4);
 }
 
@@ -50,7 +55,7 @@ export function formatUnixTime(unixSeconds: number | null | undefined): string {
   if (unixSeconds == null || !Number.isFinite(unixSeconds) || unixSeconds <= 0) {
     return "—";
   }
-  return new Date(unixSeconds * 1000).toLocaleString(undefined, {
+  return new Date(unixSeconds * 1000).toLocaleString(EXPLORER_LOCALE, {
     year: "numeric",
     month: "short",
     day: "numeric",
