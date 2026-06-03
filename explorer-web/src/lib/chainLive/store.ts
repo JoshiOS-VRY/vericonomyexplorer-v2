@@ -364,23 +364,47 @@ function startPollLoop(): void {
   }, POLL_MS);
 }
 
-function ensureChain(chainId: ChainId, initialSummary?: ChainSummary | null): void {
-  if (snapshots.has(chainId)) {
-    return;
-  }
+function isPlaceholderSummary(summary: ChainSummary): boolean {
+  return !summary.health.checks.hasBlocks;
+}
 
-  const summary = initialSummary ?? emptySummary(chainId);
+function applySummary(chainId: ChainId, summary: ChainSummary): void {
   seedKnownHashes(chainId, summary.latestBlocks);
   tipHeights.set(
     chainId,
     summary.health.heights.bestRpcHeight ??
-      summary.health.heights.maxIndexedHeight,
+      summary.health.heights.maxIndexedHeight ??
+      null,
   );
-  snapshots.set(chainId, createSnapshot(summary));
+  setSnapshot(chainId, createSnapshot(summary));
+}
+
+function ensureChain(chainId: ChainId, initialSummary?: ChainSummary | null): void {
+  const incoming = initialSummary ?? emptySummary(chainId);
+  const existing = snapshots.get(chainId);
+
+  if (!existing) {
+    applySummary(chainId, incoming);
+    return;
+  }
+
+  if (
+    initialSummary &&
+    isPlaceholderSummary(existing.summary) &&
+    !isPlaceholderSummary(incoming)
+  ) {
+    applySummary(chainId, incoming);
+  }
+}
+
+/** Apply SSR page payload into the live store (layout may have seeded an empty placeholder). */
+function seedPageSummary(chainId: ChainId, summary: ChainSummary): void {
+  applySummary(chainId, summary);
 }
 
 export const chainLiveStore = {
   ensureChain,
+  seedPageSummary,
   getSnapshot(chainId: ChainId): ChainLiveSnapshot {
     if (!snapshots.has(chainId)) {
       ensureChain(chainId);

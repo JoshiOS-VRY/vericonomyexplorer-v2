@@ -106,8 +106,10 @@
       var button = target.closest("[data-copy-value]");
       if (!button) return;
 
-      event.preventDefault();
-      event.stopPropagation();
+      if (button.closest("a")) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
 
       var value = button.getAttribute("data-copy-value");
       if (!value) return;

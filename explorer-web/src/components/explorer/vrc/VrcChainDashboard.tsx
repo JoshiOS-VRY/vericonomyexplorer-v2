@@ -10,7 +10,7 @@ import { ChainQuickNav } from "@/components/explorer/chain/ChainQuickNav";
 import { ChainRichlistPreview } from "@/components/explorer/chain/ChainRichlistPreview";
 import { ChainTransactionsPanel } from "@/components/explorer/chain/ChainTransactionsPanel";
 import { ChainExplorerHero } from "@/components/explorer/vrm/VrmChainHero";
-import { useLiveChainSummary } from "@/hooks/useLiveChainSummary";
+import { useStableChainLive } from "@/hooks/useStableChainLive";
 import type { ChainMarket, ChainSummary, RichlistResult, VrcNetworkStats } from "@/lib/api/types";
 import { fetchHomeMarket, fetchHomeNetwork } from "@/lib/api/client";
 import { applyOnChainMarketCap } from "@/lib/enrichMarket";
@@ -34,14 +34,13 @@ export function VrcChainDashboard({
   const [network, setNetwork] = useState<VrcNetworkStats>(
     initialNetwork ?? emptyNetworkPayload().vrc,
   );
-  const live = useLiveChainSummary("vrc", initialSummary);
   const {
     summary,
     chainHeight,
     addressCount,
     latestBlocks,
     heightPulse,
-  } = live;
+  } = useStableChainLive("vrc", initialSummary);
 
   useEffect(() => {
     if (initialMarket && initialNetwork) {

@@ -12,7 +12,7 @@ import { ChainTransactionsPanel } from "@/components/explorer/chain/ChainTransac
 import { ChainExplorerHero } from "@/components/explorer/vrm/VrmChainHero";
 import { VrmLeaderboardPreview } from "@/components/explorer/vrm/VrmLeaderboardPreview";
 import { VrmMinersPreview } from "@/components/explorer/vrm/VrmMinersPreview";
-import { useLiveChainSummary } from "@/hooks/useLiveChainSummary";
+import { useStableChainLive } from "@/hooks/useStableChainLive";
 import type { ChainMarket, VrmDashboardPayload, VrmNetworkStats } from "@/lib/api/types";
 import { fetchHomeMarket, fetchHomeNetwork } from "@/lib/api/client";
 import { applyOnChainMarketCap } from "@/lib/enrichMarket";
@@ -36,14 +36,13 @@ export function VrmChainDashboard({
   const [network, setNetwork] = useState<VrmNetworkStats>(
     initialNetwork ?? emptyNetworkPayload().vrm,
   );
-  const live = useLiveChainSummary("vrm", initialSummary);
   const {
     summary,
     chainHeight,
     addressCount,
     latestBlocks,
     heightPulse,
-  } = live;
+  } = useStableChainLive("vrm", initialSummary);
 
   useEffect(() => {
     if (initialMarket && initialNetwork) {
