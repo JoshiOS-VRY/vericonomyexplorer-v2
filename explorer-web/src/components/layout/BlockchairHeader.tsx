@@ -14,6 +14,7 @@ import {
   type HeaderNavItem,
   type HeaderNavLinkItem,
 } from "@/components/layout/navLinks";
+import { useHydrated } from "@/hooks/useHydrated";
 import { isNavDropdownActive, isNavLinkActive } from "@/lib/navUtils";
 import type { ChainSummary } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
@@ -288,8 +289,9 @@ export function BlockchairHeader({
   initialVrmSummary?: ChainSummary | null;
   initialVrcSummary?: ChainSummary | null;
 }) {
+  const hydrated = useHydrated();
   const pathnameFromRouter = usePathname();
-  const pathname = pathnameFromRouter ?? pathnameProp;
+  const pathname = hydrated ? (pathnameFromRouter ?? pathnameProp) : pathnameProp;
 
   return (
     <header className="bc-header sticky top-0 z-40 border-b border-border bg-bg-panel shadow-sm">

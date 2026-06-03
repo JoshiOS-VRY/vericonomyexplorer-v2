@@ -61,21 +61,39 @@ export function VericonomyHomeLiveBand({
       <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <ChainHubSection
           chainId="vrm"
-          summary={live.vrm.summary}
-          chainHeight={live.vrm.chainHeight}
-          heightPulse={live.vrm.heightPulse}
+          summary={hydrated ? live.vrm.summary : initialShell.vrm.summary}
+          chainHeight={
+            hydrated
+              ? live.vrm.chainHeight
+              : initialShell.vrm.summary.health.heights.bestRpcHeight ??
+                initialShell.vrm.summary.health.heights.maxIndexedHeight
+          }
+          heightPulse={hydrated && live.vrm.heightPulse}
           market={market.vrm}
           network={network.vrm}
-          seedBlocks={live.vrm.latestBlocks}
+          seedBlocks={
+            hydrated
+              ? live.vrm.latestBlocks
+              : initialShell.vrm.summary.latestBlocks
+          }
         />
         <ChainHubSection
           chainId="vrc"
-          summary={live.vrc.summary}
-          chainHeight={live.vrc.chainHeight}
-          heightPulse={live.vrc.heightPulse}
+          summary={hydrated ? live.vrc.summary : initialShell.vrc.summary}
+          chainHeight={
+            hydrated
+              ? live.vrc.chainHeight
+              : initialShell.vrc.summary.health.heights.bestRpcHeight ??
+                initialShell.vrc.summary.health.heights.maxIndexedHeight
+          }
+          heightPulse={hydrated && live.vrc.heightPulse}
           market={market.vrc}
           network={network.vrc}
-          seedBlocks={live.vrc.latestBlocks}
+          seedBlocks={
+            hydrated
+              ? live.vrc.latestBlocks
+              : initialShell.vrc.summary.latestBlocks
+          }
         />
       </div>
     </div>
