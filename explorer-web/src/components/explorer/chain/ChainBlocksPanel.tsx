@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Loader2, Radio } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
 import { BcPanel, BcTableLink } from "@/components/explorer/BlockchairUi";
 import { ExtractedByCell } from "@/components/explorer/block/ExtractedByCell";
@@ -90,7 +90,7 @@ export function ChainBlocksPanel({
   } = useLatestBlocksPoll(chainId, liveBlocks);
 
   const [offset, setOffset] = useState(0);
-  const [blocks, setBlocks] = useState<IndexedBlock[]>([]);
+  const [pagedBlocks, setPagedBlocks] = useState<IndexedBlock[]>([]);
   const [paging, setPaging] = useState<Paging>({
     limit: PAGE_SIZE,
     offset: 0,
@@ -104,25 +104,26 @@ export function ChainBlocksPanel({
     ? liveBlocks.length
     : chainHeight != null
       ? chainHeight + 1
-      : Math.max(paging.total, polledBlocks.length);
+      : Math.max(paging.total, polledBlocks.length, liveBlocks.length);
 
-  const latestPageBlocks = behindTip
-    ? liveBlocks.slice(0, PAGE_SIZE)
-    : polledBlocks.slice(0, PAGE_SIZE);
+  const livePageBlocks = useMemo(
+    () =>
+      (behindTip ? liveBlocks : polledBlocks).slice(0, PAGE_SIZE),
+    [behindTip, liveBlocks, polledBlocks],
+  );
 
-  useEffect(() => {
-    if (offset !== 0) {
-      return;
-    }
-
-    setBlocks(latestPageBlocks);
-    setPaging({
+  const livePaging = useMemo<Paging>(
+    () => ({
       limit: PAGE_SIZE,
       offset: 0,
       total: behindTip ? liveBlocks.length : totalBlocks,
       hasMore: PAGE_SIZE < (behindTip ? liveBlocks.length : totalBlocks),
-    });
-  }, [behindTip, latestPageBlocks, offset, totalBlocks, liveBlocks.length]);
+    }),
+    [behindTip, liveBlocks.length, totalBlocks],
+  );
+
+  const blocks = offset === 0 ? livePageBlocks : pagedBlocks;
+  const activePaging = offset === 0 ? livePaging : paging;
 
   useEffect(() => {
     if (offset === 0) {
@@ -142,7 +143,7 @@ export function ChainBlocksPanel({
         if (cancelled) {
           return;
         }
-        setBlocks(result.items);
+        setPagedBlocks(result.items);
         setPaging(result.paging);
       } catch {
         if (!cancelled) {
@@ -164,16 +165,16 @@ export function ChainBlocksPanel({
     if (loading || nextOffset < 0 || nextOffset === offset) {
       return;
     }
-    if (nextOffset >= paging.total) {
+    if (nextOffset >= activePaging.total) {
       return;
     }
     setOffset(nextOffset);
   };
 
-  const rangeStart = paging.total === 0 ? 0 : offset + 1;
-  const rangeEnd = Math.min(offset + blocks.length, paging.total);
+  const rangeStart = activePaging.total === 0 ? 0 : offset + 1;
+  const rangeEnd = Math.min(offset + blocks.length, activePaging.total);
   const canGoPrev = offset > 0 && !loading;
-  const canGoNext = paging.hasMore && !loading;
+  const canGoNext = activePaging.hasMore && !loading;
   const displayError = error ?? (offset === 0 ? pollError : null);
   const isLivePage = offset === 0 && !behindTip;
   const showLoading =
@@ -268,10 +269,10 @@ export function ChainBlocksPanel({
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                 Loading…
               </span>
-            ) : paging.total > 0 ? (
+            ) : activePaging.total > 0 ? (
               <>
                 {formatHeight(rangeStart)}–{formatHeight(rangeEnd)} of{" "}
-                {formatHeight(paging.total)}
+                {formatHeight(activePaging.total)}
               </>
             ) : (
               "No blocks"

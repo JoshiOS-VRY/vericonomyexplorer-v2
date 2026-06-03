@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchLatestBlocks } from "@/lib/api/client";
 import { usePageVisible } from "@/hooks/usePageVisible";
 import type { IndexedBlock } from "@/lib/api/types";
@@ -22,12 +22,31 @@ export function useLatestBlocksPoll(
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlightRef = useRef(false);
+  const seedSignature = useMemo(
+    () =>
+      seedBlocks
+        .slice(0, LATEST_BLOCKS_COUNT)
+        .map((block) => `${block.height}:${block.hash}`)
+        .join("|"),
+    [seedBlocks],
+  );
 
   useEffect(() => {
-    setBlocks((prev) =>
-      enrichBlocksFromPrevious(prev, seedBlocks, LATEST_BLOCKS_COUNT),
-    );
-  }, [seedBlocks]);
+    setBlocks((prev) => {
+      const next = enrichBlocksFromPrevious(
+        prev,
+        seedBlocks,
+        LATEST_BLOCKS_COUNT,
+      );
+      if (
+        next.length === prev.length &&
+        next.every((block, index) => block.hash === prev[index]?.hash)
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [seedBlocks, seedSignature]);
 
   const refresh = useCallback(async () => {
     if (!visible || inFlightRef.current) {
