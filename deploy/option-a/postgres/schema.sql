@@ -265,4 +265,18 @@ CREATE TABLE IF NOT EXISTS miner_stats (
     PRIMARY KEY (chain_id, address, day_start)
 ) PARTITION BY LIST (chain_id);
 
+-- Per-block coin issuance with a precomputed running total, so circulating
+-- supply at any height is a single indexed lookup (height <= H ORDER BY height
+-- DESC LIMIT 1) instead of re-summing coinbase/coinstake mint across millions
+-- of txs via correlated subqueries. mint_sats = coinbase outputs (VRM/PoW) or
+-- coinstake (outputs - resolved inputs) (VRC/PoS); rows with zero mint are
+-- omitted (they never change the running total). Maintained by refreshAnalytics.js.
+CREATE TABLE IF NOT EXISTS block_mint (
+    chain_id        TEXT NOT NULL,
+    height          BIGINT NOT NULL,
+    mint_sats       BIGINT NOT NULL,
+    cumulative_sats BIGINT NOT NULL,
+    PRIMARY KEY (chain_id, height)
+) PARTITION BY LIST (chain_id);
+
 COMMIT;

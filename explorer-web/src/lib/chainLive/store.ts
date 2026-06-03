@@ -3,7 +3,7 @@ import type { ChainSummary, IndexedBlock } from "@/lib/api/types";
 import { getChainTipHeight, mergeChainHealth } from "@/lib/chainDisplay";
 import {
   enrichBlocksFromPrevious,
-  shouldApplyOptimisticTip,
+  filterTableReadyBlocks,
 } from "@/lib/liveBlocksMerge";
 import { LATEST_BLOCKS_COUNT } from "@/lib/chainBlocksDisplay";
 
@@ -144,9 +144,9 @@ function mergeSummary(chainId: ChainId, next: ChainSummary): ChainLiveSnapshot {
   const prevTopHeight = prev.summary.latestBlocks[0]?.height ?? null;
   const nextTopHeight = next.latestBlocks[0]?.height ?? null;
 
-  const mergedBlocks = enrichBlocksFromPrevious(
-    prev.summary.latestBlocks,
-    next.latestBlocks,
+  const mergedBlocks = filterTableReadyBlocks(
+    enrichBlocksFromPrevious(prev.summary.latestBlocks, next.latestBlocks),
+    chainId,
   );
   const latestBlockHeight =
     mergedBlocks[0]?.height ?? nextTopHeight ?? prevTopHeight ?? null;
@@ -221,17 +221,9 @@ function applyOptimisticTip(chainId: ChainId, tip: TipEvent): void {
     return;
   }
 
-  const nextBlocks = shouldApplyOptimisticTip(tip.height, top?.height ?? null)
-    ? [
-        {
-          height: tip.height,
-          hash: tip.hash,
-          time: tip.time,
-          txCount: 0,
-        } satisfies IndexedBlock,
-        ...current.summary.latestBlocks,
-      ].slice(0, LATEST_BLOCKS_COUNT)
-    : current.summary.latestBlocks;
+  // Do not prepend a stub row: tables require enriched fields (miner, size, difficulty).
+  // chainHeight still advances from the tip; blocks/latest + summary refresh fill the list.
+  const nextBlocks = current.summary.latestBlocks;
 
   const hashes = knownHashes.get(chainId) ?? new Set<string>();
   if (!hashes.has(tip.hash)) {

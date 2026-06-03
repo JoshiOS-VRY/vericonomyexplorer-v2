@@ -1,5 +1,42 @@
 import type { IndexedBlock } from "@/lib/api/types";
 import { LATEST_BLOCKS_COUNT } from "@/lib/chainBlocksDisplay";
+import type { ChainId } from "@/lib/chainDisplay";
+
+/** True when a block has the fields required for latest-blocks tables (not a tip-stream stub). */
+export function isIndexedBlockTableReady(
+  block: IndexedBlock,
+  chainId: ChainId,
+): boolean {
+  if (!Number.isFinite(block.height) || !block.hash?.trim()) {
+    return false;
+  }
+
+  if (block.size == null || !block.difficulty) {
+    return false;
+  }
+
+  if (chainId === "vrm") {
+    return !!(
+      block.extractedBy?.trim() || block.extractedByAddress?.trim()
+    );
+  }
+
+  if (chainId === "vrc") {
+    return (
+      block.interestRatePercent != null &&
+      Number.isFinite(block.interestRatePercent)
+    );
+  }
+
+  return true;
+}
+
+export function filterTableReadyBlocks(
+  blocks: IndexedBlock[],
+  chainId: ChainId,
+): IndexedBlock[] {
+  return blocks.filter((block) => isIndexedBlockTableReady(block, chainId));
+}
 
 export function shouldApplyOptimisticTip(
   tipHeight: number,

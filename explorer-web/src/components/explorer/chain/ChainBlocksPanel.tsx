@@ -87,7 +87,7 @@ export function ChainBlocksPanel({
     blocks: polledBlocks,
     isRefreshing: isPolling,
     error: pollError,
-  } = useLatestBlocksPoll(chainId, liveBlocks);
+  } = useLatestBlocksPoll(chainId, liveBlocks, chainHeight);
 
   const [offset, setOffset] = useState(0);
   const [pagedBlocks, setPagedBlocks] = useState<IndexedBlock[]>([]);

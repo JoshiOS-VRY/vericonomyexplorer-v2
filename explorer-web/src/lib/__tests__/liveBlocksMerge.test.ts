@@ -1,13 +1,27 @@
 import { describe, expect, it } from "@jest/globals";
 import {
   enrichBlocksFromPrevious,
+  isIndexedBlockTableReady,
   shouldApplyFetchedBlocks,
   shouldApplyOptimisticTip,
 } from "@/lib/liveBlocksMerge";
 import type { IndexedBlock } from "@/lib/api/types";
 
 function block(height: number, hash = `hash-${height}`): IndexedBlock {
-  return { height, hash, time: height, txCount: 1 };
+  return {
+    height,
+    hash,
+    time: height,
+    txCount: 1,
+    size: 512,
+    difficulty: "1000",
+    extractedBy: "miner",
+    interestRatePercent: 1.5,
+  };
+}
+
+function tipStub(height: number, hash = `hash-${height}`): IndexedBlock {
+  return { height, hash, time: height, txCount: 0 };
 }
 
 describe("liveBlocksMerge", () => {
@@ -29,6 +43,18 @@ describe("liveBlocksMerge", () => {
     );
 
     expect(merged.map((entry) => entry.height)).toEqual([100, 99, 98]);
-    expect(merged[0]?.extractedBy).toBeUndefined();
+    expect(merged[0]?.extractedBy).toBe("miner");
+  });
+
+  it("rejects tip-stream stub rows for table display", () => {
+    expect(isIndexedBlockTableReady(tipStub(101), "vrm")).toBe(false);
+    expect(isIndexedBlockTableReady(block(101), "vrm")).toBe(true);
+    expect(isIndexedBlockTableReady(block(101), "vrc")).toBe(true);
+    expect(
+      isIndexedBlockTableReady(
+        { ...block(101), interestRatePercent: null },
+        "vrc",
+      ),
+    ).toBe(false);
   });
 });

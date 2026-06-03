@@ -9,19 +9,28 @@ import {
   LATEST_BLOCKS_POLL_MS,
 } from "@/lib/chainBlocksDisplay";
 import type { ChainId } from "@/lib/chainDisplay";
-import { enrichBlocksFromPrevious } from "@/lib/liveBlocksMerge";
+import {
+  enrichBlocksFromPrevious,
+  filterTableReadyBlocks,
+  isIndexedBlockTableReady,
+} from "@/lib/liveBlocksMerge";
 
 export function useLatestBlocksPoll(
   chainId: ChainId,
   seedBlocks: IndexedBlock[] = [],
+  chainHeight?: number | null,
 ) {
   const visible = usePageVisible();
   const [blocks, setBlocks] = useState<IndexedBlock[]>(() =>
-    seedBlocks.slice(0, LATEST_BLOCKS_COUNT),
+    filterTableReadyBlocks(
+      seedBlocks.slice(0, LATEST_BLOCKS_COUNT),
+      chainId,
+    ),
   );
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inFlightRef = useRef(false);
+  const chainHeightRef = useRef(chainHeight);
   const seedSignature = useMemo(
     () =>
       seedBlocks
@@ -33,11 +42,12 @@ export function useLatestBlocksPoll(
 
   useEffect(() => {
     setBlocks((prev) => {
-      const next = enrichBlocksFromPrevious(
+      const merged = enrichBlocksFromPrevious(
         prev,
         seedBlocks,
         LATEST_BLOCKS_COUNT,
       );
+      const next = filterTableReadyBlocks(merged, chainId);
       if (
         next.length === prev.length &&
         next.every((block, index) => block.hash === prev[index]?.hash)
@@ -46,7 +56,7 @@ export function useLatestBlocksPoll(
       }
       return next;
     });
-  }, [seedBlocks, seedSignature]);
+  }, [chainId, seedBlocks, seedSignature]);
 
   const refresh = useCallback(async () => {
     if (!visible || inFlightRef.current) {
@@ -58,7 +68,10 @@ export function useLatestBlocksPoll(
     try {
       const next = await fetchLatestBlocks(chainId);
       setBlocks((prev) =>
-        enrichBlocksFromPrevious(prev, next, LATEST_BLOCKS_COUNT),
+        filterTableReadyBlocks(
+          enrichBlocksFromPrevious(prev, next, LATEST_BLOCKS_COUNT),
+          chainId,
+        ),
       );
       setError(null);
     } catch (err) {
@@ -70,6 +83,24 @@ export function useLatestBlocksPoll(
       setIsRefreshing(false);
     }
   }, [chainId, visible]);
+
+  useEffect(() => {
+    const top = seedBlocks[0];
+    if (top && !isIndexedBlockTableReady(top, chainId)) {
+      void refresh();
+    }
+  }, [chainId, refresh, seedBlocks, seedSignature]);
+
+  useEffect(() => {
+    if (
+      chainHeight != null &&
+      chainHeightRef.current != null &&
+      chainHeight > chainHeightRef.current
+    ) {
+      void refresh();
+    }
+    chainHeightRef.current = chainHeight ?? chainHeightRef.current;
+  }, [chainHeight, refresh]);
 
   useEffect(() => {
     if (!visible) {

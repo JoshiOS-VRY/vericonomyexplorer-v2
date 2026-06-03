@@ -11,7 +11,8 @@ function parseArgs(argv) {
 		chain: null,
 		since: null,
 		sampleEveryHours: 1,
-		addressGrowthOnly: false
+		addressGrowthOnly: false,
+		skipSupply: false
 	};
 
 	for (let i = 0; i < argv.length; i += 1) {
@@ -27,6 +28,8 @@ function parseArgs(argv) {
 			i += 1;
 		} else if (arg === "--address-growth-only") {
 			result.addressGrowthOnly = true;
+		} else if (arg === "--skip-supply") {
+			result.skipSupply = true;
 		}
 	}
 
@@ -55,7 +58,7 @@ async function main() {
 		: await backfillFromBlocks(db, args.chain, {
 			since: args.since,
 			sampleEveryHours: args.sampleEveryHours,
-			skipSupplySeries: args.since != null
+			skipSupplySeries: args.skipSupply || args.since != null
 		});
 
 	console.log(JSON.stringify(result, null, 2));

@@ -307,6 +307,125 @@ async function refreshMinerStats(db, chain, maxHeight) {
 	return chunks;
 }
 
+// block_mint: per-height coin issuance + running total. mint_sats = coinbase
+// outputs (PoW) or coinstake (outputs - resolved inputs, when positive) (PoS).
+// cumulative_sats is the running total seeded from the prior chunk's tail, so
+// circulating supply at any height is an indexed `height <= H ORDER BY height
+// DESC LIMIT 1`. Computed set-based with grouped CTEs (no correlated subqueries).
+async function refreshBlockMint(db, chain, maxHeight) {
+	let wm = await getWatermark(db, chain, "block_mint");
+	let chunks = 0;
+
+	while (wm < maxHeight) {
+		const hi = Math.min(wm + HEIGHT_CHUNK, maxHeight);
+
+		const baseRow = await db.get(
+			`SELECT cumulative_sats FROM block_mint
+			 WHERE chain_id = ? AND height <= ?
+			 ORDER BY height DESC LIMIT 1`,
+			[chain, wm]
+		);
+		const base = baseRow && baseRow.cumulative_sats != null
+			? BigInt(baseRow.cumulative_sats).toString()
+			: "0";
+
+		await db.run(
+			`INSERT INTO block_mint (chain_id, height, mint_sats, cumulative_sats)
+			 WITH txs AS (
+				SELECT txid, block_height AS height, is_coinbase, is_coinstake
+				FROM transactions
+				WHERE chain_id = ? AND block_height > ? AND block_height <= ?
+					AND (is_coinbase = 1 OR is_coinstake = 1)
+			 ),
+			 outs AS (
+				SELECT v.txid, SUM(v.value_sats) AS out_sats
+				FROM vouts v JOIN txs ON txs.txid = v.txid
+				WHERE v.chain_id = ?
+				GROUP BY v.txid
+			 ),
+			 ins AS (
+				SELECT vi.txid, SUM(vi.value_sats) AS in_sats
+				FROM vins vi JOIN txs ON txs.txid = vi.txid
+				WHERE vi.chain_id = ? AND vi.resolved = 1
+				GROUP BY vi.txid
+			 ),
+			 per_height AS (
+				SELECT txs.height,
+					SUM(CASE
+						WHEN txs.is_coinbase = 1 THEN COALESCE(outs.out_sats, 0)
+						WHEN txs.is_coinstake = 1 AND COALESCE(outs.out_sats, 0) > COALESCE(ins.in_sats, 0)
+							THEN outs.out_sats - ins.in_sats
+						ELSE 0
+					END)::bigint AS mint_sats
+				FROM txs
+				LEFT JOIN outs ON outs.txid = txs.txid
+				LEFT JOIN ins ON ins.txid = txs.txid
+				GROUP BY txs.height
+			 ),
+			 pos AS (
+				SELECT height, mint_sats FROM per_height WHERE mint_sats > 0
+			 )
+			 SELECT ?::text, height, mint_sats,
+					(?::bigint + SUM(mint_sats) OVER (ORDER BY height ROWS UNBOUNDED PRECEDING))::bigint
+			 FROM pos
+			 ORDER BY height
+			 ON CONFLICT (chain_id, height) DO UPDATE SET
+				mint_sats = excluded.mint_sats,
+				cumulative_sats = excluded.cumulative_sats`,
+			[chain, wm, hi, chain, chain, chain, base]
+		);
+
+		wm = hi;
+		chunks += 1;
+		await setWatermark(db, chain, "block_mint", wm);
+		log(`${chain} block_mint: heights<=${wm}/${maxHeight}`);
+	}
+
+	return chunks;
+}
+
+// network_metric_buckets.supply from block_mint: each hour bucket's supply is
+// the running total at the last main-chain block in that hour. Set-based; runs
+// after refreshBlockMint so the lookup always finds a covering row.
+async function refreshSupplyBuckets(db, chain, maxHeight) {
+	let wm = await getWatermark(db, chain, "supply_buckets");
+	let chunks = 0;
+
+	while (wm < maxHeight) {
+		const hi = Math.min(wm + HEIGHT_CHUNK, maxHeight);
+		const now = Date.now();
+
+		await db.run(
+			`INSERT INTO network_metric_buckets (chain_id, bucket_start, supply, updated_at)
+			 SELECT lb.chain_id, lb.bucket_start, (s.cumulative_sats::numeric / 100000000.0), ?
+			 FROM (
+				SELECT DISTINCT ON ((time / 3600) * 3600)
+					chain_id, (time / 3600) * 3600 AS bucket_start, height
+				FROM blocks
+				WHERE chain_id = ? AND status = 'main' AND time IS NOT NULL
+					AND height > ? AND height <= ?
+				ORDER BY (time / 3600) * 3600, height DESC
+			 ) lb
+			 JOIN LATERAL (
+				SELECT cumulative_sats FROM block_mint bm
+				WHERE bm.chain_id = lb.chain_id AND bm.height <= lb.height
+				ORDER BY bm.height DESC LIMIT 1
+			 ) s ON true
+			 ON CONFLICT (chain_id, bucket_start) DO UPDATE SET
+				supply = excluded.supply,
+				updated_at = excluded.updated_at`,
+			[now, chain, wm, hi]
+		);
+
+		wm = hi;
+		chunks += 1;
+		await setWatermark(db, chain, "supply_buckets", wm);
+		log(`${chain} supply_buckets: heights<=${wm}/${maxHeight}`);
+	}
+
+	return chunks;
+}
+
 async function main() {
 	const chain = String(process.argv[2] || "").toLowerCase();
 	if (!["vrm", "vrc"].includes(chain)) {
@@ -333,11 +452,14 @@ async function main() {
 	const activity = await refreshChainActivity(db, chain, maxHeight);
 	const addressStats = await refreshAddressStats(db, chain, maxHeight);
 	const miners = await refreshMinerStats(db, chain, maxHeight);
+	const mint = await refreshBlockMint(db, chain, maxHeight);
+	const supply = await refreshSupplyBuckets(db, chain, maxHeight);
 
 	log(
 		`${chain}: done in ${((Date.now() - startedAt) / 1000).toFixed(1)}s `
 		+ `(block_totals=${totals}, chain_activity_chunks=${activity}, `
-		+ `address_chunks=${addressStats}, miner_chunks=${miners})`
+		+ `address_chunks=${addressStats}, miner_chunks=${miners}, `
+		+ `block_mint_chunks=${mint}, supply_chunks=${supply})`
 	);
 }
 
@@ -356,5 +478,7 @@ module.exports = {
 	refreshBlockTotals,
 	refreshChainActivity,
 	refreshAddressStats,
-	refreshMinerStats
+	refreshMinerStats,
+	refreshBlockMint,
+	refreshSupplyBuckets
 };

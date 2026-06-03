@@ -235,8 +235,6 @@ export function InsightsNetworkCharts({
           name="Supply"
           valueFormatter={(value) => formatNumber(value)}
           allowedViews={["area"]}
-          referenceValue={maxSupply ?? undefined}
-          referenceLabel="Max supply"
         />
         <NetworkMetricChart
           {...shared}
@@ -291,8 +289,6 @@ export function InsightsNetworkCharts({
         name="Supply"
         valueFormatter={(value) => formatNumber(value)}
         allowedViews={["area"]}
-        referenceValue={maxSupply ?? undefined}
-        referenceLabel="Max supply"
       />
       <NetworkMetricChart
         {...shared}

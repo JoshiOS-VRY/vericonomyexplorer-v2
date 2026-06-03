@@ -63,7 +63,7 @@ export function ChainHubSection({
     blocks: displayBlocks,
     isRefreshing,
     error: blocksError,
-  } = useLatestBlocksPoll(chainId, seedBlocks);
+  } = useLatestBlocksPoll(chainId, seedBlocks, chainHeight);
 
   const tipBlock = displayBlocks[0];
   const atTip = isChainAtTip(health, tipBlock?.height, chainHeight);

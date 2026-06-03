@@ -8,52 +8,14 @@ function toSafeInteger(value) {
 	return Number.isFinite(parsed) ? Math.trunc(parsed) : 0;
 }
 
+// Reads the precomputed per-height running total from block_mint (maintained by
+// refreshAnalytics.js). cumulative_sats is already the inclusive running mint
+// total at each height, so no per-tx aggregation / correlated subqueries here.
 async function loadBlockMintRows(db, chainId) {
-	if (chainId === "vrm") {
-		return db.all(`
-			SELECT t.block_height AS height, COALESCE(SUM(v.value_sats), 0) AS mint_sats
-			FROM transactions t
-			INNER JOIN vouts v ON v.chain_id = t.chain_id AND v.txid = t.txid
-			WHERE t.chain_id = ? AND t.is_coinbase = 1
-			GROUP BY t.block_height
-			ORDER BY t.block_height ASC
-		`, [chainId]);
-	}
-
 	return db.all(`
-		WITH tx_values AS (
-			SELECT
-				t.block_height AS height,
-				t.txid,
-				t.is_coinbase,
-				t.is_coinstake,
-				(
-					SELECT COALESCE(SUM(v.value_sats), 0)
-					FROM vouts v
-					WHERE v.chain_id = t.chain_id AND v.txid = t.txid
-				) AS output_sats,
-				(
-					SELECT COALESCE(SUM(vi.value_sats), 0)
-					FROM vins vi
-					WHERE vi.chain_id = t.chain_id AND vi.txid = t.txid AND vi.resolved = 1
-				) AS input_sats
-			FROM transactions t
-			WHERE t.chain_id = ? AND (t.is_coinbase = 1 OR t.is_coinstake = 1)
-		),
-		tx_mint AS (
-			SELECT
-				height,
-				CASE
-					WHEN is_coinbase = 1 THEN output_sats
-					WHEN is_coinstake = 1 AND output_sats > input_sats THEN output_sats - input_sats
-					ELSE 0
-				END AS mint_sats
-			FROM tx_values
-		)
-		SELECT height, SUM(mint_sats) AS mint_sats
-		FROM tx_mint
-		WHERE mint_sats > 0
-		GROUP BY height
+		SELECT height, cumulative_sats
+		FROM block_mint
+		WHERE chain_id = ?
 		ORDER BY height ASC
 	`, [chainId]);
 }
@@ -70,11 +32,10 @@ async function buildSupplySeries(db, chainId) {
 	}
 
 	const mintRows = await loadBlockMintRows(db, chainId);
-	let cumulativeSats = 0n;
 	const entries = [];
 
 	for (const row of mintRows) {
-		cumulativeSats += BigInt(row.mint_sats || 0);
+		const cumulativeSats = BigInt(row.cumulative_sats || 0);
 		entries.push({
 			height: toSafeInteger(row.height),
 			supplySats: cumulativeSats,
@@ -119,9 +80,26 @@ function supplyAtHeight(series, height) {
 	return entries[lo].supply;
 }
 
+// Hot path (API live snapshot): a single indexed lookup against block_mint
+// instead of materializing the whole series in the query worker.
 async function indexedSupplyAtHeight(db, chainId, height) {
-	const series = await buildSupplySeries(db, chainId);
-	return supplyAtHeight(series, height);
+	const targetHeight = toSafeInteger(height);
+	if (targetHeight < 0) {
+		return null;
+	}
+
+	const row = await db.get(`
+		SELECT cumulative_sats
+		FROM block_mint
+		WHERE chain_id = ? AND height <= ?
+		ORDER BY height DESC LIMIT 1
+	`, [chainId, targetHeight]);
+
+	if (!row || row.cumulative_sats == null) {
+		return null;
+	}
+
+	return Number(BigInt(row.cumulative_sats)) / Number(SATOSHI);
 }
 
 function clearSupplySeriesCache(db) {
