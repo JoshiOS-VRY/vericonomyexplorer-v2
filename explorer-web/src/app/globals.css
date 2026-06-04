@@ -1012,47 +1012,92 @@ html:not(.light)
   padding: 0 0.5rem 0.5rem;
 }
 
+/*
+ * Home hub block tables (VRM + VRC): identical column grid and row heights.
+ * Producer column absorbs leftover width; hash truncates; numeric cols fit content.
+ */
 .home-page .chain-hub-section .block-chain-table {
-  table-layout: auto;
+  --bct-row-head: 2.25rem;
+  --bct-row-body: 2.75rem;
+  table-layout: fixed;
   width: 100%;
 }
 
-.home-page .chain-hub-section .block-chain-table .block-chain-table__col--height,
-.home-page .chain-hub-section .block-chain-table .block-chain-table__col--hash,
-.home-page .chain-hub-section .block-chain-table .block-chain-table__col--txs,
-.home-page .chain-hub-section .block-chain-table .block-chain-table__col--size {
-  width: 1%;
-  white-space: nowrap;
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col--height {
+  width: 15%;
 }
 
-.home-page .chain-hub-section .block-chain-table .block-chain-table__col--age {
-  width: 1%;
-  min-width: 4.75rem;
-  max-width: 5.25rem;
-  white-space: nowrap;
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col--hash {
+  width: 8%;
 }
 
-.home-page .chain-hub-section .block-chain-table .block-chain-table__col--diff {
-  width: auto;
-  min-width: 3.25rem;
-  white-space: nowrap;
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col--producer {
+  width: 35%;
 }
 
-.chain-hub-section[data-chain="vrm"] .block-chain-table .block-chain-table__col--producer {
-  width: auto;
-  min-width: 6.75rem;
-  white-space: nowrap;
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col--age {
+  width: 12%;
 }
 
-.chain-hub-section[data-chain="vrc"] .block-chain-table .block-chain-table__col--producer {
-  width: 1%;
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col--txs {
+  width: 5%;
+}
+
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col--size {
+  width: 9%;
+}
+
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col--diff {
+  width: 16%;
+}
+
+.block-chain-table__cell-clip {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 0;
 }
 
 .block-chain-table__hash-link {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--font-mono);
   font-size: 0.8125rem;
   letter-spacing: -0.01em;
+}
+
+.block-chain-table__col--height,
+.block-chain-table__col--age,
+.block-chain-table__col--txs,
+.block-chain-table__col--size,
+.block-chain-table__col--diff {
+  white-space: nowrap;
+}
+
+.block-chain-table__col--producer {
+  overflow: hidden;
+}
+
+.block-chain-table__producer-inner {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+}
+
+.block-chain-table__producer-inner .extracted-by-verium-pool {
+  flex-shrink: 0;
+  max-width: 100%;
+}
+
+.block-chain-table__producer-text {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {
@@ -1060,25 +1105,24 @@ html:not(.light)
     align-items: center;
   }
 
-  .data-table--stack td.block-chain-table__col--producer > * {
+  .data-table--stack td.block-chain-table__col--producer .block-chain-table__producer-inner {
     min-width: auto;
     flex-shrink: 0;
   }
 }
 
 .home-page .chain-hub-section .block-chain-table thead tr th {
-  height: auto;
-  min-height: 2.25rem;
+  height: var(--bct-row-head);
   box-sizing: border-box;
   vertical-align: middle;
 }
 
 .home-page .chain-hub-section .block-chain-table tbody tr.block-chain-table-row td {
-  height: auto;
-  min-height: 2.625rem;
+  height: var(--bct-row-body);
   box-sizing: border-box;
   vertical-align: middle;
   font-size: 0.8125rem;
+  overflow: hidden;
 }
 
 .home-page .chain-hub-section .block-chain-table th,

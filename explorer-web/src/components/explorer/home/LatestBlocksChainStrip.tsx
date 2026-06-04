@@ -242,6 +242,15 @@ export function ChainHubSection({
 
             <div className="block-chain-table-wrap overflow-x-auto border-t border-border">
               <table className="bc-table block-chain-table data-table data-table--stack">
+                <colgroup>
+                  <col className="block-chain-table__col--height" />
+                  <col className="block-chain-table__col--hash" />
+                  <col className="block-chain-table__col--producer" />
+                  <col className="block-chain-table__col--age" />
+                  <col className="block-chain-table__col--txs" />
+                  <col className="block-chain-table__col--size" />
+                  <col className="block-chain-table__col--diff" />
+                </colgroup>
                 <thead>
                   <tr>
                     <th className="block-chain-table__col block-chain-table__col--height">
@@ -456,7 +465,7 @@ function BlockChainTableRow({
     >
       <td
         data-label="Height"
-        className="block-chain-table__col block-chain-table__col--height"
+        className="block-chain-table__col block-chain-table__col--height block-chain-table__cell-clip"
       >
         {blockHref ? (
           <BcTableLink href={blockHref} className="tabular-nums" prefetch>
@@ -470,18 +479,22 @@ function BlockChainTableRow({
       </td>
       <td
         data-label="Hash"
-        className="block-chain-table__col block-chain-table__col--hash"
+        className="block-chain-table__col block-chain-table__col--hash block-chain-table__cell-clip"
       >
         {blockHref ? (
           <BcTableLink
             href={blockHref}
             className="block-chain-table__hash-link tabular-nums"
             prefetch
+            title={block.hash}
           >
             {hashShort}
           </BcTableLink>
         ) : (
-          <span className="block-chain-table__hash-link tabular-nums text-fg-muted">
+          <span
+            className="block-chain-table__hash-link tabular-nums text-fg-muted"
+            title={block.hash}
+          >
             {hashShort}
           </span>
         )}
@@ -490,27 +503,29 @@ function BlockChainTableRow({
         data-label={chainId === "vrm" ? "Extracted by" : "Interest"}
         className="block-chain-table__col block-chain-table__col--producer"
       >
-        {chainId === "vrm" ? (
-          indexing ? (
-            <BlockFieldLoading label="Extracted by" />
+        <div className="block-chain-table__producer-inner">
+          {chainId === "vrm" ? (
+            indexing ? (
+              <BlockFieldLoading label="Extracted by" />
+            ) : (
+              <ExtractedByCell
+                block={block}
+                chainId={chainId}
+                className={
+                  isVeriumPoolExtracted(block)
+                    ? undefined
+                    : "block-chain-table__producer-text text-sm font-medium text-[var(--chain-vrm)] hover:underline"
+                }
+              />
+            )
+          ) : indexing ? (
+            <BlockFieldLoading label="Interest" />
           ) : (
-            <ExtractedByCell
-              block={block}
-              chainId={chainId}
-              className={
-                isVeriumPoolExtracted(block)
-                  ? undefined
-                  : "text-sm font-medium text-[var(--chain-vrm)] hover:underline"
-              }
-            />
-          )
-        ) : indexing ? (
-          <BlockFieldLoading label="Interest" />
-        ) : (
-          <span className="text-sm tabular-nums text-fg-muted">
-            {formatPercent(block.interestRatePercent)}
-          </span>
-        )}
+            <span className="block-chain-table__producer-text text-sm tabular-nums text-fg-muted">
+              {formatPercent(block.interestRatePercent)}
+            </span>
+          )}
+        </div>
       </td>
       <td
         data-label="Mined"
