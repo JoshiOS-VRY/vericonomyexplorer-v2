@@ -4,6 +4,9 @@ import type {
   AddressBalanceHistoryResult,
 } from "@/lib/api/types";
 
+/** Poll while the address page is visible (matches latest-blocks aggressiveness). */
+export const ADDRESS_BALANCE_HISTORY_POLL_MS = 10_000;
+
 export const ADDRESS_BALANCE_HISTORY_PERIODS: {
   id: AddressBalanceHistoryPeriodId;
   label: string;
@@ -28,6 +31,42 @@ export function getBalanceHistorySince(periodId: AddressBalanceHistoryPeriodId):
 
 export function getBalanceHistoryMaxPoints(periodId: AddressBalanceHistoryPeriodId): number {
   return ADDRESS_BALANCE_HISTORY_PERIODS.find((item) => item.id === periodId)?.maxPoints ?? 120;
+}
+
+export function isSameAddressBalanceHistory(
+  previous: AddressBalanceHistoryResult | null,
+  next: AddressBalanceHistoryResult,
+): boolean {
+  if (!previous) {
+    return false;
+  }
+
+  if (
+    previous.currentBalanceAtomic !== next.currentBalanceAtomic ||
+    previous.eventCount !== next.eventCount ||
+    previous.truncated !== next.truncated
+  ) {
+    return false;
+  }
+
+  const tailBuckets = (rows: AddressBalanceHistoryResult["buckets"]) =>
+    rows.slice(-2).map((row) =>
+      [
+        row.startTime,
+        row.minedAtomic,
+        row.stakedAtomic,
+        row.receivedAtomic,
+        row.spentAtomic,
+      ].join(":"),
+    );
+
+  const tailPoints = (rows: AddressBalanceHistoryResult["points"]) =>
+    rows.slice(-2).map((row) => `${row.time}:${row.balanceAtomic}`);
+
+  return (
+    tailBuckets(previous).join("|") === tailBuckets(next).join("|") &&
+    tailPoints(previous).join("|") === tailPoints(next).join("|")
+  );
 }
 
 export async function fetchAddressBalanceHistoryClient(

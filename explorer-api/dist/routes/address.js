@@ -22,7 +22,8 @@ const addressCache = createSwrCache({
 });
 const balanceHistoryCache = createSwrCache({
     max: 256,
-    ttlMs: 60_000,
+    ttlMs: 5_000,
+    useGlobalTtlOverride: false,
     fetch: async (key, signal) => {
         if (signal.aborted)
             throw new Error("aborted");

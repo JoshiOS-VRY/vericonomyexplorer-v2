@@ -788,6 +788,118 @@ function getAddressActivityCategory(row) {
 	return "received";
 }
 
+function applyAddressEventsToActivityBucketPlan(bucketPlan, eventRows) {
+	for (const row of eventRows) {
+		const time = toNumber(row.time);
+		const bucketIndex = findActivityBucketIndex(bucketPlan, time);
+		const bucket = bucketPlan[bucketIndex];
+		const delta = toBigInt(row.delta_sats);
+		const magnitude = delta < 0n ? -delta : delta;
+		const category = getAddressActivityCategory(row);
+
+		if (category === "mined") {
+			bucket.minedAtomic += magnitude;
+		} else if (category === "staked") {
+			bucket.stakedAtomic += magnitude;
+		} else if (category === "received") {
+			bucket.receivedAtomic += magnitude;
+		} else {
+			bucket.spentAtomic += magnitude;
+		}
+	}
+}
+
+async function getAddressStatsWatermarkHeight(db, chain) {
+	try {
+		const row = await db.get(
+			"SELECT last_height FROM rollup_state WHERE chain_id = ? AND rollup = ?",
+			[chain, "address_stats"]
+		);
+
+		if (!row) {
+			return null;
+		}
+
+		return toNumber(row.last_height);
+	} catch {
+		return null;
+	}
+}
+
+async function fetchAddressEventsAfterStatsWatermark(db, chain, address, watermarkHeight, since) {
+	const params = [chain, address, watermarkHeight];
+	let timeClause = "";
+
+	if (since) {
+		timeClause = " AND address_events.time >= ?";
+		params.push(since);
+	}
+
+	return db.all(`
+		SELECT
+			address_events.block_height,
+			address_events.time,
+			address_events.delta_sats,
+			address_events.event_type,
+			transactions.is_coinbase,
+			transactions.is_coinstake
+		FROM address_events
+		INNER JOIN transactions
+			ON transactions.chain_id = address_events.chain_id
+			AND transactions.txid = address_events.txid
+		WHERE address_events.chain_id = ? AND address_events.address = ? AND address_events.block_height > ?${timeClause}
+		ORDER BY address_events.time ASC, address_events.id ASC
+	`, params);
+}
+
+function rebuildBalancePointsFromActivityBucketPlan(chain, bucketPlan, priorBalance) {
+	let running = priorBalance;
+	const rawPoints = [];
+
+	for (const bucket of bucketPlan) {
+		const delta = bucket.minedAtomic + bucket.stakedAtomic + bucket.receivedAtomic - bucket.spentAtomic;
+
+		if (delta === 0n && !rawPoints.length) {
+			continue;
+		}
+
+		running += delta;
+		const balance = formatAtomic(chain, running);
+		rawPoints.push({
+			height: null,
+			time: bucket.endTime,
+			balanceAtomic: stringifyInteger(running),
+			balance,
+			balanceAmount: Number.parseFloat(balance.amount) || 0,
+			ticker: balance.ticker
+		});
+	}
+
+	return rawPoints;
+}
+
+function appendLiveBalanceClosingPoint(chain, rawPoints, currentBalance) {
+	const closingAtomic = stringifyInteger(currentBalance);
+	const lastPoint = rawPoints[rawPoints.length - 1];
+
+	if (lastPoint && lastPoint.balanceAtomic === closingAtomic) {
+		return rawPoints;
+	}
+
+	const now = Math.floor(Date.now() / 1000);
+	const closing = formatAtomic(chain, currentBalance);
+	rawPoints.push({
+		height: null,
+		time: now,
+		balanceAtomic: closingAtomic,
+		balance: closing,
+		balanceAmount: Number.parseFloat(closing.amount) || 0,
+		ticker: closing.ticker
+	});
+
+	return rawPoints;
+}
+
 function getTxActivityCategory(row) {
 	if (toNumber(row.is_coinstake)) {
 		return "staked";
@@ -1072,25 +1184,43 @@ async function getAddressBalanceHistoryFromBuckets(db, chain, cleanAddress, sinc
 		bucket.spentAtomic += toBigInt(row.spent_sats);
 	}
 
-	const rawPoints = [];
+	const watermarkHeight = await getAddressStatsWatermarkHeight(db, chain);
+	const liveEventRows = watermarkHeight == null
+		? []
+		: await fetchAddressEventsAfterStatsWatermark(db, chain, cleanAddress, watermarkHeight, since);
+
+	if (liveEventRows.length > 0) {
+		applyAddressEventsToActivityBucketPlan(bucketPlan, liveEventRows);
+	}
+
+	let rawPoints = [];
 	let running = priorBalance;
 
-	for (const row of bucketRows) {
-		running += toBigInt(row.delta_sats);
-		const balance = formatAtomic(chain, running);
-		rawPoints.push({
-			height: null,
-			time: toNumber(row.bucket_start) + 3599,
-			balanceAtomic: stringifyInteger(running),
-			balance,
-			balanceAmount: Number.parseFloat(balance.amount) || 0,
-			ticker: balance.ticker
-		});
+	if (liveEventRows.length > 0) {
+		rawPoints = rebuildBalancePointsFromActivityBucketPlan(chain, bucketPlan, priorBalance);
+		running = rawPoints.length
+			? toBigInt(rawPoints[rawPoints.length - 1].balanceAtomic)
+			: priorBalance;
+	} else {
+		for (const row of bucketRows) {
+			running += toBigInt(row.delta_sats);
+			const balance = formatAtomic(chain, running);
+			rawPoints.push({
+				height: null,
+				time: toNumber(row.bucket_start) + 3599,
+				balanceAtomic: stringifyInteger(running),
+				balance,
+				balanceAmount: Number.parseFloat(balance.amount) || 0,
+				ticker: balance.ticker
+			});
+		}
 	}
 
 	const currentBalance = balanceRow ? toBigInt(balanceRow.balance_sats) : running;
 	if (since) {
 		appendBalanceHistoryBookends(chain, rawPoints, since, priorBalance, currentBalance);
+	} else if (balanceRow) {
+		appendLiveBalanceClosingPoint(chain, rawPoints, currentBalance);
 	}
 
 	const eventCountRow = await db.get(`
@@ -1213,24 +1343,7 @@ async function getAddressBalanceHistory(chainId, address, options = {}) {
 	const lastTime = eventRows.length ? toNumber(eventRows[eventRows.length - 1].time) : null;
 	const bucketPlan = buildActivityBucketPlan(since, maxPoints, firstTime, lastTime);
 
-	for (const row of eventRows) {
-		const time = toNumber(row.time);
-		const bucketIndex = findActivityBucketIndex(bucketPlan, time);
-		const bucket = bucketPlan[bucketIndex];
-		const delta = toBigInt(row.delta_sats);
-		const magnitude = delta < 0n ? -delta : delta;
-		const category = getAddressActivityCategory(row);
-
-		if (category === "mined") {
-			bucket.minedAtomic += magnitude;
-		} else if (category === "staked") {
-			bucket.stakedAtomic += magnitude;
-		} else if (category === "received") {
-			bucket.receivedAtomic += magnitude;
-		} else {
-			bucket.spentAtomic += magnitude;
-		}
-	}
+	applyAddressEventsToActivityBucketPlan(bucketPlan, eventRows);
 
 	const buckets = bucketPlan.map(bucket => mapActivityBucket(chain, bucket));
 	const points = buildCumulativeBalancePoints(chain, eventRows, since, maxPoints, priorBalance);

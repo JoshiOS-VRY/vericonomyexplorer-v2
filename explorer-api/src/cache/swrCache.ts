@@ -8,6 +8,8 @@ export interface SwrOptions<T extends CacheValue = CacheValue> {
   max?: number;
   ttlMs?: number;
   staleTtlMs?: number;
+  /** When false, ignore VCEXP_API_CACHE_TTL_MS for this cache (e.g. live address charts). */
+  useGlobalTtlOverride?: boolean;
   fetch: (key: string, signal: AbortSignal) => Promise<T>;
 }
 
@@ -23,9 +25,13 @@ export function getApiCacheTtlMs(defaultTtlMs: number): number {
 export function createSwrCache<T extends CacheValue = CacheValue>(
   options: SwrOptions<T>,
 ): LRUCache<string, T, unknown> {
+  const baseTtlMs = options.ttlMs ?? 5_000;
+  const ttlMs =
+    options.useGlobalTtlOverride === false ? baseTtlMs : getApiCacheTtlMs(baseTtlMs);
+
   return new LRUCache<string, T, unknown>({
     max: options.max ?? 64,
-    ttl: getApiCacheTtlMs(options.ttlMs ?? 5_000),
+    ttl: ttlMs,
     ttlResolution: 1,
     allowStale: true,
     updateAgeOnGet: true,

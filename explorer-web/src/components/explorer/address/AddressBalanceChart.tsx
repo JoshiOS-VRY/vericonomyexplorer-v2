@@ -21,6 +21,7 @@ import {
   ADDRESS_BALANCE_HISTORY_PERIODS,
   fetchAddressBalanceHistoryClient,
 } from "@/lib/addressBalanceHistory";
+import { useAddressBalanceHistoryPoll } from "@/hooks/useAddressBalanceHistoryPoll";
 import type {
   AddressBalanceChartView,
   AddressBalanceHistoryPeriodId,
@@ -405,6 +406,21 @@ export function AddressBalanceChart({
   const [history, setHistory] = useState<AddressBalanceHistoryResult | null>(initialHistory ?? null);
   const [loading, setLoading] = useState(!initialHistory);
   const [error, setError] = useState<string | null>(null);
+
+  useAddressBalanceHistoryPoll({
+    chainId,
+    address,
+    period,
+    history,
+    enabled: Boolean(history) && !history?.truncated,
+    onHistory: (next) => {
+      setHistory(next);
+      setError(null);
+    },
+    onAllHistory: (next) => {
+      allHistoryRef.current = next;
+    },
+  });
 
   useEffect(() => {
     if (initialHistory) {

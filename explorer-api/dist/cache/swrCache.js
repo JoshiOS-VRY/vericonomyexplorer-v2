@@ -8,9 +8,11 @@ export function getApiCacheTtlMs(defaultTtlMs) {
     return defaultTtlMs;
 }
 export function createSwrCache(options) {
+    const baseTtlMs = options.ttlMs ?? 5_000;
+    const ttlMs = options.useGlobalTtlOverride === false ? baseTtlMs : getApiCacheTtlMs(baseTtlMs);
     return new LRUCache({
         max: options.max ?? 64,
-        ttl: getApiCacheTtlMs(options.ttlMs ?? 5_000),
+        ttl: ttlMs,
         ttlResolution: 1,
         allowStale: true,
         updateAgeOnGet: true,

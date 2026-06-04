@@ -6,8 +6,8 @@
 # each rollup's persisted watermark. flock guarantees single-flight so a long
 # tick never overlaps the next.
 #
-# Install (host crontab), every 3 minutes:
-#   */3 * * * * /root/vericonomyexplorer-v2/deploy/option-a/refresh-analytics-cron.sh >> /root/refresh-analytics.log 2>&1
+# Install (host crontab), every minute:
+#   * * * * * /root/vericonomyexplorer-v2/deploy/option-a/refresh-analytics-cron.sh >> /root/refresh-analytics.log 2>&1
 set -euo pipefail
 
 PROJECT_DIR="/root/vericonomyexplorer-v2"
