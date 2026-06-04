@@ -110,10 +110,6 @@ export const rootMetadata: Metadata = {
       "max-video-preview": -1,
     },
   },
-  icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/icon.svg", type: "image/svg+xml" }],
-  },
 };
 
 export function chainSectionMetadata(chainId: ChainId): Metadata {

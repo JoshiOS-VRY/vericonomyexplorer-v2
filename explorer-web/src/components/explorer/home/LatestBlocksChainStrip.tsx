@@ -154,19 +154,15 @@ export function ChainHubSection({
                 </h3>
                 <span className="chain-hub-blocks-live inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success">
                   <Radio
-                    className={cn("h-2.5 w-2.5", isRefreshing && "animate-pulse")}
+                    className={cn(
+                      "h-2.5 w-2.5",
+                      isRefreshing && "animate-pulse",
+                    )}
                     aria-hidden
                   />
                   Live
                 </span>
               </div>
-              <p className="text-xs text-fg-subtle">
-                {tableRows.length > 0
-                  ? tipBlock && !isIndexedBlockTableReady(tipBlock, chainId)
-                    ? `${tableRows.length} most recent · indexing new block…`
-                    : `${tableRows.length} most recent · updates every ${LATEST_BLOCKS_POLL_MS / 1000}s`
-                  : "Loading recent blocks…"}
-              </p>
             </div>
           </div>
           {config.exploreHref ? (
@@ -241,7 +237,15 @@ export function ChainHubSection({
             ) : null}
 
             <div className="block-chain-table-wrap overflow-x-auto border-t border-border">
-              <table className="bc-table block-chain-table data-table data-table--stack">
+              <div className="block-chain-table-shell">
+                <table
+                  className="bc-table block-chain-table data-table data-table--stack"
+                  aria-describedby={`${chainId}-latest-blocks-caption`}
+                >
+                  <caption id={`${chainId}-latest-blocks-caption`} className="sr-only">
+                    Latest {tableRows.length} {config.ticker} blocks with hash, producer,
+                    mined time, transactions, size, and difficulty.
+                  </caption>
                 <colgroup>
                   <col className="block-chain-table__col--height" />
                   <col className="block-chain-table__col--hash" />
@@ -277,16 +281,18 @@ export function ChainHubSection({
                   </tr>
                 </thead>
                 <tbody>
-                  {tableRows.map((block) => (
+                  {tableRows.map((block, index) => (
                     <BlockChainTableRow
                       key={block.hash}
                       block={block}
                       chainId={chainId}
                       blockHref={config.blockHref?.(block.height)}
+                      isNewest={index === 0}
                     />
                   ))}
                 </tbody>
-              </table>
+                </table>
+              </div>
             </div>
           </>
         )}
@@ -445,10 +451,12 @@ function BlockChainTableRow({
   block,
   chainId,
   blockHref,
+  isNewest = false,
 }: {
   block: IndexedBlock;
   chainId: ChainId;
   blockHref?: string;
+  isNewest?: boolean;
 }) {
   const hashShort = formatBlockHashShort(block.hash);
   const indexing = isOptimisticTipBlock(block, chainId);
@@ -459,6 +467,7 @@ function BlockChainTableRow({
     <tr
       className={cn(
         "block-chain-table-row transition-colors hover:bg-bg-subtle/80",
+        isNewest && "block-chain-table-row--latest",
         indexing && "block-chain-table-row--indexing",
       )}
       aria-busy={indexing}
@@ -467,15 +476,22 @@ function BlockChainTableRow({
         data-label="Height"
         className="block-chain-table__col block-chain-table__col--height block-chain-table__cell-clip"
       >
-        {blockHref ? (
-          <BcTableLink href={blockHref} className="tabular-nums" prefetch>
-            {formatHeight(block.height)}
-          </BcTableLink>
-        ) : (
-          <span className="tabular-nums text-fg">
-            {formatHeight(block.height)}
-          </span>
-        )}
+        <div className="block-chain-table__height-cell">
+          {blockHref ? (
+            <BcTableLink href={blockHref} className="tabular-nums" prefetch>
+              {formatHeight(block.height)}
+            </BcTableLink>
+          ) : (
+            <span className="tabular-nums text-fg">
+              {formatHeight(block.height)}
+            </span>
+          )}
+          {isNewest ? (
+            <span className="block-chain-table__latest-badge" aria-label="Most recent block">
+              Latest
+            </span>
+          ) : null}
+        </div>
       </td>
       <td
         data-label="Hash"
@@ -576,10 +592,7 @@ function BlockFieldLoading({
 }) {
   return (
     <span
-      className={cn(
-        "inline-flex items-center",
-        align === "right" && "ml-auto",
-      )}
+      className={cn("inline-flex items-center", align === "right" && "ml-auto")}
       role="status"
       aria-label={label ? `${label} loading` : "Loading"}
     >
@@ -590,6 +603,6 @@ function BlockFieldLoading({
 
 function formatBlockHashShort(hash: string): string {
   const h = hash.replace(/^0x/i, "");
-  if (h.length <= 8) return h;
-  return `${h.slice(0, 4)}-${h.slice(4, 8)}`;
+  if (h.length <= 20) return h;
+  return `${h.slice(0, 10)}…${h.slice(-8)}`;
 }
