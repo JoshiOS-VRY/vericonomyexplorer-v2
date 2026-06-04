@@ -242,32 +242,29 @@ export function ChainHubSection({
 
             <div className="block-chain-table-wrap overflow-x-auto border-t border-border">
               <table className="bc-table block-chain-table data-table data-table--stack">
-                <colgroup>
-                  <col className="block-chain-table__col-height" />
-                  <col className="block-chain-table__col-hash" />
-                  <col
-                    className={
-                      chainId === "vrm"
-                        ? "block-chain-table__col-producer--vrm"
-                        : "block-chain-table__col-producer--vrc"
-                    }
-                  />
-                  <col className="block-chain-table__col-age" />
-                  <col className="block-chain-table__col-txs" />
-                  <col className="block-chain-table__col-size" />
-                  <col className="block-chain-table__col-diff" />
-                </colgroup>
                 <thead>
                   <tr>
-                    <th>Height</th>
-                    <th>Hash</th>
-                    <th className="block-chain-table__producer-head">
+                    <th className="block-chain-table__col block-chain-table__col--height">
+                      Height
+                    </th>
+                    <th className="block-chain-table__col block-chain-table__col--hash">
+                      Hash
+                    </th>
+                    <th className="block-chain-table__col block-chain-table__col--producer">
                       {producerColumnLabel}
                     </th>
-                    <th className="bc-col-age">Mined</th>
-                    <th className="text-right">Txs</th>
-                    <th className="text-right">Size</th>
-                    <th className="text-right">Difficulty</th>
+                    <th className="block-chain-table__col block-chain-table__col--age">
+                      Mined
+                    </th>
+                    <th className="block-chain-table__col block-chain-table__col--txs text-right">
+                      Txs
+                    </th>
+                    <th className="block-chain-table__col block-chain-table__col--size text-right">
+                      Size
+                    </th>
+                    <th className="block-chain-table__col block-chain-table__col--diff text-right">
+                      Difficulty
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -457,7 +454,10 @@ function BlockChainTableRow({
       )}
       aria-busy={indexing}
     >
-      <td data-label="Height">
+      <td
+        data-label="Height"
+        className="block-chain-table__col block-chain-table__col--height"
+      >
         {blockHref ? (
           <BcTableLink href={blockHref} className="tabular-nums" prefetch>
             {formatHeight(block.height)}
@@ -468,25 +468,27 @@ function BlockChainTableRow({
           </span>
         )}
       </td>
-      <td data-label="Hash">
+      <td
+        data-label="Hash"
+        className="block-chain-table__col block-chain-table__col--hash"
+      >
         {blockHref ? (
           <BcTableLink
             href={blockHref}
-            className="text-sm tabular-nums"
+            className="block-chain-table__hash-link tabular-nums"
             prefetch
           >
             {hashShort}
           </BcTableLink>
         ) : (
-          <span className="text-sm text-fg-muted">{hashShort}</span>
+          <span className="block-chain-table__hash-link tabular-nums text-fg-muted">
+            {hashShort}
+          </span>
         )}
       </td>
       <td
         data-label={chainId === "vrm" ? "Extracted by" : "Interest"}
-        className={cn(
-          "block-chain-table__producer-cell",
-          chainId === "vrc" && "block-chain-table__producer-cell--vrc",
-        )}
+        className="block-chain-table__col block-chain-table__col--producer"
       >
         {chainId === "vrm" ? (
           indexing ? (
@@ -510,13 +512,22 @@ function BlockChainTableRow({
           </span>
         )}
       </td>
-      <td data-label="Mined" className="bc-col-age text-fg-muted">
+      <td
+        data-label="Mined"
+        className="block-chain-table__col block-chain-table__col--age text-fg-muted"
+      >
         <LiveRelativeTime time={block.time} interval="second" fixedWidth />
       </td>
-      <td data-label="Txs" className="text-right tabular-nums text-fg-muted">
+      <td
+        data-label="Txs"
+        className="block-chain-table__col block-chain-table__col--txs text-right tabular-nums text-fg-muted"
+      >
         {formatHeight(block.txCount)}
       </td>
-      <td data-label="Size" className="text-right tabular-nums text-fg-muted">
+      <td
+        data-label="Size"
+        className="block-chain-table__col block-chain-table__col--size text-right tabular-nums text-fg-muted"
+      >
         {block.size != null ? (
           `${formatHeight(block.size)} B`
         ) : sizePending ? (
@@ -527,7 +538,7 @@ function BlockChainTableRow({
       </td>
       <td
         data-label="Difficulty"
-        className="text-right tabular-nums text-fg-muted"
+        className="block-chain-table__col block-chain-table__col--diff text-right tabular-nums text-fg-muted"
       >
         {block.difficulty ? (
           formatDifficulty(block.difficulty)
