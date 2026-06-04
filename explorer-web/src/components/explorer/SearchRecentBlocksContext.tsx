@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useLayoutEffect,
   useMemo,
   useSyncExternalStore,
   type ReactNode,
@@ -15,8 +16,8 @@ import { filterTableReadyBlocks } from "@/lib/liveBlocksMerge";
 const SearchRecentBlocksContext = createContext<RecentBlocksByChain | null>(null);
 
 let cachedRecentBlocks: RecentBlocksByChain | null = null;
-let cachedVrmBlocks: IndexedBlock[] | null = null;
-let cachedVrcBlocks: IndexedBlock[] | null = null;
+let cachedVrmSource: IndexedBlock[] | null = null;
+let cachedVrcSource: IndexedBlock[] | null = null;
 
 function subscribeRecentBlocks(listener: () => void): () => void {
   const unsubs = (["vrm", "vrc"] as const).map((chainId) =>
@@ -38,26 +39,23 @@ function recentBlocksFromSummaries(
 }
 
 function getRecentBlocksSnapshot(): RecentBlocksByChain {
-  const vrm = filterTableReadyBlocks(
-    chainLiveStore.getSnapshot("vrm").latestBlocks,
-    "vrm",
-  );
-  const vrc = filterTableReadyBlocks(
-    chainLiveStore.getSnapshot("vrc").latestBlocks,
-    "vrc",
-  );
+  const vrmSource = chainLiveStore.getSnapshot("vrm").latestBlocks;
+  const vrcSource = chainLiveStore.getSnapshot("vrc").latestBlocks;
 
   if (
     cachedRecentBlocks &&
-    cachedVrmBlocks === vrm &&
-    cachedVrcBlocks === vrc
+    cachedVrmSource === vrmSource &&
+    cachedVrcSource === vrcSource
   ) {
     return cachedRecentBlocks;
   }
 
-  cachedVrmBlocks = vrm;
-  cachedVrcBlocks = vrc;
-  cachedRecentBlocks = { vrm, vrc };
+  cachedVrmSource = vrmSource;
+  cachedVrcSource = vrcSource;
+  cachedRecentBlocks = {
+    vrm: filterTableReadyBlocks(vrmSource, "vrm"),
+    vrc: filterTableReadyBlocks(vrcSource, "vrc"),
+  };
   return cachedRecentBlocks;
 }
 
@@ -70,28 +68,19 @@ export function SearchRecentBlocksProvider({
   initialVrcSummary?: ChainSummary | null;
   children: ReactNode;
 }) {
-  chainLiveStore.ensureChain("vrm", initialVrmSummary);
-  chainLiveStore.ensureChain("vrc", initialVrcSummary);
+  useLayoutEffect(() => {
+    chainLiveStore.ensureChain("vrm", initialVrmSummary, true);
+    chainLiveStore.ensureChain("vrc", initialVrcSummary, true);
+  }, [initialVrmSummary, initialVrcSummary]);
 
   const serverSnapshot = useMemo(
     () => recentBlocksFromSummaries(initialVrmSummary, initialVrcSummary),
     [initialVrmSummary, initialVrcSummary],
   );
 
-  const getClientSnapshot = () => {
-    const live = getRecentBlocksSnapshot();
-    if (
-      live.vrm === serverSnapshot.vrm &&
-      live.vrc === serverSnapshot.vrc
-    ) {
-      return serverSnapshot;
-    }
-    return live;
-  };
-
   const recentBlocks = useSyncExternalStore(
     subscribeRecentBlocks,
-    getClientSnapshot,
+    getRecentBlocksSnapshot,
     () => serverSnapshot,
   );
 

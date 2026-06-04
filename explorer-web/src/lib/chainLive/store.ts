@@ -136,9 +136,15 @@ function emit(chainId: ChainId): void {
   listeners.get(chainId)?.forEach((listener) => listener());
 }
 
-function setSnapshot(chainId: ChainId, next: ChainLiveSnapshot): void {
+function setSnapshot(
+  chainId: ChainId,
+  next: ChainLiveSnapshot,
+  notify = true,
+): void {
   snapshots.set(chainId, next);
-  emit(chainId);
+  if (notify) {
+    emit(chainId);
+  }
 }
 
 function mergeSummary(chainId: ChainId, next: ChainSummary): ChainLiveSnapshot {
@@ -382,7 +388,11 @@ function isPlaceholderSummary(summary: ChainSummary): boolean {
   return !summary.health.checks.hasBlocks;
 }
 
-function applySummary(chainId: ChainId, summary: ChainSummary): void {
+function applySummary(
+  chainId: ChainId,
+  summary: ChainSummary,
+  notify = false,
+): void {
   seedKnownHashes(chainId, summary.latestBlocks);
   tipHeights.set(
     chainId,
@@ -390,15 +400,19 @@ function applySummary(chainId: ChainId, summary: ChainSummary): void {
       summary.health.heights.maxIndexedHeight ??
       null,
   );
-  setSnapshot(chainId, createSnapshot(summary));
+  setSnapshot(chainId, createSnapshot(summary), notify);
 }
 
-function ensureChain(chainId: ChainId, initialSummary?: ChainSummary | null): void {
+function ensureChain(
+  chainId: ChainId,
+  initialSummary?: ChainSummary | null,
+  notify = false,
+): void {
   const incoming = initialSummary ?? emptySummary(chainId);
   const existing = snapshots.get(chainId);
 
   if (!existing) {
-    applySummary(chainId, incoming);
+    applySummary(chainId, incoming, notify);
     return;
   }
 
@@ -407,24 +421,20 @@ function ensureChain(chainId: ChainId, initialSummary?: ChainSummary | null): vo
     isPlaceholderSummary(existing.summary) &&
     !isPlaceholderSummary(incoming)
   ) {
-    applySummary(chainId, incoming);
+    applySummary(chainId, incoming, notify);
   }
 }
 
 /** Apply SSR page payload into the live store (layout may have seeded an empty placeholder). */
 function seedPageSummary(chainId: ChainId, summary: ChainSummary): void {
-  applySummary(chainId, summary);
+  applySummary(chainId, summary, true);
 }
 
 export const chainLiveStore = {
   ensureChain,
   seedPageSummary,
   getSnapshot(chainId: ChainId): ChainLiveSnapshot {
-    if (!snapshots.has(chainId)) {
-      ensureChain(chainId);
-    }
-
-    return snapshots.get(chainId)!;
+    return snapshots.get(chainId) ?? snapshotFromSummary(chainId, null);
   },
   subscribe(chainId: ChainId, listener: () => void): () => void {
     if (!listeners.has(chainId)) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useLayoutEffect, useMemo, useSyncExternalStore } from "react";
 import {
   chainLiveStore,
   snapshotFromSummary,
@@ -30,7 +30,9 @@ export function useChainLiveSnapshot(
     [chainId, initialSummary],
   );
 
-  chainLiveStore.ensureChain(chainId, initialSummary);
+  useLayoutEffect(() => {
+    chainLiveStore.ensureChain(chainId, initialSummary, true);
+  }, [chainId, initialSummary]);
 
   return useSyncExternalStore(
     (listener) => chainLiveStore.subscribe(chainId, listener),
