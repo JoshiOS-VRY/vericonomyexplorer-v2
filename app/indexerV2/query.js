@@ -1088,7 +1088,11 @@ function buildCalendarBucketPlan(since, maxPoints, firstTime, lastTime, groupBy)
 	return buckets;
 }
 
-function formatActivityBucketLabel(startTime) {
+function formatActivityBucketLabel(startTime, endTime) {
+	if (endTime != null && endTime - startTime > 86_400) {
+		return `${formatChartDayLabel(startTime)} – ${formatChartDayLabel(endTime)}`;
+	}
+
 	return formatChartDayLabel(startTime);
 }
 

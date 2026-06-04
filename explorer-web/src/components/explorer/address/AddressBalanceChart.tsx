@@ -30,6 +30,7 @@ import type {
 import {
   formatChartAxisDate,
   formatChartDateTime,
+  formatChartTooltipDate,
   formatChartTooltipRange,
 } from "@/lib/chartDates";
 import { cn } from "@/lib/utils";
@@ -93,10 +94,35 @@ function ChartHeaderControls({
   );
 }
 
+type ActivityChartRow = {
+  label: string;
+  startTime: number;
+  endTime: number;
+  ticker: string;
+  mined: number;
+  staked: number;
+  received: number;
+  spent: number;
+};
+
+const ACTIVITY_TOOLTIP_SERIES: { key: keyof ActivityChartRow; name: string }[] = [
+  { key: "mined", name: "Mined" },
+  { key: "staked", name: "Staked" },
+  { key: "received", name: "Received" },
+  { key: "spent", name: "Spent" },
+];
+
+function formatActivityTooltipTitle(row: ActivityChartRow): string {
+  if (row.endTime - row.startTime > 86_400) {
+    return formatChartTooltipRange(row.startTime, row.endTime);
+  }
+
+  return formatChartTooltipDate(row.startTime);
+}
+
 function ActivityChartTooltip({
   active,
   payload,
-  label,
   colors,
 }: RechartsTooltipContentProps & {
   colors: ReturnType<typeof useChartTheme>;
@@ -105,20 +131,22 @@ function ActivityChartTooltip({
     return null;
   }
 
-  const row = payload[0]?.payload as {
-    ticker?: string;
-    startTime?: number;
-    endTime?: number;
-  } | undefined;
-  const ticker = row?.ticker ?? "VRM";
-  const range =
-    row?.startTime != null && row?.endTime != null
-      ? formatChartTooltipRange(row.startTime, row.endTime)
-      : null;
+  const row = payload[0]?.payload as ActivityChartRow | undefined;
+  if (!row) {
+    return null;
+  }
 
-  const entries = payload
-    .filter((item) => typeof item.value === "number" && Math.abs(item.value) > 0)
-    .sort((a, b) => Math.abs(Number(b.value)) - Math.abs(Number(a.value)));
+  const ticker = row.ticker ?? "VRM";
+  const entries = ACTIVITY_TOOLTIP_SERIES.map((series) => ({
+    name: series.name,
+    value: series.key === "spent" ? Math.abs(row.spent) : Number(row[series.key]),
+  }))
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  if (!entries.length) {
+    return null;
+  }
 
   return (
     <div
@@ -130,24 +158,19 @@ function ActivityChartTooltip({
       }}
     >
       <p className="text-[11px] font-medium" style={{ color: colors.fgMuted }}>
-        {label}
+        {formatActivityTooltipTitle(row)}
       </p>
-      {range ? (
-        <p className="text-[11px]" style={{ color: colors.fgSubtle }}>
-          {range}
-        </p>
-      ) : null}
       <ul className="mt-2 space-y-1">
-        {entries.map((item, index) => (
+        {entries.map((item) => (
           <li
-            key={String(item.dataKey ?? item.name ?? index)}
+            key={item.name}
             className="flex items-center justify-between gap-4 text-xs"
           >
             <span className="font-medium" style={{ color: colors.fgMuted }}>
               {item.name}
             </span>
             <span className="font-semibold tabular-nums">
-              {Math.abs(Number(item.value)).toLocaleString(undefined, { maximumFractionDigits: 8 })} {ticker}
+              {item.value.toLocaleString(undefined, { maximumFractionDigits: 8 })} {ticker}
             </span>
           </li>
         ))}
@@ -172,10 +195,22 @@ function BalanceChartTooltip({
     ticker?: string;
     time?: number;
     height?: number | null;
+    balance?: number;
   } | undefined;
   const ticker = point?.ticker ?? "VRM";
-  const value = payload[0]?.value;
+  const value =
+    typeof point?.balance === "number"
+      ? point.balance
+      : typeof payload[0]?.value === "number"
+        ? payload[0].value
+        : null;
   const time = point?.time != null ? formatChartDateTime(point.time) : null;
+  const title =
+    point?.time != null
+      ? formatChartTooltipDate(point.time)
+      : point?.height != null
+        ? `Block ${point.height}`
+        : label;
 
   return (
     <div
@@ -187,7 +222,7 @@ function BalanceChartTooltip({
       }}
     >
       <p className="text-[11px] font-medium" style={{ color: colors.fgMuted }}>
-        {point?.height != null ? `Block ${point.height}` : label}
+        {title}
       </p>
       <p className="mt-1 text-sm font-semibold tabular-nums">
         {typeof value === "number"
@@ -260,13 +295,7 @@ function ActivityBarChart({
   colors,
   period,
 }: {
-  chartData: {
-    label: string;
-    mined: number;
-    staked: number;
-    received: number;
-    spent: number;
-  }[];
+  chartData: ActivityChartRow[];
   colors: ReturnType<typeof useChartTheme>;
   period: AddressBalanceHistoryPeriodId;
 }) {
@@ -274,7 +303,7 @@ function ActivityBarChart({
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={chartData} margin={{ top: 12, right: 12, left: 4, bottom: 4 }} stackOffset="sign">
+      <BarChart data={chartData} margin={{ top: 12, right: 12, left: 4, bottom: 4 }}>
         <CartesianGrid stroke={colors.border} strokeOpacity={0.5} strokeDasharray="3 3" vertical={false} />
         <XAxis
           dataKey="label"
@@ -301,10 +330,10 @@ function ActivityBarChart({
           wrapperStyle={{ fontSize: 11, color: colors.fgMuted }}
           formatter={(value) => <span style={{ color: colors.fgMuted }}>{value}</span>}
         />
-        <Bar dataKey="mined" name="Mined" stackId="activity" fill={categoryFill("mined")} maxBarSize={48} />
-        <Bar dataKey="staked" name="Staked" stackId="activity" fill={categoryFill("staked")} maxBarSize={48} />
-        <Bar dataKey="received" name="Received" stackId="activity" fill={categoryFill("received")} maxBarSize={48} />
-        <Bar dataKey="spent" name="Spent" stackId="activity" fill={categoryFill("spent")} maxBarSize={48} />
+        <Bar dataKey="mined" name="Mined" fill={categoryFill("mined")} maxBarSize={28} />
+        <Bar dataKey="staked" name="Staked" fill={categoryFill("staked")} maxBarSize={28} />
+        <Bar dataKey="received" name="Received" fill={categoryFill("received")} maxBarSize={28} />
+        <Bar dataKey="spent" name="Spent" fill={categoryFill("spent")} maxBarSize={28} />
       </BarChart>
     </ResponsiveContainer>
   );
