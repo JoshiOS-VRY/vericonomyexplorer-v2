@@ -56,10 +56,10 @@ describe("liveBlocksMerge", () => {
     expect(isIndexedBlockTableReady(block(101), "vrc")).toBe(true);
     expect(
       isIndexedBlockTableReady(
-        { ...block(101), interestRatePercent: null },
+        { ...block(101), interestRatePercent: null, extractedBy: null },
         "vrc",
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("keeps an optimistic tip stub at the top for home display", () => {

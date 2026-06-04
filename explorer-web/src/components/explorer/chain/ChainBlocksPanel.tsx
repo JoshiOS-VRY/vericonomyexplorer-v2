@@ -12,7 +12,6 @@ import type { IndexedBlock, Paging } from "@/lib/api/types";
 import { fetchBlocksPageClient } from "@/lib/api/client";
 import { LATEST_BLOCKS_COUNT } from "@/lib/chainBlocksDisplay";
 import type { ChainId } from "@/lib/chainDisplay";
-import { formatPercent } from "@/lib/formatMarket";
 import { cn, formatDifficulty } from "@/lib/utils";
 
 const PAGE_SIZE = LATEST_BLOCKS_COUNT;
@@ -50,17 +49,11 @@ function BlockTableRow({
         {block.difficulty ? formatDifficulty(block.difficulty) : "—"}
       </td>
       <td className="min-w-[8rem] max-w-[14rem] truncate">
-        {chainId === "vrm" ? (
-          <ExtractedByCell
-            block={block}
-            chainId={chainId}
-            className="block truncate text-sm font-medium text-accent hover:underline"
-          />
-        ) : (
-          <span className="text-sm tabular-nums text-fg-muted">
-            {formatPercent(block.interestRatePercent)}
-          </span>
-        )}
+        <ExtractedByCell
+          block={block}
+          chainId={chainId}
+          className="block truncate text-sm font-medium text-accent hover:underline"
+        />
       </td>
     </tr>
   );
@@ -77,7 +70,7 @@ export function ChainBlocksPanel({
   chainHeight: number | null;
   maxIndexedHeight?: number | null;
 }) {
-  const producerLabel = chainId === "vrm" ? "Extracted by" : "Interest";
+  const producerLabel = "Extracted by";
   const behindTip =
     chainHeight != null &&
     maxIndexedHeight != null &&

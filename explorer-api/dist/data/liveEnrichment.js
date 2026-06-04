@@ -19,16 +19,37 @@ function getLatestBlockHeight(latestBlocks) {
     const height = latestBlocks[0].height;
     return height == null || Number.isNaN(Number(height)) ? null : Number(height);
 }
-function shouldFetchLiveBlocks(tip, _indexedHeight, latestBlockHeight, options) {
+function topBlockNeedsRpcEnrichment(blocks) {
+    const top = blocks[0];
+    if (!top || top.height == null) {
+        return false;
+    }
+    const difficulty = top.difficulty;
+    return (top.size == null ||
+        difficulty == null ||
+        difficulty === "" ||
+        top.time == null ||
+        !Number.isFinite(Number(top.time)));
+}
+function shouldFetchLiveBlocks(tip, _indexedHeight, latestBlockHeight, options, indexedBlocks = []) {
     if (options.skipLiveBlocks === true) {
         return false;
     }
     if (latestBlockHeight === null) {
         return true;
     }
-    return tip.height > latestBlockHeight;
+    if (tip.height > latestBlockHeight) {
+        return true;
+    }
+    return (tip.height === latestBlockHeight &&
+        topBlockNeedsRpcEnrichment(indexedBlocks));
 }
-function computeLiveBlockCount(tipHeight, indexedHeight, latestBlockHeight, maxCount) {
+function computeLiveBlockCount(tipHeight, indexedHeight, latestBlockHeight, maxCount, indexedBlocks = []) {
+    if (latestBlockHeight != null &&
+        tipHeight === latestBlockHeight &&
+        topBlockNeedsRpcEnrichment(indexedBlocks)) {
+        return 1;
+    }
     if (indexedHeight != null && tipHeight > indexedHeight) {
         return Math.min(maxCount, Math.max(1, tipHeight - indexedHeight + 1));
     }
@@ -49,7 +70,12 @@ function mergeLatestBlocksWithRpc(indexedBlocks, rpcBlocks, maxCount = 10) {
         const indexed = byHeight.get(height);
         byHeight.set(height, indexed
             ? {
+                ...indexed,
                 ...block,
+                time: block.time ?? indexed.time ?? null,
+                txCount: block.txCount ?? indexed.txCount,
+                size: block.size ?? indexed.size ?? null,
+                difficulty: block.difficulty ?? indexed.difficulty ?? null,
                 extractedBy: block.extractedBy ?? indexed.extractedBy ?? null,
                 extractedByAddress: block.extractedByAddress ?? indexed.extractedByAddress ?? null,
                 outputCount: block.outputCount ?? indexed.outputCount ?? null,
@@ -96,12 +122,20 @@ export async function enrichLatestBlocksLive(latestBlocks, chainId, summaryHealt
         }
         const indexedHeight = summaryHealth?.heights?.maxIndexedHeight ?? null;
         const latestBlockHeight = getLatestBlockHeight(indexedBlocks);
-        if (!shouldFetchLiveBlocks(tip, indexedHeight, latestBlockHeight, options)) {
+        if (!shouldFetchLiveBlocks(tip, indexedHeight, latestBlockHeight, options, indexedBlocks)) {
             return enrichVrcBlockInterestRates(indexedBlocks, chainId, options);
         }
         const maxCount = getSummaryLiveBlockLimit();
-        const count = computeLiveBlockCount(tip.height, indexedHeight, latestBlockHeight, maxCount);
-        const fromHeight = indexedHeight != null && tip.height > indexedHeight ? indexedHeight + 1 : undefined;
+        const count = computeLiveBlockCount(tip.height, indexedHeight, latestBlockHeight, maxCount, indexedBlocks);
+        let fromHeight;
+        if (indexedHeight != null && tip.height > indexedHeight) {
+            fromHeight = indexedHeight + 1;
+        }
+        else if (latestBlockHeight != null &&
+            tip.height >= latestBlockHeight &&
+            topBlockNeedsRpcEnrichment(indexedBlocks)) {
+            fromHeight = tip.height;
+        }
         const rpcBlocks = (await liveChain.enrichBlockMiners(chainId, (await liveChain.getRecentBlocks(chainId, count, {
             ...options,
             tipHeight: tip.height,

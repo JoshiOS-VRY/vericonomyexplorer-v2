@@ -33,7 +33,6 @@ import {
   isChainAtTip,
   type ChainId,
 } from "@/lib/chainDisplay";
-import { formatPercent } from "@/lib/formatMarket";
 import {
   isIndexedBlockTableReady,
   isOptimisticTipBlock,
@@ -77,7 +76,7 @@ export function ChainHubSection({
     ...displayBlocks.slice(0, LATEST_BLOCKS_STRIP_COUNT),
   ].reverse();
   const tableRows = displayBlocks.slice(0, LATEST_BLOCKS_COUNT);
-  const producerColumnLabel = chainId === "vrm" ? "Extracted by" : "Interest";
+  const producerColumnLabel = "Extracted by";
 
   return (
     <section
@@ -411,11 +410,7 @@ function BlockChainStripCell({
         </span>
       </span>
       <span className="block-chain-strip__txs tabular-nums" aria-hidden>
-        {indexing ? (
-          <span className="block-field-loading block-field-loading--xs" />
-        ) : (
-          `${block.txCount} tx`
-        )}
+        {`${block.txCount} tx`}
       </span>
     </div>
   );
@@ -432,6 +427,8 @@ function BlockChainTableRow({
 }) {
   const hashShort = formatBlockHashShort(block.hash);
   const indexing = isOptimisticTipBlock(block, chainId);
+  const sizePending = indexing && block.size == null;
+  const difficultyPending = indexing && !block.difficulty;
 
   return (
     <tr
@@ -466,45 +463,33 @@ function BlockChainTableRow({
         )}
       </td>
       <td
-        data-label={chainId === "vrm" ? "Extracted by" : "Interest"}
+        data-label="Extracted by"
         className="min-w-24 max-w-48 truncate"
       >
-        {chainId === "vrm" ? (
-          indexing ? (
-            <BlockFieldLoading label="Extracted by" />
-          ) : (
-            <ExtractedByCell
-              block={block}
-              chainId={chainId}
-              className={cn(
-                "text-sm font-medium hover:underline",
-                "text-[var(--chain-vrm)]",
-              )}
-            />
-          )
-        ) : indexing ? (
-          <BlockFieldLoading label="Interest" />
-        ) : (
-          <span className="text-sm tabular-nums text-fg-muted">
-            {formatPercent(block.interestRatePercent)}
-          </span>
-        )}
+        <ExtractedByCell
+          block={block}
+          chainId={chainId}
+          className={cn(
+            "text-sm font-medium hover:underline",
+            chainId === "vrm"
+              ? "text-[var(--chain-vrm)]"
+              : "text-[var(--chain-vrc)]",
+          )}
+        />
       </td>
       <td data-label="Mined" className="bc-col-age text-fg-muted">
         <LiveRelativeTime time={block.time} interval="second" fixedWidth />
       </td>
       <td data-label="Txs" className="text-right tabular-nums text-fg-muted">
-        {indexing ? (
-          <BlockFieldLoading align="right" />
-        ) : (
-          formatHeight(block.txCount)
-        )}
+        {formatHeight(block.txCount)}
       </td>
       <td data-label="Size" className="text-right tabular-nums text-fg-muted">
         {block.size != null ? (
           `${formatHeight(block.size)} B`
-        ) : (
+        ) : sizePending ? (
           <BlockFieldLoading align="right" />
+        ) : (
+          "—"
         )}
       </td>
       <td
@@ -513,8 +498,10 @@ function BlockChainTableRow({
       >
         {block.difficulty ? (
           formatDifficulty(block.difficulty)
-        ) : (
+        ) : difficultyPending ? (
           <BlockFieldLoading align="right" />
+        ) : (
+          "—"
         )}
       </td>
     </tr>

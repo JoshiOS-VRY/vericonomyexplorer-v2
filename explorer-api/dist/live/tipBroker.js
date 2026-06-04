@@ -3,6 +3,10 @@ import { getSyncTipHeight } from "../data/db.js";
 function noop() {
     /* ignore */
 }
+function blockTimeFromRpc(block) {
+    const time = Number(block?.time);
+    return Number.isFinite(time) && time > 0 ? time : Date.now();
+}
 export class TipBroker extends EventEmitter {
     chainId;
     rpc;
@@ -47,7 +51,8 @@ export class TipBroker extends EventEmitter {
             return;
         try {
             const hash = await this.rpc.call("getblockhash", [height]);
-            this.current = { height: Number(height), hash, time: Date.now() };
+            const time = await this.resolveBlockTime(hash);
+            this.current = { height: Number(height), hash, time };
         }
         catch {
             this.current = { height: Number(height), hash: "", time: Date.now() };
@@ -62,13 +67,23 @@ export class TipBroker extends EventEmitter {
             if (this.current?.height === height)
                 return;
             const hash = await this.rpc.call("getblockhash", [height]);
-            this.setTip({ height, hash, time: Date.now() });
+            const time = await this.resolveBlockTime(hash);
+            this.setTip({ height, hash, time });
         }
         catch {
             /* keep last known tip */
         }
         finally {
             this.polling = false;
+        }
+    }
+    async resolveBlockTime(hash) {
+        try {
+            const block = await this.rpc.call("getblock", [hash, 1]);
+            return blockTimeFromRpc(block);
+        }
+        catch {
+            return Date.now();
         }
     }
     setTip(tip) {
@@ -87,14 +102,11 @@ export class TipBroker extends EventEmitter {
                     break;
                 const hash = message.toString("hex");
                 try {
-                    const block = await this.rpc.call("getblock", [
-                        hash,
-                        1,
-                    ]);
+                    const block = await this.rpc.call("getblock", [hash, 1]);
                     const height = Number(block.height);
                     if (this.current?.height === height)
                         continue;
-                    this.setTip({ height, hash, time: Date.now() });
+                    this.setTip({ height, hash, time: blockTimeFromRpc(block) });
                 }
                 catch {
                     void this.poll().catch(noop);

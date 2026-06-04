@@ -1,6 +1,6 @@
 import { runIndexerQuery } from "../db/queryPool.js";
 import { rpc } from "../rpc/index.js";
-import { fetchOnChainSupply, fetchVrmHashrate, getMaxSupply, getTargetBlockTimeSeconds, hashPerSecToKhPerMin, parseRpcNumber, parseVrcMiningInfo, resolveVrmBlockTimeMinutes, } from "./stats.js";
+import { fetchOnChainSupply, fetchVrmHashrate, getMaxSupply, getTargetBlockTimeSeconds, hashPerSecToKhPerMin, parseRpcNumber, parseVrcMiningInfo, resolveVrmBlockTimeMinutes, supplyFromBlockchainInfo, } from "./stats.js";
 function rpcCall(chainId) {
     const client = rpc(chainId);
     return (method, params = [], timeoutMs) => client.call(method, params, timeoutMs);
@@ -64,6 +64,20 @@ async function resolveVrmSupply(call, blocks, blockchainInfo) {
     // Do not use estimatedSupplyAtHeight for VRM: Verium PoWT rewards are not approximated
     // by the placeholder blockRewardFunction and would skew supply (~275K vs ~3.7M).
     return fetchIndexedSupply("vrm", blocks);
+}
+async function resolveVrcSupply(call, blocks, blockchainInfo) {
+    if (blocks == null) {
+        return null;
+    }
+    const fromChain = supplyFromBlockchainInfo(blockchainInfo);
+    if (fromChain != null && fromChain > 0) {
+        return fromChain;
+    }
+    const rpcSupply = await fetchOnChainSupply("vrc", call, blocks, blockchainInfo);
+    if (rpcSupply != null && rpcSupply > 0) {
+        return rpcSupply;
+    }
+    return fetchIndexedSupply("vrc", blocks);
 }
 function difficultyToHashrateKhPerMin(difficulty, chainId = "vrm") {
     if (!Number.isFinite(difficulty) || difficulty <= 0) {
@@ -132,9 +146,7 @@ export async function fetchVrcNetworkStats() {
         const blocks = parseRpcNumber(blockchainInfo?.blocks);
         let difficulty = parseRpcNumber(blockchainInfo?.difficulty);
         const [supply, miningInfo] = await Promise.all([
-            blocks != null
-                ? fetchOnChainSupply("vrc", call, blocks, blockchainInfo)
-                : Promise.resolve(null),
+            resolveVrcSupply(call, blocks, blockchainInfo),
             call("getmininginfo").catch(() => null),
         ]);
         const miningMetrics = parseVrcMiningInfo(miningInfo);

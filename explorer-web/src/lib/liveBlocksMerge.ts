@@ -15,19 +15,8 @@ export function isIndexedBlockTableReady(
     return false;
   }
 
-  if (chainId === "vrm") {
-    return !!(
-      block.extractedBy?.trim() || block.extractedByAddress?.trim()
-    );
-  }
-
-  if (chainId === "vrc") {
-    return (
-      block.interestRatePercent != null &&
-      Number.isFinite(block.interestRatePercent)
-    );
-  }
-
+  // VRM and VRC both store coinbase/coinstake producer in extracted_by fields.
+  // Producer can fill in after the row appears; size/difficulty/txs gate the stub.
   return true;
 }
 
@@ -176,6 +165,8 @@ export function enrichBlocksFromPrevious(
             extractedBy: block.extractedBy ?? prev.extractedBy ?? null,
             extractedByAddress:
               block.extractedByAddress ?? prev.extractedByAddress ?? null,
+            time: block.time ?? prev.time ?? null,
+            txCount: block.txCount ?? prev.txCount,
             difficulty: block.difficulty ?? prev.difficulty,
             size: block.size ?? prev.size,
             interestRatePercent:

@@ -30,16 +30,11 @@ export const summaryLiteCache = createSwrCache({
 });
 export const latestBlocksCache = createSwrCache({
     max: 32,
-    ttlMs: 5_000,
+    ttlMs: 2_000,
     fetch: async (key, signal) => {
         const chainId = key.split(":")[0];
         if (signal.aborted)
             throw new Error("aborted");
-        const summaryKey = cacheKey(chainId, "summary");
-        const warmSummary = summaryCache.peek(summaryKey);
-        if (warmSummary?.latestBlocks?.length) {
-            return { blocks: warmSummary.latestBlocks };
-        }
         const blocks = await fetchLatestBlocks(chainId);
         return { blocks };
     },
@@ -184,13 +179,7 @@ export async function registerChainRoutes(app) {
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });
         }
-        const cached = await swrFetch(latestBlocksCache, cacheKey(chainId, "latest-blocks"), async () => {
-            const warmSummary = summaryCache.peek(cacheKey(chainId, "summary"));
-            if (warmSummary?.latestBlocks?.length) {
-                return { blocks: warmSummary.latestBlocks };
-            }
-            return { blocks: await fetchLatestBlocks(chainId) };
-        });
+        const cached = await swrFetch(latestBlocksCache, cacheKey(chainId, "latest-blocks"), async () => ({ blocks: await fetchLatestBlocks(chainId) }));
         return cached.blocks ?? [];
     });
     app.get("/v1/:chain/blocks", async (request, reply) => {

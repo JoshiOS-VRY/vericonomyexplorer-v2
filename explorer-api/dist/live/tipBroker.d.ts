@@ -16,6 +16,7 @@ export declare class TipBroker extends EventEmitter {
     stop(): Promise<void>;
     private seedFromDb;
     private poll;
+    private resolveBlockTime;
     private setTip;
     private startZmq;
 }

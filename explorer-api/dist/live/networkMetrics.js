@@ -8,6 +8,19 @@ const requireRoot = createRequire(path.join(repoRoot, "package.json"));
 const networkMetrics = requireRoot("./app/indexerV2/networkMetrics.js");
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const supplyHistory = requireRoot("./app/indexerV2/supplyHistory.js");
+async function safeIndexedSupply(db, chainId, height) {
+    if (height == null) {
+        return null;
+    }
+    try {
+        return await supplyHistory.indexedSupplyAtHeight(db, chainId, height);
+    }
+    catch {
+        // Heavy supply-series build can exceed statement timeout (esp. VRC); the
+        // RPC-derived supply is used as the fallback for the bucket.
+        return null;
+    }
+}
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const periodStats = requireRoot("./app/indexerV2/periodStats.js");
 const lastRecordedBucket = new Map();
@@ -18,14 +31,12 @@ export async function recordNetworkMetricSnapshot(chainId) {
     if (lastRecordedBucket.get(key)) {
         return;
     }
-    const addressCount = getAddressCount(chainId);
+    const addressCount = await getAddressCount(chainId);
     const db = getWritableDb();
     if (chainId === "vrm") {
         const stats = await fetchVrmNetworkStats();
-        const indexedSupply = stats.blocks != null
-            ? supplyHistory.indexedSupplyAtHeight(db, chainId, stats.blocks)
-            : null;
-        networkMetrics.upsertNetworkMetricBucket(db, chainId, {
+        const indexedSupply = await safeIndexedSupply(db, chainId, stats.blocks);
+        await networkMetrics.upsertNetworkMetricBucket(db, chainId, {
             bucketStart,
             difficulty: stats.difficulty,
             blockHeight: stats.blocks,
@@ -36,10 +47,8 @@ export async function recordNetworkMetricSnapshot(chainId) {
     }
     else {
         const stats = await fetchVrcNetworkStats();
-        const indexedSupply = stats.blocks != null
-            ? supplyHistory.indexedSupplyAtHeight(db, chainId, stats.blocks)
-            : null;
-        networkMetrics.upsertNetworkMetricBucket(db, chainId, {
+        const indexedSupply = await safeIndexedSupply(db, chainId, stats.blocks);
+        await networkMetrics.upsertNetworkMetricBucket(db, chainId, {
             bucketStart,
             difficulty: stats.difficulty,
             blockHeight: stats.blocks,

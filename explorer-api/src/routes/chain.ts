@@ -112,24 +112,6 @@ export const latestBlocksCache = createSwrCache({
 
     if (signal.aborted) throw new Error("aborted");
 
-    const summaryKey = cacheKey(chainId, "summary");
-
-    const warmSummary = summaryCache.peek(summaryKey) as
-
-      | { latestBlocks?: unknown[] }
-
-      | undefined;
-
-
-
-    if (warmSummary?.latestBlocks?.length) {
-
-      return { blocks: warmSummary.latestBlocks } as CacheValue;
-
-    }
-
-
-
     const blocks = await fetchLatestBlocks(chainId);
 
     return { blocks } as CacheValue;
@@ -476,27 +458,7 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
 
       cacheKey(chainId, "latest-blocks"),
 
-      async () => {
-
-        const warmSummary = summaryCache.peek(cacheKey(chainId, "summary")) as
-
-          | { latestBlocks?: unknown[] }
-
-          | undefined;
-
-
-
-        if (warmSummary?.latestBlocks?.length) {
-
-          return { blocks: warmSummary.latestBlocks };
-
-        }
-
-
-
-        return { blocks: await fetchLatestBlocks(chainId) };
-
-      },
+      async () => ({ blocks: await fetchLatestBlocks(chainId) }),
 
     );
 
