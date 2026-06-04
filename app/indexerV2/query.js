@@ -949,8 +949,48 @@ function resolveActivityBucketCount(since, maxPoints, firstTime, lastTime) {
 	return Math.min(12, maxPoints);
 }
 
+function buildUtcDayActivityBucketPlan(since, end, maxPoints) {
+	const buckets = [];
+	let cursor = startOfUtcDay(since);
+
+	while (cursor <= end) {
+		const bucketEnd = Math.min(cursor + 86_400 - 1, end);
+		buckets.push({
+			startTime: cursor,
+			endTime: bucketEnd,
+			label: formatActivityBucketLabel(cursor, bucketEnd),
+			minedAtomic: 0n,
+			stakedAtomic: 0n,
+			receivedAtomic: 0n,
+			spentAtomic: 0n
+		});
+		cursor += 86_400;
+	}
+
+	if (buckets.length > maxPoints) {
+		return buckets.slice(buckets.length - maxPoints);
+	}
+
+	return buckets.length
+		? buckets
+		: [{
+			startTime: since,
+			endTime: end,
+			label: formatActivityBucketLabel(since, end),
+			minedAtomic: 0n,
+			stakedAtomic: 0n,
+			receivedAtomic: 0n,
+			spentAtomic: 0n
+		}];
+}
+
 function buildActivityBucketPlan(since, maxPoints, firstTime, lastTime) {
 	const { start, end } = resolveActivityTimeRange(since, firstTime, lastTime);
+
+	if (since) {
+		return buildUtcDayActivityBucketPlan(since, end, maxPoints);
+	}
+
 	const bucketCount = Math.max(resolveActivityBucketCount(since, maxPoints, firstTime, lastTime), 1);
 	const span = Math.max(end - start, 1);
 	const step = Math.max(Math.floor(span / bucketCount), 1);
@@ -967,7 +1007,7 @@ function buildActivityBucketPlan(since, maxPoints, firstTime, lastTime) {
 		buckets.push({
 			startTime: bucketStart,
 			endTime: bucketEnd,
-			label: formatActivityBucketLabel(bucketStart, bucketEnd, since),
+			label: formatActivityBucketLabel(bucketStart, bucketEnd),
 			minedAtomic: 0n,
 			stakedAtomic: 0n,
 			receivedAtomic: 0n,

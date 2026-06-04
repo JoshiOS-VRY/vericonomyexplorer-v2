@@ -28,10 +28,10 @@ import type {
   AddressBalanceHistoryResult,
 } from "@/lib/api/types";
 import {
+  formatActivityBucketAxisLabel,
   formatChartAxisDate,
   formatChartDateTime,
   formatChartTooltipDate,
-  formatChartTooltipRange,
 } from "@/lib/chartDates";
 import { cn } from "@/lib/utils";
 import type { RechartsTooltipContentProps } from "@/components/explorer/charts/ThemedChartTooltip";
@@ -95,7 +95,8 @@ function ChartHeaderControls({
 }
 
 type ActivityChartRow = {
-  label: string;
+  bucketKey: string;
+  axisLabel: string;
   startTime: number;
   endTime: number;
   ticker: string;
@@ -111,14 +112,6 @@ const ACTIVITY_TOOLTIP_SERIES: { key: keyof ActivityChartRow; name: string }[] =
   { key: "received", name: "Received" },
   { key: "spent", name: "Spent" },
 ];
-
-function formatActivityTooltipTitle(row: ActivityChartRow): string {
-  if (row.endTime - row.startTime > 86_400) {
-    return formatChartTooltipRange(row.startTime, row.endTime);
-  }
-
-  return formatChartTooltipDate(row.startTime);
-}
 
 function ActivityChartTooltip({
   active,
@@ -158,7 +151,10 @@ function ActivityChartTooltip({
       }}
     >
       <p className="text-[11px] font-medium" style={{ color: colors.fgMuted }}>
-        {formatActivityTooltipTitle(row)}
+        {row.axisLabel}
+      </p>
+      <p className="text-[10px]" style={{ color: colors.fgSubtle }}>
+        UTC · {formatChartDateTime(row.endTime)}
       </p>
       <ul className="mt-2 space-y-1">
         {entries.map((item) => (
@@ -306,12 +302,13 @@ function ActivityBarChart({
       <BarChart data={chartData} margin={{ top: 12, right: 12, left: 4, bottom: 4 }}>
         <CartesianGrid stroke={colors.border} strokeOpacity={0.5} strokeDasharray="3 3" vertical={false} />
         <XAxis
-          dataKey="label"
+          dataKey="bucketKey"
           tick={{ fill: colors.fgSubtle, fontSize: 11 }}
           tickLine={false}
           axisLine={{ stroke: colors.border, strokeOpacity: 0.6 }}
           minTickGap={period === "7d" ? 16 : 28}
           dy={6}
+          tickFormatter={(_value, index) => chartData[index]?.axisLabel ?? ""}
         />
         <YAxis
           tick={{ fill: colors.fgSubtle, fontSize: 11 }}
@@ -560,7 +557,8 @@ export function AddressBalanceChart({
   }
 
   const activityData = history.buckets.map((bucket) => ({
-    label: bucket.label,
+    bucketKey: String(bucket.startTime),
+    axisLabel: formatActivityBucketAxisLabel(bucket.startTime, bucket.endTime),
     startTime: bucket.startTime,
     endTime: bucket.endTime,
     ticker: bucket.ticker,
