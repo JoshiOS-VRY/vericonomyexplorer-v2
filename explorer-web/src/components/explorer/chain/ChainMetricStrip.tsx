@@ -1,7 +1,11 @@
 import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
 import { BcStat, BcStatGrid } from "@/components/explorer/BlockchairUi";
 import { formatHeight } from "@/components/explorer/ExplorerUi";
-import type { IndexedBlock, VrcNetworkStats } from "@/lib/api/types";
+import type {
+  IndexedBlock,
+  VrcNetworkStats,
+  VrmNetworkStats,
+} from "@/lib/api/types";
 import type { ChainId } from "@/lib/chainDisplay";
 import { formatPercent } from "@/lib/formatMarket";
 import { formatDifficulty } from "@/lib/utils";
@@ -19,13 +23,15 @@ export function ChainMetricStrip({
   addressCount: number;
   tipBlock: IndexedBlock | undefined;
   heightPulse: boolean;
-  network?: VrcNetworkStats | null;
+  network?: VrmNetworkStats | VrcNetworkStats | null;
 }) {
   const tipDifficulty = tipBlock?.difficulty;
+  const vrmNetwork = chainId === "vrm" ? (network as VrmNetworkStats | null) : null;
   const vrcNetwork = chainId === "vrc" ? network : null;
+  const vrmDifficulty = tipDifficulty ?? vrmNetwork?.difficulty ?? null;
 
   return (
-    <BcStatGrid>
+    <BcStatGrid className="grid-cols-4 sm:grid-cols-4">
       <BcStat
         label="Block height"
         value={formatHeight(chainHeight)}
@@ -56,7 +62,7 @@ export function ChainMetricStrip({
       ) : (
         <BcStat
           label="Difficulty"
-          value={tipDifficulty ? formatDifficulty(tipDifficulty) : "—"}
+          value={vrmDifficulty != null ? formatDifficulty(vrmDifficulty) : "—"}
         />
       )}
     </BcStatGrid>

@@ -60,13 +60,13 @@ export function RichlistBalanceList({
       <div className="richlist-balance-list__head" aria-hidden>
         <span>#</span>
         <span>Address</span>
+        <span className="text-right">Share</span>
         <span className="text-right">Balance</span>
       </div>
 
       <ul className="richlist-balance-list__body" role="list">
         {items.map((item) => {
           const amount = Number.parseFloat(item.balance.amount);
-          const sharePct = supplySharePercent(amount, totalSupply);
           const shareLabel = formatSupplySharePct(amount, totalSupply);
           const href = addressHref(item.address);
           const isPodium = item.rank <= 3;
@@ -101,25 +101,18 @@ export function RichlistBalanceList({
                       ellipsizeMiddle(item.address, 22)
                     )}
                   </strong>
-                  {sharePct != null && shareLabel ? (
-                    <div
-                      className="richlist-balance-list__share mt-2 flex min-w-0 items-center gap-2"
-                      title={`${shareLabel} of total ${item.balance.ticker} supply`}
-                    >
-                      <span
-                        className="richlist-balance-list__bar block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-border/70"
-                        aria-hidden
-                      >
-                        <span
-                          className="richlist-balance-list__bar-fill block h-full min-w-[2px] rounded-full"
-                          style={{ width: `${Math.max(sharePct, 0.15)}%` }}
-                        />
-                      </span>
-                      <span className="richlist-balance-list__pct shrink-0 text-[11px] font-semibold tabular-nums sm:text-xs">
-                        {shareLabel}
-                      </span>
-                    </div>
-                  ) : null}
+                </div>
+                <div
+                  className="richlist-balance-list__share-col text-right"
+                  title={
+                    shareLabel
+                      ? `${shareLabel} of total ${item.balance.ticker} supply`
+                      : undefined
+                  }
+                >
+                  <span className="richlist-balance-list__pct tabular-nums">
+                    {shareLabel ?? "—"}
+                  </span>
                 </div>
                 <div
                   className="richlist-balance-list__balance text-right"

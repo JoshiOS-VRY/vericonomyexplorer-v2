@@ -1057,7 +1057,7 @@ html:not(.light)
   .chain-hub-section
   .block-chain-table
   col.block-chain-table__col--age {
-  width: 12%;
+  width: 13%;
 }
 
 .home-page
@@ -1078,7 +1078,7 @@ html:not(.light)
   .chain-hub-section
   .block-chain-table
   col.block-chain-table__col--diff {
-  width: 12%;
+  width: 11%;
 }
 
 .block-chain-table__cell-clip {
@@ -1187,6 +1187,15 @@ html:not(.light)
   font-weight: 600;
 }
 
+.home-page
+  .chain-hub-section
+  .block-chain-table
+  tbody
+  tr.block-chain-table-row
+  td.block-chain-table__col--age {
+  overflow: visible;
+}
+
 .home-page .chain-hub-section .block-chain-table th,
 .home-page .chain-hub-section .block-chain-table td {
   padding-inline: 0.4375rem;
@@ -1235,6 +1244,10 @@ html:not(.light)
 
 .block-chain-section[data-chain="vrm"] .block-chain-table a {
   color: var(--chain-vrm);
+}
+
+.block-chain-section[data-chain="vrm"] .block-chain-table a.extracted-by-verium-pool {
+  color: var(--chain-btn-fg);
 }
 
 .block-chain-section[data-chain="vrc"] .block-chain-table a {
@@ -1629,12 +1642,12 @@ li[role="presentation"] + .search-dropdown-section {
 
 .richlist-balance-list__head {
   display: none;
-  grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+  grid-template-columns: 2.75rem minmax(0, 1fr) 5.25rem minmax(5.5rem, auto);
   gap: 0.75rem 1rem;
   border-bottom: 1px solid var(--border);
   background: color-mix(
     in srgb,
-    var(--richlist-accent-soft) 40%,
+    var(--richlist-accent-soft) 22%,
     var(--bg-subtle)
   );
   padding: 0.625rem 1rem;
@@ -1662,7 +1675,7 @@ li[role="presentation"] + .search-dropdown-section {
   display: grid;
   text-decoration: none;
   color: inherit;
-  grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+  grid-template-columns: 2.75rem minmax(0, 1fr) 5.25rem minmax(5.5rem, auto);
   align-items: center;
   gap: 0.75rem 1rem;
   border-top: 1px solid var(--border);
@@ -1683,15 +1696,15 @@ li[role="presentation"] + .search-dropdown-section {
 }
 
 .richlist-balance-list__row:nth-child(even) {
-  background: color-mix(in srgb, var(--richlist-accent-soft) 28%, transparent);
+  background: color-mix(in srgb, var(--bg-subtle) 45%, transparent);
 }
 
 .richlist-balance-list__row:hover {
-  background: color-mix(in srgb, var(--richlist-accent) 7%, transparent);
+  background: color-mix(in srgb, var(--richlist-accent-soft) 28%, transparent);
 }
 
 .richlist-balance-list__row--podium {
-  background: color-mix(in srgb, var(--richlist-accent-soft) 55%, transparent);
+  background: color-mix(in srgb, var(--richlist-accent-soft) 36%, transparent);
 }
 
 .richlist-balance-list__row--podium::before {
@@ -1718,22 +1731,18 @@ li[role="presentation"] + .search-dropdown-section {
   color: var(--richlist-accent);
 }
 
+.richlist-balance-list__share-col {
+  min-width: 0;
+}
+
 .richlist-balance-list__ticker {
   color: var(--richlist-accent);
 }
 
 .richlist-balance-list__pct {
-  color: color-mix(in srgb, var(--richlist-accent) 65%, var(--fg-muted));
-}
-
-.richlist-balance-list__bar-fill {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--richlist-accent) 45%, transparent),
-    var(--richlist-accent)
-  );
-  box-shadow: 0 0 12px
-    color-mix(in srgb, var(--richlist-accent) 35%, transparent);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--richlist-accent) 70%, var(--fg-muted));
 }
 
 .richlist-balance-list__footer {
@@ -1798,6 +1807,17 @@ li[role="presentation"] + .search-dropdown-section {
   border: 1px solid var(--border);
   background: var(--bg-subtle);
   color: var(--fg-subtle);
+}
+
+@media (max-width: 640px) {
+  .richlist-balance-list__row {
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+    gap: 0.625rem 0.75rem;
+  }
+
+  .richlist-balance-list__share-col {
+    display: none;
+  }
 }
 
 html:not(.light) .richlist-rank--gold {

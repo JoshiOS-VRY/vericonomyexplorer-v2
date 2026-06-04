@@ -91,6 +91,7 @@ export function VrmChainDashboard({
         addressCount={addressCount}
         tipBlock={tipBlock}
         heightPulse={heightPulse}
+        network={network}
       />
 
       <div className="grid gap-4 xl:grid-cols-2">
