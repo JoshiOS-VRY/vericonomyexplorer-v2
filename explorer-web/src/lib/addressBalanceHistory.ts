@@ -64,8 +64,8 @@ export function isSameAddressBalanceHistory(
     rows.slice(-2).map((row) => `${row.time}:${row.balanceAtomic}`);
 
   return (
-    tailBuckets(previous).join("|") === tailBuckets(next).join("|") &&
-    tailPoints(previous).join("|") === tailPoints(next).join("|")
+    tailBuckets(previous.buckets).join("|") === tailBuckets(next.buckets).join("|") &&
+    tailPoints(previous.points).join("|") === tailPoints(next.points).join("|")
   );
 }
 
