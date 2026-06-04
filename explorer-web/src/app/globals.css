@@ -1017,6 +1017,61 @@ html:not(.light)
   width: 100%;
 }
 
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col-height {
+  width: 11%;
+}
+
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col-hash {
+  width: 12%;
+}
+
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col-producer--vrm {
+  width: 22%;
+}
+
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col-producer--vrc {
+  width: 11%;
+}
+
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col-age {
+  width: 13%;
+}
+
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col-txs {
+  width: 8%;
+}
+
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col-size {
+  width: 10%;
+}
+
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col-diff {
+  width: auto;
+}
+
+.block-chain-table__producer-cell {
+  overflow: visible;
+  white-space: normal;
+}
+
+.block-chain-table__producer-cell--vrc {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .data-table--stack td.block-chain-table__producer-cell {
+    align-items: center;
+  }
+
+  .data-table--stack td.block-chain-table__producer-cell > * {
+    min-width: auto;
+    flex-shrink: 0;
+  }
+}
+
 .home-page .chain-hub-section .block-chain-table thead tr th {
   height: 2.25rem;
   box-sizing: border-box;
@@ -1597,7 +1652,6 @@ html:not(.light) .richlist-rank--bronze {
 .extracted-by-verium-pool {
   position: relative;
   display: inline-flex;
-  max-width: 100%;
   align-items: center;
   gap: 0.4375rem;
   overflow: hidden;

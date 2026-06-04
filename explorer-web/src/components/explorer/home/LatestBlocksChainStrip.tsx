@@ -38,6 +38,7 @@ import {
   isOptimisticTipBlock,
 } from "@/lib/liveBlocksMerge";
 import { formatPercent } from "@/lib/formatMarket";
+import { isVeriumPoolExtracted } from "@/lib/veriumPoolExtracted";
 import { cn, formatDifficulty } from "@/lib/utils";
 
 export interface ChainHubSectionProps {
@@ -241,11 +242,28 @@ export function ChainHubSection({
 
             <div className="block-chain-table-wrap overflow-x-auto border-t border-border">
               <table className="bc-table block-chain-table data-table data-table--stack">
+                <colgroup>
+                  <col className="block-chain-table__col-height" />
+                  <col className="block-chain-table__col-hash" />
+                  <col
+                    className={
+                      chainId === "vrm"
+                        ? "block-chain-table__col-producer--vrm"
+                        : "block-chain-table__col-producer--vrc"
+                    }
+                  />
+                  <col className="block-chain-table__col-age" />
+                  <col className="block-chain-table__col-txs" />
+                  <col className="block-chain-table__col-size" />
+                  <col className="block-chain-table__col-diff" />
+                </colgroup>
                 <thead>
                   <tr>
                     <th>Height</th>
                     <th>Hash</th>
-                    <th>{producerColumnLabel}</th>
+                    <th className="block-chain-table__producer-head">
+                      {producerColumnLabel}
+                    </th>
                     <th className="bc-col-age">Mined</th>
                     <th className="text-right">Txs</th>
                     <th className="text-right">Size</th>
@@ -465,7 +483,10 @@ function BlockChainTableRow({
       </td>
       <td
         data-label={chainId === "vrm" ? "Extracted by" : "Interest"}
-        className="min-w-24 max-w-48 truncate"
+        className={cn(
+          "block-chain-table__producer-cell",
+          chainId === "vrc" && "block-chain-table__producer-cell--vrc",
+        )}
       >
         {chainId === "vrm" ? (
           indexing ? (
@@ -474,10 +495,11 @@ function BlockChainTableRow({
             <ExtractedByCell
               block={block}
               chainId={chainId}
-              className={cn(
-                "text-sm font-medium hover:underline",
-                "text-[var(--chain-vrm)]",
-              )}
+              className={
+                isVeriumPoolExtracted(block)
+                  ? undefined
+                  : "text-sm font-medium text-[var(--chain-vrm)] hover:underline"
+              }
             />
           )
         ) : indexing ? (
