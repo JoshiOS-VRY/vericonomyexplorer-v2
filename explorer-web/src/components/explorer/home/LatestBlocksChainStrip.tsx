@@ -621,7 +621,7 @@ function BlockChainMobileCard({
           <span className="block-chain-mobile-card__label">Difficulty</span>
           <div className="tabular-nums">
             {block.difficulty ? (
-              formatDifficulty(block.difficulty)
+              formatDifficultyForChain(chainId, block.difficulty)
             ) : difficultyPending ? (
               <BlockFieldLoading />
             ) : (
@@ -754,7 +754,7 @@ function BlockChainTableRow({
         className="block-chain-table__col block-chain-table__col--diff text-right tabular-nums text-fg-muted"
       >
         {block.difficulty ? (
-          formatDifficulty(block.difficulty)
+          formatDifficultyForChain(chainId, block.difficulty)
         ) : difficultyPending ? (
           <BlockFieldLoading align="right" />
         ) : (
@@ -787,4 +787,14 @@ function formatBlockHashShort(hash: string): string {
   const h = hash.replace(/^0x/i, "");
   if (h.length <= 20) return h;
   return `${h.slice(0, 10)}…${h.slice(-8)}`;
+}
+
+function formatDifficultyForChain(
+  chainId: ChainId,
+  value: string | number | null | undefined,
+): string {
+  if (chainId !== "vrm") return formatDifficulty(value);
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return formatDifficulty(value);
+  return n.toFixed(7);
 }
