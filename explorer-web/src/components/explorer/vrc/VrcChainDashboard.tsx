@@ -7,11 +7,18 @@ import { ChainBlocksPanel } from "@/components/explorer/chain/ChainBlocksPanel";
 import { LazyChainActivityChart } from "@/components/explorer/chain/LazyChainActivityChart";
 import { ChainMetricStrip } from "@/components/explorer/chain/ChainMetricStrip";
 import { ChainQuickNav } from "@/components/explorer/chain/ChainQuickNav";
+import { ChainLeaderboardPreview } from "@/components/explorer/chain/ChainLeaderboardPreview";
 import { ChainRichlistPreview } from "@/components/explorer/chain/ChainRichlistPreview";
 import { ChainTransactionsPanel } from "@/components/explorer/chain/ChainTransactionsPanel";
 import { ChainExplorerHero } from "@/components/explorer/vrm/VrmChainHero";
 import { useStableChainLive } from "@/hooks/useStableChainLive";
-import type { ChainMarket, ChainSummary, RichlistResult, VrcNetworkStats } from "@/lib/api/types";
+import type {
+  ChainMarket,
+  ChainSummary,
+  LeaderboardResult,
+  RichlistResult,
+  VrcNetworkStats,
+} from "@/lib/api/types";
 import { fetchHomeMarket, fetchHomeNetwork } from "@/lib/api/client";
 import { applyOnChainMarketCap } from "@/lib/enrichMarket";
 import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
@@ -20,11 +27,13 @@ import { resolveRichlistTotalSupply } from "@/lib/richlistSupply";
 export function VrcChainDashboard({
   summary: initialSummary,
   richlist: initialRichlist,
+  leaderboard: initialLeaderboard,
   initialMarket,
   initialNetwork,
 }: {
   summary: ChainSummary;
   richlist: RichlistResult;
+  leaderboard: LeaderboardResult;
   initialMarket?: ChainMarket;
   initialNetwork?: VrcNetworkStats;
 }) {
@@ -106,11 +115,17 @@ export function VrcChainDashboard({
           chainHeight={chainHeight}
           maxIndexedHeight={summary.health.heights.maxIndexedHeight}
         />
-        <ChainRichlistPreview
-          chainId="vrc"
-          richlist={initialRichlist}
-          totalSupply={richlistSupply}
-        />
+        <div className="flex h-full min-h-0 flex-col gap-6">
+          <ChainRichlistPreview
+            chainId="vrc"
+            richlist={initialRichlist}
+            totalSupply={richlistSupply}
+          />
+          <ChainLeaderboardPreview
+            chainId="vrc"
+            leaderboard={initialLeaderboard}
+          />
+        </div>
       </div>
 
       <ChainTransactionsPanel chainId="vrc" transactions={summary.recentTransactions} />

@@ -10,7 +10,7 @@ import { ChainQuickNav } from "@/components/explorer/chain/ChainQuickNav";
 import { ChainRichlistPreview } from "@/components/explorer/chain/ChainRichlistPreview";
 import { ChainTransactionsPanel } from "@/components/explorer/chain/ChainTransactionsPanel";
 import { ChainExplorerHero } from "@/components/explorer/vrm/VrmChainHero";
-import { VrmLeaderboardPreview } from "@/components/explorer/vrm/VrmLeaderboardPreview";
+import { ChainLeaderboardPreview } from "@/components/explorer/chain/ChainLeaderboardPreview";
 import { VrmMinersPreview } from "@/components/explorer/vrm/VrmMinersPreview";
 import { useStableChainLive } from "@/hooks/useStableChainLive";
 import type { ChainMarket, VrmDashboardPayload, VrmNetworkStats } from "@/lib/api/types";
@@ -108,14 +108,17 @@ export function VrmChainDashboard({
           chainHeight={chainHeight}
           maxIndexedHeight={summary.health.heights.maxIndexedHeight}
         />
-        <div className="flex flex-col gap-6">
+        <div className="flex h-full min-h-0 flex-col gap-6">
           <ChainRichlistPreview
             chainId="vrm"
             richlist={initialRichlist}
             totalSupply={richlistSupply}
           />
           <VrmMinersPreview miners={initialMiners} />
-          <VrmLeaderboardPreview leaderboard={initialLeaderboard} />
+          <ChainLeaderboardPreview
+            chainId="vrm"
+            leaderboard={initialLeaderboard}
+          />
         </div>
       </div>
 
