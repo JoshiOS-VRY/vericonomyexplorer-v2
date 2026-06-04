@@ -53,20 +53,41 @@ function isCoinbaseTx(tx) {
 	return !!(tx && Array.isArray(tx.vin) && tx.vin[0] && tx.vin[0].coinbase);
 }
 
+function hasPrevoutInputs(tx) {
+	return tx.vin.some((input) => {
+		if (!input || input.coinbase != null) {
+			return false;
+		}
+
+		return input.txid != null || input.txhash != null;
+	});
+}
+
+/** VeriCoin / Peercoin PoS: coinstake spends UTXOs; kernel is usually a 0-value first vout. */
 function isCoinstakeTx(tx) {
 	if (!tx || !Array.isArray(tx.vin) || !Array.isArray(tx.vout)) {
 		return false;
 	}
 
-	if (isCoinbaseTx(tx) || tx.vin.length === 0 || tx.vout.length < 2) {
+	if (isCoinbaseTx(tx) || tx.vin.length === 0 || !hasPrevoutInputs(tx)) {
 		return false;
 	}
 
-	const firstOutput = tx.vout[0];
-	const firstValue = decimalToAtomicUnits(firstOutput.value || 0);
-	const firstType = firstOutput.scriptPubKey && firstOutput.scriptPubKey.type;
+	const firstValue = decimalToAtomicUnits(tx.vout[0]?.value || 0);
+	if (firstValue === 0n) {
+		return true;
+	}
 
-	return firstValue === 0n && (firstType === "nonstandard" || firstType === "nulldata" || firstType === "pubkey");
+	// Compact stake blocks: one prevout-funded tx with a single positive reward output.
+	if (tx.vout.length <= 2 && tx.vin.length >= 1) {
+		const rewardOutputs = tx.vout.filter(
+			(vout) => decimalToAtomicUnits(vout?.value || 0) > 0n,
+		);
+
+		return rewardOutputs.length === 1;
+	}
+
+	return false;
 }
 
 function atomicUnitsToDecimal(value, decimalPlaces = 8) {

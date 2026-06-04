@@ -1730,23 +1730,21 @@ async function enrichBlocks(db, chain, blocks) {
 		outputCounts.map(row => [row.height, toNumber(row.count)])
 	);
 
-	const producerIsCoinstake = chain === "vrc";
+	const producerFlag = chain === "vrc" ? "is_coinstake" : "is_coinbase";
 	const producerVouts = await db.all(`
 		SELECT t.block_height AS height, t.txid, v.n, v.address, v.value_sats
 		FROM vouts v
 		INNER JOIN transactions t ON t.chain_id = v.chain_id AND t.txid = v.txid
 		WHERE v.chain_id = ? AND t.block_height IN (${placeholders})
-			AND t.${producerIsCoinstake ? "is_coinstake" : "is_coinbase"} = 1
+			AND t.${producerFlag} = 1
 		ORDER BY t.block_height DESC, v.n ASC
 	`, [chain, ...heights]);
-	const producerRawByHeight = Object.fromEntries(
-		(await db.all(`
-			SELECT block_height AS height, raw_json
-			FROM transactions
-			WHERE chain_id = ? AND block_height IN (${placeholders})
-				AND ${producerIsCoinstake ? "is_coinstake" : "is_coinbase"} = 1
-		`, [chain, ...heights])).map(row => [row.height, row.raw_json])
-	);
+	let producerRawRows = await db.all(`
+		SELECT block_height AS height, raw_json
+		FROM transactions
+		WHERE chain_id = ? AND block_height IN (${placeholders})
+			AND ${producerFlag} = 1
+	`, [chain, ...heights]);
 	const producerVoutsByHeight = {};
 
 	for (const row of producerVouts) {
@@ -1755,6 +1753,55 @@ async function enrichBlocks(db, chain, blocks) {
 		}
 		producerVoutsByHeight[row.height].push(row);
 	}
+
+	if (chain === "vrc") {
+		const missingHeights = heights.filter(height => !producerVoutsByHeight[height]);
+
+		if (missingHeights.length > 0) {
+			const missingPlaceholders = missingHeights.map(() => "?").join(",");
+			const fallbackVouts = await db.all(`
+				SELECT t.block_height AS height, t.txid, v.n, v.address, v.value_sats
+				FROM vouts v
+				INNER JOIN transactions t ON t.chain_id = v.chain_id AND t.txid = v.txid
+				WHERE v.chain_id = ? AND t.block_height IN (${missingPlaceholders})
+					AND t.is_coinbase = 0
+					AND t.tx_index = (
+						SELECT MIN(t2.tx_index)
+						FROM transactions t2
+						WHERE t2.chain_id = t.chain_id
+							AND t2.block_height = t.block_height
+							AND t2.is_coinbase = 0
+					)
+				ORDER BY t.block_height DESC, v.n ASC
+			`, [chain, ...missingHeights]);
+			const fallbackRawRows = await db.all(`
+				SELECT block_height AS height, raw_json
+				FROM transactions t
+				WHERE chain_id = ? AND block_height IN (${missingPlaceholders})
+					AND is_coinbase = 0
+					AND tx_index = (
+						SELECT MIN(t2.tx_index)
+						FROM transactions t2
+						WHERE t2.chain_id = t.chain_id
+							AND t2.block_height = t.block_height
+							AND t2.is_coinbase = 0
+					)
+			`, [chain, ...missingHeights]);
+
+			for (const row of fallbackVouts) {
+				if (!producerVoutsByHeight[row.height]) {
+					producerVoutsByHeight[row.height] = [];
+				}
+				producerVoutsByHeight[row.height].push(row);
+			}
+
+			producerRawRows = producerRawRows.concat(fallbackRawRows);
+		}
+	}
+
+	const producerRawByHeight = Object.fromEntries(
+		producerRawRows.map(row => [row.height, row.raw_json])
+	);
 
 	return blocks.map(block => {
 		const producerRows = producerVoutsByHeight[block.height] || [];

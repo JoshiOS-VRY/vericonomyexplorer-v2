@@ -76,7 +76,7 @@ export function ChainHubSection({
     ...displayBlocks.slice(0, LATEST_BLOCKS_STRIP_COUNT),
   ].reverse();
   const tableRows = displayBlocks.slice(0, LATEST_BLOCKS_COUNT);
-  const producerColumnLabel = "Extracted by";
+  const showExtractedBy = true;
 
   return (
     <section
@@ -244,7 +244,7 @@ export function ChainHubSection({
                   <tr>
                     <th>Height</th>
                     <th>Hash</th>
-                    <th>{producerColumnLabel}</th>
+                    {showExtractedBy ? <th>Extracted by</th> : null}
                     <th className="bc-col-age">Mined</th>
                     <th className="text-right">Txs</th>
                     <th className="text-right">Size</th>
@@ -258,6 +258,7 @@ export function ChainHubSection({
                       block={block}
                       chainId={chainId}
                       blockHref={config.blockHref?.(block.height)}
+                      showExtractedBy={showExtractedBy}
                     />
                   ))}
                 </tbody>
@@ -420,10 +421,12 @@ function BlockChainTableRow({
   block,
   chainId,
   blockHref,
+  showExtractedBy,
 }: {
   block: IndexedBlock;
   chainId: ChainId;
   blockHref?: string;
+  showExtractedBy: boolean;
 }) {
   const hashShort = formatBlockHashShort(block.hash);
   const indexing = isOptimisticTipBlock(block, chainId);
@@ -462,21 +465,23 @@ function BlockChainTableRow({
           <span className="text-sm text-fg-muted">{hashShort}</span>
         )}
       </td>
-      <td
-        data-label="Extracted by"
-        className="min-w-24 max-w-48 truncate"
-      >
-        <ExtractedByCell
-          block={block}
-          chainId={chainId}
-          className={cn(
-            "text-sm font-medium hover:underline",
-            chainId === "vrm"
-              ? "text-[var(--chain-vrm)]"
-              : "text-[var(--chain-vrc)]",
-          )}
-        />
-      </td>
+      {showExtractedBy ? (
+        <td
+          data-label="Extracted by"
+          className="min-w-24 max-w-48 truncate"
+        >
+          <ExtractedByCell
+            block={block}
+            chainId={chainId}
+            className={cn(
+              "text-sm font-medium hover:underline",
+              chainId === "vrm"
+                ? "text-[var(--chain-vrm)]"
+                : "text-[var(--chain-vrc)]",
+            )}
+          />
+        </td>
+      ) : null}
       <td data-label="Mined" className="bc-col-age text-fg-muted">
         <LiveRelativeTime time={block.time} interval="second" fixedWidth />
       </td>

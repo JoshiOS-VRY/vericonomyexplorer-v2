@@ -17,6 +17,18 @@ function findProducerTx(txs, chainId) {
 				return tx;
 			}
 		}
+
+		for (const tx of txs) {
+			if (
+				tx
+				&& typeof tx === "object"
+				&& !isCoinbaseTx(tx)
+				&& Array.isArray(tx.vin)
+				&& tx.vin.length > 0
+			) {
+				return tx;
+			}
+		}
 	}
 
 	for (const tx of txs) {
@@ -34,6 +46,11 @@ function identifyBlockProducer(producerTx, blockHeight, chainId) {
 	}
 
 	const ticker = chainIdToTicker(chainId);
+	const chain = String(chainId || "").toLowerCase();
+
+	if (chain === "vrc" && !isCoinbaseTx(producerTx)) {
+		return utils.identifyStaker(producerTx, Number(blockHeight), ticker);
+	}
 
 	if (isCoinstakeTx(producerTx)) {
 		return utils.identifyStaker(producerTx, Number(blockHeight), ticker);

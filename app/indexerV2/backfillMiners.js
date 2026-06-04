@@ -77,10 +77,27 @@ function resolveProducerTx(db, chainId, block) {
 	const chain = String(chainId || "").toLowerCase();
 
 	if (chain === "vrc") {
+		const producerFilter = `
+			chain_id = ? AND block_height = ?
+			AND (
+				is_coinstake = 1
+				OR (
+					is_coinbase = 0
+					AND tx_index = (
+						SELECT MIN(t2.tx_index)
+						FROM transactions t2
+						WHERE t2.chain_id = transactions.chain_id
+							AND t2.block_height = transactions.block_height
+							AND t2.is_coinbase = 0
+					)
+				)
+			)
+		`;
 		const txRow = db.prepare(`
 			SELECT raw_json
 			FROM transactions
-			WHERE chain_id = ? AND block_height = ? AND is_coinstake = 1
+			WHERE ${producerFilter}
+			ORDER BY is_coinstake DESC, tx_index ASC
 			LIMIT 1
 		`).get(chain, block.height);
 
@@ -96,8 +113,21 @@ function resolveProducerTx(db, chainId, block) {
 			SELECT v.n, v.address, v.value_sats
 			FROM vouts v
 			INNER JOIN transactions t ON t.chain_id = v.chain_id AND t.txid = v.txid
-			WHERE v.chain_id = ? AND t.block_height = ? AND t.is_coinstake = 1
-			ORDER BY v.n ASC
+			WHERE t.chain_id = ? AND t.block_height = ?
+				AND (
+					t.is_coinstake = 1
+					OR (
+						t.is_coinbase = 0
+						AND t.tx_index = (
+							SELECT MIN(t2.tx_index)
+							FROM transactions t2
+							WHERE t2.chain_id = t.chain_id
+								AND t2.block_height = t.block_height
+								AND t2.is_coinbase = 0
+						)
+					)
+				)
+			ORDER BY t.is_coinstake DESC, t.tx_index ASC, v.n ASC
 		`).all(chain, block.height);
 
 		if (vouts.length === 0) {

@@ -37,4 +37,22 @@ assert.equal(mapped.extractedBy, null);
 const direct = utils.identifyStaker(coinstakeTx, 1_000_000, "VRC");
 assert.equal(direct.name, "VSMqKZYWvnBZ6A577rAQCyrJRmyyeHuSPR");
 
+const pubkeyhashKernel = {
+	blockhash: "def",
+	vin: [{ txid: "aa", vout: 1 }],
+	vout: [
+		{ value: 0, scriptPubKey: { type: "pubkeyhash", address: "Vdeadbeef" } },
+		{
+			value: 3,
+			scriptPubKey: { address: "VRCrewardaddr0000000000000000001" },
+		},
+	],
+};
+assert.ok(isCoinstakeTx(pubkeyhashKernel), "pubkeyhash kernel should be coinstake");
+const rewardOnly = {
+	vin: [{ txid: "bb", vout: 0 }],
+	vout: [{ value: 1.25, scriptPubKey: { address: "VRCrewardaddr0000000000000000002" } }],
+};
+assert.ok(isCoinstakeTx(rewardOnly), "single-reward prevout tx should be coinstake");
+
 console.log("blockProducer tests passed");
