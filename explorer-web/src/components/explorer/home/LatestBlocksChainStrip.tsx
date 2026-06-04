@@ -486,11 +486,6 @@ function BlockChainTableRow({
               {formatHeight(block.height)}
             </span>
           )}
-          {isNewest ? (
-            <span className="block-chain-table__latest-badge" aria-label="Most recent block">
-              Latest
-            </span>
-          ) : null}
         </div>
       </td>
       <td
