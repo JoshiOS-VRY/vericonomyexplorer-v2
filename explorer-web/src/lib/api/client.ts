@@ -87,8 +87,16 @@ export async function fetchChainSummary(chainId: string): Promise<ChainSummary> 
   return clientApiFetch<ChainSummary>(`/${chainId}/summary/lite`);
 }
 
-export async function fetchLatestBlocks(chainId: string): Promise<IndexedBlock[]> {
-  return clientApiFetch<IndexedBlock[]>(`/${chainId}/blocks/latest`);
+export async function fetchLatestBlocks(
+  chainId: string,
+  params: { limit?: number } = {},
+): Promise<IndexedBlock[]> {
+  const search = new URLSearchParams();
+  if (params.limit != null) search.set("limit", String(params.limit));
+  const qs = search.toString();
+  return clientApiFetch<IndexedBlock[]>(
+    `/${chainId}/blocks/latest${qs ? `?${qs}` : ""}`,
+  );
 }
 
 export async function fetchBlocksPageClient(

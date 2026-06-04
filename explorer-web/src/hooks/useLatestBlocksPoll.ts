@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTipStream } from "@/components/explorer/TipStreamProvider";
-import { fetchLatestBlocks } from "@/lib/api/client";
+import { fetchBlocksPageClient, fetchLatestBlocks } from "@/lib/api/client";
 import { usePageVisible } from "@/hooks/usePageVisible";
 import type { IndexedBlock } from "@/lib/api/types";
 import {
@@ -24,12 +24,13 @@ export function useLatestBlocksPoll(
   chainId: ChainId,
   seedBlocks: IndexedBlock[] = [],
   chainHeight?: number | null,
+  maxCount: number = LATEST_BLOCKS_COUNT,
 ) {
   const visible = usePageVisible();
   const { subscribe } = useTipStream(chainId);
   const [blocks, setBlocks] = useState<IndexedBlock[]>(() =>
     mergeBlocksForDisplay(
-      seedBlocks.slice(0, LATEST_BLOCKS_COUNT),
+      seedBlocks.slice(0, maxCount),
       chainId,
     ),
   );
@@ -40,24 +41,25 @@ export function useLatestBlocksPoll(
   const seedSignature = useMemo(
     () =>
       seedBlocks
-        .slice(0, LATEST_BLOCKS_COUNT)
+        .slice(0, maxCount)
         .map((block) => `${block.height}:${block.hash}`)
         .join("|"),
-    [seedBlocks],
+    [maxCount, seedBlocks],
   );
 
   const applyDisplayBlocks = useCallback(
     (prev: IndexedBlock[], incoming: IndexedBlock[]) => {
       const merged = mergeBlocksForDisplay(
-        enrichBlocksFromPrevious(prev, incoming, LATEST_BLOCKS_COUNT),
+        enrichBlocksFromPrevious(prev, incoming, maxCount),
         chainId,
+        maxCount,
       );
       if (areDisplayBlocksEqual(merged, prev)) {
         return prev;
       }
       return merged;
     },
-    [chainId],
+    [chainId, maxCount],
   );
 
   useEffect(() => {
@@ -88,7 +90,15 @@ export function useLatestBlocksPoll(
     inFlightRef.current = true;
     setIsRefreshing(true);
     try {
-      const next = await fetchLatestBlocks(chainId);
+      const next =
+        maxCount > LATEST_BLOCKS_COUNT
+          ? (
+              await fetchBlocksPageClient(chainId, {
+                limit: maxCount,
+                offset: 0,
+              })
+            ).items
+          : await fetchLatestBlocks(chainId, { limit: maxCount });
       setBlocks((prev) => applyDisplayBlocks(prev, next));
       setError(null);
     } catch (err) {
@@ -99,7 +109,7 @@ export function useLatestBlocksPoll(
       inFlightRef.current = false;
       setIsRefreshing(false);
     }
-  }, [applyDisplayBlocks, chainId, visible]);
+  }, [applyDisplayBlocks, chainId, maxCount, visible]);
 
   useEffect(() => {
     const top = seedBlocks[0];

@@ -54,6 +54,14 @@ import { fetchVrmDashboardBundle } from "../data/vrmDashboard.js";
 
 import { onAnyTip } from "../live/brokers.js";
 
+function latestBlocksLimit(value: string | undefined): number {
+  const parsed = Number(value ?? 10);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    return 10;
+  }
+  return Math.min(Math.floor(parsed), 25);
+}
+
 import { parseChainId, type ChainId } from "../types.js";
 
 import { homeCache, homeShellCache } from "./home.js";
@@ -440,7 +448,10 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
 
 
 
-  app.get<{ Params: { chain: string } }>("/v1/:chain/blocks/latest", async (request, reply) => {
+  app.get<{
+    Params: { chain: string };
+    Querystring: { limit?: string };
+  }>("/v1/:chain/blocks/latest", async (request, reply) => {
 
     const chainId = parseChainId(request.params.chain);
 
@@ -450,15 +461,17 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
 
     }
 
+    const limit = latestBlocksLimit(request.query.limit);
+
 
 
     const cached = await swrFetch(
 
       latestBlocksCache,
 
-      cacheKey(chainId, "latest-blocks"),
+      cacheKey(chainId, "latest-blocks", String(limit)),
 
-      async () => ({ blocks: await fetchLatestBlocks(chainId) }),
+      async () => ({ blocks: await fetchLatestBlocks(chainId, { limit }) }),
 
     );
 

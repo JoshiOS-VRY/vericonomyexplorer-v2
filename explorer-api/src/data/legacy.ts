@@ -55,6 +55,9 @@ export async function fetchLatestBlocks(
   options: Record<string, unknown> = {},
 ) {
   const queryOptions = { ...summaryQueryOptions, ...options };
+  if (options.limit != null) {
+    queryOptions.limit = options.limit;
+  }
   const indexed = (await runIndexerQuery<Record<string, unknown>>(
     "getLatestBlocksIndexed",
     [chainId],
