@@ -16,7 +16,7 @@ const {
 	isCoinbaseTx,
 	isCoinstakeTx
 } = require("./valueUtils.js");
-const { findProducerTx, mapBlockProducerFields } = require("./blockProducer.js");
+const { chainIdToTicker, mapMinerFields } = require("./miningPoolConfigs.js");
 
 function computeBlockEnrichment(block, chainId) {
 	const txs = Array.isArray(block.tx) ? block.tx : [];
@@ -28,8 +28,12 @@ function computeBlockEnrichment(block, chainId) {
 		}
 	}
 
-	const producerTx = findProducerTx(txs, chainId);
-	const mapped = mapBlockProducerFields(producerTx, Number(block.height), chainId);
+	const coinbaseTx = txs.length > 0 && typeof txs[0] === "object" ? txs[0] : null;
+	const ticker = chainIdToTicker(chainId);
+	const miner = coinbaseTx
+		? utils.identifyMiner(coinbaseTx, Number(block.height), ticker)
+		: null;
+	const mapped = mapMinerFields(miner);
 
 	return {
 		output_count: outputCount > 0 ? outputCount : null,

@@ -632,78 +632,6 @@ function identifyMiner(coinbaseTx, blockHeight, ticker) {
 	return null;
 }
 
-/** VeriCoin PoS blocks: staker is the coinstake tx (first vout is kernel, reward on later vouts). */
-function identifyStaker(coinstakeTx, blockHeight, ticker) {
-	if (coinstakeTx == null || !Array.isArray(coinstakeTx.vout) || coinstakeTx.vout.length === 0) {
-		return null;
-	}
-
-	const miningPoolConfigs = require("./indexerV2/miningPoolConfigs.js");
-	const configSets = miningPoolConfigs.getMiningPoolConfigsForIdentify(ticker);
-
-	for (const miningPoolsConfigs of configSets) {
-		for (let i = 0; i < miningPoolsConfigs.length; i++) {
-			const miningPoolsConfig = miningPoolsConfigs[i];
-
-			for (const payoutAddress in miningPoolsConfig.payout_addresses) {
-				if (!Object.prototype.hasOwnProperty.call(miningPoolsConfig.payout_addresses, payoutAddress)) {
-					continue;
-				}
-
-				for (const vout of coinstakeTx.vout) {
-					if (getVoutAddresses(vout).includes(payoutAddress)) {
-						const minerInfo = miningPoolsConfig.payout_addresses[payoutAddress];
-						minerInfo.identifiedBy = "stake payout address " + payoutAddress;
-
-						return minerInfo;
-					}
-				}
-			}
-
-			for (const blockHash in miningPoolsConfig.block_hashes) {
-				if (blockHash === coinstakeTx.blockhash) {
-					const minerInfo = miningPoolsConfig.block_hashes[blockHash];
-					minerInfo.identifiedBy = "known block hash '" + blockHash + "'";
-
-					return minerInfo;
-				}
-			}
-
-			if (global.activeBlockchain == "main" && miningPoolsConfig.block_heights) {
-				for (const minerName in miningPoolsConfig.block_heights) {
-					const minerInfo = miningPoolsConfig.block_heights[minerName];
-					minerInfo.name = minerName;
-
-					if (minerInfo.heights.includes(blockHeight)) {
-						minerInfo.identifiedBy = "known block height #" + blockHeight;
-
-						return minerInfo;
-					}
-				}
-			}
-		}
-	}
-
-	for (let i = 0; i < coinstakeTx.vout.length; i++) {
-		const vout = coinstakeTx.vout[i];
-		const voutValue = new Decimal(vout.value);
-
-		if (voutValue > 0) {
-			const address = getVoutAddress(vout);
-
-			if (address) {
-				return {
-					name: address,
-					type: "address-only",
-					identifiedBy: "stake output " + address,
-				};
-			}
-		}
-	}
-
-	return null;
-}
-
 function getTxTotalInputOutputValues(tx, txInputs, blockHeight) {
 	let totalInputValue = new Decimal(0);
 	let totalOutputValue = new Decimal(0);
@@ -1779,7 +1707,6 @@ module.exports = {
 	randomInt: randomInt,
 	logMemoryUsage: logMemoryUsage,
 	identifyMiner: identifyMiner,
-	identifyStaker: identifyStaker,
 	getBlockTotalFeesFromCoinbaseTxAndBlockHeight: getBlockTotalFeesFromCoinbaseTxAndBlockHeight,
 	estimatedSupply: estimatedSupply,
 	refreshExchangeRates: refreshExchangeRates,
