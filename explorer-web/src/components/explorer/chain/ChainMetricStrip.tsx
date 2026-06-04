@@ -31,7 +31,7 @@ export function ChainMetricStrip({
   const vrmDifficulty = tipDifficulty ?? vrmNetwork?.difficulty ?? null;
 
   return (
-    <BcStatGrid className="grid-cols-4 sm:grid-cols-4">
+    <BcStatGrid className="grid-cols-1 sm:grid-cols-4">
       <BcStat
         label="Block height"
         value={formatHeight(chainHeight)}

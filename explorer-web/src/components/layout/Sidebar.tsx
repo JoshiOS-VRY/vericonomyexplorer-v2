@@ -103,8 +103,8 @@ export function Sidebar({ pathname }: { pathname: string }) {
     <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-bg-subtle lg:sticky lg:top-0 lg:flex lg:h-screen">
       <div className="flex items-center gap-3 px-4 py-4">
         <Image
-          src="/img/vericonomy/verium-logo.svg"
-          alt="Verium"
+          src="/img/vericonomy/binary-chain-icon.svg"
+          alt="Vericonomy"
           width={36}
           height={36}
           className="h-9 w-9 shrink-0 rounded-lg object-contain"

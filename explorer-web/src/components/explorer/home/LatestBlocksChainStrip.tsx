@@ -200,43 +200,75 @@ export function ChainHubSection({
         ) : (
           <>
             {stripBlocks.length > 0 ? (
-              <div className="block-chain-strip-panel mx-3 mb-3 mt-3">
-                <div className="block-chain-strip-panel__meta">
-                  <span>Older</span>
-                  <span className="block-chain-strip-panel__meta-divider" />
-                  <span>Newest</span>
+              <>
+                <div className="block-chain-strip-panel mx-3 mb-3 mt-3 hidden sm:block">
+                  <div className="block-chain-strip-panel__meta">
+                    <span>Older</span>
+                    <span className="block-chain-strip-panel__meta-divider" />
+                    <span>Newest</span>
+                  </div>
+                  <div
+                    className="block-chain-strip"
+                    aria-label={`Latest ${stripBlocks.length} ${config.ticker} blocks, oldest to newest`}
+                  >
+                    <div className="block-chain-strip__track" aria-hidden>
+                      <span className="block-chain-strip__track-base" />
+                      <span className="block-chain-strip__track-flow" />
+                    </div>
+                    <div className="block-chain-strip__nodes">
+                      {stripBlocks.map((block, index) => (
+                        <BlockChainStripCell
+                          key={block.hash}
+                          block={block}
+                          chainLogo={config.logo}
+                          blockHref={config.blockHref?.(block.height)}
+                          isTip={index === stripBlocks.length - 1}
+                          tipLive={atTip && index === stripBlocks.length - 1}
+                          indexing={
+                            index === stripBlocks.length - 1 &&
+                            isOptimisticTipBlock(block, chainId)
+                          }
+                          ageIndex={index}
+                          totalCount={stripBlocks.length}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <div
-                  className="block-chain-strip"
-                  aria-label={`Latest ${stripBlocks.length} ${config.ticker} blocks, oldest to newest`}
+                  className="block-chain-strip-mobile mx-3 mb-3 mt-3 sm:hidden"
+                  aria-label={`Latest ${stripBlocks.length} ${config.ticker} blocks`}
                 >
-                  <div className="block-chain-strip__track" aria-hidden>
-                    <span className="block-chain-strip__track-base" />
-                    <span className="block-chain-strip__track-flow" />
-                  </div>
-                  <div className="block-chain-strip__nodes">
-                    {stripBlocks.map((block, index) => (
-                      <BlockChainStripCell
-                        key={block.hash}
-                        block={block}
-                        chainLogo={config.logo}
-                        blockHref={config.blockHref?.(block.height)}
-                        isTip={index === stripBlocks.length - 1}
-                        tipLive={atTip && index === stripBlocks.length - 1}
-                        indexing={
-                          index === stripBlocks.length - 1 &&
-                          isOptimisticTipBlock(block, chainId)
-                        }
-                        ageIndex={index}
-                        totalCount={stripBlocks.length}
-                      />
-                    ))}
-                  </div>
+                  {stripBlocks.map((block, index) => (
+                    <BlockChainStripMobileCard
+                      key={block.hash}
+                      block={block}
+                      blockHref={config.blockHref?.(block.height)}
+                      isTip={index === stripBlocks.length - 1}
+                      tipLive={atTip && index === stripBlocks.length - 1}
+                      indexing={
+                        index === stripBlocks.length - 1 &&
+                        isOptimisticTipBlock(block, chainId)
+                      }
+                    />
+                  ))}
                 </div>
-              </div>
+              </>
             ) : null}
 
-            <div className="block-chain-table-wrap overflow-x-auto border-t border-border">
+            <div className="block-chain-table-mobile-list mx-3 mb-3 space-y-2 sm:hidden">
+              {tableRows.map((block) => (
+                <BlockChainMobileCard
+                  key={block.hash}
+                  block={block}
+                  chainId={chainId}
+                  producerColumnLabel={producerColumnLabel}
+                  blockHref={config.blockHref?.(block.height)}
+                />
+              ))}
+            </div>
+
+            <div className="block-chain-table-wrap hidden overflow-x-auto border-t border-border sm:block">
               <div className="block-chain-table-shell">
                 <table
                   className="bc-table block-chain-table data-table data-table--stack"
@@ -444,6 +476,161 @@ function BlockChainStripCell({
         {`${block.txCount} tx`}
       </span>
     </div>
+  );
+}
+
+function BlockChainStripMobileCard({
+  block,
+  blockHref,
+  isTip,
+  tipLive = false,
+  indexing = false,
+}: {
+  block: IndexedBlock;
+  blockHref?: string;
+  isTip: boolean;
+  tipLive?: boolean;
+  indexing?: boolean;
+}) {
+  const card = (
+    <>
+      <div className="block-chain-strip-mobile__head">
+        <span className="tabular-nums">#{formatHeight(block.height)}</span>
+        {isTip && tipLive ? (
+          <span className="block-chain-strip-mobile__live">Live</span>
+        ) : null}
+      </div>
+      <div className="block-chain-strip-mobile__meta">
+        <span className="tabular-nums">{formatHeight(block.txCount)} tx</span>
+        <span className="truncate">
+          {indexing ? "indexing…" : <LiveRelativeTime time={block.time} interval="second" />}
+        </span>
+      </div>
+    </>
+  );
+
+  return blockHref ? (
+    <Link href={blockHref} prefetch className="block-chain-strip-mobile__card">
+      {card}
+    </Link>
+  ) : (
+    <div className="block-chain-strip-mobile__card">{card}</div>
+  );
+}
+
+function BlockChainMobileCard({
+  block,
+  chainId,
+  producerColumnLabel,
+  blockHref,
+}: {
+  block: IndexedBlock;
+  chainId: ChainId;
+  producerColumnLabel: string;
+  blockHref?: string;
+}) {
+  const hashShort = formatBlockHashShort(block.hash);
+  const indexing = isOptimisticTipBlock(block, chainId);
+  const sizePending = indexing && block.size == null;
+  const difficultyPending = indexing && !block.difficulty;
+
+  return (
+    <article className="block-chain-mobile-card" aria-busy={indexing}>
+      <div className="block-chain-mobile-card__head">
+        <div className="block-chain-mobile-card__height">
+          <span className="block-chain-mobile-card__label">Height</span>
+          {blockHref ? (
+            <BcTableLink href={blockHref} className="tabular-nums" prefetch>
+              {formatHeight(block.height)}
+            </BcTableLink>
+          ) : (
+            <span className="tabular-nums text-fg">{formatHeight(block.height)}</span>
+          )}
+        </div>
+        <div className="text-right">
+          <span className="block-chain-mobile-card__label">Mined</span>
+          <div className="text-sm text-fg-muted">
+            <LiveRelativeTime time={block.time} interval="second" fixedWidth />
+          </div>
+        </div>
+      </div>
+
+      <div className="block-chain-mobile-card__row">
+        <span className="block-chain-mobile-card__label">Hash</span>
+        {blockHref ? (
+          <BcTableLink
+            href={blockHref}
+            className="block-chain-table__hash-link tabular-nums"
+            prefetch
+            title={block.hash}
+          >
+            {hashShort}
+          </BcTableLink>
+        ) : (
+          <span className="block-chain-table__hash-link tabular-nums text-fg-muted" title={block.hash}>
+            {hashShort}
+          </span>
+        )}
+      </div>
+
+      <div className="block-chain-mobile-card__row">
+        <span className="block-chain-mobile-card__label">{producerColumnLabel}</span>
+        <div className="min-w-0">
+          {chainId === "vrm" ? (
+            indexing ? (
+              <BlockFieldLoading label="Extracted by" />
+            ) : (
+              <ExtractedByCell
+                block={block}
+                chainId={chainId}
+                className={
+                  isVeriumPoolExtracted(block)
+                    ? undefined
+                    : "block-chain-table__producer-text text-sm font-medium text-[var(--chain-vrm)] hover:underline"
+                }
+              />
+            )
+          ) : indexing ? (
+            <BlockFieldLoading label="Interest" />
+          ) : (
+            <span className="block-chain-table__producer-text text-sm tabular-nums text-fg-muted">
+              {formatPercent(block.interestRatePercent)}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="block-chain-mobile-card__metrics">
+        <div>
+          <span className="block-chain-mobile-card__label">Txs</span>
+          <div className="tabular-nums">{formatHeight(block.txCount)}</div>
+        </div>
+        <div>
+          <span className="block-chain-mobile-card__label">Size</span>
+          <div className="tabular-nums">
+            {block.size != null ? (
+              `${formatHeight(block.size)} B`
+            ) : sizePending ? (
+              <BlockFieldLoading />
+            ) : (
+              "—"
+            )}
+          </div>
+        </div>
+        <div>
+          <span className="block-chain-mobile-card__label">Difficulty</span>
+          <div className="tabular-nums">
+            {block.difficulty ? (
+              formatDifficulty(block.difficulty)
+            ) : difficultyPending ? (
+              <BlockFieldLoading />
+            ) : (
+              "—"
+            )}
+          </div>
+        </div>
+      </div>
+    </article>
   );
 }
 

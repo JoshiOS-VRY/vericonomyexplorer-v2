@@ -70,7 +70,7 @@ export function InsightsKpiStrip({
   ];
 
   return (
-    <BcStatGrid className="insights-kpi-strip gap-3 rounded-xl border border-border/80 bg-bg-panel/80 p-3 shadow-sm backdrop-blur-sm sm:grid-cols-3">
+    <BcStatGrid className="insights-kpi-strip grid-cols-1 gap-3 rounded-xl border border-border/80 bg-bg-panel/80 p-3 shadow-sm backdrop-blur-sm sm:grid-cols-3">
       {tiles.map((tile) => (
         <div
           key={tile.label}

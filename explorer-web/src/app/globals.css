@@ -1228,6 +1228,114 @@ html:not(.light)
   background: color-mix(in srgb, var(--bg-subtle) 35%, transparent);
 }
 
+.block-chain-strip-mobile {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(8.5rem, 1fr);
+  gap: 0.625rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 0.125rem;
+}
+
+.block-chain-strip-mobile__card {
+  display: block;
+  scroll-snap-align: start;
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, var(--bg-subtle) 70%, transparent);
+  padding: 0.5rem 0.625rem;
+  text-decoration: none;
+}
+
+.block-chain-strip-mobile__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.block-chain-strip-mobile__live {
+  border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  padding: 0.0625rem 0.35rem;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--success);
+}
+
+.block-chain-strip-mobile__meta {
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.6875rem;
+  color: var(--fg-subtle);
+}
+
+.block-chain-mobile-card {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--bg-subtle) 68%, transparent);
+  padding: 0.625rem 0.75rem;
+}
+
+.block-chain-mobile-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.block-chain-mobile-card__height {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.block-chain-mobile-card__row {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+}
+
+.block-chain-mobile-card__row > *:last-child {
+  min-width: 0;
+  text-align: right;
+}
+
+.block-chain-mobile-card__label {
+  display: block;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+
+.block-chain-mobile-card__metrics {
+  margin-top: 0.625rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+}
+
+.block-chain-mobile-card__metrics > div {
+  min-width: 0;
+}
+
 .block-chain-strip__label-dot {
   width: 0.3125rem;
   height: 0.3125rem;
@@ -1306,32 +1414,8 @@ html:not(.light)
     border-radius: 0.625rem;
   }
 
-  .data-table--stack.block-chain-table tbody tr {
-    margin-top: 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: 0.625rem;
-    background: color-mix(in srgb, var(--bg-subtle) 70%, transparent);
-  }
-
-  .data-table--stack.block-chain-table tbody tr:first-child {
-    margin-top: 0;
-  }
-
-  .data-table--stack.block-chain-table tbody tr.block-chain-table-row--latest {
-    border-color: color-mix(
-      in srgb,
-      var(--block-chain-accent) 38%,
-      var(--border)
-    );
-  }
-
-  .data-table--stack.block-chain-table td.block-chain-table__col--height {
-    align-items: center;
-  }
-
-  .data-table--stack.block-chain-table
-    td.block-chain-table__col--height::before {
-    min-width: 4.5rem;
+  .block-chain-table-mobile-list .block-chain-mobile-card:first-child {
+    border-color: color-mix(in srgb, var(--block-chain-accent) 36%, var(--border));
   }
 }
 
