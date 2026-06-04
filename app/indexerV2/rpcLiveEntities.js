@@ -298,12 +298,13 @@ function buildRpcBlockResult(chainId, block, options = {}) {
 	const limit = options.limit ?? 25;
 	const offset = options.offset ?? 0;
 	const tipHeight = options.tipHeight;
-	const coinbaseTx = fullTxs ? txs.find((tx) => isCoinbaseTx(tx)) : null;
-	const ticker = chainIdToTicker(chainId);
-	const miner = coinbaseTx
-		? utils.identifyMiner(coinbaseTx, Number(block.height), ticker)
-		: null;
-	const mapped = mapMinerFields(miner);
+	const { findProducerTx, mapBlockProducerFields } = require("./blockProducer.js");
+	const producerTx = fullTxs ? findProducerTx(txs, chainId) : null;
+	const mapped = mapBlockProducerFields(
+		producerTx,
+		Number(block.height),
+		chainId,
+	);
 
 	return {
 		chainId: String(chainId).toLowerCase(),

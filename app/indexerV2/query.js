@@ -17,6 +17,7 @@ const {
 	chainIdToTicker,
 	mapMinerFields,
 } = require("./miningPoolConfigs.js");
+const { blockHasProducer } = require("./blockProducer.js");
 
 const defaultLimit = 25;
 const maxLimit = 100;
@@ -1640,8 +1641,7 @@ async function enrichLatestBlocks(db, chain, blocks) {
 	}
 
 	const fullyEnriched = blocks.every(block =>
-		block.outputCount != null
-		&& (chain !== "vrm" || block.extractedBy)
+		block.outputCount != null && blockHasProducer(block, chain)
 	);
 
 	if (fullyEnriched) {
@@ -1730,34 +1730,37 @@ async function enrichBlocks(db, chain, blocks) {
 		outputCounts.map(row => [row.height, toNumber(row.count)])
 	);
 
-	const coinbaseVouts = await db.all(`
+	const producerIsCoinstake = chain === "vrc";
+	const producerVouts = await db.all(`
 		SELECT t.block_height AS height, t.txid, v.n, v.address, v.value_sats
 		FROM vouts v
 		INNER JOIN transactions t ON t.chain_id = v.chain_id AND t.txid = v.txid
-		WHERE v.chain_id = ? AND t.block_height IN (${placeholders}) AND t.is_coinbase = 1
+		WHERE v.chain_id = ? AND t.block_height IN (${placeholders})
+			AND t.${producerIsCoinstake ? "is_coinstake" : "is_coinbase"} = 1
 		ORDER BY t.block_height DESC, v.n ASC
 	`, [chain, ...heights]);
-	const coinbaseRawByHeight = Object.fromEntries(
+	const producerRawByHeight = Object.fromEntries(
 		(await db.all(`
 			SELECT block_height AS height, raw_json
 			FROM transactions
-			WHERE chain_id = ? AND block_height IN (${placeholders}) AND is_coinbase = 1
+			WHERE chain_id = ? AND block_height IN (${placeholders})
+				AND ${producerIsCoinstake ? "is_coinstake" : "is_coinbase"} = 1
 		`, [chain, ...heights])).map(row => [row.height, row.raw_json])
 	);
-	const coinbaseVoutsByHeight = {};
+	const producerVoutsByHeight = {};
 
-	for (const row of coinbaseVouts) {
-		if (!coinbaseVoutsByHeight[row.height]) {
-			coinbaseVoutsByHeight[row.height] = [];
+	for (const row of producerVouts) {
+		if (!producerVoutsByHeight[row.height]) {
+			producerVoutsByHeight[row.height] = [];
 		}
-		coinbaseVoutsByHeight[row.height].push(row);
+		producerVoutsByHeight[row.height].push(row);
 	}
 
 	return blocks.map(block => {
-		const coinbaseRows = coinbaseVoutsByHeight[block.height] || [];
-		const coinbaseRaw = coinbaseRawByHeight[block.height] || null;
-		const miner = coinbaseRows.length > 0
-			? identifyMinerFromVouts(coinbaseRows, block, chain, coinbaseRaw)
+		const producerRows = producerVoutsByHeight[block.height] || [];
+		const producerRaw = producerRawByHeight[block.height] || null;
+		const miner = producerRows.length > 0
+			? identifyProducerFromVouts(producerRows, block, chain, producerRaw)
 			: null;
 		const mapped = mapMinerFields(miner);
 		const enriched = Object.assign({}, block, {
@@ -1772,15 +1775,16 @@ async function enrichBlocks(db, chain, blocks) {
 	});
 }
 
-function identifyMinerFromVouts(vouts, block, chainId, coinbaseRawJson) {
-	if (coinbaseRawJson) {
+function identifyProducerFromVouts(vouts, block, chainId, producerRawJson) {
+	const ticker = chainIdToTicker(chainId);
+
+	if (producerRawJson) {
 		try {
-			const coinbaseTx = JSON.parse(coinbaseRawJson);
-			const miner = utils.identifyMiner(
-				coinbaseTx,
-				block.height,
-				chainIdToTicker(chainId),
-			);
+			const producerTx = JSON.parse(producerRawJson);
+			const miner = chainId === "vrc"
+				? utils.identifyStaker(producerTx, block.height, ticker)
+				: utils.identifyMiner(producerTx, block.height, ticker);
+
 			if (miner) {
 				return miner;
 			}
@@ -1789,9 +1793,11 @@ function identifyMinerFromVouts(vouts, block, chainId, coinbaseRawJson) {
 		}
 	}
 
-	const coinbaseTx = {
+	const producerTx = {
 		blockhash: block.hash,
-		vin: [{ coinbase: "00" }],
+		vin: chainId === "vrc"
+			? [{ txid: "00", vout: 0 }]
+			: [{ coinbase: "00" }],
 		vout: vouts.map(row => ({
 			n: row.n,
 			value: Number(row.value_sats) / 100000000,
@@ -1799,7 +1805,9 @@ function identifyMinerFromVouts(vouts, block, chainId, coinbaseRawJson) {
 		}))
 	};
 
-	return utils.identifyMiner(coinbaseTx, block.height, chainIdToTicker(chainId));
+	return chainId === "vrc"
+		? utils.identifyStaker(producerTx, block.height, ticker)
+		: utils.identifyMiner(producerTx, block.height, ticker);
 }
 
 function mapTransaction(tx) {

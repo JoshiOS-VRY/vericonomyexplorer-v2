@@ -1,14 +1,10 @@
 "use strict";
 
-const utils = require("../utils.js");
 const { getChainConfig, getRpcCredentials } = require("./chainConfig.js");
 const { createRpcClient } = require("./rpcClient.js");
 const { atomicUnitsToDecimal } = require("./valueUtils.js");
-const {
-	attachMinerLink,
-	chainIdToTicker,
-	mapMinerFields,
-} = require("./miningPoolConfigs.js");
+const { attachMinerLink } = require("./miningPoolConfigs.js");
+const { findProducerTx, mapBlockProducerFields } = require("./blockProducer.js");
 const {
 	buildRpcBlockResult,
 	lookupRpcTransaction,
@@ -126,12 +122,15 @@ async function enrichBlockMiners(chainId, blocks, options = {}) {
 
 function mapRpcBlock(block, verbosity = 2, chainId = "vrm") {
 	const txs = Array.isArray(block.tx) ? block.tx : [];
-	const coinbaseTx = verbosity >= 2 && txs.length > 0 && typeof txs[0] === "object" ? txs[0] : null;
-	const ticker = chainIdToTicker(chainId);
-	const miner = coinbaseTx
-		? utils.identifyMiner(coinbaseTx, Number(block.height), ticker)
-		: null;
-	const mapped = mapMinerFields(miner);
+	const fullTxs = verbosity >= 2
+		? txs.filter((tx) => tx && typeof tx === "object")
+		: [];
+	const producerTx = verbosity >= 2 ? findProducerTx(fullTxs, chainId) : null;
+	const mapped = mapBlockProducerFields(
+		producerTx,
+		Number(block.height),
+		chainId,
+	);
 
 	return attachMinerLink({
 		height: Number(block.height),
