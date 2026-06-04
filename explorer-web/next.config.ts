@@ -22,10 +22,21 @@ function resolveFastApiBase(): string {
   return `http://${host}:${port}`;
 }
 
+function resolveSiteUrl(): string {
+  const raw =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.EXPLORER_SITE_URL ??
+    process.env.BTCEXP_PUBLIC_URL ??
+    "https://explorer.vericonomy.com";
+  return raw.trim().replace(/\/$/, "");
+}
+
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: rootDir,
   env: {
+    NEXT_PUBLIC_SITE_URL: resolveSiteUrl(),
+    EXPLORER_SITE_URL: resolveSiteUrl(),
     EXPLORER_API_URL: resolveApiBase(),
     EXPLORER_FAST_API_URL: resolveFastApiBase(),
     NEXT_PUBLIC_EXPLORER_FAST_API_URL: resolveFastApiBase(),

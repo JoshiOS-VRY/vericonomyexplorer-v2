@@ -1,7 +1,10 @@
 import { loadRootEnv } from "@/lib/env";
 
 /** Production default when no public URL env is configured. */
-export const DEFAULT_SITE_URL = "https://explorer-vrm.vericonomy.com";
+export const DEFAULT_SITE_URL = "https://explorer.vericonomy.com";
+
+/** Submit this URL in Google Search Console → Sitemaps. */
+export const SITEMAP_URL = `${DEFAULT_SITE_URL}/sitemap.xml`;
 
 export const SITE_NAME = "Vericonomy Explorer";
 
