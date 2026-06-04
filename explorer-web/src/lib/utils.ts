@@ -19,6 +19,33 @@ export function formatNumber(value: number | null | undefined): string {
   return value.toLocaleString(EXPLORER_LOCALE);
 }
 
+/** Full-precision coin amount with thousands separators (SSR-safe en-US). */
+export function formatCoinAmount(amount: string | number): string {
+  if (typeof amount === "number") {
+    if (!Number.isFinite(amount)) return "—";
+    return amount.toLocaleString(EXPLORER_LOCALE, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 20,
+      useGrouping: true,
+    });
+  }
+
+  const trimmed = amount.trim();
+  if (trimmed === "" || trimmed === "—" || trimmed === "N/A") return trimmed;
+
+  const normalized = trimmed.replace(/,/g, "");
+  const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(normalized);
+  if (!match) return trimmed;
+
+  const [, sign, intPart, fracPart] = match;
+  const intNum = Number.parseInt(intPart, 10);
+  if (!Number.isFinite(intNum)) return trimmed;
+
+  const formattedInt = intNum.toLocaleString(EXPLORER_LOCALE);
+  const body = fracPart !== undefined ? `${formattedInt}.${fracPart}` : formattedInt;
+  return sign ? `${sign}${body}` : body;
+}
+
 /** Compact coin balance for tables (e.g. 264.27K, 2.20M). */
 export function formatCompactBalance(amount: string | number): string {
   const num = typeof amount === "string" ? Number.parseFloat(amount) : amount;

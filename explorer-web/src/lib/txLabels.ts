@@ -4,7 +4,7 @@ import type {
   IndexedTransaction,
   TxOutput,
 } from "@/lib/api/types";
-import { formatNumber } from "@/lib/utils";
+import { formatCoinAmount, formatNumber } from "@/lib/utils";
 
 export type OutputRole = "payment" | "change" | "mining" | "unknown";
 
@@ -177,7 +177,7 @@ export function aggregateAddressEvents(events: AddressEvent[]): AggregatedAddres
 }
 
 export function formatAmountPair(amount: { amount: string; ticker: string }): string {
-  return `${amount.amount} ${amount.ticker}`;
+  return `${formatCoinAmount(amount.amount)} ${amount.ticker}`;
 }
 
 export function uniqueRelatedAddresses(

@@ -7,7 +7,7 @@ import {
 import { BcPageHeader, BcPanel } from "@/components/explorer/BlockchairUi";
 import { getRichlist } from "@/lib/api/indexer";
 import { formatExplorerUserMessage } from "@/lib/explorerCopy";
-import { normalizeLimit, normalizeOffset } from "@/lib/utils";
+import { formatCoinAmount, normalizeLimit, normalizeOffset } from "@/lib/utils";
 import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = pageMetadata(staticPageSeo.vrcRichlist);
@@ -85,13 +85,13 @@ export default async function VrcRichlistPage({
                     <span className="text-sm break-all">{item.address}</span>
                   </td>
                   <td className="text-right font-medium tabular-nums">
-                    {item.balance.amount} {item.balance.ticker}
+                    {formatCoinAmount(item.balance.amount)} {item.balance.ticker}
                   </td>
                   <td className="text-right tabular-nums text-fg-muted">
-                    {item.totalReceived.amount}
+                    {formatCoinAmount(item.totalReceived.amount)}
                   </td>
                   <td className="text-right tabular-nums text-fg-muted">
-                    {item.totalSent.amount}
+                    {formatCoinAmount(item.totalSent.amount)}
                   </td>
                   <td className="text-right tabular-nums text-fg-muted">
                     {formatHeight(item.txCount)}

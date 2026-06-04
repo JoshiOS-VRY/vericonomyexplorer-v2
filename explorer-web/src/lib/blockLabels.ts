@@ -1,5 +1,5 @@
 import type { IndexedBlock } from "@/lib/api/types";
-import { formatNumber } from "@/lib/utils";
+import { formatCoinAmount, formatNumber } from "@/lib/utils";
 
 export function formatBlockConfirmationLabel(confirmations: number | null | undefined): string {
   const count =
@@ -37,5 +37,5 @@ export function minerDisplayName(
 }
 
 export function formatAmountPair(amount: { amount: string; ticker: string }): string {
-  return `${amount.amount} ${amount.ticker}`;
+  return `${formatCoinAmount(amount.amount)} ${amount.ticker}`;
 }
