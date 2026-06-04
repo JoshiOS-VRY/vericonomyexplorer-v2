@@ -27,7 +27,7 @@ export function ChainMetricStrip({
 }) {
   const tipDifficulty = tipBlock?.difficulty;
   const vrmNetwork = chainId === "vrm" ? (network as VrmNetworkStats | null) : null;
-  const vrcNetwork = chainId === "vrc" ? network : null;
+  const vrcNetwork = chainId === "vrc" ? (network as VrcNetworkStats | null) : null;
   const vrmDifficulty = tipDifficulty ?? vrmNetwork?.difficulty ?? null;
 
   return (
