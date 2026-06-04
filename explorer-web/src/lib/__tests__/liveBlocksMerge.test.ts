@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import {
+  areDisplayBlocksEqual,
   createOptimisticTipBlock,
   enrichBlocksFromPrevious,
   isIndexedBlockTableReady,
@@ -75,6 +76,14 @@ describe("liveBlocksMerge", () => {
     );
     expect(displayed.map((entry) => entry.height)).toEqual([101, 100, 99]);
     expect(isIndexedBlockTableReady(displayed[0]!, "vrm")).toBe(false);
+  });
+
+  it("detects enriched tip rows with the same hash", () => {
+    const stub = tipStub(101, "same-hash");
+    const enriched = block(101, "same-hash");
+
+    expect(areDisplayBlocksEqual([stub], [stub])).toBe(true);
+    expect(areDisplayBlocksEqual([stub], [enriched])).toBe(false);
   });
 
   it("drops non-tip optimistic rows from display", () => {

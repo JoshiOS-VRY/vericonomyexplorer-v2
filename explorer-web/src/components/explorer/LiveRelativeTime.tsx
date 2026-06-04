@@ -20,7 +20,7 @@ export function LiveRelativeTime({
   fixedWidth?: boolean;
 }) {
   const [mounted, setMounted] = useState(false);
-  useRelativeTimeTick(interval);
+  const tick = useRelativeTimeTick(interval);
 
   useEffect(() => {
     setMounted(true);
@@ -40,6 +40,8 @@ export function LiveRelativeTime({
       </span>
     );
   }
+
+  void tick;
 
   return (
     <span className={classes} title={title}>

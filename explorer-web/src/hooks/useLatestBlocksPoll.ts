@@ -11,9 +11,11 @@ import {
 } from "@/lib/chainBlocksDisplay";
 import type { ChainId } from "@/lib/chainDisplay";
 import {
+  areDisplayBlocksEqual,
   createOptimisticTipBlock,
   enrichBlocksFromPrevious,
   isIndexedBlockTableReady,
+  isOptimisticTipBlock,
   mergeBlocksForDisplay,
   shouldApplyOptimisticTip,
 } from "@/lib/liveBlocksMerge";
@@ -50,10 +52,7 @@ export function useLatestBlocksPoll(
         enrichBlocksFromPrevious(prev, incoming, LATEST_BLOCKS_COUNT),
         chainId,
       );
-      if (
-        merged.length === prev.length &&
-        merged.every((block, index) => block.hash === prev[index]?.hash)
-      ) {
+      if (areDisplayBlocksEqual(merged, prev)) {
         return prev;
       }
       return merged;
@@ -108,6 +107,22 @@ export function useLatestBlocksPoll(
       void refresh();
     }
   }, [chainId, refresh, seedBlocks, seedSignature]);
+
+  const indexingTip =
+    blocks[0] != null && isOptimisticTipBlock(blocks[0], chainId);
+
+  useEffect(() => {
+    if (!visible || !indexingTip) {
+      return;
+    }
+
+    void refresh();
+    const fastPoll = window.setInterval(() => {
+      void refresh();
+    }, 1_000);
+
+    return () => window.clearInterval(fastPoll);
+  }, [chainId, indexingTip, refresh, visible]);
 
   useEffect(() => {
     if (

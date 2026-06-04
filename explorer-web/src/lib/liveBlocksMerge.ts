@@ -103,6 +103,35 @@ export function shouldApplyOptimisticTip(
   return tipHeight === topHeight + 1;
 }
 
+/** Whether two latest-blocks lists are equivalent for UI (hash-only checks miss enrichment). */
+export function areDisplayBlocksEqual(
+  a: IndexedBlock[],
+  b: IndexedBlock[],
+): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  return a.every((block, index) => {
+    const other = b[index];
+    if (!other) {
+      return false;
+    }
+
+    return (
+      block.height === other.height &&
+      block.hash === other.hash &&
+      block.time === other.time &&
+      block.txCount === other.txCount &&
+      block.size === other.size &&
+      block.difficulty === other.difficulty &&
+      block.interestRatePercent === other.interestRatePercent &&
+      block.extractedBy === other.extractedBy &&
+      block.extractedByAddress === other.extractedByAddress
+    );
+  });
+}
+
 export function shouldApplyFetchedBlocks(
   fetchedTop: number | null,
   currentTop: number | null,
