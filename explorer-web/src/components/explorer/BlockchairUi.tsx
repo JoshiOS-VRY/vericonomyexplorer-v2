@@ -43,7 +43,7 @@ export function BcStatGrid({
   return (
     <div
       className={cn(
-        "bc-stat-grid grid grid-cols-2 gap-3 px-3 py-2 sm:grid-cols-3 lg:gap-4",
+        "bc-stat-grid grid grid-cols-2 gap-3 py-2 sm:grid-cols-3 lg:gap-4",
         className,
       )}
     >
@@ -121,7 +121,12 @@ export function BcPanel({
         <h2 className="text-base font-bold text-fg">{title}</h2>
         {action}
       </div>
-      <div className={cn(flush ? bodyClassName : "p-4 sm:p-5", !flush && bodyClassName)}>
+      <div
+        className={cn(
+          flush ? bodyClassName : "p-4 sm:p-5",
+          !flush && bodyClassName,
+        )}
+      >
         {children}
       </div>
     </section>
@@ -163,7 +168,8 @@ export function BcHashLink({
   prefetch?: boolean;
 }) {
   const parsed = parseAddressFromExplorerHref(href);
-  const address = parsed?.address ?? (isVeriumPoolPayoutAddress(value) ? value : null);
+  const address =
+    parsed?.address ?? (isVeriumPoolPayoutAddress(value) ? value : null);
 
   if (parsed && address) {
     return (
