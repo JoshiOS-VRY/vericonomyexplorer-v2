@@ -16,6 +16,7 @@ WORKDIR /app
 
 COPY package.json npm-shrinkwrap.json ./
 COPY explorer-web ./explorer-web
+COPY packages/network-metrics /packages/network-metrics
 COPY --from=deps /app/explorer-web/node_modules ./explorer-web/node_modules
 
 WORKDIR /app/explorer-web
