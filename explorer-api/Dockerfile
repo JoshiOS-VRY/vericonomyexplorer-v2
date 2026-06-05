@@ -16,12 +16,19 @@ COPY package.json npm-shrinkwrap.json ./
 RUN npm ci && npm rebuild better-sqlite3
 
 # Install explorer-api deps and build.
+COPY packages/network-metrics /packages/network-metrics
 COPY explorer-api/package.json explorer-api/package-lock.json ./explorer-api/
 RUN npm --prefix explorer-api ci && npm rebuild zeromq --prefix explorer-api
 
 COPY . .
+RUN rm -rf explorer-api/node_modules/@vericonomy/network-metrics \
+  && mkdir -p explorer-api/node_modules/@vericonomy \
+  && cp -r /packages/network-metrics explorer-api/node_modules/@vericonomy/network-metrics
 RUN npm --prefix explorer-api run build
 RUN npm prune --omit=dev && npm --prefix explorer-api prune --omit=dev
+RUN rm -rf explorer-api/node_modules/@vericonomy/network-metrics \
+  && mkdir -p explorer-api/node_modules/@vericonomy \
+  && cp -r /packages/network-metrics explorer-api/node_modules/@vericonomy/network-metrics
 
 FROM node:20-bookworm-slim AS runner
 
@@ -38,6 +45,7 @@ ENV VCEXP_FAST_API_PORT=3003
 
 RUN groupadd --system --gid 1001 nodejs && useradd --system --uid 1001 --gid nodejs fastapi
 
+COPY --from=build /packages/network-metrics /packages/network-metrics
 COPY --from=build --chown=fastapi:nodejs /app /app
 
 USER fastapi

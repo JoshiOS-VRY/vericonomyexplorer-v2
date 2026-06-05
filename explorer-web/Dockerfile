@@ -4,6 +4,7 @@ WORKDIR /app
 
 # explorer-web depends on the root package via file:..
 COPY package.json npm-shrinkwrap.json ./
+COPY packages/network-metrics /packages/network-metrics
 COPY explorer-web/package.json explorer-web/package-lock.json ./explorer-web/
 
 WORKDIR /app/explorer-web
