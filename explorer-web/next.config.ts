@@ -3,6 +3,7 @@ import path from "node:path";
 import { config as loadDotenv } from "dotenv";
 
 const rootDir = path.join(__dirname, "..");
+const monorepoRoot = path.join(__dirname, "../..");
 loadDotenv({ path: path.join(rootDir, ".env") });
 loadDotenv({ path: path.join(rootDir, ".env.local"), override: true });
 
@@ -33,7 +34,11 @@ function resolveSiteUrl(): string {
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  outputFileTracingRoot: rootDir,
+  outputFileTracingRoot: monorepoRoot,
+  transpilePackages: ["@vericonomy/network-metrics"],
+  turbopack: {
+    root: monorepoRoot,
+  },
   env: {
     NEXT_PUBLIC_SITE_URL: resolveSiteUrl(),
     EXPLORER_SITE_URL: resolveSiteUrl(),

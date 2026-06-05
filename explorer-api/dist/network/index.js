@@ -1,6 +1,7 @@
 import { runIndexerQuery } from "../db/queryPool.js";
 import { rpc } from "../rpc/index.js";
-import { fetchOnChainSupply, fetchVrmHashrate, getMaxSupply, getTargetBlockTimeSeconds, hashPerSecToKhPerMin, parseRpcNumber, parseVrcMiningInfo, resolveVrmBlockTimeMinutes, supplyFromBlockchainInfo, } from "./stats.js";
+import { fetchCanonicalVrmHashrate } from "./hashrateLive.js";
+import { fetchOnChainSupply, getMaxSupply, parseRpcNumber, parseVrcMiningInfo, resolveVrmBlockTimeMinutes, supplyFromBlockchainInfo, } from "./stats.js";
 function rpcCall(chainId) {
     const client = rpc(chainId);
     return (method, params = [], timeoutMs) => client.call(method, params, timeoutMs);
@@ -79,27 +80,29 @@ async function resolveVrcSupply(call, blocks, blockchainInfo) {
     }
     return fetchIndexedSupply("vrc", blocks);
 }
-function difficultyToHashrateKhPerMin(difficulty, chainId = "vrm") {
-    if (!Number.isFinite(difficulty) || difficulty <= 0) {
-        return null;
+function mapHashrateSource(source) {
+    if (source === "networkhashps" ||
+        source === "nethashrate" ||
+        source === "getnetworkhashps" ||
+        source === "difficulty") {
+        return source;
     }
-    const targetBlockTimeSeconds = getTargetBlockTimeSeconds(chainId);
-    const hashPerSec = (difficulty * 2 ** 32) / targetBlockTimeSeconds;
-    return hashPerSec > 0 ? hashPerSecToKhPerMin(hashPerSec) : null;
+    return null;
 }
 async function resolveVrmNetworkMetrics(call, difficulty) {
-    const hashrates = await fetchVrmHashrate(call, "vrm");
-    let hashrateKhPerMin = hashrates.currentHashPerSec != null
-        ? hashPerSecToKhPerMin(hashrates.currentHashPerSec)
-        : null;
-    if (hashrateKhPerMin == null && difficulty != null) {
-        hashrateKhPerMin = difficultyToHashrateKhPerMin(difficulty, "vrm");
-    }
-    const avgBlockTimeMin = resolveVrmBlockTimeMinutes(hashrates.blocksPerHour, hashrates.blockTimeMinTarget);
+    const [hashrateResolved, miningInfo] = await Promise.all([
+        fetchCanonicalVrmHashrate(call, { include7d: true }),
+        call("getmininginfo").catch(() => null),
+    ]);
+    const mining = miningInfo;
+    const blocksPerHour = parseRpcNumber(mining?.blocksperhour);
+    const blockTimeMinTarget = parseRpcNumber(mining?.blocktime);
+    const avgBlockTimeMin = resolveVrmBlockTimeMinutes(blocksPerHour, blockTimeMinTarget);
     return {
-        hashrateKhPerMin,
+        hashrateKhPerMin: hashrateResolved.hashrateKhPerMin,
+        hashrateSource: mapHashrateSource(hashrateResolved.source),
         avgBlockTimeMin,
-        blocksPerHour: hashrates.blocksPerHour,
+        blocksPerHour,
     };
 }
 export async function fetchVrmNetworkStats() {
@@ -117,6 +120,7 @@ export async function fetchVrmNetworkStats() {
         ]);
         return {
             hashrateKhPerMin: metrics.hashrateKhPerMin,
+            hashrateSource: metrics.hashrateSource,
             avgBlockTimeMin: metrics.avgBlockTimeMin,
             blocksPerHour: metrics.blocksPerHour,
             difficulty,
@@ -130,6 +134,7 @@ export async function fetchVrmNetworkStats() {
         const supply = blocks != null ? await fetchIndexedSupply("vrm", blocks) : null;
         return {
             hashrateKhPerMin: null,
+            hashrateSource: null,
             avgBlockTimeMin: null,
             blocksPerHour: null,
             difficulty: null,

@@ -1,4 +1,5 @@
 import { formatCompactBalance } from "@/lib/utils";
+import { formatNetworkHashrateKhPerMin } from "@vericonomy/network-metrics";
 
 export function formatUsdPrice(value: number | null | undefined, digits?: number): string {
   if (value == null || !Number.isFinite(value)) return "—";
@@ -49,8 +50,7 @@ export function formatHubSupply(
 }
 
 export function formatHashrateKhPerMin(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return "—";
-  return `${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} KH/m`;
+  return formatNetworkHashrateKhPerMin(value);
 }
 
 export function formatAvgBlockTimeMin(value: number | null | undefined): string {

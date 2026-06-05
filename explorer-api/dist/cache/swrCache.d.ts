@@ -5,6 +5,8 @@ export interface SwrOptions<T extends CacheValue = CacheValue> {
     max?: number;
     ttlMs?: number;
     staleTtlMs?: number;
+    /** When false, ignore VCEXP_API_CACHE_TTL_MS for this cache (e.g. live address charts). */
+    useGlobalTtlOverride?: boolean;
     fetch: (key: string, signal: AbortSignal) => Promise<T>;
 }
 export declare function getApiCacheTtlMs(defaultTtlMs: number): number;

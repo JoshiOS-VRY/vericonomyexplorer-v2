@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
+    "@vericonomy/network-metrics": "file:../../packages/network-metrics",
     "clsx": "^2.1.1",
     "dotenv": "^17.4.2",
     "lucide-react": "^1.17.0",

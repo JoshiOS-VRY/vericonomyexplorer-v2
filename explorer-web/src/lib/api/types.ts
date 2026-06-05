@@ -477,6 +477,12 @@ export interface ChainMarket {
 
 export interface VrmNetworkStats {
   hashrateKhPerMin: number | null;
+  hashrateSource?:
+    | "networkhashps"
+    | "nethashrate"
+    | "getnetworkhashps"
+    | "difficulty"
+    | null;
   avgBlockTimeMin: number | null;
   blocksPerHour: number | null;
   difficulty: number | null;

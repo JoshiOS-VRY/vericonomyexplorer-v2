@@ -6,6 +6,13 @@ import { refreshChainCachesOnTip } from "../data/chainCacheRefresh.js";
 import { fetchChainHealth, fetchChainActivityHistory, fetchChainSummary, fetchChainSummaryLite, fetchIndexerHealth, fetchLandingData, fetchLatestBlocks, fetchBlocksPage, } from "../data/legacy.js";
 import { fetchVrmDashboardBundle } from "../data/vrmDashboard.js";
 import { onAnyTip } from "../live/brokers.js";
+function latestBlocksLimit(value) {
+    const parsed = Number(value ?? 10);
+    if (!Number.isFinite(parsed) || parsed < 1) {
+        return 10;
+    }
+    return Math.min(Math.floor(parsed), 25);
+}
 import { parseChainId } from "../types.js";
 import { homeCache, homeShellCache } from "./home.js";
 export const summaryCache = createSwrCache({
@@ -179,7 +186,8 @@ export async function registerChainRoutes(app) {
         if (!chainId) {
             return reply.code(400).send({ error: "Invalid chain id" });
         }
-        const cached = await swrFetch(latestBlocksCache, cacheKey(chainId, "latest-blocks"), async () => ({ blocks: await fetchLatestBlocks(chainId) }));
+        const limit = latestBlocksLimit(request.query.limit);
+        const cached = await swrFetch(latestBlocksCache, cacheKey(chainId, "latest-blocks", String(limit)), async () => ({ blocks: await fetchLatestBlocks(chainId, { limit }) }));
         return cached.blocks ?? [];
     });
     app.get("/v1/:chain/blocks", async (request, reply) => {

@@ -2,10 +2,9 @@ import { runIndexerQuery } from "../db/queryPool.js";
 import { rpc } from "../rpc/index.js";
 import type { ChainId } from "../types.js";
 import type { VrcNetworkStats, VrmNetworkStats } from "../types/home.js";
+import { fetchCanonicalVrmHashrate } from "./hashrateLive.js";
 import {
   getMaxSupply,
-  getTargetBlockTimeSeconds,
-  hashPerSecToKhPerMin,
   parseRpcNumber,
   parseVrcMiningInfo,
   type RpcCall,
@@ -53,17 +52,21 @@ async function fetchIndexedSupply(chainId: ChainId, height: number): Promise<num
   }
 }
 
-function difficultyToHashrateKhPerMin(difficulty: number, chainId: ChainId): number | null {
-  if (!Number.isFinite(difficulty) || difficulty <= 0) {
-    return null;
+function mapHashrateSource(
+  source: string,
+): VrmNetworkStats["hashrateSource"] {
+  if (
+    source === "networkhashps" ||
+    source === "nethashrate" ||
+    source === "getnetworkhashps" ||
+    source === "difficulty"
+  ) {
+    return source;
   }
-
-  const targetBlockTimeSeconds = getTargetBlockTimeSeconds(chainId);
-  const hashPerSec = (difficulty * 2 ** 32) / targetBlockTimeSeconds;
-  return hashPerSec > 0 ? hashPerSecToKhPerMin(hashPerSec) : null;
+  return null;
 }
 
-/** Lightweight network stats for hot paths (home, SSR). No gettxoutsetinfo or long hashrate scans. */
+/** Lightweight network stats for hot paths (home, SSR). Uses canonical hashrate resolver. */
 export async function fetchVrmNetworkStatsLite(): Promise<VrmNetworkStats> {
   const call = rpcCall("vrm");
 
@@ -72,6 +75,12 @@ export async function fetchVrmNetworkStatsLite(): Promise<VrmNetworkStats> {
       call("getblockchaininfo").catch(() => null),
       call("getmininginfo").catch(() => null),
     ]);
+
+    const hashrateResolved = await fetchCanonicalVrmHashrate(call, {
+      include7d: false,
+      miningInfo,
+      blockchainInfo,
+    });
 
     const blockchain = blockchainInfo as {
       blocks?: unknown;
@@ -108,8 +117,8 @@ export async function fetchVrmNetworkStatsLite(): Promise<VrmNetworkStats> {
           : null;
 
     return {
-      hashrateKhPerMin:
-        difficulty != null ? difficultyToHashrateKhPerMin(difficulty, "vrm") : null,
+      hashrateKhPerMin: hashrateResolved.hashrateKhPerMin,
+      hashrateSource: mapHashrateSource(hashrateResolved.source),
       avgBlockTimeMin,
       blocksPerHour,
       difficulty,
@@ -123,6 +132,7 @@ export async function fetchVrmNetworkStatsLite(): Promise<VrmNetworkStats> {
 
     return {
       hashrateKhPerMin: null,
+      hashrateSource: null,
       avgBlockTimeMin: null,
       blocksPerHour: null,
       difficulty: null,

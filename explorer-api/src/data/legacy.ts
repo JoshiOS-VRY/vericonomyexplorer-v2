@@ -54,7 +54,7 @@ export async function fetchLatestBlocks(
   chainId: string,
   options: Record<string, unknown> = {},
 ) {
-  const queryOptions = { ...summaryQueryOptions, ...options };
+  const queryOptions: Record<string, unknown> = { ...summaryQueryOptions, ...options };
   if (options.limit != null) {
     queryOptions.limit = options.limit;
   }

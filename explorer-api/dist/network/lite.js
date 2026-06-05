@@ -1,6 +1,7 @@
 import { runIndexerQuery } from "../db/queryPool.js";
 import { rpc } from "../rpc/index.js";
-import { getMaxSupply, getTargetBlockTimeSeconds, hashPerSecToKhPerMin, parseRpcNumber, parseVrcMiningInfo, } from "./stats.js";
+import { fetchCanonicalVrmHashrate } from "./hashrateLive.js";
+import { getMaxSupply, parseRpcNumber, parseVrcMiningInfo, } from "./stats.js";
 const HOT_RPC_TIMEOUT_MS = Number(process.env.VCEXP_HOT_RPC_TIMEOUT_MS ?? 4_000);
 const HOT_INDEXER_TIMEOUT_MS = Number(process.env.VCEXP_HOT_INDEXER_TIMEOUT_MS ?? 3_000);
 function rpcCall(chainId) {
@@ -28,15 +29,16 @@ async function fetchIndexedSupply(chainId, height) {
         return null;
     }
 }
-function difficultyToHashrateKhPerMin(difficulty, chainId) {
-    if (!Number.isFinite(difficulty) || difficulty <= 0) {
-        return null;
+function mapHashrateSource(source) {
+    if (source === "networkhashps" ||
+        source === "nethashrate" ||
+        source === "getnetworkhashps" ||
+        source === "difficulty") {
+        return source;
     }
-    const targetBlockTimeSeconds = getTargetBlockTimeSeconds(chainId);
-    const hashPerSec = (difficulty * 2 ** 32) / targetBlockTimeSeconds;
-    return hashPerSec > 0 ? hashPerSecToKhPerMin(hashPerSec) : null;
+    return null;
 }
-/** Lightweight network stats for hot paths (home, SSR). No gettxoutsetinfo or long hashrate scans. */
+/** Lightweight network stats for hot paths (home, SSR). Uses canonical hashrate resolver. */
 export async function fetchVrmNetworkStatsLite() {
     const call = rpcCall("vrm");
     try {
@@ -44,6 +46,11 @@ export async function fetchVrmNetworkStatsLite() {
             call("getblockchaininfo").catch(() => null),
             call("getmininginfo").catch(() => null),
         ]);
+        const hashrateResolved = await fetchCanonicalVrmHashrate(call, {
+            include7d: false,
+            miningInfo,
+            blockchainInfo,
+        });
         const blockchain = blockchainInfo;
         const mining = miningInfo;
         let blocks = parseRpcNumber(blockchain?.blocks);
@@ -65,7 +72,8 @@ export async function fetchVrmNetworkStatsLite() {
                 ? blockTimeMinTarget
                 : null;
         return {
-            hashrateKhPerMin: difficulty != null ? difficultyToHashrateKhPerMin(difficulty, "vrm") : null,
+            hashrateKhPerMin: hashrateResolved.hashrateKhPerMin,
+            hashrateSource: mapHashrateSource(hashrateResolved.source),
             avgBlockTimeMin,
             blocksPerHour,
             difficulty,
@@ -79,6 +87,7 @@ export async function fetchVrmNetworkStatsLite() {
         const supply = blocks != null ? await fetchIndexedSupply("vrm", blocks) : null;
         return {
             hashrateKhPerMin: null,
+            hashrateSource: null,
             avgBlockTimeMin: null,
             blocksPerHour: null,
             difficulty: null,

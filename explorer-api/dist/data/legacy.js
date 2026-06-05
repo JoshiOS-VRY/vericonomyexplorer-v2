@@ -23,6 +23,9 @@ export async function fetchChainSummaryLite(chainId, options = {}) {
 }
 export async function fetchLatestBlocks(chainId, options = {}) {
     const queryOptions = { ...summaryQueryOptions, ...options };
+    if (options.limit != null) {
+        queryOptions.limit = options.limit;
+    }
     const indexed = (await runIndexerQuery("getLatestBlocksIndexed", [chainId], queryOptions));
     return enrichLatestBlocksLive(indexed.latestBlocks, chainId, indexed.health, queryOptions);
 }
