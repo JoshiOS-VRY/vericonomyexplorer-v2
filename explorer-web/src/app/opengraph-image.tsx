@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/seo/site";
 
@@ -5,7 +7,12 @@ export const alt = SITE_NAME;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OpenGraphImage() {
+export default async function OpenGraphImage() {
+  const logo = await readFile(
+    join(process.cwd(), "public/img/vericonomy/vericonomylogo.png"),
+  );
+  const logoSrc = `data:image/png;base64,${logo.toString("base64")}`;
+
   return new ImageResponse(
     (
       <div
@@ -29,21 +36,14 @@ export default function OpenGraphImage() {
             marginBottom: 28,
           }}
         >
-          <div
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: 16,
-              background: "linear-gradient(135deg, #5068e8, #6aa5ff)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 36,
-              fontWeight: 700,
-            }}
-          >
-            V
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={logoSrc}
+            alt=""
+            width={72}
+            height={72}
+            style={{ objectFit: "contain" }}
+          />
           <div style={{ fontSize: 52, fontWeight: 700, letterSpacing: -1 }}>{SITE_NAME}</div>
         </div>
         <div style={{ fontSize: 30, lineHeight: 1.45, maxWidth: 900, color: "#c8d6e8" }}>
