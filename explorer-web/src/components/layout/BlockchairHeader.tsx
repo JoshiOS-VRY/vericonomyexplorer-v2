@@ -46,7 +46,11 @@ function ThemeToggle() {
             "text-fg-muted hover:bg-bg-subtle hover:text-fg",
           )}
         >
-          {optionMode === "system" ? "Auto" : optionMode === "light" ? "Light" : "Dark"}
+          {optionMode === "system"
+            ? "Auto"
+            : optionMode === "light"
+              ? "Light"
+              : "Dark"}
         </button>
       ))}
     </div>
@@ -74,7 +78,9 @@ function HeaderNavLink({
       aria-current={active ? "page" : undefined}
       className={cn(
         className,
-        active ? "bg-accent/10 text-accent" : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
+        active
+          ? "bg-accent/10 text-accent"
+          : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
       )}
     >
       {item.label}
@@ -105,7 +111,12 @@ function HeaderNavDropdownMenu({
       )}
     >
       {item.items.map((child) => {
-        const childActive = isNavLinkActive(pathname, child.href, false, item.prefix);
+        const childActive = isNavLinkActive(
+          pathname,
+          child.href,
+          false,
+          item.prefix,
+        );
         return (
           <Link
             key={child.href}
@@ -210,7 +221,9 @@ function HeaderNavDropdown({
       pathname={pathname}
       item={item}
       onNavigate={closeMenu}
-      className={usePortalMenu ? undefined : "absolute left-0 top-[calc(100%+4px)]"}
+      className={
+        usePortalMenu ? undefined : "absolute left-0 top-[calc(100%+4px)]"
+      }
       style={usePortalMenu ? menuStyle : undefined}
     />
   ) : null;
@@ -228,7 +241,9 @@ function HeaderNavDropdown({
         onClick={() => setOpen((value) => !value)}
         className={cn(
           className,
-          active ? "bg-accent/10 text-accent" : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
+          active
+            ? "bg-accent/10 text-accent"
+            : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
         )}
       >
         <span>{item.label}</span>
@@ -236,16 +251,13 @@ function HeaderNavDropdown({
           ▾
         </span>
       </button>
-      {menu
-        ? usePortalMenu
-          ? createPortal(
-              <div ref={menuRef}>{menu}</div>,
-              document.body,
-            )
-          : (
-              <div ref={menuRef}>{menu}</div>
-            )
-        : null}
+      {menu ? (
+        usePortalMenu ? (
+          createPortal(<div ref={menuRef}>{menu}</div>, document.body)
+        ) : (
+          <div ref={menuRef}>{menu}</div>
+        )
+      ) : null}
     </div>
   );
 }
@@ -272,12 +284,16 @@ function HeaderNavItemView({
     );
   }
 
-  return <HeaderNavLink pathname={pathname} item={item} className={className} />;
+  return (
+    <HeaderNavLink pathname={pathname} item={item} className={className} />
+  );
 }
 
 function HeaderSearch() {
   const recentBlocks = useSearchRecentBlocks();
-  return <SearchForm variant="blockchair" recentBlocks={recentBlocks ?? undefined} />;
+  return (
+    <SearchForm variant="blockchair" recentBlocks={recentBlocks ?? undefined} />
+  );
 }
 
 export function BlockchairHeader({
@@ -291,7 +307,9 @@ export function BlockchairHeader({
 }) {
   const hydrated = useHydrated();
   const pathnameFromRouter = usePathname();
-  const pathname = hydrated ? (pathnameFromRouter ?? pathnameProp) : pathnameProp;
+  const pathname = hydrated
+    ? (pathnameFromRouter ?? pathnameProp)
+    : pathnameProp;
 
   return (
     <header className="bc-header sticky top-0 z-40 border-b border-border bg-bg-panel shadow-sm">
@@ -300,13 +318,17 @@ export function BlockchairHeader({
           <Image
             src="/img/vericonomy/vericonomylogo.png"
             alt=""
-            width={32}
-            height={32}
-            className="h-8 w-8 object-contain"
+            width={40}
+            height={40}
+            className="h-10 w-10 object-contain"
           />
           <div className="leading-tight">
-            <span className="block text-sm font-bold tracking-tight text-fg">Vericonomy</span>
-            <span className="block text-[11px] font-medium text-accent">Block explorer</span>
+            <span className="block text-sm font-bold tracking-tight text-fg">
+              Vericonomy
+            </span>
+            <span className="block text-[11px] font-medium text-accent">
+              Block explorer
+            </span>
           </div>
         </Link>
 
