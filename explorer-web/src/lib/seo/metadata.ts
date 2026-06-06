@@ -99,6 +99,10 @@ export const rootMetadata: Metadata = {
     title: SITE_NAME,
     description: SITE_TAGLINE,
   },
+  icons: {
+    icon: [{ url: "/img/vericonomy/vericonomylogo.png", type: "image/png" }],
+    apple: [{ url: "/img/vericonomy/vericonomylogo.png", type: "image/png" }],
+  },
   robots: {
     index: true,
     follow: true,
