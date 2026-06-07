@@ -10,7 +10,9 @@
   # limiting: https://caddyserver.com/docs/modules/http.handlers.rate_limit
   # Example: rate_limit { zone public_api { key {remote_ip} events 50 window 1s} }
   handle /v1/* {
-    reverse_proxy explorer-fast-api:3003
+    reverse_proxy explorer-fast-api:3003 {
+      header_up X-Real-IP {http.request.header.CF-Connecting-IP}
+    }
   }
 
   handle {
@@ -27,13 +29,8 @@
   }
 }
 
-# Legacy Express (separate blocks — comma-separated labels break if LEGACY_STAGING_DOMAIN is unset).
+# Legacy Express. Use one block when LEGACY_PUBLIC_DOMAIN and LEGACY_STAGING_DOMAIN match.
 {$LEGACY_PUBLIC_DOMAIN} {
-  encode zstd gzip
-  reverse_proxy explorer-express:3002
-}
-
-{$LEGACY_STAGING_DOMAIN} {
   encode zstd gzip
   reverse_proxy explorer-express:3002
 }

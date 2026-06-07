@@ -97,7 +97,7 @@ export function getRateLimitHeavyMax(): number {
 }
 
 export function getRateLimitSseMax(): number {
-  return readPositiveInt(process.env.VCEXP_RATE_LIMIT_SSE_MAX, 4);
+  return readPositiveInt(process.env.VCEXP_RATE_LIMIT_SSE_MAX, 8);
 }
 
 export function getRateLimitAllowIps(): string[] {

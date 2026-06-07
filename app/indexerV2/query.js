@@ -195,7 +195,7 @@ async function getLatestBlocks(chainId, options = {}) {
 	const chainHealth = await resolveChainHealth(chain, options);
 	const latestBlocks = (await db.all(`
 		SELECT height, hash, previous_hash, next_hash, time, tx_count, size, difficulty,
-			output_count, extracted_by, extracted_by_address
+			output_count, extracted_by, extracted_by_address, total_output_sats
 		FROM blocks
 		WHERE chain_id = ? AND status = 'main'
 		ORDER BY height DESC
@@ -242,7 +242,7 @@ async function getBlocksPage(chainId, options = {}) {
 	`, [chain]);
 	const rows = (await db.all(`
 		SELECT height, hash, previous_hash, next_hash, time, tx_count, size, difficulty,
-			output_count, extracted_by, extracted_by_address
+			output_count, extracted_by, extracted_by_address, total_output_sats
 		FROM blocks
 		WHERE chain_id = ? AND status = 'main'
 		ORDER BY height DESC
@@ -1787,6 +1787,13 @@ function mapBlock(block, chainId) {
 		extractedBy: block.extracted_by || block.extractedBy || null,
 		extractedByAddress: block.extracted_by_address || block.extractedByAddress || null
 	};
+
+	if (chainId && block.total_output_sats != null) {
+		const outputValue = formatAtomic(chainId, toBigInt(block.total_output_sats));
+		mapped.outputValue = outputValue;
+		mapped.outputTotal = outputValue;
+		mapped.mint = outputValue;
+	}
 
 	return chainId ? attachMinerLink(mapped, chainId) : mapped;
 }

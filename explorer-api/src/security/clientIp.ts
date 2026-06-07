@@ -39,13 +39,21 @@ export function isAllowlistedIp(ip: string): boolean {
   return isPrivateIpv4(normalized);
 }
 
-export function getClientIp(request: FastifyRequest): string {
-  const realIp = request.headers["x-real-ip"];
-  if (typeof realIp === "string" && realIp.trim()) {
-    return normalizeIp(realIp.trim());
+function readIpHeader(request: FastifyRequest, name: string): string | undefined {
+  const value = request.headers[name];
+  if (typeof value === "string" && value.trim()) {
+    return normalizeIp(value.trim());
   }
+  return undefined;
+}
 
-  return normalizeIp(request.ip);
+export function getClientIp(request: FastifyRequest): string {
+  // Cloudflare sets CF-Connecting-IP; Caddy/nginx may forward it as X-Real-IP.
+  return (
+    readIpHeader(request, "cf-connecting-ip") ??
+    readIpHeader(request, "x-real-ip") ??
+    normalizeIp(request.ip)
+  );
 }
 
 export function isRateLimitAllowlisted(request: FastifyRequest): boolean {

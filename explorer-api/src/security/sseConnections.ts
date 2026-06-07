@@ -2,34 +2,38 @@ import { getRateLimitSseMax } from "../env.js";
 import { getClientIp, isRateLimitAllowlisted } from "./clientIp.js";
 import type { FastifyRequest } from "fastify";
 
-const connectionsByIp = new Map<string, number>();
+const connectionsByKey = new Map<string, number>();
 
-export function tryAcquireSseConnection(request: FastifyRequest): boolean {
+function sseConnectionKey(request: FastifyRequest, chainId: string): string {
+  return `${getClientIp(request)}:${chainId}`;
+}
+
+export function tryAcquireSseConnection(request: FastifyRequest, chainId: string): boolean {
   if (isRateLimitAllowlisted(request)) {
     return true;
   }
 
-  const ip = getClientIp(request);
+  const key = sseConnectionKey(request, chainId);
   const max = getRateLimitSseMax();
-  const current = connectionsByIp.get(ip) ?? 0;
+  const current = connectionsByKey.get(key) ?? 0;
   if (current >= max) {
     return false;
   }
 
-  connectionsByIp.set(ip, current + 1);
+  connectionsByKey.set(key, current + 1);
   return true;
 }
 
-export function releaseSseConnection(request: FastifyRequest): void {
+export function releaseSseConnection(request: FastifyRequest, chainId: string): void {
   if (isRateLimitAllowlisted(request)) {
     return;
   }
 
-  const ip = getClientIp(request);
-  const current = connectionsByIp.get(ip) ?? 0;
+  const key = sseConnectionKey(request, chainId);
+  const current = connectionsByKey.get(key) ?? 0;
   if (current <= 1) {
-    connectionsByIp.delete(ip);
+    connectionsByKey.delete(key);
   } else {
-    connectionsByIp.set(ip, current - 1);
+    connectionsByKey.set(key, current - 1);
   }
 }

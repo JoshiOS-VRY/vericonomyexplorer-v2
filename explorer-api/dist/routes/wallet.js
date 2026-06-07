@@ -3,6 +3,14 @@ import { cacheKey, createSwrCache, swrFetch } from "../cache/swrCache.js";
 import { registerChainScopedCache } from "../cache/registry.js";
 import { parseChainId } from "../types.js";
 import { buildWalletBlocks, buildWalletChainTips, buildWalletExtraction, buildWalletPeers, buildWalletStats, buildWalletTransactions, } from "../data/walletCompat.js";
+/** Keys are `{chain}:{resource}:{suffix}` — suffix may contain colons (e.g. `week:20`). */
+function parseWalletCacheKey(key) {
+    const parts = key.split(":");
+    return {
+        chainId: parts[0],
+        suffix: parts.slice(2).join(":"),
+    };
+}
 // The wallet wraps each compat response in its own 30s cache, so short server
 // TTLs here mainly protect node RPC / the indexer from request bursts.
 const statsCache = createSwrCache({
@@ -21,9 +29,9 @@ const blocksCache = createSwrCache({
     fetch: async (key, signal) => {
         if (signal.aborted)
             throw new Error("aborted");
-        const [chainId, limit] = key.split(":");
+        const { chainId, suffix } = parseWalletCacheKey(key);
         return {
-            value: await buildWalletBlocks(chainId, Number(limit) || 100),
+            value: await buildWalletBlocks(chainId, Number(suffix) || 100),
         };
     },
 });
@@ -33,9 +41,9 @@ const transactionsCache = createSwrCache({
     fetch: async (key, signal) => {
         if (signal.aborted)
             throw new Error("aborted");
-        const [chainId, limit] = key.split(":");
+        const { chainId, suffix } = parseWalletCacheKey(key);
         return {
-            value: await buildWalletTransactions(chainId, Number(limit) || 25),
+            value: await buildWalletTransactions(chainId, Number(suffix) || 25),
         };
     },
 });
@@ -45,9 +53,10 @@ const extractionCache = createSwrCache({
     fetch: async (key, signal) => {
         if (signal.aborted)
             throw new Error("aborted");
-        const [chainId, period, limit] = key.split(":");
+        const { chainId, suffix } = parseWalletCacheKey(key);
+        const [period, limitRaw] = suffix.split(":");
         return {
-            value: await buildWalletExtraction(chainId, Number(limit) || 20, period || "month"),
+            value: await buildWalletExtraction(chainId, Number(limitRaw) || 20, period || "month"),
         };
     },
 });
@@ -67,9 +76,9 @@ const peersCache = createSwrCache({
     fetch: async (key, signal) => {
         if (signal.aborted)
             throw new Error("aborted");
-        const [chainId, limit] = key.split(":");
+        const { chainId, suffix } = parseWalletCacheKey(key);
         return {
-            value: await buildWalletPeers(chainId, Number(limit) || 50),
+            value: await buildWalletPeers(chainId, Number(suffix) || 50),
         };
     },
 });

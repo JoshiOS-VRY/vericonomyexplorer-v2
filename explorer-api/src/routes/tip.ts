@@ -41,7 +41,7 @@ export async function registerTipRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(400).send({ error: "Invalid chain id" });
     }
 
-    if (!tryAcquireSseConnection(request)) {
+    if (!tryAcquireSseConnection(request, chainId)) {
       return reply.code(429).send({
         error: "Too many requests",
         requestId: request.id,
@@ -86,7 +86,7 @@ export async function registerTipRoutes(app: FastifyInstance): Promise<void> {
       const cleanup = () => {
         broker.off("tip", onUpdate);
         clearInterval(heartbeat);
-        releaseSseConnection(request);
+        releaseSseConnection(request, chainId);
         resolve();
       };
       request.raw.on("close", cleanup);

@@ -1,5 +1,27 @@
 import { describe, expect, it, beforeEach } from "@jest/globals";
-import { chainLiveStore } from "@/lib/chainLive/store";
+import { chainLiveStore, mergeRecentTransactions } from "@/lib/chainLive/store";
+import type { IndexedTransaction } from "@/lib/api/types";
+
+const sampleTx: IndexedTransaction = {
+  txid: "abc",
+  blockHeight: 1,
+  blockHash: "hash",
+  txIndex: 0,
+  time: 1,
+  isCoinbase: true,
+  isCoinstake: false,
+};
+
+describe("mergeRecentTransactions", () => {
+  it("keeps previous rows when a lite poll returns none", () => {
+    expect(mergeRecentTransactions([sampleTx], [])).toEqual([sampleTx]);
+  });
+
+  it("replaces rows when a full summary payload includes transactions", () => {
+    const next: IndexedTransaction = { ...sampleTx, txid: "def" };
+    expect(mergeRecentTransactions([sampleTx], [next])).toEqual([next]);
+  });
+});
 
 describe("chainLiveStore.getSnapshot", () => {
   beforeEach(() => {

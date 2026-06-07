@@ -7,6 +7,7 @@
 import { rpc } from "../rpc/index.js";
 import { fetchHomeMarketOnly, fetchHomeNetwork } from "./home.js";
 import { fetchChainSummary, fetchLatestBlocks, fetchMinedLeaderboard, } from "./legacy.js";
+import { resolveWalletMinerAddress } from "./veriumPool.js";
 const RPC_TIMEOUT_MS = 8_000;
 function toNumberOrNull(value) {
     if (typeof value === "number" && Number.isFinite(value))
@@ -87,11 +88,7 @@ function mapIndexedBlock(block) {
         difficulty: toStringOrNull(block.difficulty),
         nTx: toNumberOrNull(block.txCount),
         miner: {
-            address: typeof block.extractedByAddress === "string"
-                ? block.extractedByAddress
-                : typeof block.extractedBy === "string"
-                    ? block.extractedBy
-                    : null,
+            address: resolveWalletMinerAddress(block.extractedBy, block.extractedByAddress),
         },
         strippedsize: toNumberOrNull(block.size),
         outputT: toStringOrNull(block.outputTotal ?? block.outputValue ?? block.mint),

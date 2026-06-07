@@ -3,6 +3,7 @@ import { ChainAddressLink } from "@/components/explorer/address/ChainAddressLink
 import type { IndexedBlock } from "@/lib/api/types";
 import { type ChainId } from "@/lib/chainDisplay";
 import {
+  VERIUM_POOL_PAYOUT_ADDRESS,
   isVeriumPoolExtracted,
   veriumPoolPillClassName,
 } from "@/lib/veriumPoolExtracted";
@@ -38,13 +39,20 @@ export function ExtractedByCell({
   }
 
   if (block.extractedBy) {
+    if (showVeriumPoolPill) {
+      return (
+        <ChainAddressLink
+          chainId={chainId}
+          address={VERIUM_POOL_PAYOUT_ADDRESS}
+          maxLength={24}
+          className={veriumPoolPillClassName(className)}
+        />
+      );
+    }
+
     return (
       <span
-        className={
-          showVeriumPoolPill
-            ? veriumPoolPillClassName(className)
-            : (className ?? "text-sm font-medium text-fg")
-        }
+        className={className ?? "text-sm font-medium text-fg"}
         title={block.extractedBy}
       >
         {block.extractedBy}

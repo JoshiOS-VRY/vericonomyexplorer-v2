@@ -37,6 +37,10 @@ export function mapErrorToResponse(error: unknown): { statusCode: number; error:
     if (error.message === "Invalid chain id" || error.message === "Missing query") {
       return { statusCode: 400, error: error.message };
     }
+
+    if (error.message === "Too many requests") {
+      return { statusCode: 429, error: error.message };
+    }
   }
 
   return {

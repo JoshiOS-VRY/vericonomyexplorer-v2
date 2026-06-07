@@ -147,6 +147,14 @@ function setSnapshot(
   }
 }
 
+/** Lite summary polls omit txs; keep SSR/page-seeded rows until a full payload arrives. */
+export function mergeRecentTransactions(
+  prev: ChainSummary["recentTransactions"],
+  next: ChainSummary["recentTransactions"],
+): ChainSummary["recentTransactions"] {
+  return next.length > 0 ? next : prev;
+}
+
 function mergeSummary(chainId: ChainId, next: ChainSummary): ChainLiveSnapshot {
   const prev = snapshots.get(chainId) ?? createSnapshot(next);
   const prevTopHeight = prev.summary.latestBlocks[0]?.height ?? null;
@@ -162,6 +170,10 @@ function mergeSummary(chainId: ChainId, next: ChainSummary): ChainLiveSnapshot {
   const mergedSummary: ChainSummary = {
     ...next,
     latestBlocks: mergedBlocks,
+    recentTransactions: mergeRecentTransactions(
+      prev.summary.recentTransactions,
+      next.recentTransactions,
+    ),
     health: mergeChainHealth(
       prev.summary.health,
       next.health,
