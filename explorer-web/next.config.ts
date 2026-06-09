@@ -63,6 +63,15 @@ const nextConfig: NextConfig = {
         source: "/backend-api/:path*",
         destination: `${apiBase}/:path*`,
       },
+      // Legacy Next metadata paths referenced before static logo was wired up.
+      {
+        source: "/apple-icon",
+        destination: "/img/vericonomy/vericonomylogo.png",
+      },
+      {
+        source: "/icon",
+        destination: "/img/vericonomy/vericonomylogo.png",
+      },
     ];
   },
 };

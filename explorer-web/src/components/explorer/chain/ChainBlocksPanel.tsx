@@ -109,9 +109,8 @@ export function ChainBlocksPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const totalBlocks = behindTip
-    ? liveBlocks.length
-    : chainHeight != null
+  const totalBlocks =
+    chainHeight != null
       ? chainHeight + 1
       : Math.max(paging.total, polledBlocks.length, liveBlocks.length);
 
@@ -119,20 +118,19 @@ export function ChainBlocksPanel({
     setOffset(0);
   }, [pageSize]);
 
-  const livePageBlocks = useMemo(
-    () =>
-      (behindTip ? liveBlocks : polledBlocks).slice(0, pageSize),
-    [behindTip, liveBlocks, pageSize, polledBlocks],
-  );
+  const livePageBlocks = useMemo(() => {
+    const source = polledBlocks.length > 0 ? polledBlocks : liveBlocks;
+    return source.slice(0, pageSize);
+  }, [liveBlocks, pageSize, polledBlocks]);
 
   const livePaging = useMemo<Paging>(
     () => ({
       limit: pageSize,
       offset: 0,
-      total: behindTip ? liveBlocks.length : totalBlocks,
-      hasMore: pageSize < (behindTip ? liveBlocks.length : totalBlocks),
+      total: totalBlocks,
+      hasMore: pageSize < totalBlocks,
     }),
-    [behindTip, liveBlocks.length, pageSize, totalBlocks],
+    [pageSize, totalBlocks],
   );
 
   const blocks = offset === 0 ? livePageBlocks : pagedBlocks;

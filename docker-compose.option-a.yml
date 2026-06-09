@@ -182,7 +182,6 @@ services:
       - private
 
   vrm-indexer:
-    profiles: ["vrm-catchup"]
     container_name: vericonomy-vrm-indexer
     build:
       context: .

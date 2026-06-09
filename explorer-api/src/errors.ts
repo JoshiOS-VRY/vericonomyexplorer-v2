@@ -24,9 +24,23 @@ export function isSqliteBusyError(error: unknown): boolean {
   return message.includes("database is locked") || message.includes("sqlite_busy");
 }
 
+function isTooManyRequestsError(error: unknown): boolean {
+  if (error instanceof Error) {
+    return error.message === "Too many requests";
+  }
+  if (typeof error === "object" && error !== null && "error" in error) {
+    return (error as { error: unknown }).error === "Too many requests";
+  }
+  return false;
+}
+
 export function mapErrorToResponse(error: unknown): { statusCode: number; error: string } {
   if (error instanceof ApiError) {
     return { statusCode: error.statusCode, error: error.message };
+  }
+
+  if (isTooManyRequestsError(error)) {
+    return { statusCode: 429, error: "Too many requests" };
   }
 
   if (error instanceof Error) {
@@ -36,10 +50,6 @@ export function mapErrorToResponse(error: unknown): { statusCode: number; error:
 
     if (error.message === "Invalid chain id" || error.message === "Missing query") {
       return { statusCode: 400, error: error.message };
-    }
-
-    if (error.message === "Too many requests") {
-      return { statusCode: 429, error: error.message };
     }
   }
 
