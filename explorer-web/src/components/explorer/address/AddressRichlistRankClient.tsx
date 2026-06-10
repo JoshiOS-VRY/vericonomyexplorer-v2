@@ -1,12 +1,14 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { AddressRichlistCard } from "@/components/explorer/address/AddressRichlistCard";
 import { BcPanel } from "@/components/explorer/BlockchairUi";
-import { clientApiFetch } from "@/lib/api/client";
+import { useLivePoll } from "@/hooks/useLivePoll";
+import { fetchAddressClient } from "@/lib/addressLive";
 import type { AddressRichlistInfo } from "@/lib/api/types";
 import type { ChainId } from "@/lib/chainDisplay";
+import { ENTITY_LIVE_POLL_MS } from "@/lib/liveDataConfig";
 
 export function AddressRichlistRankClient({
   chainId,
@@ -17,29 +19,37 @@ export function AddressRichlistRankClient({
 }) {
   const [richlist, setRichlist] = useState<AddressRichlistInfo | null>(null);
   const [failed, setFailed] = useState(false);
+  const inFlightRef = useRef(false);
+  const hasDataRef = useRef(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const refresh = useCallback(async () => {
+    if (inFlightRef.current) {
+      return;
+    }
 
-    void (async () => {
-      try {
-        const result = await clientApiFetch<{ richlist: AddressRichlistInfo }>(
-          `/${chainId}/address/${encodeURIComponent(address)}?includeRank=1&limit=1`,
-        );
-        if (!cancelled) {
-          setRichlist(result.richlist);
-        }
-      } catch {
-        if (!cancelled) {
-          setFailed(true);
-        }
+    inFlightRef.current = true;
+    try {
+      const result = await fetchAddressClient(chainId, address, {
+        limit: 1,
+        includeRank: true,
+      });
+      setRichlist(result.richlist);
+      hasDataRef.current = true;
+      setFailed(false);
+    } catch {
+      if (!hasDataRef.current) {
+        setFailed(true);
       }
-    })();
+    } finally {
+      inFlightRef.current = false;
+    }
+  }, [address, chainId]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [chainId, address]);
+  useLivePoll({
+    chainId: chainId as ChainId,
+    intervalMs: ENTITY_LIVE_POLL_MS,
+    onRefresh: refresh,
+  });
 
   if (failed) {
     return (

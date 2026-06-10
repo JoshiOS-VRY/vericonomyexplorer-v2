@@ -1,4 +1,4 @@
-import type { AddressUtxosResult, BlocksPageResult, ChainSummary, HomeMarketPayload, HomeNetworkPayload, IndexedBlock, MinersLeaderboardResult } from "@/lib/api/types";
+import type { AddressUtxosResult, BlockResult, BlocksPageResult, ChainSummary, HomeMarketPayload, HomeNetworkPayload, IndexedBlock, MinersLeaderboardResult, RichlistResult, TransactionResult } from "@/lib/api/types";
 import { getClientV1Url, getTipStreamUrl } from "@/lib/api/v1Urls";
 
 export class ClientApiError extends Error {
@@ -63,6 +63,44 @@ export async function fetchAddressUtxosClient(
 
   return clientApiFetch<AddressUtxosResult>(
     `/${chainId}/address/${encodeURIComponent(address)}/utxos${qs ? `?${qs}` : ""}`,
+  );
+}
+
+export async function fetchBlockClient(
+  chainId: string,
+  hashOrHeight: string,
+  params: { limit?: number; offset?: number } = {},
+): Promise<BlockResult> {
+  const search = new URLSearchParams();
+  if (params.limit != null) search.set("limit", String(params.limit));
+  if (params.offset != null) search.set("offset", String(params.offset));
+  const qs = search.toString();
+
+  return clientApiFetch<BlockResult>(
+    `/${chainId}/block/${encodeURIComponent(hashOrHeight)}${qs ? `?${qs}` : ""}`,
+  );
+}
+
+export async function fetchTransactionClient(
+  chainId: string,
+  txid: string,
+): Promise<TransactionResult> {
+  return clientApiFetch<TransactionResult>(
+    `/${chainId}/tx/${encodeURIComponent(txid)}`,
+  );
+}
+
+export async function fetchRichlistClient(
+  chainId: string,
+  params: { limit?: number; offset?: number } = {},
+): Promise<RichlistResult> {
+  const search = new URLSearchParams();
+  if (params.limit != null) search.set("limit", String(params.limit));
+  if (params.offset != null) search.set("offset", String(params.offset));
+  const qs = search.toString();
+
+  return clientApiFetch<RichlistResult>(
+    `/${chainId}/richlist${qs ? `?${qs}` : ""}`,
   );
 }
 

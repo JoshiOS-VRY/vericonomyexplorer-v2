@@ -72,7 +72,8 @@ export const summaryCache = createSwrCache({
 
   max: 32,
 
-  ttlMs: 30_000,
+  ttlMs: 10_000,
+  useGlobalTtlOverride: false,
 
   fetch: async (key, signal) => {
 
@@ -92,7 +93,8 @@ export const summaryLiteCache = createSwrCache({
 
   max: 32,
 
-  ttlMs: 30_000,
+  ttlMs: 10_000,
+  useGlobalTtlOverride: false,
 
   fetch: async (key, signal) => {
 

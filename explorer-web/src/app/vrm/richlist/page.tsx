@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import {
   AlertBanner,
-  PaginationLinks,
   formatHeight,
 } from "@/components/explorer/ExplorerUi";
-import { BcHashLink, BcPageHeader, BcPanel } from "@/components/explorer/BlockchairUi";
+import { BcPageHeader } from "@/components/explorer/BlockchairUi";
+import { RichlistLiveTable } from "@/components/explorer/richlist/RichlistLiveTable";
 import { getRichlist } from "@/lib/api/indexer";
 import { formatExplorerUserMessage } from "@/lib/explorerCopy";
-import { formatCoinAmount, normalizeLimit, normalizeOffset } from "@/lib/utils";
+import { normalizeLimit, normalizeOffset } from "@/lib/utils";
 import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
 
 export const metadata: Metadata = pageMetadata(staticPageSeo.vrmRichlist);
 
-export const revalidate = 60;
+export const revalidate = 30;
 
 export default async function RichlistPage({
   searchParams,
@@ -50,45 +50,13 @@ export default async function RichlistPage({
         subtitle={`Showing ${formatHeight(from)}–${formatHeight(to)} of ${formatHeight(paging.total)} addresses`}
       />
 
-      <BcPanel title="Addresses" flush>
-        <div className="overflow-x-auto">
-          <table className="bc-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Address</th>
-                <th className="text-right">Balance</th>
-                <th className="text-right">Received</th>
-                <th className="text-right">Sent</th>
-                <th className="text-right">Tx</th>
-              </tr>
-            </thead>
-            <tbody>
-              {richlist.items.map((item) => (
-                <tr key={item.address}>
-                  <td className="tabular-nums text-fg-subtle">{item.rank}</td>
-                  <td>
-                    <BcHashLink href={`/vrm/address/${item.address}`} value={item.address} prefetch />
-                  </td>
-                  <td className="text-right font-medium tabular-nums">
-                    {formatCoinAmount(item.balance.amount)} {item.balance.ticker}
-                  </td>
-                  <td className="text-right tabular-nums text-fg-muted">
-                    {formatCoinAmount(item.totalReceived.amount)}
-                  </td>
-                  <td className="text-right tabular-nums text-fg-muted">
-                    {formatCoinAmount(item.totalSent.amount)}
-                  </td>
-                  <td className="text-right tabular-nums text-fg-muted">{formatHeight(item.txCount)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="border-t border-border px-5 py-4">
-          <PaginationLinks basePath="/vrm/richlist" paging={paging} />
-        </div>
-      </BcPanel>
+      <RichlistLiveTable
+        chainId="vrm"
+        initialRichlist={richlist}
+        basePath="/vrm/richlist"
+        limit={limit}
+        offset={offset}
+      />
     </div>
   );
 }

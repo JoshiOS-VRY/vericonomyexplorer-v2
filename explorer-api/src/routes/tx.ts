@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { heavyRateLimitRouteConfig } from "../env.js";
-import { createSwrCache } from "../cache/swrCache.js";
+import { createSwrCache, swrFetch } from "../cache/swrCache.js";
 import {
   fetchTransaction,
   fetchTransactionRelatedAddresses,
@@ -9,7 +9,8 @@ import { parseChainId } from "../types.js";
 
 const txCache = createSwrCache({
   max: 256,
-  ttlMs: 120_000,
+  ttlMs: 5_000,
+  useGlobalTtlOverride: false,
   fetch: async (key, signal) => {
     if (signal.aborted) throw new Error("aborted");
     const [chainId, txid] = key.split(":");
@@ -19,7 +20,8 @@ const txCache = createSwrCache({
 
 const relatedCache = createSwrCache({
   max: 128,
-  ttlMs: 60_000,
+  ttlMs: 5_000,
+  useGlobalTtlOverride: false,
   fetch: async (key, signal) => {
     if (signal.aborted) throw new Error("aborted");
     const [chainId, txid, limit] = key.split(":");
@@ -39,20 +41,9 @@ export async function registerTxRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const key = `${chainId}:${request.params.txid}`;
-      const cached = txCache.get(key, { allowStale: true }) as { found?: boolean } | undefined;
-      if (cached?.found) {
-        return cached;
-      }
-
-      const result = (await fetchTransaction(chainId, request.params.txid)) as Record<
-        string,
-        unknown
-      >;
-      if (result.found) {
-        txCache.set(key, result);
-      }
-
-      return result;
+      return swrFetch(txCache, key, () =>
+        fetchTransaction(chainId, request.params.txid),
+      );
     },
   );
 
@@ -66,6 +57,9 @@ export async function registerTxRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const limit = Math.min(Math.max(Number(request.query.limit) || 6, 1), 25);
-    return relatedCache.fetch(`${chainId}:${request.params.txid}:${limit}`);
+    const key = `${chainId}:${request.params.txid}:${limit}`;
+    return swrFetch(relatedCache, key, () =>
+      fetchTransactionRelatedAddresses(chainId, request.params.txid, { limit }),
+    );
   });
 }

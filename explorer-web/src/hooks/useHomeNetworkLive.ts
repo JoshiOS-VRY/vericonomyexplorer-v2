@@ -6,8 +6,9 @@ import { fetchHomeNetwork } from "@/lib/api/client";
 import { usePageVisible } from "@/hooks/usePageVisible";
 import type { HomeNetworkPayload, VrcNetworkStats, VrmNetworkStats } from "@/lib/api/types";
 import { mergeHomeNetworkPayload } from "@/lib/enrichNetwork";
+import { NETWORK_LIVE_POLL_MS } from "@/lib/liveDataConfig";
 
-const NETWORK_POLL_MS = 30_000;
+const NETWORK_POLL_MS = NETWORK_LIVE_POLL_MS;
 
 function vrmNetworkReceived(stats: VrmNetworkStats): boolean {
   return (

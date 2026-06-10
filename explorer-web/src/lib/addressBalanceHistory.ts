@@ -3,9 +3,9 @@ import type {
   AddressBalanceHistoryPeriodId,
   AddressBalanceHistoryResult,
 } from "@/lib/api/types";
+import { ADDRESS_BALANCE_HISTORY_POLL_MS } from "@/lib/liveDataConfig";
 
-/** Poll while the address page is visible (matches latest-blocks aggressiveness). */
-export const ADDRESS_BALANCE_HISTORY_POLL_MS = 10_000;
+export { ADDRESS_BALANCE_HISTORY_POLL_MS };
 
 export const ADDRESS_BALANCE_HISTORY_PERIODS: {
   id: AddressBalanceHistoryPeriodId;

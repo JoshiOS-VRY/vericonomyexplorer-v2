@@ -1,14 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTipStream } from "@/components/explorer/TipStreamProvider";
 import { fetchHomeMarket } from "@/lib/api/client";
 import { usePageVisible } from "@/hooks/usePageVisible";
-import type { ChainMarket, HomeMarketPayload } from "@/lib/api/types";
-
-const MARKET_POLL_MS = 60_000;
+import type { HomeMarketPayload } from "@/lib/api/types";
+import { MARKET_LIVE_POLL_MS } from "@/lib/liveDataConfig";
 
 export function useHomeMarket(initial: HomeMarketPayload) {
   const visible = usePageVisible();
+  const { subscribe } = useTipStream("vrm");
   const [market, setMarket] = useState(initial);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,11 +38,23 @@ export function useHomeMarket(initial: HomeMarketPayload) {
 
     void refresh();
 
+    const unsubVrm = subscribe("vrm", () => {
+      void refresh();
+    });
+    const unsubVrc = subscribe("vrc", () => {
+      void refresh();
+    });
+
     const timer = window.setInterval(() => {
       void refresh();
-    }, MARKET_POLL_MS);
-    return () => window.clearInterval(timer);
-  }, [refresh, visible]);
+    }, MARKET_LIVE_POLL_MS);
+
+    return () => {
+      unsubVrm();
+      unsubVrc();
+      window.clearInterval(timer);
+    };
+  }, [refresh, subscribe, visible]);
 
   return {
     vrmMarket: market.vrm,
@@ -52,4 +65,4 @@ export function useHomeMarket(initial: HomeMarketPayload) {
   };
 }
 
-export type { ChainMarket };
+export type { ChainMarket } from "@/lib/api/types";

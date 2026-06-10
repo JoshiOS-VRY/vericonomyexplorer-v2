@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
 import { BcPageHeader } from "@/components/explorer/BlockchairUi";
 import { ChainActivityInsightsChart } from "@/components/explorer/insights/ChainActivityInsightsChart";
 import { InsightsKpiStrip } from "@/components/explorer/insights/InsightsKpiStrip";
 import { InsightsMarketChart } from "@/components/explorer/insights/InsightsMarketChart";
 import { InsightsNetworkCharts } from "@/components/explorer/insights/InsightsNetworkCharts";
-import { fetchHomeMarket, fetchHomeNetwork } from "@/lib/api/client";
+import { useHomeMarket } from "@/hooks/useHomeMarket";
+import { useHomeNetworkLive } from "@/hooks/useHomeNetworkLive";
+import { useStableChainLive } from "@/hooks/useStableChainLive";
 import type {
   ChainMarket,
   ChainSummary,
@@ -32,39 +33,28 @@ export function InsightsDashboard({
   const router = useRouter();
   const searchParams = useSearchParams();
   const chainId = searchParams.get("chain") === "vrc" ? "vrc" : initialChainId;
-  const [network, setNetwork] = useState<VrmNetworkStats | VrcNetworkStats>(
-    initialNetwork
-      ?? (chainId === "vrm" ? emptyNetworkPayload().vrm : emptyNetworkPayload().vrc),
-  );
-  const [market, setMarket] = useState<ChainMarket>(
-    initialMarket
-      ?? (chainId === "vrm" ? emptyMarketPayload().vrm : emptyMarketPayload().vrc),
-  );
-
-  useEffect(() => {
-    if (initialMarket && initialNetwork && chainId === initialChainId) {
-      return;
-    }
-
-    let cancelled = false;
-    void (async () => {
-      try {
-        const [marketPayload, networkPayload] = await Promise.all([
-          fetchHomeMarket(),
-          fetchHomeNetwork(),
-        ]);
-        if (!cancelled) {
-          setMarket(marketPayload[chainId]);
-          setNetwork(networkPayload[chainId]);
+  const liveSummary = useStableChainLive(chainId, summary);
+  const initialNetworkPayload =
+    initialNetwork != null
+      ? {
+          fetchedAt: new Date().toISOString(),
+          vrm: chainId === "vrm" ? (initialNetwork as VrmNetworkStats) : emptyNetworkPayload().vrm,
+          vrc: chainId === "vrc" ? (initialNetwork as VrcNetworkStats) : emptyNetworkPayload().vrc,
         }
-      } catch {
-        /* keep defaults */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [chainId, initialChainId, initialMarket, initialNetwork]);
+      : emptyNetworkPayload();
+  const { network: networkPayload } = useHomeNetworkLive(initialNetworkPayload);
+  const network =
+    chainId === "vrm" ? networkPayload.vrm : networkPayload.vrc;
+  const initialMarketPayload =
+    initialMarket != null
+      ? {
+          fetchedAt: new Date().toISOString(),
+          vrm: chainId === "vrm" ? initialMarket : emptyMarketPayload().vrm,
+          vrc: chainId === "vrc" ? initialMarket : emptyMarketPayload().vrc,
+        }
+      : emptyMarketPayload();
+  const { vrmMarket, vrcMarket } = useHomeMarket(initialMarketPayload);
+  const market = chainId === "vrm" ? vrmMarket : vrcMarket;
 
   const setChain = (next: "vrm" | "vrc") => {
     const params = new URLSearchParams(searchParams.toString());
@@ -72,7 +62,7 @@ export function InsightsDashboard({
     router.replace(`/insights?${params.toString()}`);
   };
 
-  const live = summary.health.trusted;
+  const live = liveSummary.summary.health.trusted;
   const chainAccent = getChainAccentVar(chainId);
 
   return (
@@ -129,7 +119,7 @@ export function InsightsDashboard({
 
       <InsightsKpiStrip
         chainId={chainId}
-        summary={summary}
+        summary={liveSummary.summary}
         network={network}
         market={market}
       />

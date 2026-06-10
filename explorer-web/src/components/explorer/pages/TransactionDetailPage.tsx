@@ -1,18 +1,9 @@
 import {
   AlertBanner,
-  formatHeight,
 } from "@/components/explorer/ExplorerUi";
-import { EntityHero } from "@/components/explorer/BlockDetail";
 import { Breadcrumb } from "@/components/explorer/Breadcrumb";
-import { TxAddressStory } from "@/components/explorer/tx/TxAddressStory";
-import { TxAdvancedPanel } from "@/components/explorer/tx/TxAdvancedPanel";
-import { TxBlockNav } from "@/components/explorer/tx/TxBlockNav";
-import { TxFlowDiagram } from "@/components/explorer/tx/TxFlowDiagram";
-import { TxMetricStrip } from "@/components/explorer/tx/TxMetricStrip";
-import { TxRelatedActivityClient } from "@/components/explorer/tx/TxRelatedActivityClient";
-import { TxShareActions } from "@/components/explorer/tx/TxShareActions";
-import { TxStatusBar } from "@/components/explorer/tx/TxStatusBar";
-import { getTransaction } from "@/lib/api/indexer";
+import { TransactionDetailLive } from "@/components/explorer/tx/TransactionDetailLive";
+import { getChainSummary, getTransaction } from "@/lib/api/indexer";
 import {
   CHAIN_EXPLORERS,
   chainBlockPath,
@@ -53,6 +44,13 @@ export async function TransactionDetailPage({
 
   const tx = result.transaction;
 
+  let summary;
+  try {
+    summary = await getChainSummary(chainId);
+  } catch {
+    summary = null;
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <Breadcrumb
@@ -63,25 +61,12 @@ export async function TransactionDetailPage({
         ]}
       />
 
-      <EntityHero
-        eyebrow={`${chain.name} transaction`}
-        title={ellipsizeMiddle(tx.txid, 24)}
-        hash={tx.txid}
-        badges={<TxShareActions chainId={chainId} txid={tx.txid} />}
-        meta={
-          <span className="text-xs text-fg-muted">
-            Block {formatHeight(tx.blockHeight)} · position {formatHeight(tx.txIndex)}
-          </span>
-        }
+      <TransactionDetailLive
+        chainId={chainId}
+        txid={tx.txid}
+        initialResult={result}
+        initialSummary={summary}
       />
-
-      <TxStatusBar result={result} chainId={chainId} />
-      <TxFlowDiagram result={result} chainId={chainId} />
-      <TxMetricStrip result={result} />
-      <TxAddressStory events={result.addressEvents} chainId={chainId} />
-      <TxBlockNav result={result} chainId={chainId} />
-      <TxAdvancedPanel result={result} chainId={chainId} />
-      <TxRelatedActivityClient chainId={chainId} txid={tx.txid} />
     </div>
   );
 }

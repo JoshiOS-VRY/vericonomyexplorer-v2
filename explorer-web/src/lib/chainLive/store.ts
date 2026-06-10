@@ -1,6 +1,7 @@
 import { fetchChainSummary } from "@/lib/api/client";
 import type { ChainSummary, IndexedBlock } from "@/lib/api/types";
 import { getChainTipHeight, mergeChainHealth } from "@/lib/chainDisplay";
+import { CHAIN_SUMMARY_POLL_MS } from "@/lib/liveDataConfig";
 import {
   createOptimisticTipBlock,
   enrichBlocksFromPrevious,
@@ -31,7 +32,7 @@ export interface ChainLiveSnapshot {
 const CHAINS: ChainId[] = ["vrm", "vrc"];
 const EMPTY_BLOCKS: IndexedBlock[] = [];
 const EMPTY_TRANSACTIONS: ChainSummary["recentTransactions"] = [];
-const POLL_MS = 30_000;
+const POLL_MS = CHAIN_SUMMARY_POLL_MS;
 const REFRESH_DEBOUNCE_MS = 2_000;
 
 const listeners = new Map<ChainId, Set<() => void>>();

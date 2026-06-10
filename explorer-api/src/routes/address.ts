@@ -14,7 +14,8 @@ function parseIncludeRank(value: string | undefined): boolean {
 
 const addressCache = createSwrCache({
   max: 256,
-  ttlMs: 60_000,
+  ttlMs: 5_000,
+  useGlobalTtlOverride: false,
   fetch: async (key, signal) => {
     if (signal.aborted) throw new Error("aborted");
     const parts = key.split(":");
@@ -74,21 +75,13 @@ export async function registerAddressRoutes(app: FastifyInstance): Promise<void>
     const offset = request.query.offset ? Number(request.query.offset) : undefined;
     const includeRank = parseIncludeRank(request.query.includeRank);
     const key = `${chainId}:${request.params.address}:${limit ?? ""}:${offset ?? ""}:${includeRank ? "1" : "0"}`;
-    const cached = addressCache.get(key, { allowStale: true }) as { found?: boolean } | undefined;
-    if (cached?.found) {
-      return cached;
-    }
-
-    const result = (await fetchAddress(chainId, request.params.address, {
-      limit,
-      offset,
-      includeRank,
-    })) as Record<string, unknown>;
-    if (result.found) {
-      addressCache.set(key, result);
-    }
-
-    return result;
+    return swrFetch(addressCache, key, () =>
+      fetchAddress(chainId, request.params.address, {
+        limit,
+        offset,
+        includeRank,
+      }),
+    );
   });
 
   app.get<{

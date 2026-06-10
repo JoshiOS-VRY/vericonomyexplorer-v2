@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { ChainAddressLink } from "@/components/explorer/address/ChainAddressLink";
-import { useEffect, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { TimeCell } from "@/components/explorer/ExplorerUi";
+import { useLivePoll } from "@/hooks/useLivePoll";
 import { clientApiFetch } from "@/lib/api/client";
 import type { TransactionRelatedAddressesResult } from "@/lib/api/types";
 import { chainTxPath, type ChainId } from "@/lib/chainDisplay";
+import { ENTITY_LIVE_POLL_MS } from "@/lib/liveDataConfig";
 import {
   mapTransactionRelatedGroups,
   type TxRelatedActivityGroup,
@@ -17,38 +19,45 @@ import { ellipsizeMiddle } from "@/lib/utils";
 export function TxRelatedActivityClient({
   chainId,
   txid,
+  liveEnabled = true,
 }: {
   chainId: ChainId;
   txid: string;
+  liveEnabled?: boolean;
 }) {
   const [groups, setGroups] = useState<TxRelatedActivityGroup[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const inFlightRef = useRef(false);
+  const hasDataRef = useRef(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const refresh = useCallback(async () => {
+    if (inFlightRef.current) {
+      return;
+    }
 
-    void (async () => {
-      try {
-        const related = await clientApiFetch<TransactionRelatedAddressesResult>(
-          `/${chainId}/tx/${encodeURIComponent(txid)}/related-addresses?limit=6`,
-        );
-
-        if (cancelled) {
-          return;
-        }
-
-        setGroups(mapTransactionRelatedGroups(txid, related));
-      } catch {
-        if (!cancelled) {
-          setFailed(true);
-        }
+    inFlightRef.current = true;
+    try {
+      const related = await clientApiFetch<TransactionRelatedAddressesResult>(
+        `/${chainId}/tx/${encodeURIComponent(txid)}/related-addresses?limit=6`,
+      );
+      setGroups(mapTransactionRelatedGroups(txid, related));
+      hasDataRef.current = true;
+      setFailed(false);
+    } catch {
+      if (!hasDataRef.current) {
+        setFailed(true);
       }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
+    } finally {
+      inFlightRef.current = false;
+    }
   }, [chainId, txid]);
+
+  useLivePoll({
+    chainId,
+    enabled: liveEnabled,
+    intervalMs: ENTITY_LIVE_POLL_MS,
+    onRefresh: refresh,
+  });
 
   if (failed) {
     return (

@@ -1,13 +1,7 @@
 import { AlertBanner, formatHeight } from "@/components/explorer/ExplorerUi";
-import { BlockDetailHero } from "@/components/explorer/BlockDetail";
+import { BlockDetailLive } from "@/components/explorer/block/BlockDetailLive";
 import { Breadcrumb } from "@/components/explorer/Breadcrumb";
-import { BlockAdvancedPanel } from "@/components/explorer/block/BlockAdvancedPanel";
-import { BlockMetricStrip } from "@/components/explorer/block/BlockMetricStrip";
-import { BlockMiningCard } from "@/components/explorer/block/BlockMiningCard";
-import { BlockShareActions } from "@/components/explorer/block/BlockShareActions";
-import { BlockStatusBar } from "@/components/explorer/block/BlockStatusBar";
-import { BlockTxTable } from "@/components/explorer/block/BlockTxTable";
-import { getBlock } from "@/lib/api/indexer";
+import { getBlock, getChainSummary } from "@/lib/api/indexer";
 import { CHAIN_EXPLORERS, type ChainId } from "@/lib/chainDisplay";
 import { normalizeLimit, normalizeOffset } from "@/lib/utils";
 
@@ -30,6 +24,13 @@ export async function BlockDetailPage({
     result = await getBlock(chainId, hashOrHeight, { limit, offset });
   } catch (err) {
     loadError = err instanceof Error ? err.message : "Unable to load block data.";
+  }
+
+  let summary;
+  try {
+    summary = await getChainSummary(chainId);
+  } catch {
+    summary = null;
   }
 
   if (loadError || !result) {
@@ -56,7 +57,6 @@ export async function BlockDetailPage({
   }
 
   const block = result.block;
-  const blockTime = result.transactions.find((tx) => tx.time)?.time ?? block.time ?? null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -68,25 +68,14 @@ export async function BlockDetailPage({
         ]}
       />
 
-      <BlockDetailHero
-        height={block.height}
-        hash={block.hash}
-        blockTime={blockTime}
-        txCount={block.txCount}
-        size={block.size ?? null}
-        difficulty={block.difficulty}
-        previousHash={block.previousHash}
-        nextHash={block.nextHash}
-        actions={
-          <BlockShareActions chainId={chainId} hash={block.hash} height={block.height} />
-        }
+      <BlockDetailLive
+        chainId={chainId}
+        hashOrHeight={hashOrHeight}
+        initialResult={result}
+        initialSummary={summary}
+        limit={limit}
+        offset={offset}
       />
-
-      <BlockStatusBar result={result} />
-      <BlockMiningCard result={result} chainId={chainId} />
-      <BlockMetricStrip result={result} />
-      <BlockTxTable result={result} blockHeight={block.height} chainId={chainId} />
-      <BlockAdvancedPanel result={result} chainId={chainId} />
     </div>
   );
 }
