@@ -297,6 +297,11 @@ function ActivityBarChart({
 }) {
   const categoryFill = (id: string) => colors[CATEGORY_COLORS[id] ?? "accent"];
 
+  const formatActivityTick = (value: string | number) => {
+    const row = chartData.find((item) => item.bucketKey === String(value));
+    return row?.axisLabel ?? "";
+  };
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={chartData} margin={{ top: 12, right: 12, left: 4, bottom: 4 }}>
@@ -308,7 +313,7 @@ function ActivityBarChart({
           axisLine={{ stroke: colors.border, strokeOpacity: 0.6 }}
           minTickGap={period === "7d" ? 16 : 28}
           dy={6}
-          tickFormatter={(_value, index) => chartData[index]?.axisLabel ?? ""}
+          tickFormatter={formatActivityTick}
         />
         <YAxis
           tick={{ fill: colors.fgSubtle, fontSize: 11 }}
@@ -345,7 +350,6 @@ function CumulativeBalanceChart({
   fillBottomOpacity,
 }: {
   chartData: {
-    label: string;
     balance: number;
     time: number;
     height: number | null;
@@ -368,12 +372,15 @@ function CumulativeBalanceChart({
         </defs>
         <CartesianGrid stroke={colors.border} strokeOpacity={0.5} strokeDasharray="3 3" vertical={false} />
         <XAxis
-          dataKey="label"
+          dataKey="time"
+          type="number"
+          domain={["dataMin", "dataMax"]}
           tick={{ fill: colors.fgSubtle, fontSize: 11 }}
           tickLine={false}
           axisLine={{ stroke: colors.border, strokeOpacity: 0.6 }}
           minTickGap={period === "7d" ? 24 : 32}
           dy={6}
+          tickFormatter={(value: number) => formatChartAxisDate(value)}
         />
         <YAxis
           tick={{ fill: colors.fgSubtle, fontSize: 11 }}
@@ -405,10 +412,6 @@ function CumulativeBalanceChart({
       </AreaChart>
     </ResponsiveContainer>
   );
-}
-
-function formatBalancePointLabel(time: number, _period: AddressBalanceHistoryPeriodId): string {
-  return formatChartAxisDate(time);
 }
 
 export function AddressBalanceChart({
@@ -569,7 +572,6 @@ export function AddressBalanceChart({
   }));
 
   const balanceData = history.points.map((point) => ({
-    label: formatBalancePointLabel(point.time, period),
     balance: point.balanceAmount,
     time: point.time,
     height: point.height,
