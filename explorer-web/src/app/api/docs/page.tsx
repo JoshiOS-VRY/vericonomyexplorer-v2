@@ -20,6 +20,7 @@ export default async function ApiDocsPage() {
           "/v1/landing",
           "/v1/vrm/dashboard",
           "/v1/vrm/supply",
+          "/v1/vrc/supply",
           "/v1/:chain/tip/stream",
           "/v1/:chain/summary",
           "/v1/:chain/summary/lite",
