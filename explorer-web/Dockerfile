@@ -43,7 +43,7 @@ RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
 # outputFileTracingRoot points at the monorepo root (standalone under app/explorer-web with Next 16)
 COPY --from=builder /app/explorer-web/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/explorer-web/.next/standalone/app/explorer-web ./
+COPY --from=builder --chown=nextjs:nodejs /app/explorer-web/.next/standalone/explorer-web ./
 COPY --from=builder --chown=nextjs:nodejs /app/explorer-web/.next/static ./.next/static
 
 USER nextjs

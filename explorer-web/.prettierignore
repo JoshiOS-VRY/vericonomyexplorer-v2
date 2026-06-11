@@ -6,3 +6,4 @@ package-lock.json
 *.tsbuildinfo
 next-env.d.ts
 .vercel
+tmp-*.json

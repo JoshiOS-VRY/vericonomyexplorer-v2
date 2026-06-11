@@ -176,7 +176,13 @@ export const staticPageSeo: Record<string, PageSeoInput> = {
     description:
       'REST API documentation for Vericonomy Explorer — chain summaries, blocks, transactions, addresses, rich lists, and indexer health endpoints.',
     path: '/api/docs',
-    keywords: ['blockchain API', 'explorer API', 'Verium API', 'indexer API', 'developer reference'],
+    keywords: [
+      'blockchain API',
+      'explorer API',
+      'Verium API',
+      'indexer API',
+      'developer reference',
+    ],
   },
   vrmRichlist: {
     title: 'Verium Rich List',

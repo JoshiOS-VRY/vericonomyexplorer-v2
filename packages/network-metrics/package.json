@@ -1,0 +1,25 @@
+{
+  "name": "@vericonomy/network-metrics",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Canonical Verium network hashrate conversion, resolution, and display formatting.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "node --test --import tsx test/*.test.ts",
+    "typecheck": "tsc -b --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.19",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

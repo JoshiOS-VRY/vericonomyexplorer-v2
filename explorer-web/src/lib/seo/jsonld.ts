@@ -1,9 +1,4 @@
-import {
-  SITE_DESCRIPTION,
-  SITE_NAME,
-  absoluteUrl,
-  getSiteUrl,
-} from '@/lib/seo/site';
+import { SITE_DESCRIPTION, SITE_NAME, absoluteUrl, getSiteUrl } from '@/lib/seo/site';
 
 export function organizationJsonLd() {
   const siteUrl = getSiteUrl();

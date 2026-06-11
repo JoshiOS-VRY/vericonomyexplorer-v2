@@ -3,9 +3,13 @@ import { config as loadDotenv } from 'dotenv';
 
 let loaded = false;
 
-/** Load root repo .env so BTCEXP_* / VCEXP_* vars are available to Next. */
+function shouldLoadDotenvFiles(): boolean {
+  return !process.env.VERCEL;
+}
+
+/** Load root repo .env so BTCEXP_* / VCEXP_* vars are available to Next (local/Docker only). */
 export function loadRootEnv(): void {
-  if (loaded) return;
+  if (loaded || !shouldLoadDotenvFiles()) return;
   loaded = true;
   const rootDir = path.join(process.cwd(), '..');
   loadDotenv({ path: path.join(rootDir, '.env') });

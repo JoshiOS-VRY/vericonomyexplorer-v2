@@ -2,10 +2,12 @@ import type { NextConfig } from 'next';
 import path from 'node:path';
 import { config as loadDotenv } from 'dotenv';
 
-const rootDir = path.join(__dirname, '..');
-const monorepoRoot = path.join(__dirname, '../..');
-loadDotenv({ path: path.join(rootDir, '.env') });
-loadDotenv({ path: path.join(rootDir, '.env.local'), override: true });
+const repoRoot = path.join(__dirname, '..');
+
+if (!process.env.VERCEL) {
+  loadDotenv({ path: path.join(repoRoot, '.env') });
+  loadDotenv({ path: path.join(repoRoot, '.env.local'), override: true });
+}
 
 function resolveApiBase(): string {
   if (process.env.EXPLORER_API_URL) return process.env.EXPLORER_API_URL.replace(/\/$/, '');
@@ -34,10 +36,10 @@ function resolveSiteUrl(): string {
 
 const nextConfig: NextConfig = {
   output: 'standalone',
-  outputFileTracingRoot: monorepoRoot,
+  outputFileTracingRoot: repoRoot,
   transpilePackages: ['@vericonomy/network-metrics'],
   turbopack: {
-    root: monorepoRoot,
+    root: repoRoot,
   },
   env: {
     NEXT_PUBLIC_SITE_URL: resolveSiteUrl(),

@@ -21,7 +21,14 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
       {
-        userAgent: ['GPTBot', 'ChatGPT-User', 'OAI-SearchBot', 'PerplexityBot', 'ClaudeBot', 'anthropic-ai'],
+        userAgent: [
+          'GPTBot',
+          'ChatGPT-User',
+          'OAI-SearchBot',
+          'PerplexityBot',
+          'ClaudeBot',
+          'anthropic-ai',
+        ],
         allow: ['/', '/vrm/', '/vrc/', '/search', '/about', '/insights', '/api/docs'],
         disallow: ['/admin/', '/api/', '/rpc-terminal', '/rpc-browser', '/terminal'],
       },
