@@ -1,0 +1,3 @@
+Vercel CLI 54.12.0 (Node.js 20.19.4)
+Fetching deployment "dpl_AqqJjetQwx3ZS9zqBFRtodqqemdf" in joshua-tiptons-projects
+status	ΓùÅ Error

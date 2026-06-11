@@ -215,22 +215,24 @@ export function ChainHubSection({
                     </div>
                   </div>
                 </div>
-                <div
-                  className="block-chain-strip-mobile mx-3 mb-3 mt-3 sm:hidden"
-                  aria-label={`Latest ${stripBlocks.length} ${config.ticker} blocks`}
-                >
-                  {stripBlocks.map((block, index) => (
-                    <BlockChainStripMobileCard
-                      key={block.hash}
-                      block={block}
-                      blockHref={config.blockHref?.(block.height)}
-                      isTip={index === stripBlocks.length - 1}
-                      tipLive={atTip && index === stripBlocks.length - 1}
-                      indexing={
-                        index === stripBlocks.length - 1 && isOptimisticTipBlock(block, chainId)
-                      }
-                    />
-                  ))}
+                <div className="mx-3 mb-3 mt-3 sm:hidden">
+                  <div
+                    className="block-chain-strip-mobile"
+                    aria-label={`Latest ${stripBlocks.length} ${config.ticker} blocks`}
+                  >
+                    {stripBlocks.map((block, index) => (
+                      <BlockChainStripMobileCard
+                        key={block.hash}
+                        block={block}
+                        blockHref={config.blockHref?.(block.height)}
+                        isTip={index === stripBlocks.length - 1}
+                        tipLive={atTip && index === stripBlocks.length - 1}
+                        indexing={
+                          index === stripBlocks.length - 1 && isOptimisticTipBlock(block, chainId)
+                        }
+                      />
+                    ))}
+                  </div>
                 </div>
               </>
             ) : null}

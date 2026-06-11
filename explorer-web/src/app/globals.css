@@ -1180,14 +1180,16 @@ html:not(.light)
   background: color-mix(in srgb, var(--bg-subtle) 35%, transparent);
 }
 
-.block-chain-strip-mobile {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(8.5rem, 1fr);
-  gap: 0.625rem;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding-bottom: 0.125rem;
+@media (max-width: 639px) {
+  .block-chain-strip-mobile {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(8.5rem, 1fr);
+    gap: 0.625rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 0.125rem;
+  }
 }
 
 .block-chain-strip-mobile__card {
