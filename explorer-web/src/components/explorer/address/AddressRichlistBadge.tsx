@@ -1,7 +1,7 @@
-import Link from "next/link";
-import type { AddressRichlistInfo } from "@/lib/api/types";
-import { formatHeight } from "@/components/explorer/ExplorerUi";
-import { CHAIN_EXPLORERS, type ChainId } from "@/lib/chainDisplay";
+import Link from 'next/link';
+import type { AddressRichlistInfo } from '@/lib/api/types';
+import { formatHeight } from '@/components/explorer/ExplorerUi';
+import { CHAIN_EXPLORERS, type ChainId } from '@/lib/chainDisplay';
 
 export function AddressRichlistBadge({
   chainId,
@@ -22,9 +22,7 @@ export function AddressRichlistBadge({
 
   const offset = Math.max(richlist.rank - 1, 0);
   const topPercent =
-    richlist.percentile != null
-      ? Math.max(1, Math.ceil(richlist.percentile * 100))
-      : null;
+    richlist.percentile != null ? Math.max(1, Math.ceil(richlist.percentile * 100)) : null;
 
   return (
     <Link
@@ -35,7 +33,7 @@ export function AddressRichlistBadge({
       <span>#{formatHeight(richlist.rank)}</span>
       <span className="font-normal text-accent/80">
         of {formatHeight(richlist.total)}
-        {topPercent != null ? ` · top ${topPercent}%` : ""}
+        {topPercent != null ? ` · top ${topPercent}%` : ''}
       </span>
     </Link>
   );

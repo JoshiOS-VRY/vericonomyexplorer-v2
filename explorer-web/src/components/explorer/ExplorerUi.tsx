@@ -1,17 +1,11 @@
-import Link from "next/link";
-import { ChainAddressLink } from "@/components/explorer/address/ChainAddressLink";
-import { Badge } from "@/components/ui/Badge";
-import { parseAddressFromExplorerHref } from "@/lib/explorerAddressHref";
-import type { ChainId } from "@/lib/chainDisplay";
-import {
-  cn,
-  ellipsizeMiddle,
-  formatBlockAge,
-  formatNumber,
-  formatUnixTime,
-} from "@/lib/utils";
-import type { SourceInfo } from "@/lib/api/types";
-import { formatExplorerSourceLabel } from "@/lib/explorerCopy";
+import Link from 'next/link';
+import { ChainAddressLink } from '@/components/explorer/address/ChainAddressLink';
+import { Badge } from '@/components/ui/Badge';
+import { parseAddressFromExplorerHref } from '@/lib/explorerAddressHref';
+import type { ChainId } from '@/lib/chainDisplay';
+import { cn, ellipsizeMiddle, formatBlockAge, formatNumber, formatUnixTime } from '@/lib/utils';
+import type { SourceInfo } from '@/lib/api/types';
+import { formatExplorerSourceLabel } from '@/lib/explorerCopy';
 
 export function SourceBadge({ source }: { source: SourceInfo }) {
   const label = formatExplorerSourceLabel(source);
@@ -22,31 +16,23 @@ export function SourceBadge({ source }: { source: SourceInfo }) {
 }
 
 export function StatusDot({
-  tone = "accent",
+  tone = 'accent',
   pulse = false,
 }: {
-  tone?: "success" | "warning" | "accent" | "neutral";
+  tone?: 'success' | 'warning' | 'accent' | 'neutral';
   pulse?: boolean;
 }) {
   const colors = {
-    success: "bg-success",
-    warning: "bg-warning",
-    accent: "bg-accent",
-    neutral: "bg-fg-subtle",
+    success: 'bg-success',
+    warning: 'bg-warning',
+    accent: 'bg-accent',
+    neutral: 'bg-fg-subtle',
   };
   return (
-    <span
-      className={cn(
-        "relative inline-flex h-2 w-2 shrink-0 rounded-full",
-        colors[tone],
-      )}
-    >
+    <span className={cn('relative inline-flex h-2 w-2 shrink-0 rounded-full', colors[tone])}>
       {pulse ? (
         <span
-          className={cn(
-            "absolute inset-0 animate-ping rounded-full opacity-60",
-            colors[tone],
-          )}
+          className={cn('absolute inset-0 animate-ping rounded-full opacity-60', colors[tone])}
         />
       ) : null}
     </span>
@@ -56,19 +42,19 @@ export function StatusDot({
 export function AlertBanner({
   title,
   children,
-  tone = "warning",
+  tone = 'warning',
 }: {
   title: string;
   children: React.ReactNode;
-  tone?: "warning" | "danger" | "accent";
+  tone?: 'warning' | 'danger' | 'accent';
 }) {
   const styles = {
-    warning: "border-warning/30 bg-warning/10 text-warning",
-    danger: "border-danger/30 bg-danger/10 text-danger",
-    accent: "border-accent/30 bg-accent/10 text-accent",
+    warning: 'border-warning/30 bg-warning/10 text-warning',
+    danger: 'border-danger/30 bg-danger/10 text-danger',
+    accent: 'border-accent/30 bg-accent/10 text-accent',
   };
   return (
-    <div className={cn("rounded-lg border px-4 py-3 text-sm", styles[tone])}>
+    <div className={cn('rounded-lg border px-4 py-3 text-sm', styles[tone])}>
       <h2 className="mb-1 font-semibold">{title}</h2>
       <div className="leading-relaxed opacity-90">{children}</div>
     </div>
@@ -88,16 +74,12 @@ export function MetricStrip({
   return (
     <div className="grid grid-cols-2 divide-y divide-border/70 border-t border-border/70 bg-bg-panel/30 sm:grid-cols-3 lg:grid-cols-6 lg:divide-y-0 lg:divide-x">
       {items.map((item) => (
-        <div key={item.label} className={cn("px-4 py-3", item.className)}>
+        <div key={item.label} className={cn('px-4 py-3', item.className)}>
           <div className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
             {item.label}
           </div>
-          <div className="mt-1 text-sm font-semibold tabular-nums text-fg">
-            {item.value}
-          </div>
-          {item.hint ? (
-            <div className="mt-0.5 text-[11px] text-fg-subtle">{item.hint}</div>
-          ) : null}
+          <div className="mt-1 text-sm font-semibold tabular-nums text-fg">{item.value}</div>
+          {item.hint ? <div className="mt-0.5 text-[11px] text-fg-subtle">{item.hint}</div> : null}
         </div>
       ))}
     </div>
@@ -122,18 +104,14 @@ export function ChainCard({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-bg-panel p-4 shadow-sm transition hover:border-border-strong",
-        muted && "opacity-75",
+        'rounded-xl border border-border bg-bg-panel p-4 shadow-sm transition hover:border-border-strong',
+        muted && 'opacity-75'
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={logo}
-            alt=""
-            className="h-8 w-8 rounded-lg object-contain"
-          />
+          <img src={logo} alt="" className="h-8 w-8 rounded-lg object-contain" />
           <div>
             <h3 className="text-sm font-semibold text-fg">{title}</h3>
             <div className="mt-1">{badge}</div>
@@ -169,14 +147,10 @@ export function FeatureTile({
   return (
     <div className="rounded-xl border border-border bg-bg-panel p-5 shadow-sm transition hover:border-border-strong">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-sm font-medium uppercase tracking-wide text-fg-muted">
-          {title}
-        </h3>
+        <h3 className="text-sm font-medium uppercase tracking-wide text-fg-muted">{title}</h3>
         {badge}
       </div>
-      <p className="mt-3 text-sm leading-relaxed text-fg-muted">
-        {description}
-      </p>
+      <p className="mt-3 text-sm leading-relaxed text-fg-muted">{description}</p>
       <Link
         href={href}
         className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent underline-offset-2 hover:underline"
@@ -188,18 +162,10 @@ export function FeatureTile({
   );
 }
 
-export function SectionHeader({
-  title,
-  action,
-}: {
-  title: string;
-  action?: React.ReactNode;
-}) {
+export function SectionHeader({ title, action }: { title: string; action?: React.ReactNode }) {
   return (
     <div className="mb-3 flex items-center justify-between gap-3">
-      <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted">
-        {title}
-      </h2>
+      <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted">{title}</h2>
       {action}
     </div>
   );
@@ -213,24 +179,15 @@ export function EmptyPanel({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function SummaryGrid({
-  items,
-}: {
-  items: { label: string; value: React.ReactNode }[];
-}) {
+export function SummaryGrid({ items }: { items: { label: string; value: React.ReactNode }[] }) {
   return (
     <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((item) => (
-        <div
-          key={item.label}
-          className="rounded-md border border-border bg-bg-subtle px-3 py-2.5"
-        >
+        <div key={item.label} className="rounded-md border border-border bg-bg-subtle px-3 py-2.5">
           <dt className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
             {item.label}
           </dt>
-          <dd className="mt-1 text-sm font-medium tabular-nums text-fg">
-            {item.value}
-          </dd>
+          <dd className="mt-1 text-sm font-medium tabular-nums text-fg">{item.value}</dd>
         </div>
       ))}
     </dl>
@@ -269,8 +226,8 @@ export function PaginationLinks({
   basePath,
   paging,
   extraParams = {},
-  offsetParam = "offset",
-  limitParam = "limit",
+  offsetParam = 'offset',
+  limitParam = 'limit',
 }: {
   basePath: string;
   paging: { limit: number; offset: number; hasMore: boolean };
@@ -282,9 +239,7 @@ export function PaginationLinks({
   const nextOffset = paging.offset + paging.limit;
   const buildHref = (offset: number) => {
     const params = new URLSearchParams(
-      Object.fromEntries(
-        Object.entries(extraParams).map(([k, v]) => [k, String(v)]),
-      ),
+      Object.fromEntries(Object.entries(extraParams).map(([k, v]) => [k, String(v)]))
     );
     params.set(limitParam, String(paging.limit));
     params.set(offsetParam, String(offset));
@@ -338,11 +293,11 @@ export function DataTable({
   return (
     <div
       className={cn(
-        "data-table-scroll overflow-x-auto",
-        compact ? "max-h-[360px] overflow-y-auto" : undefined,
+        'data-table-scroll overflow-x-auto',
+        compact ? 'max-h-[360px] overflow-y-auto' : undefined
       )}
     >
-      <table className={cn("data-table", stackOnMobile && "data-table--stack")}>
+      <table className={cn('data-table', stackOnMobile && 'data-table--stack')}>
         <thead>
           <tr>
             {headers.map((header) => (
@@ -380,9 +335,7 @@ export function MonoLink({
   /** When set (or parsed from `/vrm/address/…`), pool payout uses the Verium Pool pill. */
   chainId?: ChainId;
 }) {
-  const parsed = chainId
-    ? { chainId, address: value }
-    : parseAddressFromExplorerHref(href);
+  const parsed = chainId ? { chainId, address: value } : parseAddressFromExplorerHref(href);
 
   if (parsed) {
     return (
@@ -407,13 +360,7 @@ export function MonoLink({
   );
 }
 
-export function TimeCell({
-  time,
-  absolute = false,
-}: {
-  time: number | null;
-  absolute?: boolean;
-}) {
+export function TimeCell({ time, absolute = false }: { time: number | null; absolute?: boolean }) {
   if (!time) return <span className="text-xs text-fg-subtle">—</span>;
 
   return (
@@ -452,12 +399,8 @@ export function RankList({
           <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg-subtle text-xs font-semibold text-fg-subtle">
             {item.rank}
           </span>
-          <strong className="flex-1 truncate text-xs text-fg">
-            {item.label}
-          </strong>
-          <em className="text-sm not-italic tabular-nums text-fg-muted">
-            {item.value}
-          </em>
+          <strong className="flex-1 truncate text-xs text-fg">{item.label}</strong>
+          <em className="text-sm not-italic tabular-nums text-fg-muted">{item.value}</em>
         </Link>
       ))}
     </div>
@@ -485,16 +428,10 @@ export function PageHero({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           {eyebrow ? (
-            <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
-              {eyebrow}
-            </p>
+            <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">{eyebrow}</p>
           ) : null}
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-fg">
-            {title}
-          </h1>
-          {subtitle ? (
-            <p className="mt-2 max-w-2xl text-sm text-fg-muted">{subtitle}</p>
-          ) : null}
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-fg">{title}</h1>
+          {subtitle ? <p className="mt-2 max-w-2xl text-sm text-fg-muted">{subtitle}</p> : null}
         </div>
         {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
       </div>
@@ -523,9 +460,7 @@ export function WalletHero({
       <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-8">
         <div className="min-w-0">
           {eyebrow ? (
-            <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
-              {eyebrow}
-            </p>
+            <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">{eyebrow}</p>
           ) : null}
           <div className="mt-2">{title}</div>
           {subtitle ? <div className="mt-3">{subtitle}</div> : null}

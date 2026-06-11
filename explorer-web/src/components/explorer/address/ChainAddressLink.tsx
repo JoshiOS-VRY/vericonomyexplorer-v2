@@ -1,7 +1,7 @@
-import Link from "next/link";
-import { VrmAddressLink } from "@/components/explorer/address/VrmAddressLink";
-import { chainAddressPath, type ChainId } from "@/lib/chainDisplay";
-import { cn, ellipsizeMiddle } from "@/lib/utils";
+import Link from 'next/link';
+import { VrmAddressLink } from '@/components/explorer/address/VrmAddressLink';
+import { chainAddressPath, type ChainId } from '@/lib/chainDisplay';
+import { cn, ellipsizeMiddle } from '@/lib/utils';
 
 export function ChainAddressLink({
   chainId,
@@ -18,7 +18,7 @@ export function ChainAddressLink({
   prefetch?: boolean;
   showFullAddress?: boolean;
 }) {
-  if (chainId === "vrm") {
+  if (chainId === 'vrm') {
     return (
       <VrmAddressLink
         address={address}
@@ -35,10 +35,7 @@ export function ChainAddressLink({
       href={chainAddressPath(chainId, address)}
       title={address}
       prefetch={prefetch}
-      className={cn(
-        "text-sm font-medium text-accent hover:underline hash-mono",
-        className,
-      )}
+      className={cn('text-sm font-medium text-accent hover:underline hash-mono', className)}
     >
       {showFullAddress ? address : ellipsizeMiddle(address, maxLength)}
     </Link>

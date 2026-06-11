@@ -1,30 +1,30 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { createPortal } from "react-dom";
-import { SearchForm } from "@/components/explorer/SearchForm";
-import { useSearchRecentBlocks } from "@/components/explorer/SearchRecentBlocksContext";
-import { SyncStatusPills } from "@/components/layout/SyncStatusPills";
+import Link from 'next/link';
+import Image from 'next/image';
+import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { createPortal } from 'react-dom';
+import { SearchForm } from '@/components/explorer/SearchForm';
+import { useSearchRecentBlocks } from '@/components/explorer/SearchRecentBlocksContext';
+import { SyncStatusPills } from '@/components/layout/SyncStatusPills';
 import {
   headerNav,
   type HeaderNavDropdownItem,
   type HeaderNavItem,
   type HeaderNavLinkItem,
-} from "@/components/layout/navLinks";
-import { useHydrated } from "@/hooks/useHydrated";
-import { isNavDropdownActive, isNavLinkActive } from "@/lib/navUtils";
-import type { ChainSummary } from "@/lib/api/types";
-import { cn } from "@/lib/utils";
+} from '@/components/layout/navLinks';
+import { useHydrated } from '@/hooks/useHydrated';
+import { isNavDropdownActive, isNavLinkActive } from '@/lib/navUtils';
+import type { ChainSummary } from '@/lib/api/types';
+import { cn } from '@/lib/utils';
 
-type ThemeMode = "light" | "dark" | "system";
+type ThemeMode = 'light' | 'dark' | 'system';
 
 const themeOptions: { mode: ThemeMode; label: string }[] = [
-  { mode: "system", label: "System theme" },
-  { mode: "light", label: "Light theme" },
-  { mode: "dark", label: "Dark theme" },
+  { mode: 'system', label: 'System theme' },
+  { mode: 'light', label: 'Light theme' },
+  { mode: 'dark', label: 'Dark theme' },
 ];
 
 function ThemeToggle() {
@@ -42,15 +42,11 @@ function ThemeToggle() {
           aria-pressed="false"
           suppressHydrationWarning
           className={cn(
-            "theme-toggle-btn inline-flex h-7 items-center rounded px-2 text-[11px] font-medium transition-colors",
-            "text-fg-muted hover:bg-bg-subtle hover:text-fg",
+            'theme-toggle-btn inline-flex h-7 items-center rounded px-2 text-[11px] font-medium transition-colors',
+            'text-fg-muted hover:bg-bg-subtle hover:text-fg'
           )}
         >
-          {optionMode === "system"
-            ? "Auto"
-            : optionMode === "light"
-              ? "Light"
-              : "Dark"}
+          {optionMode === 'system' ? 'Auto' : optionMode === 'light' ? 'Light' : 'Dark'}
         </button>
       ))}
     </div>
@@ -73,14 +69,12 @@ function HeaderNavLink({
       href={item.href}
       prefetch
       data-nav-link
-      data-nav-exact={item.exact ? "true" : undefined}
-      data-nav-prefix={item.prefix ? "true" : undefined}
-      aria-current={active ? "page" : undefined}
+      data-nav-exact={item.exact ? 'true' : undefined}
+      data-nav-prefix={item.prefix ? 'true' : undefined}
+      aria-current={active ? 'page' : undefined}
       className={cn(
         className,
-        active
-          ? "bg-accent/10 text-accent"
-          : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
+        active ? 'bg-accent/10 text-accent' : 'text-fg-muted hover:bg-bg-subtle hover:text-fg'
       )}
     >
       {item.label}
@@ -106,17 +100,12 @@ function HeaderNavDropdownMenu({
       role="menu"
       style={style}
       className={cn(
-        "z-[60] min-w-[10rem] rounded-md border border-border bg-bg-panel py-1 shadow-lg",
-        className,
+        'z-[60] min-w-[10rem] rounded-md border border-border bg-bg-panel py-1 shadow-lg',
+        className
       )}
     >
       {item.items.map((child) => {
-        const childActive = isNavLinkActive(
-          pathname,
-          child.href,
-          false,
-          item.prefix,
-        );
+        const childActive = isNavLinkActive(pathname, child.href, false, item.prefix);
         return (
           <Link
             key={child.href}
@@ -124,14 +113,14 @@ function HeaderNavDropdownMenu({
             prefetch
             role="menuitem"
             data-nav-link
-            data-nav-prefix={item.prefix ? "true" : undefined}
-            aria-current={childActive ? "page" : undefined}
+            data-nav-prefix={item.prefix ? 'true' : undefined}
+            aria-current={childActive ? 'page' : undefined}
             onClick={onNavigate}
             className={cn(
-              "block px-3 py-2 text-sm transition-colors",
+              'block px-3 py-2 text-sm transition-colors',
               childActive
-                ? "bg-accent/10 text-accent"
-                : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
+                ? 'bg-accent/10 text-accent'
+                : 'text-fg-muted hover:bg-bg-subtle hover:text-fg'
             )}
           >
             {child.label}
@@ -172,7 +161,7 @@ function HeaderNavDropdown({
 
       const rect = buttonRef.current.getBoundingClientRect();
       setMenuStyle({
-        position: "fixed",
+        position: 'fixed',
         top: rect.bottom + 4,
         left: rect.left,
         minWidth: Math.max(rect.width, 160),
@@ -180,37 +169,34 @@ function HeaderNavDropdown({
     }
 
     updateMenuPosition();
-    window.addEventListener("resize", updateMenuPosition);
-    window.addEventListener("scroll", updateMenuPosition, true);
+    window.addEventListener('resize', updateMenuPosition);
+    window.addEventListener('scroll', updateMenuPosition, true);
 
     function handlePointerDown(event: PointerEvent) {
       const target = event.target as Node;
-      if (
-        rootRef.current?.contains(target) ||
-        menuRef.current?.contains(target)
-      ) {
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) {
         return;
       }
       setOpen(false);
     }
 
     function handleEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         setOpen(false);
       }
     }
 
     const listenerTimer = window.setTimeout(() => {
-      document.addEventListener("pointerdown", handlePointerDown);
+      document.addEventListener('pointerdown', handlePointerDown);
     }, 0);
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener('keydown', handleEscape);
 
     return () => {
       window.clearTimeout(listenerTimer);
-      window.removeEventListener("resize", updateMenuPosition);
-      window.removeEventListener("scroll", updateMenuPosition, true);
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener('resize', updateMenuPosition);
+      window.removeEventListener('scroll', updateMenuPosition, true);
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleEscape);
     };
   }, [open, usePortalMenu]);
 
@@ -221,9 +207,7 @@ function HeaderNavDropdown({
       pathname={pathname}
       item={item}
       onNavigate={closeMenu}
-      className={
-        usePortalMenu ? undefined : "absolute left-0 top-[calc(100%+4px)]"
-      }
+      className={usePortalMenu ? undefined : 'absolute left-0 top-[calc(100%+4px)]'}
       style={usePortalMenu ? menuStyle : undefined}
     />
   ) : null;
@@ -234,16 +218,14 @@ function HeaderNavDropdown({
         ref={buttonRef}
         type="button"
         data-nav-dropdown
-        data-nav-prefix={item.prefix ? "true" : undefined}
+        data-nav-prefix={item.prefix ? 'true' : undefined}
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-current={active ? "page" : undefined}
+        aria-current={active ? 'page' : undefined}
         onClick={() => setOpen((value) => !value)}
         className={cn(
           className,
-          active
-            ? "bg-accent/10 text-accent"
-            : "text-fg-muted hover:bg-bg-subtle hover:text-fg",
+          active ? 'bg-accent/10 text-accent' : 'text-fg-muted hover:bg-bg-subtle hover:text-fg'
         )}
       >
         <span>{item.label}</span>
@@ -273,7 +255,7 @@ function HeaderNavItemView({
   className?: string;
   usePortalMenu?: boolean;
 }) {
-  if (item.type === "dropdown") {
+  if (item.type === 'dropdown') {
     return (
       <HeaderNavDropdown
         pathname={pathname}
@@ -284,16 +266,12 @@ function HeaderNavItemView({
     );
   }
 
-  return (
-    <HeaderNavLink pathname={pathname} item={item} className={className} />
-  );
+  return <HeaderNavLink pathname={pathname} item={item} className={className} />;
 }
 
 function HeaderSearch() {
   const recentBlocks = useSearchRecentBlocks();
-  return (
-    <SearchForm variant="blockchair" recentBlocks={recentBlocks ?? undefined} />
-  );
+  return <SearchForm variant="blockchair" recentBlocks={recentBlocks ?? undefined} />;
 }
 
 export function BlockchairHeader({
@@ -307,9 +285,7 @@ export function BlockchairHeader({
 }) {
   const hydrated = useHydrated();
   const pathnameFromRouter = usePathname();
-  const pathname = hydrated
-    ? (pathnameFromRouter ?? pathnameProp)
-    : pathnameProp;
+  const pathname = hydrated ? (pathnameFromRouter ?? pathnameProp) : pathnameProp;
 
   return (
     <header className="bc-header sticky top-0 z-40 border-b border-border bg-bg-panel shadow-sm">
@@ -323,19 +299,15 @@ export function BlockchairHeader({
             className="h-10 w-10 object-contain"
           />
           <div className="leading-tight">
-            <span className="block text-sm font-bold tracking-tight text-fg">
-              Vericonomy
-            </span>
-            <span className="block text-[11px] font-medium text-accent">
-              Block explorer
-            </span>
+            <span className="block text-sm font-bold tracking-tight text-fg">Vericonomy</span>
+            <span className="block text-[11px] font-medium text-accent">Block explorer</span>
           </div>
         </Link>
 
         <nav className="hidden items-center gap-0.5 md:flex" aria-label="Main">
           {headerNav.map((item) => (
             <HeaderNavItemView
-              key={item.type === "dropdown" ? item.label : item.href}
+              key={item.type === 'dropdown' ? item.label : item.href}
               pathname={pathname}
               item={item}
               className="rounded px-3 py-1.5 text-sm font-medium transition-colors"
@@ -362,7 +334,7 @@ export function BlockchairHeader({
         <div className="mx-auto flex max-w-[1720px] flex-wrap gap-1">
           {headerNav.map((item) => (
             <HeaderNavItemView
-              key={item.type === "dropdown" ? item.label : item.href}
+              key={item.type === 'dropdown' ? item.label : item.href}
               pathname={pathname}
               item={item}
               usePortalMenu

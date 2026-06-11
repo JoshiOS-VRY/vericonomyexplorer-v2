@@ -1,9 +1,9 @@
-import Link from "next/link";
-import { ChainAddressLink } from "@/components/explorer/address/ChainAddressLink";
-import { AnimatedStatValue } from "@/components/explorer/AnimatedStatValue";
-import { parseAddressFromExplorerHref } from "@/lib/explorerAddressHref";
-import { isVeriumPoolPayoutAddress } from "@/lib/veriumPoolExtracted";
-import { cn } from "@/lib/utils";
+import Link from 'next/link';
+import { ChainAddressLink } from '@/components/explorer/address/ChainAddressLink';
+import { AnimatedStatValue } from '@/components/explorer/AnimatedStatValue';
+import { parseAddressFromExplorerHref } from '@/lib/explorerAddressHref';
+import { isVeriumPoolPayoutAddress } from '@/lib/veriumPoolExtracted';
+import { cn } from '@/lib/utils';
 export function BcPageHeader({
   title,
   subtitle,
@@ -19,14 +19,10 @@ export function BcPageHeader({
     <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
       <div>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-bold tracking-tight text-fg sm:text-[1.75rem]">
-            {title}
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight text-fg sm:text-[1.75rem]">{title}</h1>
           {badge}
         </div>
-        {subtitle ? (
-          <p className="mt-1 text-sm text-fg-muted">{subtitle}</p>
-        ) : null}
+        {subtitle ? <p className="mt-1 text-sm text-fg-muted">{subtitle}</p> : null}
       </div>
       {action}
     </div>
@@ -42,10 +38,7 @@ export function BcStatGrid({
 }) {
   return (
     <div
-      className={cn(
-        "bc-stat-grid grid grid-cols-2 gap-3 py-2 sm:grid-cols-3 lg:gap-4",
-        className,
-      )}
+      className={cn('bc-stat-grid grid grid-cols-2 gap-3 py-2 sm:grid-cols-3 lg:gap-4', className)}
     >
       {children}
     </div>
@@ -68,15 +61,15 @@ export function BcStat({
   numericValue?: number;
 }) {
   const renderedValue =
-    animated && typeof value === "string" ? (
+    animated && typeof value === 'string' ? (
       <AnimatedStatValue
         value={value}
         numericValue={numericValue}
         pulse={pulse}
-        className={cn(pulse && !animated && "live-height-pulse")}
+        className={cn(pulse && !animated && 'live-height-pulse')}
       />
     ) : (
-      <span className={cn(pulse && "live-height-pulse")}>{value}</span>
+      <span className={cn(pulse && 'live-height-pulse')}>{value}</span>
     );
 
   return (
@@ -85,9 +78,7 @@ export function BcStat({
         {label}
       </div>
       <div
-        className={cn(
-          "mt-1.5 text-lg font-bold tabular-nums tracking-tight text-fg sm:text-xl",
-        )}
+        className={cn('mt-1.5 text-lg font-bold tabular-nums tracking-tight text-fg sm:text-xl')}
       >
         {renderedValue}
       </div>
@@ -113,20 +104,15 @@ export function BcPanel({
   return (
     <section
       className={cn(
-        "bc-panel overflow-hidden rounded-lg border border-border bg-bg-panel shadow-sm",
-        className,
+        'bc-panel overflow-hidden rounded-lg border border-border bg-bg-panel shadow-sm',
+        className
       )}
     >
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
         <h2 className="text-base font-bold text-fg">{title}</h2>
         {action}
       </div>
-      <div
-        className={cn(
-          flush ? bodyClassName : "p-4 sm:p-5",
-          !flush && bodyClassName,
-        )}
-      >
+      <div className={cn(flush ? bodyClassName : 'p-4 sm:p-5', !flush && bodyClassName)}>
         {children}
       </div>
     </section>
@@ -151,7 +137,7 @@ export function BcTableLink({
       href={href}
       title={title}
       prefetch={prefetch}
-      className={cn("font-medium text-accent hover:underline", className)}
+      className={cn('font-medium text-accent hover:underline', className)}
     >
       {children}
     </Link>
@@ -168,8 +154,7 @@ export function BcHashLink({
   prefetch?: boolean;
 }) {
   const parsed = parseAddressFromExplorerHref(href);
-  const address =
-    parsed?.address ?? (isVeriumPoolPayoutAddress(value) ? value : null);
+  const address = parsed?.address ?? (isVeriumPoolPayoutAddress(value) ? value : null);
 
   if (parsed && address) {
     return (

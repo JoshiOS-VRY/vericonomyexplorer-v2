@@ -1,6 +1,6 @@
-import { getRateLimitSseMax } from "../env.js";
-import { getClientIp, isRateLimitAllowlisted } from "./clientIp.js";
-import type { FastifyRequest } from "fastify";
+import { getRateLimitSseMax } from '../env.js';
+import { getClientIp, isRateLimitAllowlisted } from './clientIp.js';
+import type { FastifyRequest } from 'fastify';
 
 const connectionsByKey = new Map<string, number>();
 

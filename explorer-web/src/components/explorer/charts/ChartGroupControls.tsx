@@ -1,10 +1,7 @@
-"use client";
+'use client';
 
-import {
-  INSIGHTS_HISTORY_GROUPS,
-  type InsightsHistoryGroupBy,
-} from "@/lib/insightsChartConfig";
-import { cn } from "@/lib/utils";
+import { INSIGHTS_HISTORY_GROUPS, type InsightsHistoryGroupBy } from '@/lib/insightsChartConfig';
+import { cn } from '@/lib/utils';
 
 export function ChartGroupControls({
   groupBy,
@@ -29,17 +26,15 @@ export function ChartGroupControls({
               disabled={loading}
               onClick={() => onGroupByChange(item.id)}
               className={cn(
-                "rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all duration-200",
-                active
-                  ? "shadow-sm"
-                  : "text-fg-muted hover:bg-bg-panel hover:text-fg",
-                loading && !active && "opacity-60",
+                'rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all duration-200',
+                active ? 'shadow-sm' : 'text-fg-muted hover:bg-bg-panel hover:text-fg',
+                loading && !active && 'opacity-60'
               )}
               style={
                 active
                   ? {
-                      background: accentVar ?? "var(--accent)",
-                      color: "var(--chain-btn-fg)",
+                      background: accentVar ?? 'var(--accent)',
+                      color: 'var(--chain-btn-fg)',
                     }
                   : undefined
               }
@@ -54,9 +49,7 @@ export function ChartGroupControls({
         <select
           value={groupBy}
           disabled={loading}
-          onChange={(event) =>
-            onGroupByChange(event.target.value as InsightsHistoryGroupBy)
-          }
+          onChange={(event) => onGroupByChange(event.target.value as InsightsHistoryGroupBy)}
           className="appearance-none rounded-md border border-border bg-bg-subtle py-1.5 pl-2.5 pr-8 text-xs font-medium text-fg"
         >
           {INSIGHTS_HISTORY_GROUPS.map((item) => (

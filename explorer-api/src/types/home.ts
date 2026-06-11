@@ -1,4 +1,4 @@
-import type { ChainId } from "../types.js";
+import type { ChainId } from '../types.js';
 
 export interface PriceHistoryPoint {
   time: number;
@@ -12,7 +12,7 @@ export interface ChainMarket {
   volume24h: number | null;
   change24h: number | null;
   circulatingSupply: number | null;
-  source: "livecoinwatch" | "coingecko" | "computed" | "unavailable";
+  source: 'livecoinwatch' | 'coingecko' | 'computed' | 'unavailable';
   updatedAt: string | null;
   priceHistory24h: PriceHistoryPoint[];
 }
@@ -20,12 +20,7 @@ export interface ChainMarket {
 export interface VrmNetworkStats {
   hashrateKhPerMin: number | null;
   /** How hashrateKhPerMin was derived (debug / cross-site parity). */
-  hashrateSource?:
-    | "networkhashps"
-    | "nethashrate"
-    | "getnetworkhashps"
-    | "difficulty"
-    | null;
+  hashrateSource?: 'networkhashps' | 'nethashrate' | 'getnetworkhashps' | 'difficulty' | null;
   avgBlockTimeMin: number | null;
   blocksPerHour: number | null;
   difficulty: number | null;
@@ -37,7 +32,7 @@ export interface VrmNetworkStats {
 export interface VrmNetworkHashratePayload {
   hashPerSec: number | null;
   hashrateKhPerMin: number | null;
-  source: "networkhashps" | "nethashrate" | "getnetworkhashps" | "difficulty" | null;
+  source: 'networkhashps' | 'nethashrate' | 'getnetworkhashps' | 'difficulty' | null;
   difficulty: number | null;
   fetchedAt: string;
 }
@@ -93,6 +88,6 @@ export interface HomeNetworkPayload {
 }
 
 export const LCW_CHAIN_CODES: Record<ChainId, string> = {
-  vrm: "VRM",
-  vrc: "VRC",
+  vrm: 'VRM',
+  vrc: 'VRC',
 };

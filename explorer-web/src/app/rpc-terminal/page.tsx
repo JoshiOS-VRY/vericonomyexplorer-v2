@@ -1,30 +1,30 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { useState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 
 export default function RpcTerminalPage() {
-  const [method, setMethod] = useState("getblockchaininfo");
-  const [params, setParams] = useState("[]");
-  const [result, setResult] = useState<string>("");
+  const [method, setMethod] = useState('getblockchaininfo');
+  const [params, setParams] = useState('[]');
+  const [result, setResult] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
   async function runRpc() {
     setLoading(true);
     try {
-      const response = await fetch("/api/rpc", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('/api/rpc', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           method,
-          params: JSON.parse(params || "[]"),
+          params: JSON.parse(params || '[]'),
         }),
       });
       const body = await response.json();
       setResult(JSON.stringify(body, null, 2));
     } catch (error) {
-      setResult(error instanceof Error ? error.message : "RPC failed");
+      setResult(error instanceof Error ? error.message : 'RPC failed');
     } finally {
       setLoading(false);
     }
@@ -51,10 +51,10 @@ export default function RpcTerminalPage() {
             placeholder='["param"]'
           />
           <Button onClick={runRpc} disabled={loading}>
-            {loading ? "Running..." : "Run"}
+            {loading ? 'Running...' : 'Run'}
           </Button>
           <pre className="overflow-x-auto rounded-lg border border-border bg-bg-subtle p-4 text-xs">
-            {result || "No result yet."}
+            {result || 'No result yet.'}
           </pre>
         </CardContent>
       </Card>

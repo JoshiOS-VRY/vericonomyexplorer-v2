@@ -1,5 +1,5 @@
 (function () {
-  var STORAGE_KEY = "verium-theme-mode";
+  var STORAGE_KEY = 'verium-theme-mode';
   var doc = document.documentElement;
 
   var mode;
@@ -8,27 +8,26 @@
   } catch (_) {
     mode = null;
   }
-  if (mode !== "light" && mode !== "dark" && mode !== "system") {
-    var configured = doc.getAttribute("data-ui-theme");
-    if (configured === "light" || configured === "dark" || configured === "system") {
+  if (mode !== 'light' && mode !== 'dark' && mode !== 'system') {
+    var configured = doc.getAttribute('data-ui-theme');
+    if (configured === 'light' || configured === 'dark' || configured === 'system') {
       mode = configured;
     } else {
-      mode = "dark";
+      mode = 'dark';
     }
   }
 
   var resolved = mode;
-  if (mode === "system") {
+  if (mode === 'system') {
     var prefersDark =
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches;
-    resolved = prefersDark ? "dark" : "light";
+      window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    resolved = prefersDark ? 'dark' : 'light';
   }
 
-  if (resolved === "light") {
-    doc.classList.add("light");
+  if (resolved === 'light') {
+    doc.classList.add('light');
   } else {
-    doc.classList.remove("light");
+    doc.classList.remove('light');
   }
-  doc.classList.remove("dark");
+  doc.classList.remove('dark');
 })();

@@ -231,7 +231,7 @@ export interface AddressBalanceInfo {
 }
 
 export interface AddressActivityCategory {
-  id: "mined" | "staked" | "received" | "spent";
+  id: 'mined' | 'staked' | 'received' | 'spent';
   label: string;
 }
 
@@ -263,7 +263,7 @@ export interface AddressBalanceHistoryPoint {
   ticker: string;
 }
 
-export type AddressBalanceChartView = "activity" | "balance";
+export type AddressBalanceChartView = 'activity' | 'balance';
 
 export interface AddressBalanceHistoryResult {
   chainId: string;
@@ -281,10 +281,10 @@ export interface AddressBalanceHistoryResult {
   currentBalanceAtomic: string;
 }
 
-export type AddressBalanceHistoryPeriodId = "7d" | "30d" | "90d" | "1y" | "all";
+export type AddressBalanceHistoryPeriodId = '7d' | '30d' | '90d' | '1y' | 'all';
 
 export interface ChainActivityCategory {
-  id: "mined" | "staked" | "received";
+  id: 'mined' | 'staked' | 'received';
   label: string;
 }
 
@@ -298,7 +298,7 @@ export interface ChainActivityBucket {
   blockCount: number;
 }
 
-export type ChainActivityChartView = "activity" | "blocks";
+export type ChainActivityChartView = 'activity' | 'blocks';
 
 export interface ChainActivityHistoryResult {
   chainId: string;
@@ -470,19 +470,14 @@ export interface ChainMarket {
   volume24h: number | null;
   change24h: number | null;
   circulatingSupply: number | null;
-  source: "livecoinwatch" | "coingecko" | "computed" | "unavailable";
+  source: 'livecoinwatch' | 'coingecko' | 'computed' | 'unavailable';
   updatedAt: string | null;
   priceHistory24h: PriceHistoryPoint[];
 }
 
 export interface VrmNetworkStats {
   hashrateKhPerMin: number | null;
-  hashrateSource?:
-    | "networkhashps"
-    | "nethashrate"
-    | "getnetworkhashps"
-    | "difficulty"
-    | null;
+  hashrateSource?: 'networkhashps' | 'nethashrate' | 'getnetworkhashps' | 'difficulty' | null;
   avgBlockTimeMin: number | null;
   blocksPerHour: number | null;
   difficulty: number | null;

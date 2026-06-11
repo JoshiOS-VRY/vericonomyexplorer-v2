@@ -1,16 +1,10 @@
-import Link from "next/link";
-import { formatHeight } from "@/components/explorer/ExplorerUi";
-import type { TransactionResult } from "@/lib/api/types";
-import { chainBlockPath, chainTxPath, type ChainId } from "@/lib/chainDisplay";
-import { ellipsizeMiddle } from "@/lib/utils";
+import Link from 'next/link';
+import { formatHeight } from '@/components/explorer/ExplorerUi';
+import type { TransactionResult } from '@/lib/api/types';
+import { chainBlockPath, chainTxPath, type ChainId } from '@/lib/chainDisplay';
+import { ellipsizeMiddle } from '@/lib/utils';
 
-export function TxBlockNav({
-  result,
-  chainId,
-}: {
-  result: TransactionResult;
-  chainId: ChainId;
-}) {
+export function TxBlockNav({ result, chainId }: { result: TransactionResult; chainId: ChainId }) {
   const tx = result.transaction!;
   const siblings = result.siblings ?? { prevTxid: null, nextTxid: null };
 
@@ -41,9 +35,7 @@ export function TxBlockNav({
         href={chainBlockPath(chainId, tx.blockHeight)}
         className="rounded-lg border border-accent/30 bg-accent/10 px-4 py-3 text-center transition hover:bg-accent/15 m-2 sm:my-3"
       >
-        <span className="block text-[10px] uppercase tracking-wide text-accent">
-          Block
-        </span>
+        <span className="block text-[10px] uppercase tracking-wide text-accent">Block</span>
         <span className="mt-1 block text-lg font-semibold tabular-nums text-fg">
           #{formatHeight(tx.blockHeight)}
         </span>
@@ -57,9 +49,7 @@ export function TxBlockNav({
           href={chainTxPath(chainId, siblings.nextTxid)}
           className="rounded-lg border border-border bg-bg-panel/60 px-4 py-3 text-right text-sm transition hover:bg-bg-subtle m-2 sm:m-3 sm:ml-0"
         >
-          <span className="block text-[10px] uppercase tracking-wide text-fg-subtle">
-            Next tx
-          </span>
+          <span className="block text-[10px] uppercase tracking-wide text-fg-subtle">Next tx</span>
           <span className="mt-1 block text-xs text-fg-muted">
             {ellipsizeMiddle(siblings.nextTxid, 18)}
           </span>

@@ -1,9 +1,9 @@
-import { AlertBanner, formatHeight } from "@/components/explorer/ExplorerUi";
-import { BlockDetailLive } from "@/components/explorer/block/BlockDetailLive";
-import { Breadcrumb } from "@/components/explorer/Breadcrumb";
-import { getBlock, getChainSummary } from "@/lib/api/indexer";
-import { CHAIN_EXPLORERS, type ChainId } from "@/lib/chainDisplay";
-import { normalizeLimit, normalizeOffset } from "@/lib/utils";
+import { AlertBanner, formatHeight } from '@/components/explorer/ExplorerUi';
+import { BlockDetailLive } from '@/components/explorer/block/BlockDetailLive';
+import { Breadcrumb } from '@/components/explorer/Breadcrumb';
+import { getBlock, getChainSummary } from '@/lib/api/indexer';
+import { CHAIN_EXPLORERS, type ChainId } from '@/lib/chainDisplay';
+import { normalizeLimit, normalizeOffset } from '@/lib/utils';
 
 export async function BlockDetailPage({
   chainId,
@@ -23,7 +23,7 @@ export async function BlockDetailPage({
   try {
     result = await getBlock(chainId, hashOrHeight, { limit, offset });
   } catch (err) {
-    loadError = err instanceof Error ? err.message : "Unable to load block data.";
+    loadError = err instanceof Error ? err.message : 'Unable to load block data.';
   }
 
   let summary;
@@ -36,7 +36,7 @@ export async function BlockDetailPage({
   if (loadError || !result) {
     return (
       <AlertBanner title="Block Lookup Failed">
-        {loadError ?? "Unable to load block data."}
+        {loadError ?? 'Unable to load block data.'}
       </AlertBanner>
     );
   }
@@ -47,7 +47,7 @@ export async function BlockDetailPage({
         <Breadcrumb
           items={[
             { label: chain.name, href: chain.exploreHref! },
-            { label: "Blocks", href: chain.exploreHref! },
+            { label: 'Blocks', href: chain.exploreHref! },
             { label: hashOrHeight },
           ]}
         />
@@ -63,7 +63,7 @@ export async function BlockDetailPage({
       <Breadcrumb
         items={[
           { label: chain.name, href: chain.exploreHref! },
-          { label: "Blocks", href: chain.exploreHref! },
+          { label: 'Blocks', href: chain.exploreHref! },
           { label: `#${formatHeight(block.height)}` },
         ]}
       />
@@ -80,10 +80,7 @@ export async function BlockDetailPage({
   );
 }
 
-export function blockDetailSearchParams(searchParams: {
-  limit?: string;
-  offset?: string;
-}) {
+export function blockDetailSearchParams(searchParams: { limit?: string; offset?: string }) {
   return {
     limit: normalizeLimit(searchParams.limit, 50),
     offset: normalizeOffset(searchParams.offset),

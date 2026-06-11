@@ -1,10 +1,10 @@
-import type { Metadata } from "next";
-import { pageMetadata } from "@/lib/seo/metadata";
+import type { Metadata } from 'next';
+import { pageMetadata } from '@/lib/seo/metadata';
 
 export const metadata: Metadata = pageMetadata({
-  title: "Admin",
-  description: "Vericonomy Explorer administration.",
-  path: "/admin",
+  title: 'Admin',
+  description: 'Vericonomy Explorer administration.',
+  path: '/admin',
   noIndex: true,
 });
 

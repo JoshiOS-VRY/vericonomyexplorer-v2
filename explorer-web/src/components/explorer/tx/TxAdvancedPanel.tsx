@@ -1,16 +1,12 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { ChainAddressLink } from "@/components/explorer/address/ChainAddressLink";
-import { DataTable, MonoLink } from "@/components/explorer/ExplorerUi";
-import { CopyButton } from "@/components/explorer/BlockDetail";
-import type { TransactionResult } from "@/lib/api/types";
-import {
-  chainAddressPath,
-  chainTxPath,
-  type ChainId,
-} from "@/lib/chainDisplay";
-import { ellipsizeMiddle } from "@/lib/utils";
+import Link from 'next/link';
+import { ChainAddressLink } from '@/components/explorer/address/ChainAddressLink';
+import { DataTable, MonoLink } from '@/components/explorer/ExplorerUi';
+import { CopyButton } from '@/components/explorer/BlockDetail';
+import type { TransactionResult } from '@/lib/api/types';
+import { chainAddressPath, chainTxPath, type ChainId } from '@/lib/chainDisplay';
+import { ellipsizeMiddle } from '@/lib/utils';
 
 export function TxAdvancedPanel({
   result,
@@ -19,9 +15,7 @@ export function TxAdvancedPanel({
   result: TransactionResult;
   chainId: ChainId;
 }) {
-  const unresolvedInputs = result.inputs.filter(
-    (input) => input.resolved === false,
-  );
+  const unresolvedInputs = result.inputs.filter((input) => input.resolved === false);
 
   return (
     <details className="rounded-xl border border-border bg-bg-panel shadow-sm">
@@ -32,8 +26,8 @@ export function TxAdvancedPanel({
         {unresolvedInputs.length > 0 ? (
           <div className="rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning">
             {unresolvedInputs.length} input
-            {unresolvedInputs.length === 1 ? "" : "s"} could not be fully not
-            yet resolved. Balances depending on these spends may be incomplete.
+            {unresolvedInputs.length === 1 ? '' : 's'} could not be fully not yet resolved. Balances
+            depending on these spends may be incomplete.
           </div>
         ) : null}
 
@@ -45,7 +39,7 @@ export function TxAdvancedPanel({
             <p className="text-sm text-fg-muted">No inputs found.</p>
           ) : (
             <DataTable
-              headers={["#", "Address", "Value", "Provenance"]}
+              headers={['#', 'Address', 'Value', 'Provenance']}
               rows={result.inputs.map((input) => [
                 String(input.n),
                 input.address ? (
@@ -59,16 +53,14 @@ export function TxAdvancedPanel({
                 ) : (
                   <span className="text-fg-muted">coinbase</span>
                 ),
-                input.value
-                  ? `${input.value.amount} ${input.value.ticker}`
-                  : "N/A",
+                input.value ? `${input.value.amount} ${input.value.ticker}` : 'N/A',
                 input.prevTxid ? (
                   <Link
                     key="p"
-                    href={`${chainTxPath(chainId, input.prevTxid)}${input.prevVout != null ? `#output-${input.prevVout}` : ""}`}
+                    href={`${chainTxPath(chainId, input.prevTxid)}${input.prevVout != null ? `#output-${input.prevVout}` : ''}`}
                     className="text-accent hover:underline"
                   >
-                    spent from output #{input.prevVout ?? "?"}
+                    spent from output #{input.prevVout ?? '?'}
                   </Link>
                 ) : input.resolved === false ? (
                   <span className="text-warning">unresolved</span>
@@ -88,7 +80,7 @@ export function TxAdvancedPanel({
             <p className="text-sm text-fg-muted">No outputs found.</p>
           ) : (
             <DataTable
-              headers={["#", "Address", "Value", "Lifecycle", "Script"]}
+              headers={['#', 'Address', 'Value', 'Lifecycle', 'Script']}
               rows={result.outputs.map((output) => [
                 <span key="n" id={`output-${output.n}`} className="font-mono">
                   {output.n}
@@ -102,23 +94,21 @@ export function TxAdvancedPanel({
                     chainId={chainId}
                   />
                 ) : (
-                  <span className="text-fg-muted">
-                    {output.scriptType || "unknown"}
-                  </span>
+                  <span className="text-fg-muted">{output.scriptType || 'unknown'}</span>
                 ),
                 `${output.value.amount} ${output.value.ticker}`,
                 output.isSpent ? (
                   <span key="s" className="text-fg-muted">
-                    Spent in{" "}
+                    Spent in{' '}
                     <Link
                       href={chainTxPath(chainId, output.spentByTxid!)}
                       className="text-accent hover:underline"
                     >
-                      {ellipsizeMiddle(output.spentByTxid ?? "", 16)}
+                      {ellipsizeMiddle(output.spentByTxid ?? '', 16)}
                     </Link>
                     {output.spentHeight != null
                       ? ` · block ${output.spentHeight.toLocaleString()}`
-                      : ""}
+                      : ''}
                   </span>
                 ) : (
                   <span key="s" className="text-success">
@@ -126,15 +116,12 @@ export function TxAdvancedPanel({
                   </span>
                 ),
                 <span key="script" className="text-xs text-fg-muted">
-                  {output.scriptType || "—"}
+                  {output.scriptType || '—'}
                   {output.scriptPubKey ? (
                     <>
-                      {" · "}
+                      {' · '}
                       <code>{ellipsizeMiddle(output.scriptPubKey, 20)}</code>
-                      <CopyButton
-                        value={output.scriptPubKey}
-                        label="Copy script"
-                      />
+                      <CopyButton value={output.scriptPubKey} label="Copy script" />
                     </>
                   ) : null}
                 </span>,
@@ -149,7 +136,7 @@ export function TxAdvancedPanel({
               Address deltas
             </h3>
             <DataTable
-              headers={["Address", "Event", "Delta"]}
+              headers={['Address', 'Event', 'Delta']}
               rows={result.addressEvents.map((event) => [
                 <ChainAddressLink
                   key="a"
@@ -161,11 +148,7 @@ export function TxAdvancedPanel({
                 event.eventType,
                 <span
                   key="d"
-                  className={
-                    event.deltaAtomic.startsWith("-")
-                      ? "text-danger"
-                      : "text-success"
-                  }
+                  className={event.deltaAtomic.startsWith('-') ? 'text-danger' : 'text-success'}
                 >
                   {event.delta.amount} {event.delta.ticker}
                 </span>,

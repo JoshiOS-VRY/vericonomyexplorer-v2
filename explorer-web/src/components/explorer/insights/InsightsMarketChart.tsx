@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -9,30 +9,30 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts";
-import { ChartPeriodControls } from "@/components/explorer/charts/ChartPeriodControls";
-import { ChartViewToggle } from "@/components/explorer/charts/ChartViewToggle";
+} from 'recharts';
+import { ChartPeriodControls } from '@/components/explorer/charts/ChartPeriodControls';
+import { ChartViewToggle } from '@/components/explorer/charts/ChartViewToggle';
 import {
   chartGridProps,
   chartXAxisProps,
   chartYAxisProps,
-} from "@/components/explorer/charts/chartAxis";
-import { ThemedChartTooltip } from "@/components/explorer/charts/ThemedChartTooltip";
-import { InsightsChartPanel } from "@/components/explorer/charts/InsightsChartPanel";
-import { useChartTheme } from "@/hooks/useChartTheme";
-import { CHART_ANIMATION, CHART_MARGINS, formatCompactAxisValue } from "@/lib/chartVisuals";
-import { fetchMarketHistoryClient } from "@/lib/insights/marketHistory";
-import { formatChartAxisDate } from "@/lib/chartDates";
+} from '@/components/explorer/charts/chartAxis';
+import { ThemedChartTooltip } from '@/components/explorer/charts/ThemedChartTooltip';
+import { InsightsChartPanel } from '@/components/explorer/charts/InsightsChartPanel';
+import { useChartTheme } from '@/hooks/useChartTheme';
+import { CHART_ANIMATION, CHART_MARGINS, formatCompactAxisValue } from '@/lib/chartVisuals';
+import { fetchMarketHistoryClient } from '@/lib/insights/marketHistory';
+import { formatChartAxisDate } from '@/lib/chartDates';
 import {
   formatInsightsFooter,
   getChainAccentVar,
   INSIGHTS_HISTORY_PERIODS,
-} from "@/lib/insightsChartConfig";
-import type { AddressBalanceHistoryPeriodId } from "@/lib/api/types";
+} from '@/lib/insightsChartConfig';
+import type { AddressBalanceHistoryPeriodId } from '@/lib/api/types';
 
-const SERIES_COLOR = "#418bca";
+const SERIES_COLOR = '#418bca';
 
-export function InsightsMarketChart({ chainId }: { chainId: "vrm" | "vrc" }) {
+export function InsightsMarketChart({ chainId }: { chainId: 'vrm' | 'vrc' }) {
   const colors = useChartTheme();
   const accentVar = getChainAccentVar(chainId);
   const grid = chartGridProps(colors);
@@ -42,14 +42,14 @@ export function InsightsMarketChart({ chainId }: { chainId: "vrm" | "vrc" }) {
     tickFormatter: (value) => formatCompactAxisValue(Number(value)),
   });
 
-  const [period, setPeriod] = useState<AddressBalanceHistoryPeriodId>("30d");
-  const [currency, setCurrency] = useState<"usd" | "btc">("usd");
+  const [period, setPeriod] = useState<AddressBalanceHistoryPeriodId>('30d');
+  const [currency, setCurrency] = useState<'usd' | 'btc'>('usd');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [points, setPoints] = useState<
     { label: string; startTime: number; endTime: number; value: number }[]
   >([]);
-  const [source, setSource] = useState<string>("unavailable");
+  const [source, setSource] = useState<string>('unavailable');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,11 +62,11 @@ export function InsightsMarketChart({ chainId }: { chainId: "vrm" | "vrc" }) {
           startTime: point.time,
           endTime: point.time,
           value: point.value,
-        })),
+        }))
       );
       setSource(result.source);
     } catch {
-      setError("Unable to load market history.");
+      setError('Unable to load market history.');
     } finally {
       setLoading(false);
     }
@@ -80,7 +80,7 @@ export function InsightsMarketChart({ chainId }: { chainId: "vrm" | "vrc" }) {
   const hasData = points.length > 0;
 
   const formatPrice = (value: number) =>
-    currency === "usd"
+    currency === 'usd'
       ? `$${value.toLocaleString(undefined, { maximumFractionDigits: 6 })}`
       : `${value.toFixed(8)} BTC`;
 
@@ -92,8 +92,8 @@ export function InsightsMarketChart({ chainId }: { chainId: "vrm" | "vrc" }) {
         <div className="flex flex-wrap items-center justify-end gap-2">
           <ChartViewToggle
             views={[
-              { id: "usd" as const, label: "USD" },
-              { id: "btc" as const, label: "BTC" },
+              { id: 'usd' as const, label: 'USD' },
+              { id: 'btc' as const, label: 'BTC' },
             ]}
             view={currency}
             onViewChange={setCurrency}
@@ -109,12 +109,12 @@ export function InsightsMarketChart({ chainId }: { chainId: "vrm" | "vrc" }) {
       }
       loading={loading && !hasData}
       error={error}
-      empty={!loading && !hasData ? "Market history unavailable." : null}
+      empty={!loading && !hasData ? 'Market history unavailable.' : null}
       footer={
         hasData
           ? formatInsightsFooter(points.length, periodMeta?.label, `source: ${source}`)
           : loading
-            ? "Updating…"
+            ? 'Updating…'
             : null
       }
     >

@@ -1,6 +1,6 @@
-import autocannon from "autocannon";
+import autocannon from 'autocannon';
 
-const base = process.env.BENCH_URL ?? "http://127.0.0.1:3003";
+const base = process.env.BENCH_URL ?? 'http://127.0.0.1:3003';
 const duration = Number(process.env.BENCH_DURATION ?? 10);
 
 async function run(name, url) {
@@ -19,5 +19,5 @@ async function run(name, url) {
   console.log(`errors: ${result.errors}`);
 }
 
-await run("tip height", `${base}/v1/vrm/tip/height`);
-await run("health", `${base}/v1/health`);
+await run('tip height', `${base}/v1/vrm/tip/height`);
+await run('health', `${base}/v1/health`);

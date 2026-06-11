@@ -1,8 +1,8 @@
-import Link from "next/link";
-import { BcHashLink, BcPanel } from "@/components/explorer/BlockchairUi";
-import { formatHeight, PaginationLinks } from "@/components/explorer/ExplorerUi";
-import type { AddressUtxosResult } from "@/lib/api/types";
-import { chainBlockPath, chainTxPath, type ChainId } from "@/lib/chainDisplay";
+import Link from 'next/link';
+import { BcHashLink, BcPanel } from '@/components/explorer/BlockchairUi';
+import { formatHeight, PaginationLinks } from '@/components/explorer/ExplorerUi';
+import type { AddressUtxosResult } from '@/lib/api/types';
+import { chainBlockPath, chainTxPath, type ChainId } from '@/lib/chainDisplay';
 
 export function AddressUtxoPanel({
   chainId,
@@ -23,7 +23,7 @@ export function AddressUtxoPanel({
       flush
       action={
         <span className="rounded-md bg-bg-subtle px-2 py-0.5 text-[11px] font-medium tabular-nums text-fg-subtle">
-          {formatHeight(utxos.summary.utxoCount)} · {utxos.summary.totalValue.amount}{" "}
+          {formatHeight(utxos.summary.utxoCount)} · {utxos.summary.totalValue.amount}{' '}
           {utxos.summary.totalValue.ticker}
         </span>
       }

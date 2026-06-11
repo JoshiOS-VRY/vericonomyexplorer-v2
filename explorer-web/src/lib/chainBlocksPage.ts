@@ -1,4 +1,4 @@
-import type { IndexedBlock } from "@/lib/api/types";
+import type { IndexedBlock } from '@/lib/api/types';
 
 /**
  * Choose the base list for the first blocks page.
@@ -10,7 +10,7 @@ import type { IndexedBlock } from "@/lib/api/types";
  */
 export function pickBlockPageBase(
   filledPage: IndexedBlock[] | null,
-  liveBlocks: IndexedBlock[],
+  liveBlocks: IndexedBlock[]
 ): IndexedBlock[] {
   if (filledPage != null && filledPage.length > 0) {
     const filledTop = filledPage[0]?.height ?? Number.NEGATIVE_INFINITY;

@@ -1,7 +1,7 @@
-import { EventEmitter } from "node:events";
-import { getSyncTipHeight } from "../data/db.js";
-import type { RpcClient } from "../rpc/pool.js";
-import type { ChainId, TipState } from "../types.js";
+import { EventEmitter } from 'node:events';
+import { getSyncTipHeight } from '../data/db.js';
+import type { RpcClient } from '../rpc/pool.js';
+import type { ChainId, TipState } from '../types.js';
 
 function noop(): void {
   /* ignore */
@@ -22,7 +22,7 @@ export class TipBroker extends EventEmitter {
     readonly chainId: ChainId,
     private readonly rpc: RpcClient,
     private readonly pollMs: number,
-    private readonly zmqUrl?: string,
+    private readonly zmqUrl?: string
   ) {
     super();
     this.setMaxListeners(100);
@@ -57,11 +57,11 @@ export class TipBroker extends EventEmitter {
     const height = getSyncTipHeight(this.chainId);
     if (height == null || height < 0) return;
     try {
-      const hash = await this.rpc.call<string>("getblockhash", [height]);
+      const hash = await this.rpc.call<string>('getblockhash', [height]);
       const time = await this.resolveBlockTime(hash);
       this.current = { height: Number(height), hash, time };
     } catch {
-      this.current = { height: Number(height), hash: "", time: Date.now() };
+      this.current = { height: Number(height), hash: '', time: Date.now() };
     }
   }
 
@@ -69,9 +69,9 @@ export class TipBroker extends EventEmitter {
     if (this.polling) return;
     this.polling = true;
     try {
-      const height = Number(await this.rpc.call<number>("getblockcount"));
+      const height = Number(await this.rpc.call<number>('getblockcount'));
       if (this.current?.height === height) return;
-      const hash = await this.rpc.call<string>("getblockhash", [height]);
+      const hash = await this.rpc.call<string>('getblockhash', [height]);
       const time = await this.resolveBlockTime(hash);
       this.setTip({ height, hash, time });
     } catch {
@@ -83,7 +83,7 @@ export class TipBroker extends EventEmitter {
 
   private async resolveBlockTime(hash: string): Promise<number> {
     try {
-      const block = await this.rpc.call<{ time?: number }>("getblock", [hash, 1]);
+      const block = await this.rpc.call<{ time?: number }>('getblock', [hash, 1]);
       return blockTimeFromRpc(block);
     } catch {
       return Date.now();
@@ -92,24 +92,24 @@ export class TipBroker extends EventEmitter {
 
   private setTip(tip: TipState): void {
     this.current = tip;
-    this.emit("tip", tip);
+    this.emit('tip', tip);
   }
 
   private async startZmq(url: string): Promise<void> {
     this.zmqAbort = new AbortController();
-    const { Subscriber } = await import("zeromq");
+    const { Subscriber } = await import('zeromq');
     const sock = new Subscriber();
     try {
       sock.connect(url);
-      sock.subscribe("hashblock");
+      sock.subscribe('hashblock');
       for await (const [, message] of sock) {
         if (this.zmqAbort.signal.aborted) break;
-        const hash = message.toString("hex");
+        const hash = message.toString('hex');
         try {
-          const block = await this.rpc.call<{ height: number; time?: number }>(
-            "getblock",
-            [hash, 1],
-          );
+          const block = await this.rpc.call<{ height: number; time?: number }>('getblock', [
+            hash,
+            1,
+          ]);
           const height = Number(block.height);
           if (this.current?.height === height) continue;
           this.setTip({ height, hash, time: blockTimeFromRpc(block) });

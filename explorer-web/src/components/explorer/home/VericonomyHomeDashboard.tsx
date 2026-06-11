@@ -1,47 +1,29 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
-import {
-  BcPanel,
-  BcStat,
-  BcStatGrid,
-} from "@/components/explorer/BlockchairUi";
-import { VrmAddressLabel } from "@/components/explorer/address/VrmAddressLink";
-import {
-  FeatureTile,
-  RankList,
-  StatusDot,
-  formatHeight,
-} from "@/components/explorer/ExplorerUi";
-import { BinaryChainActivity } from "@/components/explorer/home/BinaryChainActivity";
-import { BinaryChainHero } from "@/components/explorer/home/BinaryChainHero";
-import { ChainMarketCard } from "@/components/explorer/home/ChainMarketCard";
-import { ChainNetworkCard } from "@/components/explorer/home/ChainNetworkCard";
-import { LiveBlocksFeed } from "@/components/explorer/home/LiveBlocksFeed";
-import { useDualChainLive } from "@/hooks/useDualChainLive";
-import { useHomeMarket } from "@/hooks/useHomeMarket";
-import type { HomePayload, RichlistResult } from "@/lib/api/types";
-import {
-  CHAIN_EXPLORERS,
-  getChainTipHeight,
-  isChainLive,
-} from "@/lib/chainDisplay";
-import { formatExplorerUserMessage } from "@/lib/explorerCopy";
-import { cn, ellipsizeMiddle } from "@/lib/utils";
+import Image from 'next/image';
+import Link from 'next/link';
+import { LiveRelativeTime } from '@/components/explorer/LiveRelativeTime';
+import { BcPanel, BcStat, BcStatGrid } from '@/components/explorer/BlockchairUi';
+import { VrmAddressLabel } from '@/components/explorer/address/VrmAddressLink';
+import { FeatureTile, RankList, StatusDot, formatHeight } from '@/components/explorer/ExplorerUi';
+import { BinaryChainActivity } from '@/components/explorer/home/BinaryChainActivity';
+import { BinaryChainHero } from '@/components/explorer/home/BinaryChainHero';
+import { ChainMarketCard } from '@/components/explorer/home/ChainMarketCard';
+import { ChainNetworkCard } from '@/components/explorer/home/ChainNetworkCard';
+import { LiveBlocksFeed } from '@/components/explorer/home/LiveBlocksFeed';
+import { useDualChainLive } from '@/hooks/useDualChainLive';
+import { useHomeMarket } from '@/hooks/useHomeMarket';
+import type { HomePayload, RichlistResult } from '@/lib/api/types';
+import { CHAIN_EXPLORERS, getChainTipHeight, isChainLive } from '@/lib/chainDisplay';
+import { formatExplorerUserMessage } from '@/lib/explorerCopy';
+import { cn, ellipsizeMiddle } from '@/lib/utils';
 
 interface VericonomyHomeDashboardProps {
   initialHome: HomePayload;
 }
 
-export function VericonomyHomeDashboard({
-  initialHome,
-}: VericonomyHomeDashboardProps) {
-  const live = useDualChainLive(
-    initialHome.vrm.summary,
-    initialHome.vrc.summary,
-  );
+export function VericonomyHomeDashboard({ initialHome }: VericonomyHomeDashboardProps) {
+  const live = useDualChainLive(initialHome.vrm.summary, initialHome.vrc.summary);
   const market = useHomeMarket({
     vrm: initialHome.vrm.market,
     vrc: initialHome.vrc.market,
@@ -51,12 +33,12 @@ export function VericonomyHomeDashboard({
   const vrmLive = isChainLive(
     live.vrm.summary.health,
     live.vrm.summary.latestBlocks[0]?.height,
-    live.vrm.chainHeight,
+    live.vrm.chainHeight
   );
   const vrcLive = isChainLive(
     live.vrc.summary.health,
     live.vrc.summary.latestBlocks[0]?.height,
-    live.vrc.chainHeight,
+    live.vrc.chainHeight
   );
 
   return (
@@ -121,8 +103,8 @@ function ChainOverviewPanel({
   chainHeight,
   heightPulse,
 }: {
-  chainId: "vrm" | "vrc";
-  summary: HomePayload["vrm"]["summary"];
+  chainId: 'vrm' | 'vrc';
+  summary: HomePayload['vrm']['summary'];
   chainHeight: number | null;
   heightPulse: boolean;
 }) {
@@ -152,8 +134,8 @@ function ChainOverviewPanel({
               <span className="text-xs text-fg-subtle">{config.consensus}</span>
             </div>
             <div className="mt-1.5 flex items-center gap-2 text-sm text-fg-muted">
-              <StatusDot tone={live ? "success" : "warning"} pulse={live} />
-              <span>{live ? "Live" : "Offline"}</span>
+              <StatusDot tone={live ? 'success' : 'warning'} pulse={live} />
+              <span>{live ? 'Live' : 'Offline'}</span>
             </div>
           </div>
         </div>
@@ -177,10 +159,7 @@ function ChainOverviewPanel({
           value={formatHeight(chainHeight ?? getChainTipHeight(health))}
           pulse={heightPulse}
         />
-        <BcStat
-          label="Addresses"
-          value={formatHeight(health.counts.addressCount)}
-        />
+        <BcStat label="Addresses" value={formatHeight(health.counts.addressCount)} />
         <BcStat
           label="Latest block"
           value={
@@ -191,7 +170,7 @@ function ChainOverviewPanel({
                 className="text-lg font-bold sm:text-xl truncate"
               />
             ) : (
-              "—"
+              '—'
             )
           }
         />
@@ -201,7 +180,7 @@ function ChainOverviewPanel({
 }
 
 function ChainRichlistPanel({ richlist }: { richlist: RichlistResult }) {
-  const config = CHAIN_EXPLORERS[richlist.chainId as "vrm" | "vrc"];
+  const config = CHAIN_EXPLORERS[richlist.chainId as 'vrm' | 'vrc'];
   if (!config) return null;
 
   const action =
@@ -217,9 +196,7 @@ function ChainRichlistPanel({ richlist }: { richlist: RichlistResult }) {
   return (
     <BcPanel title={`Top ${config.ticker} balances`} action={action}>
       {!richlist.enabled && richlist.message ? (
-        <p className={cn("text-sm text-fg-muted")}>
-          {formatExplorerUserMessage(richlist.message)}
-        </p>
+        <p className={cn('text-sm text-fg-muted')}>{formatExplorerUserMessage(richlist.message)}</p>
       ) : richlist.items.length === 0 ? (
         <p className="text-sm text-fg-muted">No ranked balances yet.</p>
       ) : config.exploreHref ? (

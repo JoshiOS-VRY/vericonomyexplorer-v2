@@ -1,12 +1,13 @@
 import { heavyRateLimitRouteConfig } from "../env.js";
-import { createSwrCache } from "../cache/swrCache.js";
+import { createSwrCache, swrFetch } from "../cache/swrCache.js";
 import { fetchLeaderboard, fetchMinedLeaderboard, fetchRichlist } from "../data/legacy.js";
 import { parseChainId } from "../types.js";
 import { withTimeout } from "../util/timeout.js";
 const heavyRouteTimeoutMs = Number(process.env.VCEXP_API_HEAVY_ROUTE_TIMEOUT_MS ?? 5_000);
 const richlistCache = createSwrCache({
     max: 32,
-    ttlMs: 30_000,
+    ttlMs: 10_000,
+    useGlobalTtlOverride: false,
     fetch: async (key, signal) => {
         if (signal.aborted)
             throw new Error("aborted");
@@ -53,7 +54,10 @@ export async function registerRichRoutes(app) {
             return reply.code(400).send({ error: "Invalid chain id" });
         }
         const key = `${chainId}:${request.query.limit ?? ""}:${request.query.offset ?? ""}`;
-        return richlistCache.fetch(key);
+        return swrFetch(richlistCache, key, () => fetchRichlist(chainId, {
+            limit: request.query.limit ? Number(request.query.limit) : undefined,
+            offset: request.query.offset ? Number(request.query.offset) : undefined,
+        }));
     });
     app.get("/v1/:chain/leaderboard", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
         const chainId = parseChainId(request.params.chain);

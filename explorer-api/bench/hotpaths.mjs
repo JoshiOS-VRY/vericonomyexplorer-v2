@@ -1,48 +1,48 @@
-import autocannon from "autocannon";
+import autocannon from 'autocannon';
 
-const base = process.env.BENCH_URL ?? "http://127.0.0.1:3003";
+const base = process.env.BENCH_URL ?? 'http://127.0.0.1:3003';
 const duration = Number(process.env.BENCH_DURATION ?? 10);
 const connections = Number(process.env.BENCH_CONNECTIONS ?? 10);
-const chain = process.env.BENCH_CHAIN ?? "vrm";
-const sampleAddress = process.env.BENCH_ADDRESS ?? "";
-const sampleBlock = process.env.BENCH_BLOCK ?? "1";
-const sampleTx = process.env.BENCH_TX ?? "";
+const chain = process.env.BENCH_CHAIN ?? 'vrm';
+const sampleAddress = process.env.BENCH_ADDRESS ?? '';
+const sampleBlock = process.env.BENCH_BLOCK ?? '1';
+const sampleTx = process.env.BENCH_TX ?? '';
 
 const paths = [
-  { name: "health", url: `${base}/v1/health` },
-  { name: "tip height", url: `${base}/v1/${chain}/tip/height` },
-  { name: "summary", url: `${base}/v1/${chain}/summary` },
-  { name: "home shell", url: `${base}/v1/home/shell` },
-  { name: "richlist", url: `${base}/v1/${chain}/richlist?limit=25` },
-  { name: "indexer status", url: `${base}/v1/indexer/status` },
-  { name: "landing", url: `${base}/v1/landing` },
-  { name: "vrm dashboard", url: `${base}/v1/vrm/dashboard` },
-  { name: "chain health", url: `${base}/v1/${chain}/health` },
-  { name: "block", url: `${base}/v1/${chain}/block/${sampleBlock}` },
+  { name: 'health', url: `${base}/v1/health` },
+  { name: 'tip height', url: `${base}/v1/${chain}/tip/height` },
+  { name: 'summary', url: `${base}/v1/${chain}/summary` },
+  { name: 'home shell', url: `${base}/v1/home/shell` },
+  { name: 'richlist', url: `${base}/v1/${chain}/richlist?limit=25` },
+  { name: 'indexer status', url: `${base}/v1/indexer/status` },
+  { name: 'landing', url: `${base}/v1/landing` },
+  { name: 'vrm dashboard', url: `${base}/v1/vrm/dashboard` },
+  { name: 'chain health', url: `${base}/v1/${chain}/health` },
+  { name: 'block', url: `${base}/v1/${chain}/block/${sampleBlock}` },
 ];
 
 if (sampleAddress) {
   paths.push({
-    name: "address",
+    name: 'address',
     url: `${base}/v1/${chain}/address/${encodeURIComponent(sampleAddress)}?limit=25`,
   });
   paths.push({
-    name: "balance-history",
+    name: 'balance-history',
     url: `${base}/v1/${chain}/address/${encodeURIComponent(sampleAddress)}/balance-history?maxPoints=120`,
   });
   paths.push({
-    name: "address utxos",
+    name: 'address utxos',
     url: `${base}/v1/${chain}/address/${encodeURIComponent(sampleAddress)}/utxos?limit=25`,
   });
 }
 
 if (sampleTx) {
   paths.push({
-    name: "search tx",
+    name: 'search tx',
     url: `${base}/v1/${chain}/search?q=${sampleTx}`,
   });
   paths.push({
-    name: "tx related addresses",
+    name: 'tx related addresses',
     url: `${base}/v1/${chain}/tx/${sampleTx}/related-addresses?limit=6`,
   });
 }
@@ -78,5 +78,5 @@ for (const path of paths) {
   results.push(await run(path.name, path.url));
 }
 
-console.log("\n=== summary ===");
+console.log('\n=== summary ===');
 console.table(results);

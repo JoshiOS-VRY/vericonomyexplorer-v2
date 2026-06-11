@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 import {
   applyTheme,
   cacheThemeMode,
@@ -9,14 +9,14 @@ import {
   type ResolvedTheme,
   type ThemeMode,
   THEME_STORAGE_KEY,
-} from "@/lib/theme";
+} from '@/lib/theme';
 
 export function useTheme() {
-  const [mode, setModeState] = useState<ThemeMode>("system");
-  const [resolved, setResolved] = useState<ResolvedTheme>("dark");
+  const [mode, setModeState] = useState<ThemeMode>('system');
+  const [resolved, setResolved] = useState<ResolvedTheme>('dark');
 
   useEffect(() => {
-    const cached = readCachedThemeMode() ?? "system";
+    const cached = readCachedThemeMode() ?? 'system';
     const nextResolved = resolveTheme(cached);
     setModeState(cached);
     setResolved(nextResolved);
@@ -24,15 +24,15 @@ export function useTheme() {
   }, []);
 
   useEffect(() => {
-    if (mode !== "system") return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    if (mode !== 'system') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = () => {
-      const next = resolveTheme("system");
+      const next = resolveTheme('system');
       setResolved(next);
       applyTheme(next);
     };
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, [mode]);
 
   const setMode = useCallback((next: ThemeMode) => {

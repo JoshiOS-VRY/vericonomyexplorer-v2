@@ -1,8 +1,8 @@
-import type { ChainId } from "../types.js";
-import type { ChainMarket, PriceHistoryPoint } from "../types/home.js";
-import { LCW_CHAIN_CODES } from "../types/home.js";
+import type { ChainId } from '../types.js';
+import type { ChainMarket, PriceHistoryPoint } from '../types/home.js';
+import { LCW_CHAIN_CODES } from '../types/home.js';
 
-const LCW_BASE = "https://api.livecoinwatch.com";
+const LCW_BASE = 'https://api.livecoinwatch.com';
 
 interface LcwSingleResponse {
   rate?: number | null;
@@ -29,11 +29,11 @@ async function lcwPost<T>(path: string, body: unknown): Promise<T | null> {
 
   try {
     const response = await fetch(`${LCW_BASE}${path}`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        accept: "application/json",
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        accept: 'application/json',
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(12_000),
@@ -51,9 +51,9 @@ async function lcwPost<T>(path: string, body: unknown): Promise<T | null> {
 
 export async function fetchLcwSingle(
   chainId: ChainId,
-  currency: "USD" | "BTC",
+  currency: 'USD' | 'BTC'
 ): Promise<LcwSingleResponse | null> {
-  return lcwPost<LcwSingleResponse>("/coins/single", {
+  return lcwPost<LcwSingleResponse>('/coins/single', {
     currency,
     code: LCW_CHAIN_CODES[chainId],
     meta: true,
@@ -63,8 +63,8 @@ export async function fetchLcwSingle(
 export async function fetchLcwHistory24h(chainId: ChainId): Promise<LcwHistoryPoint[]> {
   const end = Date.now();
   const start = end - 24 * 60 * 60 * 1000;
-  const data = await lcwPost<LcwHistoryPoint[]>("/coins/single/history", {
-    currency: "USD",
+  const data = await lcwPost<LcwHistoryPoint[]>('/coins/single/history', {
+    currency: 'USD',
     code: LCW_CHAIN_CODES[chainId],
     start,
     end,
@@ -72,16 +72,16 @@ export async function fetchLcwHistory24h(chainId: ChainId): Promise<LcwHistoryPo
   });
 
   if (!Array.isArray(data)) return [];
-  return data.filter((point) => typeof point.rate === "number" && Number.isFinite(point.rate));
+  return data.filter((point) => typeof point.rate === 'number' && Number.isFinite(point.rate));
 }
 
 export async function fetchLcwHistoryRange(
   chainId: ChainId,
-  currency: "USD" | "BTC",
+  currency: 'USD' | 'BTC',
   startMs: number,
-  endMs: number,
+  endMs: number
 ): Promise<PriceHistoryPoint[]> {
-  const data = await lcwPost<LcwHistoryPoint[]>("/coins/single/history", {
+  const data = await lcwPost<LcwHistoryPoint[]>('/coins/single/history', {
     currency,
     code: LCW_CHAIN_CODES[chainId],
     start: startMs,
@@ -91,7 +91,7 @@ export async function fetchLcwHistoryRange(
 
   if (!Array.isArray(data)) return [];
   return data
-    .filter((point) => typeof point.rate === "number" && Number.isFinite(point.rate))
+    .filter((point) => typeof point.rate === 'number' && Number.isFinite(point.rate))
     .map((point) => ({
       time: Math.floor(point.date / 1000),
       value: point.rate,
@@ -101,29 +101,30 @@ export async function fetchLcwHistoryRange(
 export function mapLcwToMarket(
   usdData: LcwSingleResponse | null,
   btcData: LcwSingleResponse | null,
-  history: LcwHistoryPoint[],
-): Omit<ChainMarket, "marketCap"> & { marketCap: number | null } {
+  history: LcwHistoryPoint[]
+): Omit<ChainMarket, 'marketCap'> & { marketCap: number | null } {
   const usd = usdData?.rate ?? null;
   const btc = btcData?.rate ?? null;
   const updatedAt = new Date().toISOString();
 
   return {
-    usd: typeof usd === "number" && Number.isFinite(usd) ? usd : null,
-    btc: typeof btc === "number" && Number.isFinite(btc) ? btc : null,
-    marketCap: typeof usdData?.cap === "number" && Number.isFinite(usdData.cap) ? usdData.cap : null,
+    usd: typeof usd === 'number' && Number.isFinite(usd) ? usd : null,
+    btc: typeof btc === 'number' && Number.isFinite(btc) ? btc : null,
+    marketCap:
+      typeof usdData?.cap === 'number' && Number.isFinite(usdData.cap) ? usdData.cap : null,
     volume24h:
-      typeof usdData?.volume === "number" && Number.isFinite(usdData.volume)
+      typeof usdData?.volume === 'number' && Number.isFinite(usdData.volume)
         ? usdData.volume
         : null,
     change24h:
-      typeof usdData?.delta?.day === "number" && Number.isFinite(usdData.delta.day)
+      typeof usdData?.delta?.day === 'number' && Number.isFinite(usdData.delta.day)
         ? usdData.delta.day
         : null,
     circulatingSupply:
-      typeof usdData?.circulatingSupply === "number" && Number.isFinite(usdData.circulatingSupply)
+      typeof usdData?.circulatingSupply === 'number' && Number.isFinite(usdData.circulatingSupply)
         ? usdData.circulatingSupply
         : null,
-    source: usd != null || btc != null ? "livecoinwatch" : "unavailable",
+    source: usd != null || btc != null ? 'livecoinwatch' : 'unavailable',
     updatedAt: usd != null || btc != null ? updatedAt : null,
     priceHistory24h: history.map((point) => ({ time: point.date, value: point.rate })),
   };

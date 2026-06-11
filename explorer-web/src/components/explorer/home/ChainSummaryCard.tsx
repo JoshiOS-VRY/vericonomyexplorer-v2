@@ -1,27 +1,22 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
-import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
-import { BcStat, BcStatGrid } from "@/components/explorer/BlockchairUi";
-import { StatusDot, formatHeight } from "@/components/explorer/ExplorerUi";
-import { ChainMarketCard } from "@/components/explorer/home/ChainMarketCard";
-import { ChainNetworkCard } from "@/components/explorer/home/ChainNetworkCard";
-import type {
-  ChainMarket,
-  ChainSummary,
-  VrcNetworkStats,
-  VrmNetworkStats,
-} from "@/lib/api/types";
+import Image from 'next/image';
+import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
+import { LiveRelativeTime } from '@/components/explorer/LiveRelativeTime';
+import { BcStat, BcStatGrid } from '@/components/explorer/BlockchairUi';
+import { StatusDot, formatHeight } from '@/components/explorer/ExplorerUi';
+import { ChainMarketCard } from '@/components/explorer/home/ChainMarketCard';
+import { ChainNetworkCard } from '@/components/explorer/home/ChainNetworkCard';
+import type { ChainMarket, ChainSummary, VrcNetworkStats, VrmNetworkStats } from '@/lib/api/types';
 import {
   CHAIN_EXPLORERS,
   getChainStatusTone,
   getChainSyncLabel,
   getChainTipHeight,
   isChainAtTip,
-} from "@/lib/chainDisplay";
-import { cn } from "@/lib/utils";
+} from '@/lib/chainDisplay';
+import { cn } from '@/lib/utils';
 
 export function ChainSummaryCard({
   chainId,
@@ -31,7 +26,7 @@ export function ChainSummaryCard({
   market,
   network,
 }: {
-  chainId: "vrm" | "vrc";
+  chainId: 'vrm' | 'vrc';
   summary: ChainSummary;
   chainHeight: number | null;
   heightPulse: boolean;
@@ -74,10 +69,8 @@ export function ChainSummaryCard({
         {exploreReady ? (
           <span
             className={cn(
-              "chain-explore-btn pointer-events-none shrink-0 rounded-lg px-3 py-1.5 text-xs",
-              chainId === "vrm"
-                ? "chain-explore-btn-vrm"
-                : "chain-explore-btn-vrc",
+              'chain-explore-btn pointer-events-none shrink-0 rounded-lg px-3 py-1.5 text-xs',
+              chainId === 'vrm' ? 'chain-explore-btn-vrm' : 'chain-explore-btn-vrc'
             )}
             aria-hidden
           >
@@ -117,7 +110,7 @@ export function ChainSummaryCard({
                 className="truncate text-lg font-bold sm:text-xl"
               />
             ) : (
-              "—"
+              '—'
             )
           }
         />
@@ -128,12 +121,7 @@ export function ChainSummaryCard({
       </div>
 
       <div className="border-t border-border">
-        <ChainNetworkCard
-          chainId={chainId}
-          network={network}
-          embedded
-          animated
-        />
+        <ChainNetworkCard chainId={chainId} network={network} embedded animated />
       </div>
     </>
   );
@@ -144,10 +132,8 @@ export function ChainSummaryCard({
         href={config.exploreHref}
         prefetch
         className={cn(
-          "chain-summary-card block overflow-hidden rounded-xl border border-border bg-bg-panel shadow-sm outline-none",
-          chainId === "vrm"
-            ? "chain-summary-card-vrm"
-            : "chain-summary-card-vrc",
+          'chain-summary-card block overflow-hidden rounded-xl border border-border bg-bg-panel shadow-sm outline-none',
+          chainId === 'vrm' ? 'chain-summary-card-vrm' : 'chain-summary-card-vrc'
         )}
       >
         {content}

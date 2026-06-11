@@ -1,18 +1,18 @@
-import type { Metadata } from "next";
-import { Suspense } from "react";
-import { AlertBanner } from "@/components/explorer/ExplorerUi";
-import { InsightsDashboard } from "@/components/explorer/insights/InsightsDashboard";
-import { getChainSummary, getHomeMarket, getHomeNetwork } from "@/lib/api/indexer";
-import { applyOnChainMarketCap } from "@/lib/enrichMarket";
-import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
-import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
+import type { Metadata } from 'next';
+import { Suspense } from 'react';
+import { AlertBanner } from '@/components/explorer/ExplorerUi';
+import { InsightsDashboard } from '@/components/explorer/insights/InsightsDashboard';
+import { getChainSummary, getHomeMarket, getHomeNetwork } from '@/lib/api/indexer';
+import { applyOnChainMarketCap } from '@/lib/enrichMarket';
+import { emptyMarketPayload, emptyNetworkPayload } from '@/lib/homeDefaults';
+import { pageMetadata, staticPageSeo } from '@/lib/seo/metadata';
 
 export const metadata: Metadata = pageMetadata(staticPageSeo.insights);
 
 export const revalidate = 30;
 
-function parseChainId(value?: string): "vrm" | "vrc" {
-  return value === "vrc" ? "vrc" : "vrm";
+function parseChainId(value?: string): 'vrm' | 'vrc' {
+  return value === 'vrc' ? 'vrc' : 'vrm';
 }
 
 export default async function InsightsPage({
@@ -30,11 +30,11 @@ export default async function InsightsPage({
       getHomeNetwork().catch(() => emptyNetworkPayload()),
     ]);
 
-    const network = chainId === "vrc" ? networkPayload.vrc : networkPayload.vrm;
+    const network = chainId === 'vrc' ? networkPayload.vrc : networkPayload.vrm;
     const market = applyOnChainMarketCap(
-      chainId === "vrc" ? marketPayload.vrc : marketPayload.vrm,
+      chainId === 'vrc' ? marketPayload.vrc : marketPayload.vrm,
       chainId,
-      network.supply,
+      network.supply
     );
 
     return (

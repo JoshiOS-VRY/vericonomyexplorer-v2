@@ -1,47 +1,42 @@
-import { UserMessageBanner } from "@/components/explorer/UserMessageBanner";
-import { AlertBanner } from "@/components/explorer/ExplorerUi";
-import { VrcChainDashboard } from "@/components/explorer/vrc/VrcChainDashboard";
+import { UserMessageBanner } from '@/components/explorer/UserMessageBanner';
+import { AlertBanner } from '@/components/explorer/ExplorerUi';
+import { VrcChainDashboard } from '@/components/explorer/vrc/VrcChainDashboard';
 import {
   getChainSummary,
   getHomeMarket,
   getHomeNetwork,
   getLeaderboard,
   getRichlist,
-} from "@/lib/api/indexer";
-import type { LeaderboardResult } from "@/lib/api/types";
-import { applyOnChainMarketCap } from "@/lib/enrichMarket";
-import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
+} from '@/lib/api/indexer';
+import type { LeaderboardResult } from '@/lib/api/types';
+import { applyOnChainMarketCap } from '@/lib/enrichMarket';
+import { emptyMarketPayload, emptyNetworkPayload } from '@/lib/homeDefaults';
 
 const emptyVrcLeaderboard: LeaderboardResult = {
-  chainId: "vrc",
+  chainId: 'vrc',
   trusted: false,
   enabled: false,
   items: [],
-  source: { label: "unavailable" },
+  source: { label: 'unavailable' },
 };
 
 export const revalidate = 30;
 
 export default async function VrcChainPage() {
   try {
-    const [summary, richlist, leaderboard, marketPayload, networkPayload] =
-      await Promise.all([
-        getChainSummary("vrc"),
-        getRichlist("vrc", { limit: 5 }),
-        getLeaderboard("vrc", {
-          period: "month",
-          sort: "activity",
-          limit: 5,
-        }).catch(() => emptyVrcLeaderboard),
-        getHomeMarket().catch(() => emptyMarketPayload()),
-        getHomeNetwork().catch(() => emptyNetworkPayload()),
-      ]);
+    const [summary, richlist, leaderboard, marketPayload, networkPayload] = await Promise.all([
+      getChainSummary('vrc'),
+      getRichlist('vrc', { limit: 5 }),
+      getLeaderboard('vrc', {
+        period: 'month',
+        sort: 'activity',
+        limit: 5,
+      }).catch(() => emptyVrcLeaderboard),
+      getHomeMarket().catch(() => emptyMarketPayload()),
+      getHomeNetwork().catch(() => emptyNetworkPayload()),
+    ]);
 
-    const market = applyOnChainMarketCap(
-      marketPayload.vrc,
-      "vrc",
-      networkPayload.vrc.supply,
-    );
+    const market = applyOnChainMarketCap(marketPayload.vrc, 'vrc', networkPayload.vrc.supply);
 
     return (
       <>

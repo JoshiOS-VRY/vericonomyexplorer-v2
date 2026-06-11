@@ -1,23 +1,23 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { ChainMarketCard } from "@/components/explorer/home/ChainMarketCard";
-import { ChainNetworkCard } from "@/components/explorer/home/ChainNetworkCard";
-import { ChainBlocksPanel } from "@/components/explorer/chain/ChainBlocksPanel";
-import { LazyChainActivityChart } from "@/components/explorer/chain/LazyChainActivityChart";
-import { ChainMetricStrip } from "@/components/explorer/chain/ChainMetricStrip";
-import { ChainQuickNav } from "@/components/explorer/chain/ChainQuickNav";
-import { ChainRichlistPreview } from "@/components/explorer/chain/ChainRichlistPreview";
-import { ChainTransactionsPanel } from "@/components/explorer/chain/ChainTransactionsPanel";
-import { ChainExplorerHero } from "@/components/explorer/vrm/VrmChainHero";
-import { ChainLeaderboardPreview } from "@/components/explorer/chain/ChainLeaderboardPreview";
-import { VrmMinersPreview } from "@/components/explorer/vrm/VrmMinersPreview";
-import { useStableChainLive } from "@/hooks/useStableChainLive";
-import type { ChainMarket, VrmDashboardPayload, VrmNetworkStats } from "@/lib/api/types";
-import { fetchHomeMarket, fetchHomeNetwork } from "@/lib/api/client";
-import { applyOnChainMarketCap } from "@/lib/enrichMarket";
-import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
-import { resolveRichlistTotalSupply } from "@/lib/richlistSupply";
+import { useEffect, useState } from 'react';
+import { ChainMarketCard } from '@/components/explorer/home/ChainMarketCard';
+import { ChainNetworkCard } from '@/components/explorer/home/ChainNetworkCard';
+import { ChainBlocksPanel } from '@/components/explorer/chain/ChainBlocksPanel';
+import { LazyChainActivityChart } from '@/components/explorer/chain/LazyChainActivityChart';
+import { ChainMetricStrip } from '@/components/explorer/chain/ChainMetricStrip';
+import { ChainQuickNav } from '@/components/explorer/chain/ChainQuickNav';
+import { ChainRichlistPreview } from '@/components/explorer/chain/ChainRichlistPreview';
+import { ChainTransactionsPanel } from '@/components/explorer/chain/ChainTransactionsPanel';
+import { ChainExplorerHero } from '@/components/explorer/vrm/VrmChainHero';
+import { ChainLeaderboardPreview } from '@/components/explorer/chain/ChainLeaderboardPreview';
+import { VrmMinersPreview } from '@/components/explorer/vrm/VrmMinersPreview';
+import { useStableChainLive } from '@/hooks/useStableChainLive';
+import type { ChainMarket, VrmDashboardPayload, VrmNetworkStats } from '@/lib/api/types';
+import { fetchHomeMarket, fetchHomeNetwork } from '@/lib/api/client';
+import { applyOnChainMarketCap } from '@/lib/enrichMarket';
+import { emptyMarketPayload, emptyNetworkPayload } from '@/lib/homeDefaults';
+import { resolveRichlistTotalSupply } from '@/lib/richlistSupply';
 
 export function VrmChainDashboard({
   summary: initialSummary,
@@ -30,19 +30,14 @@ export function VrmChainDashboard({
   initialMarket?: ChainMarket;
   initialNetwork?: VrmNetworkStats;
 }) {
-  const [market, setMarket] = useState<ChainMarket>(
-    initialMarket ?? emptyMarketPayload().vrm,
-  );
+  const [market, setMarket] = useState<ChainMarket>(initialMarket ?? emptyMarketPayload().vrm);
   const [network, setNetwork] = useState<VrmNetworkStats>(
-    initialNetwork ?? emptyNetworkPayload().vrm,
+    initialNetwork ?? emptyNetworkPayload().vrm
   );
-  const {
-    summary,
-    chainHeight,
-    addressCount,
-    latestBlocks,
-    heightPulse,
-  } = useStableChainLive("vrm", initialSummary);
+  const { summary, chainHeight, addressCount, latestBlocks, heightPulse } = useStableChainLive(
+    'vrm',
+    initialSummary
+  );
 
   useEffect(() => {
     if (initialMarket && initialNetwork) {
@@ -58,7 +53,7 @@ export function VrmChainDashboard({
           fetchHomeNetwork(),
         ]);
         if (!cancelled) {
-          setMarket(applyOnChainMarketCap(marketPayload.vrm, "vrm", networkPayload.vrm.supply));
+          setMarket(applyOnChainMarketCap(marketPayload.vrm, 'vrm', networkPayload.vrm.supply));
           setNetwork(networkPayload.vrm);
         }
       } catch {
@@ -115,10 +110,7 @@ export function VrmChainDashboard({
             totalSupply={richlistSupply}
           />
           <VrmMinersPreview miners={initialMiners} />
-          <ChainLeaderboardPreview
-            chainId="vrm"
-            leaderboard={initialLeaderboard}
-          />
+          <ChainLeaderboardPreview chainId="vrm" leaderboard={initialLeaderboard} />
         </div>
       </div>
 

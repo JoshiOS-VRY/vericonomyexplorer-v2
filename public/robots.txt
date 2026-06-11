@@ -1,24 +1,6 @@
+# Legacy robots.txt — superseded by explorer-web/src/app/robots.ts (Next.js App Router).
+# Deploy the explorer-web app; do not serve this file in production.
+# See explorer-web/public/llms.txt for AI crawler guidance.
+
 User-agent: *
-Disallow: /address/
-Disallow: /rpc*
-Disallow: /tx-stats
-Disallow: /peers
-Disallow: /mempool-transactions
-Disallow: /block-analysis/
-Disallow: /snippet/
-Disallow: /api/
-Crawl-delay: 10
-
-# Block OpenAI GPTBot
-User-agent: GPTBot
-Disallow: /
-
-# Block other aggressive crawlers
-User-agent: ChatGPT-User
-Disallow: /
-
-User-agent: CCBot
-Disallow: /
-
-User-agent: anthropic-ai
-Disallow: /
+Allow: /

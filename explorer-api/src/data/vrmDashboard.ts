@@ -1,5 +1,5 @@
-import { runIndexerQuery } from "../db/queryPool.js";
-import { enrichChainSummary } from "./liveEnrichment.js";
+import { runIndexerQuery } from '../db/queryPool.js';
+import { enrichChainSummary } from './liveEnrichment.js';
 
 const skipOpts = {
   skipLiveBlocks: true,
@@ -17,12 +17,12 @@ type VrmDashboardBundle = {
 
 export async function fetchVrmDashboardBundle() {
   const bundle = (await runIndexerQuery<VrmDashboardBundle>(
-    "getVrmDashboardBundle",
+    'getVrmDashboardBundle',
     [],
-    skipOpts,
+    skipOpts
   )) as VrmDashboardBundle;
 
-  const summary = await enrichChainSummary(bundle.summary, "vrm", skipOpts);
+  const summary = await enrichChainSummary(bundle.summary, 'vrm', skipOpts);
 
   return {
     summary,

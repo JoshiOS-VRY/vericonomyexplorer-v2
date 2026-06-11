@@ -1,9 +1,9 @@
-import Image from "next/image";
-import Link from "next/link";
-import { StatusDot, formatHeight } from "@/components/explorer/ExplorerUi";
-import type { ChainHealth, IndexedBlock } from "@/lib/api/types";
-import { CHAIN_EXPLORERS, isChainLive } from "@/lib/chainDisplay";
-import { cn } from "@/lib/utils";
+import Image from 'next/image';
+import Link from 'next/link';
+import { StatusDot, formatHeight } from '@/components/explorer/ExplorerUi';
+import type { ChainHealth, IndexedBlock } from '@/lib/api/types';
+import { CHAIN_EXPLORERS, isChainLive } from '@/lib/chainDisplay';
+import { cn } from '@/lib/utils';
 
 export function ChainExplorerHero({
   chainId,
@@ -12,7 +12,7 @@ export function ChainExplorerHero({
   heightPulse,
   tipBlock,
 }: {
-  chainId: "vrm" | "vrc";
+  chainId: 'vrm' | 'vrc';
   health: ChainHealth;
   chainHeight: number | null;
   heightPulse: boolean;
@@ -20,14 +20,12 @@ export function ChainExplorerHero({
 }) {
   const config = CHAIN_EXPLORERS[chainId];
   const live = isChainLive(health, tipBlock?.height, chainHeight);
-  const tipHref =
-    tipBlock && config.blockHref ? config.blockHref(tipBlock.height) : null;
-  const chainLabel =
-    chainId === "vrm" ? "Verium blockchain" : "VeriCoin blockchain";
+  const tipHref = tipBlock && config.blockHref ? config.blockHref(tipBlock.height) : null;
+  const chainLabel = chainId === 'vrm' ? 'Verium blockchain' : 'VeriCoin blockchain';
   const description =
-    chainId === "vrm"
-      ? "Explore blocks, transactions, and addresses on the Verium proof-of-work-time chain."
-      : "Explore blocks, transactions, and balances on the VeriCoin proof-of-stake-time chain.";
+    chainId === 'vrm'
+      ? 'Explore blocks, transactions, and addresses on the Verium proof-of-work-time chain.'
+      : 'Explore blocks, transactions, and balances on the VeriCoin proof-of-stake-time chain.';
 
   return (
     <section className="wallet-panel overflow-hidden rounded-xl border border-border bg-gradient-to-br from-bg-panel via-bg-panel to-accent/5 shadow-sm">
@@ -52,30 +50,26 @@ export function ChainExplorerHero({
                 <span className="rounded bg-accent/10 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-accent">
                   {config.ticker}
                 </span>
-                <span className="text-xs text-fg-subtle">
-                  {config.consensus}
-                </span>
+                <span className="text-xs text-fg-subtle">{config.consensus}</span>
               </div>
-              <p className="mt-2 max-w-2xl text-sm text-fg-muted">
-                {description}
-              </p>
+              <p className="mt-2 max-w-2xl text-sm text-fg-muted">{description}</p>
               <div className="mt-3 flex flex-wrap items-center gap-4">
                 <span
                   className={cn(
-                    "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold",
+                    'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold',
                     live
-                      ? "border-success/30 bg-success/10 text-success"
-                      : "border-border bg-bg-subtle text-fg-muted",
+                      ? 'border-success/30 bg-success/10 text-success'
+                      : 'border-border bg-bg-subtle text-fg-muted'
                   )}
                 >
-                  <StatusDot tone={live ? "success" : "neutral"} pulse={live} />
-                  {live ? "Live" : "Offline"}
+                  <StatusDot tone={live ? 'success' : 'neutral'} pulse={live} />
+                  {live ? 'Live' : 'Offline'}
                 </span>
                 {chainHeight != null ? (
                   <span
                     className={cn(
-                      "text-sm font-semibold tabular-nums text-fg",
-                      heightPulse && "live-height-pulse",
+                      'text-sm font-semibold tabular-nums text-fg',
+                      heightPulse && 'live-height-pulse'
                     )}
                   >
                     Height {formatHeight(chainHeight)}

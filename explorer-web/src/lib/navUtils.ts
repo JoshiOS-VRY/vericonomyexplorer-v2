@@ -1,12 +1,12 @@
 export function normalizePathname(pathname: string): string {
-  return pathname.replace(/\/$/, "") || "/";
+  return pathname.replace(/\/$/, '') || '/';
 }
 
 export function isNavLinkActive(
   pathname: string,
   href: string,
   exact?: boolean,
-  prefix?: boolean,
+  prefix?: boolean
 ): boolean {
   const current = normalizePathname(pathname);
   if (exact) return current === href;
@@ -17,7 +17,7 @@ export function isNavLinkActive(
 export function isNavDropdownActive(
   pathname: string,
   items: { href: string }[],
-  prefix?: boolean,
+  prefix?: boolean
 ): boolean {
   return items.some((item) => isNavLinkActive(pathname, item.href, false, prefix));
 }
@@ -26,5 +26,5 @@ export function getNavSearchString(pathname: string, search?: string): string {
   if (!search) {
     return pathname;
   }
-  return `${pathname}${search.startsWith("?") ? search : `?${search}`}`;
+  return `${pathname}${search.startsWith('?') ? search : `?${search}`}`;
 }

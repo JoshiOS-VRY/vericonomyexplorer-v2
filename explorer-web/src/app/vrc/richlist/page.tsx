@@ -1,14 +1,11 @@
-import type { Metadata } from "next";
-import {
-  AlertBanner,
-  formatHeight,
-} from "@/components/explorer/ExplorerUi";
-import { BcPageHeader } from "@/components/explorer/BlockchairUi";
-import { RichlistLiveTable } from "@/components/explorer/richlist/RichlistLiveTable";
-import { getRichlist } from "@/lib/api/indexer";
-import { formatExplorerUserMessage } from "@/lib/explorerCopy";
-import { normalizeLimit, normalizeOffset } from "@/lib/utils";
-import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
+import type { Metadata } from 'next';
+import { AlertBanner, formatHeight } from '@/components/explorer/ExplorerUi';
+import { BcPageHeader } from '@/components/explorer/BlockchairUi';
+import { RichlistLiveTable } from '@/components/explorer/richlist/RichlistLiveTable';
+import { getRichlist } from '@/lib/api/indexer';
+import { formatExplorerUserMessage } from '@/lib/explorerCopy';
+import { normalizeLimit, normalizeOffset } from '@/lib/utils';
+import { pageMetadata, staticPageSeo } from '@/lib/seo/metadata';
 
 export const metadata: Metadata = pageMetadata(staticPageSeo.vrcRichlist);
 
@@ -25,22 +22,15 @@ export default async function VrcRichlistPage({
 
   let richlist;
   try {
-    richlist = await getRichlist("vrc", { limit, offset });
+    richlist = await getRichlist('vrc', { limit, offset });
   } catch {
-    return (
-      <AlertBanner title="Richlist Unavailable">
-        Unable to load VRC richlist.
-      </AlertBanner>
-    );
+    return <AlertBanner title="Richlist Unavailable">Unable to load VRC richlist.</AlertBanner>;
   }
 
   if (!richlist.enabled && richlist.message) {
     return (
       <div className="space-y-6">
-        <BcPageHeader
-          title="Rich list"
-          subtitle="Top VRC addresses by balance."
-        />
+        <BcPageHeader title="Rich list" subtitle="Top VRC addresses by balance." />
         <AlertBanner title="Richlist Unavailable">
           {formatExplorerUserMessage(richlist.message)}
         </AlertBanner>

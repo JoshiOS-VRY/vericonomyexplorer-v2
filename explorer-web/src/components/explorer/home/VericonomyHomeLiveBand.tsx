@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { BinaryChainActivity } from "@/components/explorer/home/BinaryChainActivity";
-import { BinaryChainHero } from "@/components/explorer/home/BinaryChainHero";
-import { ChainHubSection } from "@/components/explorer/home/LatestBlocksChainStrip";
-import { useDualChainLive } from "@/hooks/useDualChainLive";
-import { useHomeMarket } from "@/hooks/useHomeMarket";
-import { useHydrated } from "@/hooks/useHydrated";
-import { useHomeNetworkLive } from "@/hooks/useHomeNetworkLive";
-import type { HomeNetworkPayload, HomeShellPayload } from "@/lib/api/types";
-import { isChainLive } from "@/lib/chainDisplay";
-import { enrichHomeNetworkPayload } from "@/lib/enrichNetwork";
-import { applyOnChainMarketCap } from "@/lib/enrichMarket";
-import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
+import { BinaryChainActivity } from '@/components/explorer/home/BinaryChainActivity';
+import { BinaryChainHero } from '@/components/explorer/home/BinaryChainHero';
+import { ChainHubSection } from '@/components/explorer/home/LatestBlocksChainStrip';
+import { useDualChainLive } from '@/hooks/useDualChainLive';
+import { useHomeMarket } from '@/hooks/useHomeMarket';
+import { useHydrated } from '@/hooks/useHydrated';
+import { useHomeNetworkLive } from '@/hooks/useHomeNetworkLive';
+import type { HomeNetworkPayload, HomeShellPayload } from '@/lib/api/types';
+import { isChainLive } from '@/lib/chainDisplay';
+import { enrichHomeNetworkPayload } from '@/lib/enrichNetwork';
+import { applyOnChainMarketCap } from '@/lib/enrichMarket';
+import { emptyMarketPayload, emptyNetworkPayload } from '@/lib/homeDefaults';
 
 interface VericonomyHomeLiveBandProps {
   initialShell: HomeShellPayload;
@@ -24,21 +24,12 @@ export function VericonomyHomeLiveBand({
 }: VericonomyHomeLiveBandProps) {
   const hydrated = useHydrated();
   const { vrmMarket, vrcMarket } = useHomeMarket(emptyMarketPayload());
-  const live = useDualChainLive(
-    initialShell.vrm.summary,
-    initialShell.vrc.summary,
-  );
-  const { network: liveNetwork } = useHomeNetworkLive(
-    initialNetwork ?? emptyNetworkPayload(),
-  );
-  const network = enrichHomeNetworkPayload(
-    liveNetwork,
-    live.vrm.summary,
-    live.vrc.summary,
-  );
+  const live = useDualChainLive(initialShell.vrm.summary, initialShell.vrc.summary);
+  const { network: liveNetwork } = useHomeNetworkLive(initialNetwork ?? emptyNetworkPayload());
+  const network = enrichHomeNetworkPayload(liveNetwork, live.vrm.summary, live.vrc.summary);
   const market = {
-    vrm: applyOnChainMarketCap(vrmMarket, "vrm", network.vrm.supply),
-    vrc: applyOnChainMarketCap(vrcMarket, "vrc", network.vrc.supply),
+    vrm: applyOnChainMarketCap(vrmMarket, 'vrm', network.vrm.supply),
+    vrc: applyOnChainMarketCap(vrcMarket, 'vrc', network.vrc.supply),
   };
 
   const vrmSummary = hydrated ? live.vrm.summary : initialShell.vrm.summary;
@@ -46,12 +37,12 @@ export function VericonomyHomeLiveBand({
   const vrmLive = isChainLive(
     vrmSummary.health,
     vrmSummary.latestBlocks[0]?.height,
-    live.vrm.chainHeight,
+    live.vrm.chainHeight
   );
   const vrcLive = isChainLive(
     vrcSummary.health,
     vrcSummary.latestBlocks[0]?.height,
-    live.vrc.chainHeight,
+    live.vrc.chainHeight
   );
 
   return (
@@ -69,11 +60,7 @@ export function VericonomyHomeLiveBand({
           heightPulse={hydrated && live.vrm.heightPulse}
           market={market.vrm}
           network={network.vrm}
-          seedBlocks={
-            hydrated
-              ? live.vrm.latestBlocks
-              : initialShell.vrm.summary.latestBlocks
-          }
+          seedBlocks={hydrated ? live.vrm.latestBlocks : initialShell.vrm.summary.latestBlocks}
         />
         <ChainHubSection
           chainId="vrc"
@@ -87,11 +74,7 @@ export function VericonomyHomeLiveBand({
           heightPulse={hydrated && live.vrc.heightPulse}
           market={market.vrc}
           network={network.vrc}
-          seedBlocks={
-            hydrated
-              ? live.vrc.latestBlocks
-              : initialShell.vrc.summary.latestBlocks
-          }
+          seedBlocks={hydrated ? live.vrc.latestBlocks : initialShell.vrc.summary.latestBlocks}
         />
       </div>
     </div>

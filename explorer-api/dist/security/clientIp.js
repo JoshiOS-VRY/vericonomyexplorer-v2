@@ -40,12 +40,18 @@ export function isAllowlistedIp(ip) {
     }
     return isPrivateIpv4(normalized);
 }
-export function getClientIp(request) {
-    const realIp = request.headers["x-real-ip"];
-    if (typeof realIp === "string" && realIp.trim()) {
-        return normalizeIp(realIp.trim());
+function readIpHeader(request, name) {
+    const value = request.headers[name];
+    if (typeof value === "string" && value.trim()) {
+        return normalizeIp(value.trim());
     }
-    return normalizeIp(request.ip);
+    return undefined;
+}
+export function getClientIp(request) {
+    // Cloudflare sets CF-Connecting-IP; Caddy/nginx may forward it as X-Real-IP.
+    return (readIpHeader(request, "cf-connecting-ip") ??
+        readIpHeader(request, "x-real-ip") ??
+        normalizeIp(request.ip));
 }
 export function isRateLimitAllowlisted(request) {
     const ip = getClientIp(request);

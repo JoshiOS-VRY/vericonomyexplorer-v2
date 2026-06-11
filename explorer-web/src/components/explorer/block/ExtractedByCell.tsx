@@ -1,24 +1,23 @@
-import Link from "next/link";
-import { ChainAddressLink } from "@/components/explorer/address/ChainAddressLink";
-import type { IndexedBlock } from "@/lib/api/types";
-import { type ChainId } from "@/lib/chainDisplay";
+import Link from 'next/link';
+import { ChainAddressLink } from '@/components/explorer/address/ChainAddressLink';
+import type { IndexedBlock } from '@/lib/api/types';
+import { type ChainId } from '@/lib/chainDisplay';
 import {
   VERIUM_POOL_PAYOUT_ADDRESS,
   isVeriumPoolExtracted,
   veriumPoolPillClassName,
-} from "@/lib/veriumPoolExtracted";
+} from '@/lib/veriumPoolExtracted';
 
 export function ExtractedByCell({
   block,
   chainId,
   className,
 }: {
-  block: Pick<IndexedBlock, "extractedBy" | "extractedByAddress" | "extractedByLink">;
+  block: Pick<IndexedBlock, 'extractedBy' | 'extractedByAddress' | 'extractedByLink'>;
   chainId: ChainId;
   className?: string;
 }) {
-  const showVeriumPoolPill =
-    chainId === "vrm" && isVeriumPoolExtracted(block);
+  const showVeriumPoolPill = chainId === 'vrm' && isVeriumPoolExtracted(block);
 
   if (block.extractedBy && block.extractedByLink) {
     return (
@@ -28,7 +27,7 @@ export function ExtractedByCell({
         className={
           showVeriumPoolPill
             ? veriumPoolPillClassName(className)
-            : (className ?? "text-sm font-medium text-accent hover:underline")
+            : (className ?? 'text-sm font-medium text-accent hover:underline')
         }
         target="_blank"
         rel="noreferrer"
@@ -51,10 +50,7 @@ export function ExtractedByCell({
     }
 
     return (
-      <span
-        className={className ?? "text-sm font-medium text-fg"}
-        title={block.extractedBy}
-      >
+      <span className={className ?? 'text-sm font-medium text-fg'} title={block.extractedBy}>
         {block.extractedBy}
       </span>
     );
@@ -71,5 +67,5 @@ export function ExtractedByCell({
     );
   }
 
-  return <span className={className ?? "text-sm text-fg-muted"}>Unknown</span>;
+  return <span className={className ?? 'text-sm text-fg-muted'}>Unknown</span>;
 }

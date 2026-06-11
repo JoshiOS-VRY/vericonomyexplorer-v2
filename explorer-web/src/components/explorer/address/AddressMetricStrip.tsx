@@ -1,5 +1,5 @@
-import { MetricStrip, formatHeight } from "@/components/explorer/ExplorerUi";
-import type { AddressResult } from "@/lib/api/types";
+import { MetricStrip, formatHeight } from '@/components/explorer/ExplorerUi';
+import type { AddressResult } from '@/lib/api/types';
 
 export function AddressMetricStrip({ result }: { result: AddressResult }) {
   const { balance } = result;
@@ -9,19 +9,19 @@ export function AddressMetricStrip({ result }: { result: AddressResult }) {
       <MetricStrip
         items={[
           {
-            label: "Balance",
+            label: 'Balance',
             value: `${balance.balance.amount} ${balance.balance.ticker}`,
           },
           {
-            label: "Received",
+            label: 'Received',
             value: `${balance.totalReceived.amount} ${balance.totalReceived.ticker}`,
           },
           {
-            label: "Sent",
+            label: 'Sent',
             value: `${balance.totalSent.amount} ${balance.totalSent.ticker}`,
           },
           {
-            label: "Transactions",
+            label: 'Transactions',
             value: formatHeight(balance.txCount),
           },
         ]}

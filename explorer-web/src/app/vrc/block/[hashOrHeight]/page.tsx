@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata } from 'next';
 import {
   BlockDetailPage,
   blockDetailSearchParams,
-} from "@/components/explorer/pages/BlockDetailPage";
-import { blockPageMetadata } from "@/lib/seo/dynamic";
+} from '@/components/explorer/pages/BlockDetailPage';
+import { blockPageMetadata } from '@/lib/seo/dynamic';
 
 export const revalidate = 60;
 
@@ -13,7 +13,7 @@ export async function generateMetadata({
   params: Promise<{ hashOrHeight: string }>;
 }): Promise<Metadata> {
   const { hashOrHeight } = await params;
-  return blockPageMetadata("vrc", hashOrHeight);
+  return blockPageMetadata('vrc', hashOrHeight);
 }
 
 export default async function VrcBlockPage({
@@ -27,11 +27,6 @@ export default async function VrcBlockPage({
   const { limit, offset } = blockDetailSearchParams(await searchParams);
 
   return (
-    <BlockDetailPage
-      chainId="vrc"
-      hashOrHeight={hashOrHeight}
-      limit={limit}
-      offset={offset}
-    />
+    <BlockDetailPage chainId="vrc" hashOrHeight={hashOrHeight} limit={limit} offset={offset} />
   );
 }

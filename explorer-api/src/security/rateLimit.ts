@@ -1,19 +1,19 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance } from 'fastify';
 import {
   getRateLimitCrawlerMax,
   getRateLimitMax,
   getRateLimitWindowMs,
   getRedisUrl,
   isRateLimitEnabled,
-} from "../env.js";
-import { getClientIp, isRateLimitAllowlisted } from "./clientIp.js";
-import { getCrawlerFromUserAgent } from "./crawler.js";
+} from '../env.js';
+import { getClientIp, isRateLimitAllowlisted } from './clientIp.js';
+import { getCrawlerFromUserAgent } from './crawler.js';
 
 function sanitizeRouteForLog(url: string): string {
-  if (!url.includes("search")) {
+  if (!url.includes('search')) {
     return url;
   }
-  const idx = url.indexOf("?");
+  const idx = url.indexOf('?');
   return idx >= 0 ? `${url.slice(0, idx)}?…` : url;
 }
 
@@ -23,7 +23,7 @@ async function createRedisClient(): Promise<unknown | undefined> {
     return undefined;
   }
 
-  const { Redis } = await import("ioredis");
+  const { Redis } = await import('ioredis');
   return new Redis(url, {
     connectTimeout: 5000,
     maxRetriesPerRequest: 1,
@@ -32,14 +32,14 @@ async function createRedisClient(): Promise<unknown | undefined> {
 }
 
 export async function registerSecurity(app: FastifyInstance): Promise<void> {
-  const { default: helmet } = await import("@fastify/helmet");
+  const { default: helmet } = await import('@fastify/helmet');
   await app.register(helmet, {
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
   });
 
   if (!isRateLimitEnabled()) {
-    app.log.info("Rate limiting disabled (VCEXP_RATE_LIMIT_WINDOW_MINUTES=-1)");
+    app.log.info('Rate limiting disabled (VCEXP_RATE_LIMIT_WINDOW_MINUTES=-1)');
     return;
   }
 
@@ -48,12 +48,12 @@ export async function registerSecurity(app: FastifyInstance): Promise<void> {
   const crawlerMax = getRateLimitCrawlerMax();
   const redis = await createRedisClient();
 
-  const { default: rateLimit } = await import("@fastify/rate-limit");
+  const { default: rateLimit } = await import('@fastify/rate-limit');
   await app.register(rateLimit, {
     global: true,
     max: (request) => {
-      const ua = request.headers["user-agent"];
-      const crawler = getCrawlerFromUserAgent(typeof ua === "string" ? ua : undefined);
+      const ua = request.headers['user-agent'];
+      const crawler = getCrawlerFromUserAgent(typeof ua === 'string' ? ua : undefined);
       return crawler ? crawlerMax : globalMax;
     },
     timeWindow: windowMs,
@@ -63,12 +63,12 @@ export async function registerSecurity(app: FastifyInstance): Promise<void> {
     allowList: (request) => isRateLimitAllowlisted(request),
     keyGenerator: (request) => getClientIp(request),
     errorResponseBuilder: (request) => ({
-      error: "Too many requests",
+      error: 'Too many requests',
       requestId: request.id,
     }),
     onExceeded: (request) => {
-      const ua = request.headers["user-agent"];
-      const crawler = getCrawlerFromUserAgent(typeof ua === "string" ? ua : undefined);
+      const ua = request.headers['user-agent'];
+      const crawler = getCrawlerFromUserAgent(typeof ua === 'string' ? ua : undefined);
       request.log.warn(
         {
           requestId: request.id,
@@ -76,13 +76,10 @@ export async function registerSecurity(app: FastifyInstance): Promise<void> {
           ip: getClientIp(request),
           crawler,
         },
-        "rate limit exceeded",
+        'rate limit exceeded'
       );
     },
   });
 
-  app.log.info(
-    { windowMs, globalMax, crawlerMax, redis: Boolean(redis) },
-    "Rate limiting enabled",
-  );
+  app.log.info({ windowMs, globalMax, crawlerMax, redis: Boolean(redis) }, 'Rate limiting enabled');
 }

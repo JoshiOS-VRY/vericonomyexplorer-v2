@@ -10,13 +10,11 @@ export type NextFetchInit = RequestInit & {
 
 export function buildFetchInit(
   options: CacheFetchOptions = {},
-  extra: RequestInit = {},
+  extra: RequestInit = {}
 ): NextFetchInit {
   const init: NextFetchInit = {
     ...extra,
-    cache:
-      options.cache ??
-      (options.revalidate !== undefined ? "force-cache" : "no-store"),
+    cache: options.cache ?? (options.revalidate !== undefined ? 'force-cache' : 'no-store'),
   };
 
   if (options.revalidate !== undefined) {

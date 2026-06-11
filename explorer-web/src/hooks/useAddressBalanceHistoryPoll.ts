@@ -1,16 +1,13 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef } from "react";
-import { usePageVisible } from "@/hooks/usePageVisible";
+import { useCallback, useEffect, useRef } from 'react';
+import { usePageVisible } from '@/hooks/usePageVisible';
 import {
   ADDRESS_BALANCE_HISTORY_POLL_MS,
   fetchAddressBalanceHistoryClient,
   isSameAddressBalanceHistory,
-} from "@/lib/addressBalanceHistory";
-import type {
-  AddressBalanceHistoryPeriodId,
-  AddressBalanceHistoryResult,
-} from "@/lib/api/types";
+} from '@/lib/addressBalanceHistory';
+import type { AddressBalanceHistoryPeriodId, AddressBalanceHistoryResult } from '@/lib/api/types';
 
 export function useAddressBalanceHistoryPoll({
   chainId,
@@ -50,7 +47,7 @@ export function useAddressBalanceHistoryPoll({
         return;
       }
 
-      if (period === "all") {
+      if (period === 'all') {
         onAllHistory?.(next);
       }
       onHistory(next);

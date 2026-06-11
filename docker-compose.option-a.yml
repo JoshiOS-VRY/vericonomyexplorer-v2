@@ -10,51 +10,52 @@ services:
     container_name: vericonomy-postgres
     restart: unless-stopped
     # shared_buffers must fit in shm; 8GB buffers + 1gb shm caused "No space left on device" under load.
-    shm_size: "2gb"
+    shm_size: '2gb'
     environment:
       POSTGRES_USER: ${VCEXP_PG_USER:-vericonomy}
       POSTGRES_PASSWORD: ${VCEXP_PG_PASSWORD:?set VCEXP_PG_PASSWORD in .env.production}
       POSTGRES_DB: ${VCEXP_PG_DB:-vericonomy}
       # Initialize the cluster with C collation for fast text comparisons.
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8 --locale=C'
     command:
-      - "postgres"
-      - "-c"
-      - "shared_buffers=1536MB"
-      - "-c"
-      - "effective_cache_size=20GB"
-      - "-c"
-      - "maintenance_work_mem=2GB"
-      - "-c"
-      - "work_mem=96MB"
-      - "-c"
-      - "max_wal_size=12GB"
-      - "-c"
-      - "min_wal_size=2GB"
-      - "-c"
-      - "checkpoint_completion_target=0.9"
-      - "-c"
-      - "wal_compression=on"
-      - "-c"
-      - "random_page_cost=1.1"
-      - "-c"
-      - "effective_io_concurrency=200"
-      - "-c"
-      - "max_connections=120"
-      - "-c"
-      - "max_worker_processes=8"
-      - "-c"
-      - "max_parallel_workers=8"
-      - "-c"
-      - "max_parallel_workers_per_gather=4"
-      - "-c"
-      - "max_parallel_maintenance_workers=4"
-      - "-c"
-      - "synchronous_commit=off"
+      - 'postgres'
+      - '-c'
+      - 'shared_buffers=1536MB'
+      - '-c'
+      - 'effective_cache_size=20GB'
+      - '-c'
+      - 'maintenance_work_mem=2GB'
+      - '-c'
+      - 'work_mem=96MB'
+      - '-c'
+      - 'max_wal_size=12GB'
+      - '-c'
+      - 'min_wal_size=2GB'
+      - '-c'
+      - 'checkpoint_completion_target=0.9'
+      - '-c'
+      - 'wal_compression=on'
+      - '-c'
+      - 'random_page_cost=1.1'
+      - '-c'
+      - 'effective_io_concurrency=200'
+      - '-c'
+      - 'max_connections=120'
+      - '-c'
+      - 'max_worker_processes=8'
+      - '-c'
+      - 'max_parallel_workers=8'
+      - '-c'
+      - 'max_parallel_workers_per_gather=4'
+      - '-c'
+      - 'max_parallel_maintenance_workers=4'
+      - '-c'
+      - 'synchronous_commit=off'
     volumes:
       - vericonomy-pg:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${VCEXP_PG_USER:-vericonomy} -d ${VCEXP_PG_DB:-vericonomy}"]
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${VCEXP_PG_USER:-vericonomy} -d ${VCEXP_PG_DB:-vericonomy}']
       interval: 10s
       timeout: 5s
       retries: 12
@@ -73,8 +74,8 @@ services:
       # Empty value breaks Caddy site label "host1, { ... }" — keep a non-empty default.
       LEGACY_STAGING_DOMAIN: ${LEGACY_STAGING_DOMAIN:-legacy-staging-explorer.vericonomy.com}
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
     volumes:
       - ./deploy/option-a/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -108,7 +109,7 @@ services:
       VCEXP_FAST_API_HOST: explorer-fast-api
       VCEXP_FAST_API_PORT: ${FAST_API_PORT:-3003}
     expose:
-      - "${WEB_PORT:-3000}"
+      - '${WEB_PORT:-3000}'
     depends_on:
       - explorer-fast-api
       - explorer-express
@@ -130,7 +131,7 @@ services:
       VCEXP_DB_BACKEND: ${VCEXP_DB_BACKEND:-sqlite}
       VCEXP_PG_URL: ${VCEXP_PG_URL:-postgres://vericonomy:@postgres:5432/vericonomy}
     expose:
-      - "${EXPRESS_PORT:-3002}"
+      - '${EXPRESS_PORT:-3002}'
     volumes:
       - vericonomy-cache:/app/cache
       - vericonomy-database:/app/database
@@ -171,7 +172,7 @@ services:
       VCEXP_SQLITE_MMAP_MB: ${VCEXP_SQLITE_MMAP_MB:-256}
       VCEXP_CHAIN_HEALTH_CACHE_MS: ${VCEXP_CHAIN_HEALTH_CACHE_MS:-60000}
     expose:
-      - "${FAST_API_PORT:-3003}"
+      - '${FAST_API_PORT:-3003}'
     volumes:
       - vericonomy-database:/app/database
       - ./configs/chains.json:/app/configs/chains.json:ro
@@ -192,19 +193,19 @@ services:
       disable: true
     command:
       [
-        "node",
-        "./bin/indexer-v2-loop.js",
-        "--chain",
-        "vrm",
-        "--index-only",
-        "--batch-size",
-        "25",
-        "--pause-ms",
-        "50",
-        "--idle-ms",
-        "5000",
-        "--log-every",
-        "500",
+        'node',
+        './bin/indexer-v2-loop.js',
+        '--chain',
+        'vrm',
+        '--index-only',
+        '--batch-size',
+        '25',
+        '--pause-ms',
+        '50',
+        '--idle-ms',
+        '5000',
+        '--log-every',
+        '500',
       ]
     env_file:
       - ${ENV_FILE:-.env.production}
@@ -235,17 +236,17 @@ services:
       disable: true
     command:
       [
-        "node",
-        "./bin/indexer-v2-loop.js",
-        "--chain",
-        "vrc",
-        "--index-only",
-        "--batch-size",
-        "25",
-        "--pause-ms",
-        "50",
-        "--log-every",
-        "1000",
+        'node',
+        './bin/indexer-v2-loop.js',
+        '--chain',
+        'vrc',
+        '--index-only',
+        '--batch-size',
+        '25',
+        '--pause-ms',
+        '50',
+        '--log-every',
+        '1000',
       ]
     env_file:
       - ${ENV_FILE:-.env.production}

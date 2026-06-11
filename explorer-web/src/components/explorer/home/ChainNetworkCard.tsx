@@ -1,22 +1,18 @@
-import { AnimatedStatValue } from "@/components/explorer/AnimatedStatValue";
-import type { VrcNetworkStats, VrmNetworkStats } from "@/lib/api/types";
-import { CHAIN_EXPLORERS } from "@/lib/chainDisplay";
+import { AnimatedStatValue } from '@/components/explorer/AnimatedStatValue';
+import type { VrcNetworkStats, VrmNetworkStats } from '@/lib/api/types';
+import { CHAIN_EXPLORERS } from '@/lib/chainDisplay';
 import {
   formatAvgBlockTimeMin,
   formatHashrateKhPerMin,
   formatHubSupply,
   formatPercent,
   formatSupply,
-} from "@/lib/formatMarket";
-import { cn, formatDifficulty, formatNumber } from "@/lib/utils";
-import {
-  ChainHubSectionHead,
-  ChainHubStatCell,
-  ChainHubStatRow,
-} from "./ChainHubStats";
+} from '@/lib/formatMarket';
+import { cn, formatDifficulty, formatNumber } from '@/lib/utils';
+import { ChainHubSectionHead, ChainHubStatCell, ChainHubStatRow } from './ChainHubStats';
 
 interface ChainNetworkCardProps {
-  chainId: "vrm" | "vrc";
+  chainId: 'vrm' | 'vrc';
   network: VrmNetworkStats | VrcNetworkStats;
   embedded?: boolean;
   animated?: boolean;
@@ -33,7 +29,7 @@ export function ChainNetworkCard({
 }: ChainNetworkCardProps) {
   const config = CHAIN_EXPLORERS[chainId];
 
-  if (chainId === "vrm") {
+  if (chainId === 'vrm') {
     const vrm = network as VrmNetworkStats;
     const supplyDisplay = formatHubSupply(vrm.supply, config.ticker);
     const body = hubLayout ? (
@@ -47,11 +43,7 @@ export function ChainNetworkCard({
         />
         <ChainHubStatCell
           label="Difficulty"
-          value={
-            vrm.difficulty != null
-              ? formatDifficulty(String(vrm.difficulty))
-              : "—"
-          }
+          value={vrm.difficulty != null ? formatDifficulty(String(vrm.difficulty)) : '—'}
           numericValue={vrm.difficulty ?? undefined}
           formatFn={(n) => formatDifficulty(String(n))}
           animated={animated}
@@ -63,11 +55,7 @@ export function ChainNetworkCard({
           numericValue={vrm.supply ?? undefined}
           formatFn={(n) => formatHubSupply(n, config.ticker)}
           animated={animated}
-          title={
-            vrm.supply != null
-              ? formatSupply(vrm.supply, config.ticker)
-              : undefined
-          }
+          title={vrm.supply != null ? formatSupply(vrm.supply, config.ticker) : undefined}
         />
         <ChainHubStatCell
           label="Avg block time"
@@ -88,11 +76,7 @@ export function ChainNetworkCard({
         />
         <NetworkStat
           label="Difficulty"
-          value={
-            vrm.difficulty != null
-              ? formatDifficulty(String(vrm.difficulty))
-              : "—"
-          }
+          value={vrm.difficulty != null ? formatDifficulty(String(vrm.difficulty)) : '—'}
           numericValue={vrm.difficulty ?? undefined}
           formatFn={(n) => formatDifficulty(String(n))}
           animated={animated}
@@ -127,7 +111,7 @@ export function ChainNetworkCard({
 
     if (embedded) {
       return (
-        <div className={hubLayout ? "chain-hub-network" : undefined}>
+        <div className={hubLayout ? 'chain-hub-network' : undefined}>
           {hubLayout ? (
             <ChainHubSectionHead title="Network" />
           ) : (
@@ -169,11 +153,7 @@ export function ChainNetworkCard({
         numericValue={vrc.supply ?? undefined}
         formatFn={(n) => formatHubSupply(n, config.ticker)}
         animated={animated}
-        title={
-          vrc.supply != null
-            ? formatSupply(vrc.supply, config.ticker)
-            : undefined
-        }
+        title={vrc.supply != null ? formatSupply(vrc.supply, config.ticker) : undefined}
       />
       <ChainHubStatCell
         label="Staked"
@@ -184,11 +164,7 @@ export function ChainNetworkCard({
       />
       <ChainHubStatCell
         label="Difficulty"
-        value={
-          vrc.difficulty != null
-            ? formatDifficulty(String(vrc.difficulty))
-            : "—"
-        }
+        value={vrc.difficulty != null ? formatDifficulty(String(vrc.difficulty)) : '—'}
         numericValue={vrc.difficulty ?? undefined}
         formatFn={(n) => formatDifficulty(String(n))}
         animated={animated}
@@ -242,7 +218,7 @@ export function ChainNetworkCard({
 
   if (embedded) {
     return (
-      <div className={hubLayout ? "chain-hub-network" : undefined}>
+      <div className={hubLayout ? 'chain-hub-network' : undefined}>
         {hubLayout ? (
           <ChainHubSectionHead title="Network" />
         ) : (
@@ -260,9 +236,7 @@ export function ChainNetworkCard({
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-bg-panel shadow-sm">
       <div className="border-b border-border px-4 py-3">
-        <h3 className="text-sm font-bold text-fg">
-          {config.name} Network (PoST)
-        </h3>
+        <h3 className="text-sm font-bold text-fg">{config.name} Network (PoST)</h3>
       </div>
       {body}
     </section>
@@ -287,24 +261,18 @@ function NetworkStat({
   formatFn?: (value: number) => string;
 }) {
   return (
-    <div className={cn("px-4 py-3", className)}>
+    <div className={cn('px-4 py-3', className)}>
       <div className="text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">
         {label}
       </div>
       <div className="mt-1 text-base font-bold tabular-nums text-fg">
         {animated ? (
-          <AnimatedStatValue
-            value={value}
-            numericValue={numericValue}
-            formatFn={formatFn}
-          />
+          <AnimatedStatValue value={value} numericValue={numericValue} formatFn={formatFn} />
         ) : (
           value
         )}
       </div>
-      {hint ? (
-        <div className="mt-0.5 text-[11px] text-fg-subtle">{hint}</div>
-      ) : null}
+      {hint ? <div className="mt-0.5 text-[11px] text-fg-subtle">{hint}</div> : null}
     </div>
   );
 }

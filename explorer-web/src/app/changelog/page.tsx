@@ -1,4 +1,4 @@
-import { StaticInfoPage } from "@/components/legacy/LegacyViews";
+import { StaticInfoPage } from '@/components/legacy/LegacyViews';
 
 export default function ChangelogPage() {
   return (

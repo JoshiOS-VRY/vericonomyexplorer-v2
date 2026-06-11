@@ -1,4 +1,4 @@
-version: "3.8"
+version: '3.8'
 
 networks:
   vericonomy-network:
@@ -21,7 +21,7 @@ services:
       VCEXP_CHAINS_CONFIG: /app/configs/chains.vrm-poc.example.json
       BTCEXP_BITCOIND_URI: ${BTCEXP_BITCOIND_URI:-bitcoin://rpcuser:rpcpassword@127.0.0.1:36988/}
     ports:
-      - "3002:3002"
+      - '3002:3002'
     volumes:
       - vericonomy-cache:/app/cache
       - vericonomy-database:/app/database
@@ -41,7 +41,7 @@ services:
       EXPLORER_API_URL: http://explorer-api:3002
       PORT: 3000
     ports:
-      - "3000:3000"
+      - '3000:3000'
     networks:
       - vericonomy-network
 
@@ -52,7 +52,7 @@ services:
       dockerfile: Dockerfile
     image: vericonomy-explorer-api:latest
     restart: unless-stopped
-    command: ["npm", "run", "indexer:vrm"]
+    command: ['npm', 'run', 'indexer:vrm']
     environment:
       VCEXP_INDEXER_SQLITE_PATH: /app/database/vericonomy-index.sqlite
       VCEXP_CHAINS_CONFIG: /app/configs/chains.vrm-poc.example.json

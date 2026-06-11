@@ -1,13 +1,7 @@
-import { AnimatedStatValue } from "@/components/explorer/AnimatedStatValue";
-import { cn } from "@/lib/utils";
+import { AnimatedStatValue } from '@/components/explorer/AnimatedStatValue';
+import { cn } from '@/lib/utils';
 
-export function ChainHubSectionHead({
-  title,
-  meta,
-}: {
-  title: string;
-  meta?: React.ReactNode;
-}) {
+export function ChainHubSectionHead({ title, meta }: { title: string; meta?: React.ReactNode }) {
   return (
     <div className="chain-hub-section-head flex min-h-[2.125rem] items-center justify-between gap-3 border-b border-border px-4 py-2 sm:px-5">
       <h4 className="shrink-0 text-[11px] font-bold uppercase tracking-wide text-fg-subtle">
@@ -34,9 +28,9 @@ export function ChainHubStatRow({
   return (
     <div
       className={cn(
-        "chain-hub-stat-row grid divide-x divide-border",
-        cols === 4 ? "grid-cols-4" : "grid-cols-3",
-        className,
+        'chain-hub-stat-row grid divide-x divide-border',
+        cols === 4 ? 'grid-cols-4' : 'grid-cols-3',
+        className
       )}
     >
       {children}
@@ -68,7 +62,7 @@ export function ChainHubStatCell({
   title?: string;
 }) {
   const renderedValue =
-    animated && typeof value === "string" ? (
+    animated && typeof value === 'string' ? (
       <AnimatedStatValue
         value={value}
         numericValue={numericValue}
@@ -77,20 +71,16 @@ export function ChainHubStatCell({
         className={valueClassName}
       />
     ) : (
-      <span className={cn(pulse && "live-height-pulse", valueClassName)}>
-        {value}
-      </span>
+      <span className={cn(pulse && 'live-height-pulse', valueClassName)}>{value}</span>
     );
 
   return (
-    <div
-      className={cn("chain-hub-stat-cell flex min-w-0 flex-col justify-center", className)}
-    >
+    <div className={cn('chain-hub-stat-cell flex min-w-0 flex-col justify-center', className)}>
       <div className="chain-hub-stat-cell__label truncate">{label}</div>
       <div
         className={cn(
-          "chain-hub-stat-cell__value truncate text-fg",
-          mono && "font-mono text-[13px] sm:text-sm",
+          'chain-hub-stat-cell__value truncate text-fg',
+          mono && 'font-mono text-[13px] sm:text-sm'
         )}
         title={title}
       >

@@ -1,56 +1,56 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ChartPeriodControls } from "@/components/explorer/charts/ChartPeriodControls";
-import { ChartViewToggle } from "@/components/explorer/charts/ChartViewToggle";
-import { ActivityBarChart } from "@/components/explorer/charts/ActivityBarChart";
-import { InsightsChartPanel } from "@/components/explorer/charts/InsightsChartPanel";
-import { AddressChartSkeleton } from "@/components/explorer/address/AddressSectionSkeleton";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChartPeriodControls } from '@/components/explorer/charts/ChartPeriodControls';
+import { ChartViewToggle } from '@/components/explorer/charts/ChartViewToggle';
+import { ActivityBarChart } from '@/components/explorer/charts/ActivityBarChart';
+import { InsightsChartPanel } from '@/components/explorer/charts/InsightsChartPanel';
+import { AddressChartSkeleton } from '@/components/explorer/address/AddressSectionSkeleton';
 import {
   CHAIN_ACTIVITY_HISTORY_PERIODS,
   fetchChainActivityHistoryClient,
-} from "@/lib/chainActivityHistory";
-import { formatInsightsFooter, getChainAccentVar } from "@/lib/insightsChartConfig";
+} from '@/lib/chainActivityHistory';
+import { formatInsightsFooter, getChainAccentVar } from '@/lib/insightsChartConfig';
 import type {
   AddressBalanceHistoryPeriodId,
   ChainActivityChartView,
   ChainActivityHistoryResult,
-} from "@/lib/api/types";
+} from '@/lib/api/types';
 
 const CHART_VIEWS: { id: ChainActivityChartView; label: string }[] = [
-  { id: "activity", label: "Activity" },
-  { id: "blocks", label: "Blocks" },
+  { id: 'activity', label: 'Activity' },
+  { id: 'blocks', label: 'Blocks' },
 ];
 
 export function VrmChainActivityChart() {
-  const [view, setView] = useState<ChainActivityChartView>("activity");
-  const [period, setPeriod] = useState<AddressBalanceHistoryPeriodId>("30d");
+  const [view, setView] = useState<ChainActivityChartView>('activity');
+  const [period, setPeriod] = useState<AddressBalanceHistoryPeriodId>('30d');
   const [history, setHistory] = useState<ChainActivityHistoryResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const defaultHistoryRef = useRef<ChainActivityHistoryResult | null>(null);
-  const accent = getChainAccentVar("vrm");
+  const accent = getChainAccentVar('vrm');
 
   const loadPeriod = useCallback(async (nextPeriod: AddressBalanceHistoryPeriodId) => {
     setLoading(true);
     setError(null);
 
     try {
-      const nextHistory = await fetchChainActivityHistoryClient("vrm", nextPeriod);
-      if (nextPeriod === "30d") {
+      const nextHistory = await fetchChainActivityHistoryClient('vrm', nextPeriod);
+      if (nextPeriod === '30d') {
         defaultHistoryRef.current = nextHistory;
       }
       setHistory(nextHistory);
       setPeriod(nextPeriod);
     } catch {
-      setError("Unable to load chart data for this period.");
+      setError('Unable to load chart data for this period.');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void loadPeriod("30d");
+    void loadPeriod('30d');
   }, [loadPeriod]);
 
   const handlePeriodChange = (next: AddressBalanceHistoryPeriodId) => {
@@ -58,9 +58,9 @@ export function VrmChainActivityChart() {
       return;
     }
 
-    if (next === "30d" && defaultHistoryRef.current) {
+    if (next === '30d' && defaultHistoryRef.current) {
       setHistory(defaultHistoryRef.current);
-      setPeriod("30d");
+      setPeriod('30d');
       setError(null);
       return;
     }
@@ -73,7 +73,7 @@ export function VrmChainActivityChart() {
   }
 
   const periodMeta = CHAIN_ACTIVITY_HISTORY_PERIODS.find((item) => item.id === period);
-  const panelTitle = view === "blocks" ? "Block production" : "Chain activity";
+  const panelTitle = view === 'blocks' ? 'Block production' : 'Chain activity';
 
   const activityData = history.buckets.map((bucket) => ({
     label: bucket.label,
@@ -92,10 +92,10 @@ export function VrmChainActivityChart() {
   }));
 
   const hasActivity = activityData.some(
-    (row) => row.mined > 0 || row.staked > 0 || row.received > 0,
+    (row) => row.mined > 0 || row.staked > 0 || row.received > 0
   );
   const hasBlocks = blocksData.some((row) => row.blocks > 0);
-  const hasData = view === "blocks" ? hasBlocks : hasActivity;
+  const hasData = view === 'blocks' ? hasBlocks : hasActivity;
 
   return (
     <InsightsChartPanel
@@ -122,15 +122,15 @@ export function VrmChainActivityChart() {
       empty={
         !loading && !hasData
           ? history.backfillRequired
-            ? "Historical chain activity is still being collected."
-            : `No ${view === "blocks" ? "blocks" : "transactions"} in the ${periodMeta?.label ?? "selected"} period.`
+            ? 'Historical chain activity is still being collected.'
+            : `No ${view === 'blocks' ? 'blocks' : 'transactions'} in the ${periodMeta?.label ?? 'selected'} period.`
           : !history.buckets.length && !loading
-            ? "No chain activity data available yet."
+            ? 'No chain activity data available yet.'
             : null
       }
       footer={
         loading
-          ? "Updating…"
+          ? 'Updating…'
           : hasData
             ? formatInsightsFooter(history.buckets.length, periodMeta?.label)
             : null

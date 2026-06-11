@@ -1,371 +1,398 @@
-"use strict";
+'use strict';
 
-const dbModule = require("./db.js");
-const { getChainConfig, getRpcCredentials } = require("./chainConfig.js");
-const { createRpcClient } = require("./rpcClient.js");
-const { ingestBlock } = require("./ingest.js");
-const { rollbackFromHeight } = require("./reorg.js");
-const { resolveBlocksPerPass, yieldToReaders } = require("./yield.js");
-const {
-	resolveIndexOnly,
-	resolveRpcBatchSize,
-	resolveStoreRawJson
-} = require("./indexOnly.js");
+const dbModule = require('./db.js');
+const { getChainConfig, getRpcCredentials } = require('./chainConfig.js');
+const { createRpcClient } = require('./rpcClient.js');
+const { ingestBlock } = require('./ingest.js');
+const { rollbackFromHeight } = require('./reorg.js');
+const { resolveBlocksPerPass, yieldToReaders } = require('./yield.js');
+const { resolveIndexOnly, resolveRpcBatchSize, resolveStoreRawJson } = require('./indexOnly.js');
 
 async function syncRange(options = {}) {
-	const chainId = normalizeChainId(options.chain || process.env.VCEXP_INDEXER_CHAIN || "vrm");
-	const chainConfig = getChainConfig(chainId, options.configPath);
-	const rpcCredentials = getRpcCredentials(chainConfig);
-	const rpc = options.rpc || createRpcClient(rpcCredentials);
-	const db = options.db || dbModule.openDatabase();
-	const indexerConfig = chainConfig.indexer || {};
-	const indexOnly = resolveIndexOnly(options, indexerConfig);
-	const rpcBatchSize = resolveRpcBatchSize(options, indexOnly);
-	const storeRawJson = resolveStoreRawJson(options, indexerConfig, indexOnly);
-	const batchSize = Number(options.batchSize || indexerConfig.batchSize || 0);
-	const pauseMs = Number(options.pauseMs === undefined ? indexerConfig.pauseMs || 0 : options.pauseMs);
-	const autoRollback = options.autoRollback !== false;
+  const chainId = normalizeChainId(options.chain || process.env.VCEXP_INDEXER_CHAIN || 'vrm');
+  const chainConfig = getChainConfig(chainId, options.configPath);
+  const rpcCredentials = getRpcCredentials(chainConfig);
+  const rpc = options.rpc || createRpcClient(rpcCredentials);
+  const db = options.db || dbModule.openDatabase();
+  const indexerConfig = chainConfig.indexer || {};
+  const indexOnly = resolveIndexOnly(options, indexerConfig);
+  const rpcBatchSize = resolveRpcBatchSize(options, indexOnly);
+  const storeRawJson = resolveStoreRawJson(options, indexerConfig, indexOnly);
+  const batchSize = Number(options.batchSize || indexerConfig.batchSize || 0);
+  const pauseMs = Number(
+    options.pauseMs === undefined ? indexerConfig.pauseMs || 0 : options.pauseMs
+  );
+  const autoRollback = options.autoRollback !== false;
 
-	const bestHeight = await rpc.call("getblockcount");
-	let startHeight = options.startHeight === undefined
-		? await getResumeHeight(db, chainConfig.id)
-		: Number(options.startHeight);
-	const requestedEndHeight = options.endHeight === undefined ? bestHeight : Number(options.endHeight);
-	let endHeight = Math.min(requestedEndHeight, bestHeight);
-	const maxBlocksPerPass = resolveBlocksPerPass(options);
-	if (maxBlocksPerPass > 0 && startHeight <= endHeight) {
-		endHeight = Math.min(endHeight, startHeight + maxBlocksPerPass - 1);
-	}
+  const bestHeight = await rpc.call('getblockcount');
+  let startHeight =
+    options.startHeight === undefined
+      ? await getResumeHeight(db, chainConfig.id)
+      : Number(options.startHeight);
+  const requestedEndHeight =
+    options.endHeight === undefined ? bestHeight : Number(options.endHeight);
+  let endHeight = Math.min(requestedEndHeight, bestHeight);
+  const maxBlocksPerPass = resolveBlocksPerPass(options);
+  if (maxBlocksPerPass > 0 && startHeight <= endHeight) {
+    endHeight = Math.min(endHeight, startHeight + maxBlocksPerPass - 1);
+  }
 
-	if (Number.isNaN(startHeight) || Number.isNaN(endHeight)) {
-		throw new Error(`Invalid height range: start=${options.startHeight}, end=${options.endHeight}`);
-	}
+  if (Number.isNaN(startHeight) || Number.isNaN(endHeight)) {
+    throw new Error(`Invalid height range: start=${options.startHeight}, end=${options.endHeight}`);
+  }
 
-	if (startHeight > endHeight) {
-		return {
-			chainId: chainConfig.id,
-			bestHeight,
-			startHeight,
-			endHeight,
-			indexed: 0,
-			indexOnly,
-			rpcBatchSize
-		};
-	}
+  if (startHeight > endHeight) {
+    return {
+      chainId: chainConfig.id,
+      bestHeight,
+      startHeight,
+      endHeight,
+      indexed: 0,
+      indexOnly,
+      rpcBatchSize,
+    };
+  }
 
-	if (autoRollback && startHeight > 0) {
-		const resumeCheck = await ensureResumeOnMainChain(db, rpc, chainConfig.id, startHeight, bestHeight);
-		startHeight = resumeCheck.startHeight;
+  if (autoRollback && startHeight > 0) {
+    const resumeCheck = await ensureResumeOnMainChain(
+      db,
+      rpc,
+      chainConfig.id,
+      startHeight,
+      bestHeight
+    );
+    startHeight = resumeCheck.startHeight;
 
-		if (resumeCheck.rollback && options.onProgress) {
-			options.onProgress({
-				chainId: chainConfig.id,
-				height: resumeCheck.rollback.fromHeight,
-				endHeight,
-				hash: resumeCheck.rollback.newTipHash,
-				rolledBack: true,
-				rollback: resumeCheck.rollback,
-				memory: getMemoryUsage()
-			});
-		}
-	}
+    if (resumeCheck.rollback && options.onProgress) {
+      options.onProgress({
+        chainId: chainConfig.id,
+        height: resumeCheck.rollback.fromHeight,
+        endHeight,
+        hash: resumeCheck.rollback.newTipHash,
+        rolledBack: true,
+        rollback: resumeCheck.rollback,
+        memory: getMemoryUsage(),
+      });
+    }
+  }
 
-	const ingestOptions = {
-		db,
-		bestRpcHeight: bestHeight,
-		force: options.force === true,
-		storeRawJson,
-		indexOnly
-	};
+  const ingestOptions = {
+    db,
+    bestRpcHeight: bestHeight,
+    force: options.force === true,
+    storeRawJson,
+    indexOnly,
+  };
 
-	let indexed = 0;
+  let indexed = 0;
 
-	if (indexOnly && rpcBatchSize > 1) {
-		indexed = await syncRangeWithRpcBatch({
-			db,
-			rpc,
-			chainId: chainConfig.id,
-			startHeight,
-			endHeight,
-			rpcBatchSize,
-			autoRollback,
-			ingestOptions,
-			onProgress: options.onProgress,
-			batchSize,
-			pauseMs
-		});
-	} else {
-		indexed = await syncRangeSequential({
-			db,
-			rpc,
-			chainId: chainConfig.id,
-			startHeight,
-			endHeight,
-			autoRollback,
-			ingestOptions,
-			onProgress: options.onProgress,
-			batchSize,
-			pauseMs
-		});
-	}
+  if (indexOnly && rpcBatchSize > 1) {
+    indexed = await syncRangeWithRpcBatch({
+      db,
+      rpc,
+      chainId: chainConfig.id,
+      startHeight,
+      endHeight,
+      rpcBatchSize,
+      autoRollback,
+      ingestOptions,
+      onProgress: options.onProgress,
+      batchSize,
+      pauseMs,
+    });
+  } else {
+    indexed = await syncRangeSequential({
+      db,
+      rpc,
+      chainId: chainConfig.id,
+      startHeight,
+      endHeight,
+      autoRollback,
+      ingestOptions,
+      onProgress: options.onProgress,
+      batchSize,
+      pauseMs,
+    });
+  }
 
-	return {
-		chainId: chainConfig.id,
-		bestHeight,
-		startHeight,
-		endHeight,
-		indexed,
-		indexOnly,
-		rpcBatchSize: indexOnly ? rpcBatchSize : 1,
-		maxBlocksPerPass: maxBlocksPerPass > 0 ? maxBlocksPerPass : null,
-		caughtUp: endHeight >= bestHeight
-	};
+  return {
+    chainId: chainConfig.id,
+    bestHeight,
+    startHeight,
+    endHeight,
+    indexed,
+    indexOnly,
+    rpcBatchSize: indexOnly ? rpcBatchSize : 1,
+    maxBlocksPerPass: maxBlocksPerPass > 0 ? maxBlocksPerPass : null,
+    caughtUp: endHeight >= bestHeight,
+  };
 }
 
 async function syncRangeSequential(context) {
-	let indexed = 0;
+  let indexed = 0;
 
-	for (let height = context.startHeight; height <= context.endHeight; height++) {
-		const blockhash = await context.rpc.call("getblockhash", [height]);
-		const block = await context.rpc.call("getblock", [blockhash, 2]);
-		const ingested = await ingestHeight(context, height, blockhash, block);
-		indexed += ingested;
-		await maybePause(context, height, indexed);
-		await yieldToReaders();
-	}
+  for (let height = context.startHeight; height <= context.endHeight; height++) {
+    const blockhash = await context.rpc.call('getblockhash', [height]);
+    const block = await context.rpc.call('getblock', [blockhash, 2]);
+    const ingested = await ingestHeight(context, height, blockhash, block);
+    indexed += ingested;
+    await maybePause(context, height, indexed);
+    await yieldToReaders();
+  }
 
-	return indexed;
+  return indexed;
 }
 
 async function syncRangeWithRpcBatch(context) {
-	let indexed = 0;
+  let indexed = 0;
 
-	for (let windowStart = context.startHeight; windowStart <= context.endHeight; windowStart += context.rpcBatchSize) {
-		const windowEnd = Math.min(windowStart + context.rpcBatchSize - 1, context.endHeight);
-		const heights = [];
+  for (
+    let windowStart = context.startHeight;
+    windowStart <= context.endHeight;
+    windowStart += context.rpcBatchSize
+  ) {
+    const windowEnd = Math.min(windowStart + context.rpcBatchSize - 1, context.endHeight);
+    const heights = [];
 
-		for (let height = windowStart; height <= windowEnd; height++) {
-			heights.push(height);
-		}
+    for (let height = windowStart; height <= windowEnd; height++) {
+      heights.push(height);
+    }
 
-		const hashes = await context.rpc.batch(
-			heights.map((height) => ({
-				method: "getblockhash",
-				params: [height]
-			}))
-		);
+    const hashes = await context.rpc.batch(
+      heights.map((height) => ({
+        method: 'getblockhash',
+        params: [height],
+      }))
+    );
 
-		const pending = [];
+    const pending = [];
 
-		for (let i = 0; i < heights.length; i++) {
-			const height = heights[i];
-			const blockhash = hashes[i];
-			const existingHash = await getIndexedBlockHash(context.db, context.chainId, height);
+    for (let i = 0; i < heights.length; i++) {
+      const height = heights[i];
+      const blockhash = hashes[i];
+      const existingHash = await getIndexedBlockHash(context.db, context.chainId, height);
 
-			if (context.autoRollback && existingHash && existingHash !== blockhash) {
-				await assertRollbackWithinLimit(context.chainId, height, context.db);
-				const rollback = await rollbackFromHeight(context.chainId, height, { db: context.db });
+      if (context.autoRollback && existingHash && existingHash !== blockhash) {
+        await assertRollbackWithinLimit(context.chainId, height, context.db);
+        const rollback = await rollbackFromHeight(context.chainId, height, { db: context.db });
 
-				if (context.onProgress) {
-					context.onProgress({
-						chainId: context.chainId,
-						height,
-						endHeight: context.endHeight,
-						hash: blockhash,
-						rolledBack: true,
-						rollback,
-						memory: getMemoryUsage()
-					});
-				}
-			}
+        if (context.onProgress) {
+          context.onProgress({
+            chainId: context.chainId,
+            height,
+            endHeight: context.endHeight,
+            hash: blockhash,
+            rolledBack: true,
+            rollback,
+            memory: getMemoryUsage(),
+          });
+        }
+      }
 
-			pending.push({ height, blockhash });
-		}
+      pending.push({ height, blockhash });
+    }
 
-		const blocks = await context.rpc.batch(
-			pending.map((entry) => ({
-				method: "getblock",
-				params: [entry.blockhash, 2]
-			}))
-		);
+    const blocks = await context.rpc.batch(
+      pending.map((entry) => ({
+        method: 'getblock',
+        params: [entry.blockhash, 2],
+      }))
+    );
 
-		for (let i = 0; i < pending.length; i++) {
-			const entry = pending[i];
-			const ingested = await ingestHeight(context, entry.height, entry.blockhash, blocks[i]);
-			indexed += ingested;
-		}
+    for (let i = 0; i < pending.length; i++) {
+      const entry = pending[i];
+      const ingested = await ingestHeight(context, entry.height, entry.blockhash, blocks[i]);
+      indexed += ingested;
+    }
 
-		await maybePause(context, windowEnd, indexed);
-		await yieldToReaders();
-	}
+    await maybePause(context, windowEnd, indexed);
+    await yieldToReaders();
+  }
 
-	return indexed;
+  return indexed;
 }
 
 async function ingestHeight(context, height, blockhash, block) {
-	if (!block) {
-		throw new Error(`Missing block payload for height ${height}`);
-	}
+  if (!block) {
+    throw new Error(`Missing block payload for height ${height}`);
+  }
 
-	const result = await ingestBlock(context.chainId, block, context.ingestOptions);
-	const ingested = result.skipped ? 0 : 1;
+  const result = await ingestBlock(context.chainId, block, context.ingestOptions);
+  const ingested = result.skipped ? 0 : 1;
 
-	if (context.onProgress) {
-		context.onProgress({
-			chainId: context.chainId,
-			height,
-			endHeight: context.endHeight,
-			hash: blockhash,
-			skipped: !!result.skipped,
-			rolledBack: false,
-			memory: getMemoryUsage()
-		});
-	}
+  if (context.onProgress) {
+    context.onProgress({
+      chainId: context.chainId,
+      height,
+      endHeight: context.endHeight,
+      hash: blockhash,
+      skipped: !!result.skipped,
+      rolledBack: false,
+      memory: getMemoryUsage(),
+    });
+  }
 
-	return ingested;
+  return ingested;
 }
 
 async function maybePause(context, height, indexed) {
-	if (context.batchSize > 0 && context.pauseMs > 0 && height < context.endHeight && indexed > 0 && indexed % context.batchSize === 0) {
-		await sleep(context.pauseMs);
-	}
+  if (
+    context.batchSize > 0 &&
+    context.pauseMs > 0 &&
+    height < context.endHeight &&
+    indexed > 0 &&
+    indexed % context.batchSize === 0
+  ) {
+    await sleep(context.pauseMs);
+  }
 }
 
 function resolveMaxAutoRollbackBlocks() {
-	const configured = Number(process.env.VCEXP_INDEXER_MAX_AUTO_ROLLBACK_BLOCKS ?? 100);
-	return Number.isFinite(configured) && configured > 0 ? Math.trunc(configured) : 100;
+  const configured = Number(process.env.VCEXP_INDEXER_MAX_AUTO_ROLLBACK_BLOCKS ?? 100);
+  return Number.isFinite(configured) && configured > 0 ? Math.trunc(configured) : 100;
 }
 
 function allowLargeRollback() {
-	return String(process.env.VCEXP_INDEXER_ALLOW_LARGE_ROLLBACK ?? "").toLowerCase() === "1"
-		|| String(process.env.VCEXP_INDEXER_ALLOW_LARGE_ROLLBACK ?? "").toLowerCase() === "true";
+  return (
+    String(process.env.VCEXP_INDEXER_ALLOW_LARGE_ROLLBACK ?? '').toLowerCase() === '1' ||
+    String(process.env.VCEXP_INDEXER_ALLOW_LARGE_ROLLBACK ?? '').toLowerCase() === 'true'
+  );
 }
 
 async function assertRollbackWithinLimit(chainId, fromHeight, db) {
-	if (allowLargeRollback()) {
-		return;
-	}
+  if (allowLargeRollback()) {
+    return;
+  }
 
-	const row = await db.get(`
+  const row = await db.get(
+    `
 		SELECT MAX(height) AS max_height
 		FROM blocks
 		WHERE chain_id = ? AND status = 'main'
-	`, [chainId]);
+	`,
+    [chainId]
+  );
 
-	const maxHeight = row?.max_height == null ? null : Number(row.max_height);
-	if (maxHeight == null || maxHeight < fromHeight) {
-		return;
-	}
+  const maxHeight = row?.max_height == null ? null : Number(row.max_height);
+  if (maxHeight == null || maxHeight < fromHeight) {
+    return;
+  }
 
-	const blocksToRemove = maxHeight - fromHeight + 1;
-	const maxAllowed = resolveMaxAutoRollbackBlocks();
-	if (blocksToRemove > maxAllowed) {
-		throw new Error(
-			`Refusing auto-rollback of ${blocksToRemove} ${chainId} blocks from height ${fromHeight} `
-			+ `(limit ${maxAllowed}). Set VCEXP_INDEXER_ALLOW_LARGE_ROLLBACK=1 to override.`
-		);
-	}
+  const blocksToRemove = maxHeight - fromHeight + 1;
+  const maxAllowed = resolveMaxAutoRollbackBlocks();
+  if (blocksToRemove > maxAllowed) {
+    throw new Error(
+      `Refusing auto-rollback of ${blocksToRemove} ${chainId} blocks from height ${fromHeight} ` +
+        `(limit ${maxAllowed}). Set VCEXP_INDEXER_ALLOW_LARGE_ROLLBACK=1 to override.`
+    );
+  }
 }
 
 async function ensureResumeOnMainChain(db, rpc, chainId, startHeight, bestHeight) {
-	const previousHeight = startHeight - 1;
-	const existingHash = await getIndexedBlockHash(db, chainId, previousHeight);
+  const previousHeight = startHeight - 1;
+  const existingHash = await getIndexedBlockHash(db, chainId, previousHeight);
 
-	if (!existingHash || previousHeight > bestHeight) {
-		return {
-			startHeight
-		};
-	}
+  if (!existingHash || previousHeight > bestHeight) {
+    return {
+      startHeight,
+    };
+  }
 
-	const rpcHash = await rpc.call("getblockhash", [previousHeight]);
-	if (existingHash === rpcHash) {
-		return {
-			startHeight
-		};
-	}
+  const rpcHash = await rpc.call('getblockhash', [previousHeight]);
+  if (existingHash === rpcHash) {
+    return {
+      startHeight,
+    };
+  }
 
-	let commonHeight = previousHeight - 1;
-	while (commonHeight >= 0) {
-		const indexedHash = await getIndexedBlockHash(db, chainId, commonHeight);
+  let commonHeight = previousHeight - 1;
+  while (commonHeight >= 0) {
+    const indexedHash = await getIndexedBlockHash(db, chainId, commonHeight);
 
-		if (!indexedHash) {
-			commonHeight--;
-			continue;
-		}
+    if (!indexedHash) {
+      commonHeight--;
+      continue;
+    }
 
-		const canonicalHash = await rpc.call("getblockhash", [commonHeight]);
-		if (indexedHash === canonicalHash) {
-			break;
-		}
+    const canonicalHash = await rpc.call('getblockhash', [commonHeight]);
+    if (indexedHash === canonicalHash) {
+      break;
+    }
 
-		commonHeight--;
-	}
+    commonHeight--;
+  }
 
-	const rollbackHeight = Math.max(0, commonHeight + 1);
-	await assertRollbackWithinLimit(chainId, rollbackHeight, db);
-	const rollback = await rollbackFromHeight(chainId, rollbackHeight, { db });
+  const rollbackHeight = Math.max(0, commonHeight + 1);
+  await assertRollbackWithinLimit(chainId, rollbackHeight, db);
+  const rollback = await rollbackFromHeight(chainId, rollbackHeight, { db });
 
-	return {
-		startHeight: rollbackHeight,
-		rollback
-	};
+  return {
+    startHeight: rollbackHeight,
+    rollback,
+  };
 }
 
 async function getIndexedBlockHash(db, chainId, height) {
-	const row = await db.get(`
+  const row = await db.get(
+    `
 		SELECT hash
 		FROM blocks
 		WHERE chain_id = ? AND height = ? AND status = 'main'
-	`, [chainId, height]);
+	`,
+    [chainId, height]
+  );
 
-	return row ? row.hash : null;
+  return row ? row.hash : null;
 }
 
 function getMemoryUsage() {
-	const usage = process.memoryUsage();
-	return {
-		rssMb: Math.round(usage.rss / 1024 / 1024),
-		heapUsedMb: Math.round(usage.heapUsed / 1024 / 1024),
-		heapTotalMb: Math.round(usage.heapTotal / 1024 / 1024)
-	};
+  const usage = process.memoryUsage();
+  return {
+    rssMb: Math.round(usage.rss / 1024 / 1024),
+    heapUsedMb: Math.round(usage.heapUsed / 1024 / 1024),
+    heapTotalMb: Math.round(usage.heapTotal / 1024 / 1024),
+  };
 }
 
 function sleep(ms) {
-	return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function getResumeHeight(db, chainId) {
-	const row = await db.get(`
+  const row = await db.get(
+    `
 		SELECT last_indexed_height
 		FROM sync_state
 		WHERE chain_id = ?
-	`, [chainId]);
+	`,
+    [chainId]
+  );
 
-	if (!row || row.last_indexed_height === null || row.last_indexed_height === undefined) {
-		return 0;
-	}
+  if (!row || row.last_indexed_height === null || row.last_indexed_height === undefined) {
+    return 0;
+  }
 
-	return Number(row.last_indexed_height) + 1;
+  return Number(row.last_indexed_height) + 1;
 }
 
 function normalizeChainId(chain) {
-	const normalized = String(chain).toLowerCase();
-	if (normalized === "vericoin") {
-		return "vrc";
-	}
+  const normalized = String(chain).toLowerCase();
+  if (normalized === 'vericoin') {
+    return 'vrc';
+  }
 
-	if (normalized === "verium") {
-		return "vrm";
-	}
+  if (normalized === 'verium') {
+    return 'vrm';
+  }
 
-	return normalized;
+  return normalized;
 }
 
 module.exports = {
-	syncRange,
-	getResumeHeight,
-	normalizeChainId,
-	resolveIndexOnly,
-	resolveRpcBatchSize,
-	resolveStoreRawJson
+  syncRange,
+  getResumeHeight,
+  normalizeChainId,
+  resolveIndexOnly,
+  resolveRpcBatchSize,
+  resolveStoreRawJson,
 };

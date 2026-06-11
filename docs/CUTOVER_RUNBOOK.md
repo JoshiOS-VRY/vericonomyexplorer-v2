@@ -2,11 +2,11 @@
 
 ## Services
 
-| Service | Port | Role |
-|---|---|---|
-| `explorer-web` | 3000 | Next.js UI |
-| `explorer-api` | 3002 | Express API + legacy RPC |
-| `vrm-indexer` | n/a | Indexer worker writing SQLite |
+| Service        | Port | Role                          |
+| -------------- | ---- | ----------------------------- |
+| `explorer-web` | 3000 | Next.js UI                    |
+| `explorer-api` | 3002 | Express API + legacy RPC      |
+| `vrm-indexer`  | n/a  | Indexer worker writing SQLite |
 
 ## Staged Cutover
 

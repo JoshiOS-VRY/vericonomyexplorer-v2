@@ -1,16 +1,16 @@
-import { NextResponse } from "next/server";
-import { getApiBaseUrl } from "@/lib/api/config";
+import { NextResponse } from 'next/server';
+import { getApiBaseUrl } from '@/lib/api/config';
 
 export async function POST(request: Request) {
   const body = (await request.json()) as { method?: string; params?: unknown[] };
-  const method = body.method ?? "getblockchaininfo";
+  const method = body.method ?? 'getblockchaininfo';
   const params = body.params ?? [];
 
   const response = await fetch(`${getApiBaseUrl()}/rpc-terminal`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ cmd: method, params }),
-    cache: "no-store",
+    cache: 'no-store',
   });
 
   const text = await response.text();

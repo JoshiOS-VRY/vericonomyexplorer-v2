@@ -1,4 +1,4 @@
 #!/usr/bin/env node
-"use strict";
+'use strict';
 
-require("../app/indexerV2/backfillNetworkMetrics.js");
+require('../app/indexerV2/backfillNetworkMetrics.js');

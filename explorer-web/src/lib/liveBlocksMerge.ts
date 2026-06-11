@@ -1,12 +1,9 @@
-import type { IndexedBlock } from "@/lib/api/types";
-import { LATEST_BLOCKS_COUNT } from "@/lib/chainBlocksDisplay";
-import type { ChainId } from "@/lib/chainDisplay";
+import type { IndexedBlock } from '@/lib/api/types';
+import { LATEST_BLOCKS_COUNT } from '@/lib/chainBlocksDisplay';
+import type { ChainId } from '@/lib/chainDisplay';
 
 /** True when a block has the fields required for latest-blocks tables (not a tip-stream stub). */
-export function isIndexedBlockTableReady(
-  block: IndexedBlock,
-  chainId: ChainId,
-): boolean {
+export function isIndexedBlockTableReady(block: IndexedBlock, chainId: ChainId): boolean {
   if (!Number.isFinite(block.height) || !block.hash?.trim()) {
     return false;
   }
@@ -15,34 +12,23 @@ export function isIndexedBlockTableReady(
     return false;
   }
 
-  if (chainId === "vrm") {
-    return !!(
-      block.extractedBy?.trim() || block.extractedByAddress?.trim()
-    );
+  if (chainId === 'vrm') {
+    return !!(block.extractedBy?.trim() || block.extractedByAddress?.trim());
   }
 
-  if (chainId === "vrc") {
-    return (
-      block.interestRatePercent != null &&
-      Number.isFinite(block.interestRatePercent)
-    );
+  if (chainId === 'vrc') {
+    return block.interestRatePercent != null && Number.isFinite(block.interestRatePercent);
   }
 
   return true;
 }
 
-export function filterTableReadyBlocks(
-  blocks: IndexedBlock[],
-  chainId: ChainId,
-): IndexedBlock[] {
+export function filterTableReadyBlocks(blocks: IndexedBlock[], chainId: ChainId): IndexedBlock[] {
   return blocks.filter((block) => isIndexedBlockTableReady(block, chainId));
 }
 
 /** Tip-stream row: height/hash/time only until the indexer enriches the block. */
-export function isOptimisticTipBlock(
-  block: IndexedBlock,
-  chainId: ChainId,
-): boolean {
+export function isOptimisticTipBlock(block: IndexedBlock, chainId: ChainId): boolean {
   return (
     !isIndexedBlockTableReady(block, chainId) &&
     Number.isFinite(block.height) &&
@@ -69,7 +55,7 @@ export function createOptimisticTipBlock(tip: {
 export function mergeBlocksForDisplay(
   blocks: IndexedBlock[],
   chainId: ChainId,
-  maxCount = LATEST_BLOCKS_COUNT,
+  maxCount = LATEST_BLOCKS_COUNT
 ): IndexedBlock[] {
   const sorted = [...blocks]
     .filter((block) => block.height != null)
@@ -92,10 +78,7 @@ export function mergeBlocksForDisplay(
   return result;
 }
 
-export function shouldApplyOptimisticTip(
-  tipHeight: number,
-  topHeight: number | null,
-): boolean {
+export function shouldApplyOptimisticTip(tipHeight: number, topHeight: number | null): boolean {
   if (topHeight == null) {
     return true;
   }
@@ -104,10 +87,7 @@ export function shouldApplyOptimisticTip(
 }
 
 /** Whether two latest-blocks lists are equivalent for UI (hash-only checks miss enrichment). */
-export function areDisplayBlocksEqual(
-  a: IndexedBlock[],
-  b: IndexedBlock[],
-): boolean {
+export function areDisplayBlocksEqual(a: IndexedBlock[], b: IndexedBlock[]): boolean {
   if (a.length !== b.length) {
     return false;
   }
@@ -134,7 +114,7 @@ export function areDisplayBlocksEqual(
 
 export function shouldApplyFetchedBlocks(
   fetchedTop: number | null,
-  currentTop: number | null,
+  currentTop: number | null
 ): boolean {
   if (fetchedTop == null) {
     return false;
@@ -151,7 +131,7 @@ export function shouldApplyFetchedBlocks(
 export function enrichBlocksFromPrevious(
   prevBlocks: IndexedBlock[],
   nextBlocks: IndexedBlock[],
-  maxCount = LATEST_BLOCKS_COUNT,
+  maxCount = LATEST_BLOCKS_COUNT
 ): IndexedBlock[] {
   const byHeight = new Map<number, IndexedBlock>();
 
@@ -174,20 +154,16 @@ export function enrichBlocksFromPrevious(
         ? {
             ...block,
             extractedBy: block.extractedBy ?? prev.extractedBy ?? null,
-            extractedByAddress:
-              block.extractedByAddress ?? prev.extractedByAddress ?? null,
+            extractedByAddress: block.extractedByAddress ?? prev.extractedByAddress ?? null,
             time: block.time ?? prev.time ?? null,
             txCount: block.txCount ?? prev.txCount,
             difficulty: block.difficulty ?? prev.difficulty,
             size: block.size ?? prev.size,
-            interestRatePercent:
-              block.interestRatePercent ?? prev.interestRatePercent ?? null,
+            interestRatePercent: block.interestRatePercent ?? prev.interestRatePercent ?? null,
           }
-        : block,
+        : block
     );
   }
 
-  return [...byHeight.values()]
-    .sort((a, b) => b.height - a.height)
-    .slice(0, maxCount);
+  return [...byHeight.values()].sort((a, b) => b.height - a.height).slice(0, maxCount);
 }

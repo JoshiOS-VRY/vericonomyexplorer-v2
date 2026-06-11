@@ -1,4 +1,4 @@
-import { runIndexerQuery } from "../db/queryPool.js";
+import { runIndexerQuery } from '../db/queryPool.js';
 
 export async function fetchNetworkMetricHistory(
   chainId: string,
@@ -7,7 +7,7 @@ export async function fetchNetworkMetricHistory(
     since?: number;
     groupBy?: string;
     chainHealth?: Record<string, unknown>;
-  } = {},
+  } = {}
 ) {
-  return runIndexerQuery("getNetworkMetricHistory", [chainId], options);
+  return runIndexerQuery('getNetworkMetricHistory', [chainId], options);
 }

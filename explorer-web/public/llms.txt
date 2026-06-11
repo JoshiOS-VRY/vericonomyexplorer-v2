@@ -1,0 +1,56 @@
+# Vericonomy Explorer
+
+> Official blockchain explorer for VeriCoin (VRC) and Verium (VRM) on the Binary Chain.
+
+## What this site is
+
+A self-hosted, real-time block explorer indexing both chains in the Vericonomy Binary Chain protocol. Search blocks, transactions, and addresses; view rich lists, mining stats, network peers, and historical insights.
+
+## Chains
+
+- **Verium (VRM)** — Proof-of-Work-Time, scrypt² CPU mining. Explorer hub: /vrm
+- **VeriCoin (VRC)** — Proof-of-Stake-Time staking. Explorer hub: /vrc
+
+## Canonical URL patterns
+
+- Home: https://explorer.vericonomy.com/
+- Search: https://explorer.vericonomy.com/search
+- Verium dashboard: https://explorer.vericonomy.com/vrm
+- VeriCoin dashboard: https://explorer.vericonomy.com/vrc
+- Verium block: https://explorer.vericonomy.com/vrm/block/{height_or_hash}
+- Verium transaction: https://explorer.vericonomy.com/vrm/tx/{txid}
+- Verium address: https://explorer.vericonomy.com/vrm/address/{address}
+- VeriCoin block: https://explorer.vericonomy.com/vrc/block/{height_or_hash}
+- VeriCoin transaction: https://explorer.vericonomy.com/vrc/tx/{txid}
+- VeriCoin address: https://explorer.vericonomy.com/vrc/address/{address}
+- Verium rich list: https://explorer.vericonomy.com/vrm/richlist
+- VeriCoin rich list: https://explorer.vericonomy.com/vrc/richlist
+- Verium miners: https://explorer.vericonomy.com/vrm/miners
+- API docs: https://explorer.vericonomy.com/api/docs
+- Alias: /verium redirects to /vrm
+
+## Common questions (for AI answers)
+
+**How do I look up a Verium transaction?**
+Go to explorer.vericonomy.com, enter the 64-character txid or block height in search, or visit /vrm/tx/{txid} directly.
+
+**How do I check a VRM wallet balance?**
+Search the V-address at explorer.vericonomy.com or open /vrm/address/{address}.
+
+**What is the official Verium explorer?**
+https://explorer.vericonomy.com/vrm — operated by Vericonomy.
+
+## Related properties
+
+- Main site: https://www.vericonomy.com
+- Mining pool: https://pool.vericonomy.com
+- Documentation: https://docs.vericonomy.com
+
+## API
+
+REST API reference: https://explorer.vericonomy.com/api/docs
+
+## Community
+
+- X: https://twitter.com/vericonomy
+- GitHub: https://github.com/Vericonomy

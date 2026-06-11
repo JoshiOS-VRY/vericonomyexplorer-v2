@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
-var debug = require("debug");
-var debugLog = debug("btcexp:config");
+var debug = require('debug');
+var debugLog = debug('btcexp:config');
 
 // to debug arg settings, enable the below line:
 //debug.enable("btcexp:*");
 
-const args = require('meow')(`
+const args = require('meow')(
+  `
 	Usage
 	  $ btc-rpc-explorer [options]
 
@@ -54,41 +55,43 @@ const args = require('meow')(`
 	  $ BTCEXP_PORT=8080 BTCEXP_BITCOIND_PORT=18443 BTCEXP_BITCOIND_COOKIE=~/.bitcoin/regtest/.cookie btc-rpc-explorer
 
 
-`, {
-		flags: {
-			port: {alias:'p'},
-			host: {alias:'i'},
-			basicAuthPassword: {alias:'a'},
-			coin: {alias:'C'},
-			bitcoindUri: {alias:'b'},
-			bitcoindHost: {alias:'H'},
-			bitcoindPort: {alias:'P'},
-			bitcoindCookie: {alias:'c'},
-			bitcoindUser: {alias:'u'},
-			bitcoindPass: {alias:'w'},
-			demo: {},
-			rpcAllowall: {},
-			electrumServers: {alias:'E'},
-			nodeEnv: {alias:'e', default:'production'},
-			privacyMode: {},
-			slowDeviceMode: {}
-		}
-	}
+`,
+  {
+    flags: {
+      port: { alias: 'p' },
+      host: { alias: 'i' },
+      basicAuthPassword: { alias: 'a' },
+      coin: { alias: 'C' },
+      bitcoindUri: { alias: 'b' },
+      bitcoindHost: { alias: 'H' },
+      bitcoindPort: { alias: 'P' },
+      bitcoindCookie: { alias: 'c' },
+      bitcoindUser: { alias: 'u' },
+      bitcoindPass: { alias: 'w' },
+      demo: {},
+      rpcAllowall: {},
+      electrumServers: { alias: 'E' },
+      nodeEnv: { alias: 'e', default: 'production' },
+      privacyMode: {},
+      slowDeviceMode: {},
+    },
+  }
 ).flags;
 
-const envify = k => k.replace(/([A-Z])/g, '_$1').toUpperCase();
+const envify = (k) => k.replace(/([A-Z])/g, '_$1').toUpperCase();
 
-Object.keys(args).filter(k => k.length > 1).forEach(k => {
-	if (args[k] === false) {
-		debugLog(`Config(arg): BTCEXP_NO_${envify(k)}=true`);
+Object.keys(args)
+  .filter((k) => k.length > 1)
+  .forEach((k) => {
+    if (args[k] === false) {
+      debugLog(`Config(arg): BTCEXP_NO_${envify(k)}=true`);
 
-		process.env[`BTCEXP_NO_${envify(k)}`] = true;
+      process.env[`BTCEXP_NO_${envify(k)}`] = true;
+    } else {
+      debugLog(`Config(arg): BTCEXP_${envify(k)}=${args[k]}`);
 
-	} else {
-		debugLog(`Config(arg): BTCEXP_${envify(k)}=${args[k]}`);
-
-		process.env[`BTCEXP_${envify(k)}`] = args[k];
-	}
-});
+      process.env[`BTCEXP_${envify(k)}`] = args[k];
+    }
+  });
 
 require('./www');

@@ -1,4 +1,4 @@
-import { FeatureTile } from "@/components/explorer/ExplorerUi";
+import { FeatureTile } from '@/components/explorer/ExplorerUi';
 
 export function VrmQuickNav({ tipBlockHref }: { tipBlockHref: string | null }) {
   return (
@@ -18,8 +18,8 @@ export function VrmQuickNav({ tipBlockHref }: { tipBlockHref: string | null }) {
       <FeatureTile
         title="Latest block"
         description="Open the most recent block and its transactions."
-        href={tipBlockHref ?? "/vrm"}
-        hrefLabel={tipBlockHref ? "Open latest block" : "Explorer home"}
+        href={tipBlockHref ?? '/vrm'}
+        hrefLabel={tipBlockHref ? 'Open latest block' : 'Explorer home'}
       />
       <FeatureTile
         title="API reference"

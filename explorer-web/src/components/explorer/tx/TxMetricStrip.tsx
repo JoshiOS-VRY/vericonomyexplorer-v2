@@ -1,6 +1,6 @@
-import { MetricStrip, TxTypeBadge } from "@/components/explorer/ExplorerUi";
-import type { TransactionResult } from "@/lib/api/types";
-import { formatAmountPair } from "@/lib/txLabels";
+import { MetricStrip, TxTypeBadge } from '@/components/explorer/ExplorerUi';
+import type { TransactionResult } from '@/lib/api/types';
+import { formatAmountPair } from '@/lib/txLabels';
 
 export function TxMetricStrip({ result }: { result: TransactionResult }) {
   const tx = result.transaction!;
@@ -11,19 +11,19 @@ export function TxMetricStrip({ result }: { result: TransactionResult }) {
       <MetricStrip
         items={[
           {
-            label: "Total in",
-            value: totals ? formatAmountPair(totals.input) : "N/A",
+            label: 'Total in',
+            value: totals ? formatAmountPair(totals.input) : 'N/A',
           },
           {
-            label: "Total out",
-            value: totals ? formatAmountPair(totals.output) : "N/A",
+            label: 'Total out',
+            value: totals ? formatAmountPair(totals.output) : 'N/A',
           },
           {
-            label: "Fee",
-            value: totals ? formatAmountPair(totals.fee) : "N/A",
+            label: 'Fee',
+            value: totals ? formatAmountPair(totals.fee) : 'N/A',
           },
           {
-            label: "Type",
+            label: 'Type',
             value: <TxTypeBadge isCoinbase={tx.isCoinbase} isCoinstake={tx.isCoinstake} />,
           },
         ]}

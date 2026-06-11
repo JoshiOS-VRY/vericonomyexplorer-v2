@@ -5,12 +5,12 @@ without touching `vericonomy-postgres`, indexers, or chain nodes.
 
 ## What runs where
 
-| Component | Production | Parity test |
-|-----------|------------|-------------|
-| Postgres | `vericonomy-postgres` / `vericonomy` | `vericonomy-postgres-reindex` / `vericonomy_reindex` |
-| Volume | `vericonomy-pg` | `vericonomy-pg-reindex` |
-| Indexer | `vericonomy-vrm-indexer` (unchanged) | `vericonomy-vrm-reindex-worker` (one-shot) |
-| Nodes | Host `veriumd` / `vericoind` (read-only RPC) | Same RPC — not modified |
+| Component | Production                                   | Parity test                                          |
+| --------- | -------------------------------------------- | ---------------------------------------------------- |
+| Postgres  | `vericonomy-postgres` / `vericonomy`         | `vericonomy-postgres-reindex` / `vericonomy_reindex` |
+| Volume    | `vericonomy-pg`                              | `vericonomy-pg-reindex`                              |
+| Indexer   | `vericonomy-vrm-indexer` (unchanged)         | `vericonomy-vrm-reindex-worker` (one-shot)           |
+| Nodes     | Host `veriumd` / `vericoind` (read-only RPC) | Same RPC — not modified                              |
 
 Ingest uses **`--index-only`**: blocks, txs, vins/vouts, `address_events`, `address_balances` only (no insights buckets).
 
@@ -58,13 +58,13 @@ bash deploy/option-a/reindex-parity/parity-report.sh VEeDxDJbnVNUuWAZCyoqdVDW6iq
 
 Full RPC reindex to height **1,100,575** matched production exactly:
 
-| Field | Value (VRM) |
-|-------|-------------|
-| Balance | 58,645.57204978 |
-| Received | 99,345.54033548 |
-| Sent | 40,699.96828570 |
-| Tx count | 571 |
-| Coinbase txs (flagged) | 0 |
+| Field                  | Value (VRM)     |
+| ---------------------- | --------------- |
+| Balance                | 58,645.57204978 |
+| Received               | 99,345.54033548 |
+| Sent                   | 40,699.96828570 |
+| Tx count               | 571             |
+| Coinbase txs (flagged) | 0               |
 
 Wallet **available** ~65,469.93 → gap **~6,824 VRM** vs explorer. Reindex confirms the indexer consistently under-counts vs the user wallet; root cause is in **ingest / RPC vout address extraction**, not the bootstrap zip or ETL copy.
 

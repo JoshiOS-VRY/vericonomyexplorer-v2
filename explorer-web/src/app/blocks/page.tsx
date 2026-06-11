@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
-import { BlocksPageClient } from "@/components/legacy/BlocksPageClient";
-import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
+import type { Metadata } from 'next';
+import { BlocksPageClient } from '@/components/legacy/BlocksPageClient';
+import { pageMetadata, staticPageSeo } from '@/lib/seo/metadata';
 
 export const metadata: Metadata = pageMetadata(staticPageSeo.blocks);
-import { normalizeLimit, normalizeOffset } from "@/lib/utils";
+import { normalizeLimit, normalizeOffset } from '@/lib/utils';
 
 const DEFAULT_LIMIT = 25;
 
@@ -15,7 +15,7 @@ export default async function BlocksPage({
   const params = await searchParams;
   const limit = normalizeLimit(params.limit, DEFAULT_LIMIT);
   const offset = normalizeOffset(params.offset);
-  const sort = params.sort === "asc" ? "asc" : "desc";
+  const sort = params.sort === 'asc' ? 'asc' : 'desc';
 
   return <BlocksPageClient limit={limit} offset={offset} sort={sort} />;
 }

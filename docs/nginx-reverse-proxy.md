@@ -1,20 +1,21 @@
 Instructions for nginx reverse proxy, accessible via https (thanks [@leshacat](https://github.com/leshacat))
 
-* `sudo apt -y install nginx-full python-certbot-nginx`
-* Edit `/etc/nginx/sites-available/default`
+- `sudo apt -y install nginx-full python-certbot-nginx`
+- Edit `/etc/nginx/sites-available/default`
 
 Leave the default config, scroll to the bottom, paste in at bottom and edit:
+
 ```
 upstream explorer-servers {
 	ip_hash;
-	server srv1.example.com:3000 max_fails=1 weight=4;	
+	server srv1.example.com:3000 max_fails=1 weight=4;
 	server srv2.example.com:3000 max_fails=1 weight=2;
-	server srv3.example.com:3000 max_fails=1 weight=1;		
+	server srv3.example.com:3000 max_fails=1 weight=1;
 }
 
 server {
 	server_name explorer.example.com; # managed by Certbot
-	
+
 	proxy_set_header Host $host;
 	proxy_set_header X-Real-IP $remote_addr;
 	proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -38,9 +39,9 @@ server {
 	}
 ```
 
-* `systemctl enable nginx`
-*  `systemctl restart nginx`
-* `certbot --nginx -d explorer.example.com`
+- `systemctl enable nginx`
+- `systemctl restart nginx`
+- `certbot --nginx -d explorer.example.com`
 
 ## Optional edge rate limiting
 

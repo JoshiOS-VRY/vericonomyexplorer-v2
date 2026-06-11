@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
-import { useHydrated } from "@/hooks/useHydrated";
-import { getDigitRollParts, type DigitRollParts } from "@/lib/animatedStatRoll";
-import { cn } from "@/lib/utils";
+import { motion, useReducedMotion } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
+import { useHydrated } from '@/hooks/useHydrated';
+import { getDigitRollParts, type DigitRollParts } from '@/lib/animatedStatRoll';
+import { cn } from '@/lib/utils';
 
 const DIGIT_ROLL_DURATION = 0.9;
 const DIGIT_ROLL_EASE = [0.33, 1, 0.32, 1] as const;
@@ -17,7 +17,7 @@ function DigitRoll({ fromDigit, toDigit }: { fromDigit: string; toDigit: string 
       <motion.span
         className="animated-stat-digit-roll__track"
         initial={{ y: 0 }}
-        animate={{ y: "-50%" }}
+        animate={{ y: '-50%' }}
         transition={{ duration: DIGIT_ROLL_DURATION, ease: DIGIT_ROLL_EASE }}
       >
         <span className="animated-stat-digit-roll__digit">{fromDigit}</span>
@@ -75,10 +75,13 @@ export function AnimatedStatValue({
     if (parts) {
       setRoll(parts);
       setFlash(true);
-      const timer = window.setTimeout(() => {
-        setRoll(null);
-        setFlash(false);
-      }, DIGIT_ROLL_DURATION * 1000 + 80);
+      const timer = window.setTimeout(
+        () => {
+          setRoll(null);
+          setFlash(false);
+        },
+        DIGIT_ROLL_DURATION * 1000 + 80
+      );
       return () => window.clearTimeout(timer);
     }
 
@@ -111,13 +114,9 @@ export function AnimatedStatValue({
   if (roll && !reducedMotion) {
     return (
       <motion.span
-        className={cn(className, "inline-flex items-baseline tabular-nums")}
+        className={cn(className, 'inline-flex items-baseline tabular-nums')}
         animate={shouldPulse ? { scale: [1, PULSE_SCALE, 1] } : { scale: 1 }}
-        transition={
-          shouldPulse
-            ? { duration: PULSE_DURATION, ease: DIGIT_ROLL_EASE }
-            : undefined
-        }
+        transition={shouldPulse ? { duration: PULSE_DURATION, ease: DIGIT_ROLL_EASE } : undefined}
       >
         <span>{roll.prefix}</span>
         <DigitRoll
@@ -132,13 +131,9 @@ export function AnimatedStatValue({
 
   return (
     <motion.span
-      className={cn(className, shouldPulse && !className?.includes("text-") && "text-accent")}
+      className={cn(className, shouldPulse && !className?.includes('text-') && 'text-accent')}
       animate={shouldPulse ? { scale: [1, PULSE_SCALE, 1] } : { scale: 1 }}
-      transition={
-        shouldPulse
-          ? { duration: PULSE_DURATION, ease: DIGIT_ROLL_EASE }
-          : undefined
-      }
+      transition={shouldPulse ? { duration: PULSE_DURATION, ease: DIGIT_ROLL_EASE } : undefined}
     >
       {display}
     </motion.span>

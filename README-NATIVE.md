@@ -145,6 +145,7 @@ npm run start              # Alternative start command
 ## Platform Support
 
 ### Linux (Ubuntu/Debian)
+
 ```bash
 # Install Node.js
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -152,6 +153,7 @@ sudo apt-get install -y nodejs
 ```
 
 ### Linux (CentOS/RHEL/Fedora)
+
 ```bash
 # Install Node.js
 curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
@@ -159,12 +161,14 @@ sudo yum install -y nodejs
 ```
 
 ### macOS
+
 ```bash
 # Install Node.js via Homebrew
 brew install node
 ```
 
 ### Windows
+
 1. Download Node.js from https://nodejs.org/
 2. Install Git for Windows
 3. Use PowerShell or Command Prompt
@@ -172,6 +176,7 @@ brew install node
 ## Access the Explorer
 
 Once running, access your Verium explorer at:
+
 - **Local**: `http://localhost:3003`
 - **Network**: `http://your-server-ip:3003`
 
@@ -182,25 +187,28 @@ Once running, access your Verium explorer at:
 ✅ **Git Integration**: Easy updates from repository  
 ✅ **Process Management**: PM2 for production  
 ✅ **Development Mode**: Simple start for testing  
-✅ **Cross-Platform**: Linux, macOS, Windows support  
+✅ **Cross-Platform**: Linux, macOS, Windows support
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Port Already in Use**
+
    ```bash
    lsof -i :3003
    kill -9 <PID>
    ```
 
 2. **Permission Issues**
+
    ```bash
    chmod +x bin/www
    chown -R $USER:$USER .
    ```
 
 3. **Memory Issues**
+
    ```bash
    export NODE_OPTIONS="--max-old-space-size=2048"
    npm start
@@ -236,6 +244,7 @@ free -h
 ## Backup and Updates
 
 ### Backup
+
 ```bash
 # Backup application
 tar -czf verium-explorer-backup.tar.gz btc-rpc-explorer/
@@ -245,6 +254,7 @@ tar -czf cache-backup.tar.gz cache/
 ```
 
 ### Updates
+
 ```bash
 # Update from Git
 git pull origin verium-explorer
@@ -262,6 +272,7 @@ pm2 restart verium-explorer
 ## Support
 
 For issues and questions:
+
 1. Check the logs: `pm2 logs verium-explorer`
 2. Verify Verium node connection
 3. Check system resources

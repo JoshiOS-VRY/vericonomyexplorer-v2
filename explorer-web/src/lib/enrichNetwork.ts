@@ -1,10 +1,15 @@
-import type { ChainSummary, HomeNetworkPayload, VrcNetworkStats, VrmNetworkStats } from "@/lib/api/types";
-import { hashPerSecToKhPerMin } from "@/lib/formatMarket";
+import type {
+  ChainSummary,
+  HomeNetworkPayload,
+  VrcNetworkStats,
+  VrmNetworkStats,
+} from '@/lib/api/types';
+import { hashPerSecToKhPerMin } from '@/lib/formatMarket';
 
 const VRM_TARGET_BLOCK_TIME_SECONDS = 300;
 
 function parseDifficulty(value: string | null | undefined): number | null {
-  if (value == null || value === "") return null;
+  if (value == null || value === '') return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -25,7 +30,7 @@ export function estimateVrmHashrateKhPerMin(difficulty: number): number {
 
 export function enrichVrmNetworkStats(
   network: VrmNetworkStats,
-  summary: ChainSummary,
+  summary: ChainSummary
 ): VrmNetworkStats {
   const tip = summary.latestBlocks[0];
   const tipDifficulty = parseDifficulty(tip?.difficulty);
@@ -41,7 +46,7 @@ export function enrichVrmNetworkStats(
 
 export function enrichVrcNetworkStats(
   network: VrcNetworkStats,
-  summary: ChainSummary,
+  summary: ChainSummary
 ): VrcNetworkStats {
   const tip = summary.latestBlocks[0];
   const tipDifficulty = parseDifficulty(tip?.difficulty);
@@ -57,7 +62,7 @@ export function enrichVrcNetworkStats(
 export function enrichHomeNetworkPayload(
   network: HomeNetworkPayload,
   vrmSummary: ChainSummary,
-  vrcSummary: ChainSummary,
+  vrcSummary: ChainSummary
 ): HomeNetworkPayload {
   return {
     ...network,
@@ -68,7 +73,7 @@ export function enrichHomeNetworkPayload(
 
 export function mergeVrmNetworkStats(
   prev: VrmNetworkStats,
-  next: VrmNetworkStats,
+  next: VrmNetworkStats
 ): VrmNetworkStats {
   return {
     hashrateKhPerMin: next.hashrateKhPerMin ?? prev.hashrateKhPerMin,
@@ -83,7 +88,7 @@ export function mergeVrmNetworkStats(
 
 export function mergeVrcNetworkStats(
   prev: VrcNetworkStats,
-  next: VrcNetworkStats,
+  next: VrcNetworkStats
 ): VrcNetworkStats {
   return {
     difficulty: next.difficulty ?? prev.difficulty,
@@ -93,14 +98,13 @@ export function mergeVrcNetworkStats(
     interestRatePercent: next.interestRatePercent ?? prev.interestRatePercent,
     netStakeWeight: next.netStakeWeight ?? prev.netStakeWeight,
     percentStaked: next.percentStaked ?? prev.percentStaked,
-    expectedStakeTimeSeconds:
-      next.expectedStakeTimeSeconds ?? prev.expectedStakeTimeSeconds,
+    expectedStakeTimeSeconds: next.expectedStakeTimeSeconds ?? prev.expectedStakeTimeSeconds,
   };
 }
 
 export function mergeHomeNetworkPayload(
   prev: HomeNetworkPayload,
-  next: HomeNetworkPayload,
+  next: HomeNetworkPayload
 ): HomeNetworkPayload {
   return {
     fetchedAt: next.fetchedAt || prev.fetchedAt,

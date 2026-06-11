@@ -1,17 +1,14 @@
-"use client";
+'use client';
 
-import { useLayoutEffect, useMemo } from "react";
-import { useHydrated } from "@/hooks/useHydrated";
-import { useLiveChainSummary } from "@/hooks/useLiveChainSummary";
-import { chainLiveStore } from "@/lib/chainLive/store";
-import type { ChainSummary } from "@/lib/api/types";
-import { getChainTipHeight } from "@/lib/chainDisplay";
+import { useLayoutEffect, useMemo } from 'react';
+import { useHydrated } from '@/hooks/useHydrated';
+import { useLiveChainSummary } from '@/hooks/useLiveChainSummary';
+import { chainLiveStore } from '@/lib/chainLive/store';
+import type { ChainSummary } from '@/lib/api/types';
+import { getChainTipHeight } from '@/lib/chainDisplay';
 
 /** Live chain data that matches SSR until the client has hydrated (avoids hydration crashes). */
-export function useStableChainLive(
-  chainId: "vrm" | "vrc",
-  initialSummary: ChainSummary,
-) {
+export function useStableChainLive(chainId: 'vrm' | 'vrc', initialSummary: ChainSummary) {
   const hydrated = useHydrated();
   const live = useLiveChainSummary(chainId, initialSummary);
 
@@ -30,7 +27,7 @@ export function useStableChainLive(
       error: null as string | null,
       lastUpdated: 0,
     }),
-    [initialSummary],
+    [initialSummary]
   );
 
   return hydrated ? live : stable;

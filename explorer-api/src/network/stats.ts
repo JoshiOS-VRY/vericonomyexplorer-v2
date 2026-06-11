@@ -1,6 +1,6 @@
-import { createRequire } from "node:module";
-import { repoRoot } from "../env.js";
-import type { ChainId } from "../types.js";
+import { createRequire } from 'node:module';
+import { repoRoot } from '../env.js';
+import type { ChainId } from '../types.js';
 
 const require = createRequire(import.meta.url);
 
@@ -9,27 +9,23 @@ const veriumCoin = require(`${repoRoot}/app/coins/verium.js`);
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const vericoinCoin = require(`${repoRoot}/app/coins/vericoin.js`);
 
-const Decimal = require("decimal.js");
+const Decimal = require('decimal.js');
 
 const COINS: Record<ChainId, typeof veriumCoin> = {
   vrm: veriumCoin,
   vrc: vericoinCoin,
 };
 
-const NETWORK = "main";
+const NETWORK = 'main';
 
-export type RpcCall = (
-  method: string,
-  params?: unknown[],
-  timeoutMs?: number,
-) => Promise<unknown>;
+export type RpcCall = (method: string, params?: unknown[], timeoutMs?: number) => Promise<unknown>;
 
 export function parseRpcNumber(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
   }
 
-  if (typeof value === "string" && value.trim() !== "") {
+  if (typeof value === 'string' && value.trim() !== '') {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
   }
@@ -38,7 +34,7 @@ export function parseRpcNumber(value: unknown): number | null {
 }
 
 export function supplyFromBlockchainInfo(blockchainInfo: unknown): number | null {
-  if (!blockchainInfo || typeof blockchainInfo !== "object") {
+  if (!blockchainInfo || typeof blockchainInfo !== 'object') {
     return null;
   }
 
@@ -52,7 +48,7 @@ export function parseVrcMiningInfo(miningInfo: unknown): {
   expectedStakeTimeSeconds: number | null;
   difficulty: number | null;
 } {
-  if (!miningInfo || typeof miningInfo !== "object") {
+  if (!miningInfo || typeof miningInfo !== 'object') {
     return {
       interestRatePercent: null,
       netStakeWeight: null,
@@ -68,29 +64,24 @@ export function parseVrcMiningInfo(miningInfo: unknown): {
 
   let difficulty: number | null = null;
   const difficultyValue = info.difficulty;
-  if (difficultyValue && typeof difficultyValue === "object") {
+  if (difficultyValue && typeof difficultyValue === 'object') {
     const difficultyObj = difficultyValue as Record<string, unknown>;
     difficulty =
-      parseRpcNumber(difficultyObj["proof-of-work"]) ??
-      parseRpcNumber(difficultyObj["proof-of-stake"]);
+      parseRpcNumber(difficultyObj['proof-of-work']) ??
+      parseRpcNumber(difficultyObj['proof-of-stake']);
   } else {
     difficulty = parseRpcNumber(difficultyValue);
   }
 
   let expectedStakeTimeSeconds: number | null = null;
   const walletWeight =
-    info.stakeweight && typeof info.stakeweight === "object"
+    info.stakeweight && typeof info.stakeweight === 'object'
       ? parseRpcNumber((info.stakeweight as Record<string, unknown>).combined)
       : null;
 
-  if (
-    walletWeight != null &&
-    walletWeight > 0 &&
-    netStakeWeight != null &&
-    netStakeWeight > 0
-  ) {
+  if (walletWeight != null && walletWeight > 0 && netStakeWeight != null && netStakeWeight > 0) {
     expectedStakeTimeSeconds = Math.round(
-      (netStakeWeight / walletWeight) * getTargetBlockTimeSeconds("vrc"),
+      (netStakeWeight / walletWeight) * getTargetBlockTimeSeconds('vrc')
     );
   }
 
@@ -103,7 +94,7 @@ export function parseVrcMiningInfo(miningInfo: unknown): {
 }
 
 function utxoSetTimeoutMs(chainId: ChainId): number {
-  if (chainId === "vrc") {
+  if (chainId === 'vrc') {
     return Number(process.env.VCEXP_VRC_UTXO_SET_TIMEOUT_MS ?? 15_000);
   }
 
@@ -114,7 +105,7 @@ export async function fetchOnChainSupply(
   chainId: ChainId,
   rpcCall: RpcCall,
   blocks: number,
-  blockchainInfo?: unknown,
+  blockchainInfo?: unknown
 ): Promise<number | null> {
   const fromChain = supplyFromBlockchainInfo(blockchainInfo);
   if (fromChain != null) {
@@ -122,11 +113,9 @@ export async function fetchOnChainSupply(
   }
 
   try {
-    const utxo = await rpcCall("gettxoutsetinfo", [], utxoSetTimeoutMs(chainId));
-    if (utxo && typeof utxo === "object" && "total_amount" in utxo) {
-      const supply = parseRpcNumber(
-        (utxo as { total_amount?: number | string }).total_amount,
-      );
+    const utxo = await rpcCall('gettxoutsetinfo', [], utxoSetTimeoutMs(chainId));
+    if (utxo && typeof utxo === 'object' && 'total_amount' in utxo) {
+      const supply = parseRpcNumber((utxo as { total_amount?: number | string }).total_amount);
       if (supply != null && supply > 0) {
         return supply;
       }
@@ -135,17 +124,11 @@ export async function fetchOnChainSupply(
     /* fall through */
   }
 
-  if (chainId === "vrm") {
+  if (chainId === 'vrm') {
     try {
-      const utxo = await rpcCall(
-        "gettxoutsetinfo",
-        ["muhash"],
-        utxoSetTimeoutMs(chainId),
-      );
-      if (utxo && typeof utxo === "object" && "total_amount" in utxo) {
-        const supply = parseRpcNumber(
-          (utxo as { total_amount?: number | string }).total_amount,
-        );
+      const utxo = await rpcCall('gettxoutsetinfo', ['muhash'], utxoSetTimeoutMs(chainId));
+      if (utxo && typeof utxo === 'object' && 'total_amount' in utxo) {
+        const supply = parseRpcNumber((utxo as { total_amount?: number | string }).total_amount);
         if (supply != null && supply > 0) {
           return supply;
         }
@@ -166,10 +149,7 @@ export function getMaxSupply(chainId: ChainId): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-export function estimatedSupplyAtHeight(
-  chainId: ChainId,
-  height: number,
-): number | null {
+export function estimatedSupplyAtHeight(chainId: ChainId, height: number): number | null {
   return estimatedSupply(chainId, height);
 }
 
@@ -219,7 +199,7 @@ export function hashPerSecToKhPerMin(hashPerSec: number): number {
 /** Matches wallet `resolveBlockTimeMinutes`: observed rate first, then RPC target. */
 export function resolveVrmBlockTimeMinutes(
   blocksPerHour: number | null,
-  blockTimeMinTarget: number | null,
+  blockTimeMinTarget: number | null
 ): number | null {
   if (blocksPerHour != null && blocksPerHour > 0) {
     return 60 / blocksPerHour;
@@ -234,7 +214,7 @@ export function resolveVrmBlockTimeMinutes(
 
 export async function fetchVrmHashrate(
   rpcCall: RpcCall,
-  chainId: ChainId = "vrm",
+  chainId: ChainId = 'vrm'
 ): Promise<{
   currentHashPerSec: number | null;
   hashrate7dHashPerSec: number | null;
@@ -248,10 +228,10 @@ export async function fetchVrmHashrate(
 
   const [miningInfoResult, hashrate7dResult, hashrate1dResult, blockchainInfoResult] =
     await Promise.allSettled([
-      rpcCall("getmininginfo"),
+      rpcCall('getmininginfo'),
       safeNetworkHashrate(rpcCall, blocks7Days),
       safeNetworkHashrate(rpcCall, blocks1Day),
-      rpcCall("getblockchaininfo"),
+      rpcCall('getblockchaininfo'),
     ]);
 
   let currentHashPerSec: number | null = null;
@@ -259,7 +239,7 @@ export async function fetchVrmHashrate(
   let blocksPerHour: number | null = null;
   let blockTimeMinTarget: number | null = null;
 
-  if (miningInfoResult.status === "fulfilled") {
+  if (miningInfoResult.status === 'fulfilled') {
     const miningInfo = miningInfoResult.value as {
       networkhashps?: number;
       blocksperhour?: unknown;
@@ -272,15 +252,18 @@ export async function fetchVrmHashrate(
     blockTimeMinTarget = parseRpcNumber(miningInfo?.blocktime);
   }
 
-  if (hashrate7dResult.status === "fulfilled") {
+  if (hashrate7dResult.status === 'fulfilled') {
     hashrate7dHashPerSec = hashrate7dResult.value;
   }
 
-  if ((!currentHashPerSec || currentHashPerSec <= 0) && hashrate1dResult.status === "fulfilled") {
+  if ((!currentHashPerSec || currentHashPerSec <= 0) && hashrate1dResult.status === 'fulfilled') {
     currentHashPerSec = hashrate1dResult.value;
   }
 
-  if ((!currentHashPerSec || currentHashPerSec <= 0) && blockchainInfoResult.status === "fulfilled") {
+  if (
+    (!currentHashPerSec || currentHashPerSec <= 0) &&
+    blockchainInfoResult.status === 'fulfilled'
+  ) {
     const blockchainInfo = blockchainInfoResult.value as { difficulty?: number };
     if (blockchainInfo?.difficulty) {
       const difficulty = Number(blockchainInfo.difficulty);
@@ -289,7 +272,11 @@ export async function fetchVrmHashrate(
     }
   }
 
-  if ((!currentHashPerSec || currentHashPerSec <= 0) && hashrate7dHashPerSec && hashrate7dHashPerSec > 0) {
+  if (
+    (!currentHashPerSec || currentHashPerSec <= 0) &&
+    hashrate7dHashPerSec &&
+    hashrate7dHashPerSec > 0
+  ) {
     currentHashPerSec = hashrate7dHashPerSec;
   }
 
@@ -309,13 +296,10 @@ export async function fetchVrmHashrate(
   };
 }
 
-async function safeNetworkHashrate(
-  rpcCall: RpcCall,
-  blockCount: number,
-): Promise<number | null> {
+async function safeNetworkHashrate(rpcCall: RpcCall, blockCount: number): Promise<number | null> {
   try {
-    const hashrate = await rpcCall("getnetworkhashps", [blockCount], 15_000);
-    if (typeof hashrate === "number" && hashrate > 0) {
+    const hashrate = await rpcCall('getnetworkhashps', [blockCount], 15_000);
+    if (typeof hashrate === 'number' && hashrate > 0) {
       return hashrate;
     }
   } catch {

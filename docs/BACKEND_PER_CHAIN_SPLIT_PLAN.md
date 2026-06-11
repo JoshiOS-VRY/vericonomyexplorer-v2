@@ -42,6 +42,7 @@ per-chain physical isolation via partitioning.
 Migration complete. Both chains on Postgres, all pages + charts populated, warm reads well under 2s.
 
 Done:
+
 - Site + indexers on Postgres (`VCEXP_DB_BACKEND=postgres`); pages < 0.3s warm.
 - VRC + VRM ETL, `finalize.sh`, full async port (read/ingest/backfills/API).
 - Legacy 58GB `vericonomy-index.sqlite` retired (`deploy/option-a/retire-sqlite-index.sh`).
@@ -59,6 +60,7 @@ Done:
   every rollup incrementally; verified tick is sub-second compute per chain.
 
 Remaining / optional:
+
 - VRC historical supply curve: heavy correlated-subquery series; a best-effort full pass is
   backgrounded. Leading-edge VRC supply is captured live; only the deep history is pending.
 - Precompute cumulative mint for `getIndexedSupplyAtHeight` to make VRC supply backfill cheap.

@@ -17,7 +17,8 @@ import { parseChainId } from "../types.js";
 import { homeCache, homeShellCache } from "./home.js";
 export const summaryCache = createSwrCache({
     max: 32,
-    ttlMs: 30_000,
+    ttlMs: 10_000,
+    useGlobalTtlOverride: false,
     fetch: async (key, signal) => {
         const chainId = key.split(":")[0];
         if (signal.aborted)
@@ -27,7 +28,8 @@ export const summaryCache = createSwrCache({
 });
 export const summaryLiteCache = createSwrCache({
     max: 32,
-    ttlMs: 30_000,
+    ttlMs: 10_000,
+    useGlobalTtlOverride: false,
     fetch: async (key, signal) => {
         const chainId = key.split(":")[0];
         if (signal.aborted)

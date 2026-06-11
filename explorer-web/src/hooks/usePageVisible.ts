@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 export function usePageVisible(): boolean {
   const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const update = () => setVisible(document.visibilityState === "visible");
+    const update = () => setVisible(document.visibilityState === 'visible');
     update();
-    document.addEventListener("visibilitychange", update);
-    return () => document.removeEventListener("visibilitychange", update);
+    document.addEventListener('visibilitychange', update);
+    return () => document.removeEventListener('visibilitychange', update);
   }, []);
 
   return visible;

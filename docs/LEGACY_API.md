@@ -6,13 +6,13 @@ The original btc-rpc-explorer Express server on port **3002** is retained only f
 
 All explorer hot paths now go through **explorer-api** (Fastify, port **3003**):
 
-| Legacy (avoid) | Fast API (use) |
-|----------------|----------------|
-| `/api/blocks/tip/height` | `/v1/vrm/tip/height` |
-| `/api/indexer/:chain/summary` | `/v1/:chain/summary` |
-| `/api/indexer/landing` | `/v1/landing` |
-| `/api/indexer/vrm/dashboard` | `/v1/vrm/dashboard` |
-| polling every 8s | SSE `/v1/:chain/tip/stream` |
+| Legacy (avoid)                | Fast API (use)              |
+| ----------------------------- | --------------------------- |
+| `/api/blocks/tip/height`      | `/v1/vrm/tip/height`        |
+| `/api/indexer/:chain/summary` | `/v1/:chain/summary`        |
+| `/api/indexer/landing`        | `/v1/landing`               |
+| `/api/indexer/vrm/dashboard`  | `/v1/vrm/dashboard`         |
+| polling every 8s              | SSE `/v1/:chain/tip/stream` |
 
 Next.js rewrites:
 

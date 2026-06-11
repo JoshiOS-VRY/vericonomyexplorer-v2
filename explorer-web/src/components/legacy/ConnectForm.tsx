@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Button } from "@/components/ui/Button";
+import { Button } from '@/components/ui/Button';
 
 export function ConnectForm() {
   return (
@@ -23,10 +23,7 @@ export function ConnectForm() {
       </label>
       <label className="grid gap-1 text-sm">
         <span className="text-fg-muted">User</span>
-        <input
-          name="user"
-          className="h-9 rounded-md border border-border bg-bg-subtle px-3"
-        />
+        <input name="user" className="h-9 rounded-md border border-border bg-bg-subtle px-3" />
       </label>
       <label className="grid gap-1 text-sm">
         <span className="text-fg-muted">Password</span>

@@ -1,19 +1,19 @@
-import type { Metadata } from "next";
-import { HomeJsonLd } from "@/components/seo/HomeJsonLd";
-import { AlertBanner } from "@/components/explorer/ExplorerUi";
-import { UserMessageBanner } from "@/components/explorer/UserMessageBanner";
-import { VericonomyHomeLiveBand } from "@/components/explorer/home/VericonomyHomeLiveBand";
-import { VericonomyHomeRichlists } from "@/components/explorer/home/VericonomyHomeRichlists";
-import { VericonomyHomeStatic } from "@/components/explorer/home/VericonomyHomeSections";
-import { getHomeNetwork, getHomeShell, getLandingData } from "@/lib/api/indexer";
+import type { Metadata } from 'next';
+import { HomeJsonLd } from '@/components/seo/HomeJsonLd';
+import { AlertBanner } from '@/components/explorer/ExplorerUi';
+import { UserMessageBanner } from '@/components/explorer/UserMessageBanner';
+import { VericonomyHomeLiveBand } from '@/components/explorer/home/VericonomyHomeLiveBand';
+import { VericonomyHomeRichlists } from '@/components/explorer/home/VericonomyHomeRichlists';
+import { VericonomyHomeStatic } from '@/components/explorer/home/VericonomyHomeSections';
+import { getHomeNetwork, getHomeShell, getLandingData } from '@/lib/api/indexer';
 import type {
   ChainSummary,
   HomeNetworkPayload,
   HomeShellPayload,
   LeaderboardResult,
   RichlistResult,
-} from "@/lib/api/types";
-import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
+} from '@/lib/api/types';
+import { pageMetadata, staticPageSeo } from '@/lib/seo/metadata';
 
 export const metadata: Metadata = pageMetadata(staticPageSeo.home);
 
@@ -24,10 +24,7 @@ export default async function HomePage() {
   let network: HomeNetworkPayload | null = null;
 
   try {
-    [shell, network] = await Promise.all([
-      getHomeShell(),
-      getHomeNetwork().catch(() => null),
-    ]);
+    [shell, network] = await Promise.all([getHomeShell(), getHomeNetwork().catch(() => null)]);
   } catch {
     try {
       const landing = await getLandingData();
@@ -60,10 +57,7 @@ export default async function HomePage() {
     <div className="home-page space-y-10">
       <HomeJsonLd />
       <UserMessageBanner />
-      <VericonomyHomeLiveBand
-        initialShell={normalized}
-        initialNetwork={network ?? undefined}
-      />
+      <VericonomyHomeLiveBand initialShell={normalized} initialNetwork={network ?? undefined} />
 
       <VericonomyHomeRichlists
         vrmRichlist={normalized.vrm.richlist}
@@ -81,20 +75,20 @@ export default async function HomePage() {
 function normalizeShell(shell: HomeShellPayload): HomeShellPayload {
   return {
     vrm: {
-      summary: shell.vrm?.summary ?? emptySummary("vrm"),
-      richlist: shell.vrm?.richlist ?? emptyRichlist("vrm"),
+      summary: shell.vrm?.summary ?? emptySummary('vrm'),
+      richlist: shell.vrm?.richlist ?? emptyRichlist('vrm'),
     },
     vrc: {
-      summary: shell.vrc?.summary ?? emptySummary("vrc"),
-      richlist: shell.vrc?.richlist ?? emptyRichlist("vrc"),
+      summary: shell.vrc?.summary ?? emptySummary('vrc'),
+      richlist: shell.vrc?.richlist ?? emptyRichlist('vrc'),
     },
     vrmLeaderboard: shell.vrmLeaderboard ?? emptyLeaderboard(),
     fetchedAt: shell.fetchedAt ?? new Date().toISOString(),
   };
 }
 
-function emptySummary(chainId: "vrm" | "vrc"): ChainSummary {
-  const name = chainId === "vrm" ? "Verium" : "VeriCoin";
+function emptySummary(chainId: 'vrm' | 'vrc'): ChainSummary {
+  const name = chainId === 'vrm' ? 'Verium' : 'VeriCoin';
   const ticker = chainId.toUpperCase();
   return {
     chainId,
@@ -102,10 +96,10 @@ function emptySummary(chainId: "vrm" | "vrc"): ChainSummary {
       id: chainId,
       ticker,
       name,
-      consensus: chainId === "vrm" ? "PoWT" : "PoST",
-      status: "Unavailable",
+      consensus: chainId === 'vrm' ? 'PoWT' : 'PoST',
+      status: 'Unavailable',
       trusted: false,
-      message: "Chain data could not be loaded.",
+      message: 'Chain data could not be loaded.',
       checks: {},
       heights: {
         bestRpcHeight: null,
@@ -125,7 +119,7 @@ function emptySummary(chainId: "vrm" | "vrc"): ChainSummary {
     },
     latestBlocks: [],
     recentTransactions: [],
-    source: { label: "unavailable" },
+    source: { label: 'unavailable' },
   };
 }
 
@@ -134,17 +128,17 @@ function emptyRichlist(chainId: string): RichlistResult {
     chainId,
     trusted: false,
     enabled: false,
-    source: { label: "unavailable" },
+    source: { label: 'unavailable' },
     items: [],
   };
 }
 
 function emptyLeaderboard(): LeaderboardResult {
   return {
-    chainId: "vrm",
+    chainId: 'vrm',
     trusted: false,
     enabled: false,
-    source: { label: "unavailable" },
+    source: { label: 'unavailable' },
     items: [],
   };
 }

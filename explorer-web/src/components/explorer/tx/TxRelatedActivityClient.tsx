@@ -1,20 +1,17 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { ChainAddressLink } from "@/components/explorer/address/ChainAddressLink";
-import { useCallback, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
-import { TimeCell } from "@/components/explorer/ExplorerUi";
-import { useLivePoll } from "@/hooks/useLivePoll";
-import { clientApiFetch } from "@/lib/api/client";
-import type { TransactionRelatedAddressesResult } from "@/lib/api/types";
-import { chainTxPath, type ChainId } from "@/lib/chainDisplay";
-import { ENTITY_LIVE_POLL_MS } from "@/lib/liveDataConfig";
-import {
-  mapTransactionRelatedGroups,
-  type TxRelatedActivityGroup,
-} from "@/lib/txRelatedActivity";
-import { ellipsizeMiddle } from "@/lib/utils";
+import Link from 'next/link';
+import { ChainAddressLink } from '@/components/explorer/address/ChainAddressLink';
+import { useCallback, useRef, useState } from 'react';
+import { Loader2 } from 'lucide-react';
+import { TimeCell } from '@/components/explorer/ExplorerUi';
+import { useLivePoll } from '@/hooks/useLivePoll';
+import { clientApiFetch } from '@/lib/api/client';
+import type { TransactionRelatedAddressesResult } from '@/lib/api/types';
+import { chainTxPath, type ChainId } from '@/lib/chainDisplay';
+import { ENTITY_LIVE_POLL_MS } from '@/lib/liveDataConfig';
+import { mapTransactionRelatedGroups, type TxRelatedActivityGroup } from '@/lib/txRelatedActivity';
+import { ellipsizeMiddle } from '@/lib/utils';
 
 export function TxRelatedActivityClient({
   chainId,
@@ -38,7 +35,7 @@ export function TxRelatedActivityClient({
     inFlightRef.current = true;
     try {
       const related = await clientApiFetch<TransactionRelatedAddressesResult>(
-        `/${chainId}/tx/${encodeURIComponent(txid)}/related-addresses?limit=6`,
+        `/${chainId}/tx/${encodeURIComponent(txid)}/related-addresses?limit=6`
       );
       setGroups(mapTransactionRelatedGroups(txid, related));
       hasDataRef.current = true;
@@ -65,9 +62,7 @@ export function TxRelatedActivityClient({
         <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted">
           Related activity
         </h2>
-        <p className="mt-2 text-sm text-fg-subtle">
-          Unable to load related activity right now.
-        </p>
+        <p className="mt-2 text-sm text-fg-subtle">Unable to load related activity right now.</p>
       </section>
     );
   }
@@ -114,9 +109,7 @@ export function TxRelatedActivityClient({
                 prefetch
                 className="text-sm"
               />
-              <span className="text-xs text-fg-subtle">
-                Recent transactions
-              </span>
+              <span className="text-xs text-fg-subtle">Recent transactions</span>
             </div>
             <ul className="space-y-2">
               {group.transactions.map((tx) => (
@@ -126,12 +119,9 @@ export function TxRelatedActivityClient({
                     prefetch
                     className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/70 bg-bg-subtle/40 px-3 py-2 transition hover:bg-bg-subtle"
                   >
-                    <span className="text-xs text-accent">
-                      {ellipsizeMiddle(tx.txid, 24)}
-                    </span>
+                    <span className="text-xs text-accent">{ellipsizeMiddle(tx.txid, 24)}</span>
                     <span className="text-xs text-fg-muted">
-                      block {tx.blockHeight.toLocaleString()} ·{" "}
-                      <TimeCell time={tx.time} />
+                      block {tx.blockHeight.toLocaleString()} · <TimeCell time={tx.time} />
                     </span>
                   </Link>
                 </li>

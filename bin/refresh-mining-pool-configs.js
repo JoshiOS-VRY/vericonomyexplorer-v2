@@ -1,83 +1,98 @@
 #!/usr/bin/env node
 
-"use strict";
+'use strict';
 
-const os = require("os");
-const path = require("path");
-const dotenv = require("dotenv");
-const fs = require("fs");
-const axios = require("axios");
+const os = require('os');
+const path = require('path');
+const dotenv = require('dotenv');
+const fs = require('fs');
+const axios = require('axios');
 
-const utils = require("../app/utils.js");
-const coins = require("../app/coins.js");
+const utils = require('../app/utils.js');
+const coins = require('../app/coins.js');
 
 async function refreshMiningPoolsForCoin(coinName) {
-	console.log(`Refreshing mining pools for ${coinName}...`);
-		
-	if (coins[coinName].miningPoolsConfigUrls) {
-		const miningPoolsConfigDir = path.join(__dirname, "..", "public", "txt", "mining-pools-configs", coinName);
-		
-		fs.readdir(miningPoolsConfigDir, (err, files) => {
-			if (err) {
-				throw new Error(`Unable to delete existing files from '${miningPoolsConfigDir}'`);
-			}
+  console.log(`Refreshing mining pools for ${coinName}...`);
 
-			files.forEach(function(file) {
-				// delete existing file
-				fs.unlinkSync(path.join(miningPoolsConfigDir, file));
-			});
-		});
+  if (coins[coinName].miningPoolsConfigUrls) {
+    const miningPoolsConfigDir = path.join(
+      __dirname,
+      '..',
+      'public',
+      'txt',
+      'mining-pools-configs',
+      coinName
+    );
 
-		const miningPoolsConfigUrls = coins[coinName].miningPoolsConfigUrls;
+    fs.readdir(miningPoolsConfigDir, (err, files) => {
+      if (err) {
+        throw new Error(`Unable to delete existing files from '${miningPoolsConfigDir}'`);
+      }
 
-		const promises = [];
+      files.forEach(function (file) {
+        // delete existing file
+        fs.unlinkSync(path.join(miningPoolsConfigDir, file));
+      });
+    });
 
-		console.log(`${miningPoolsConfigUrls.length} mining pool config(s) found for ${coinName}`);
+    const miningPoolsConfigUrls = coins[coinName].miningPoolsConfigUrls;
 
-		for (let i = 0; i < miningPoolsConfigUrls.length; i++) {
-			promises.push(refreshMiningPoolConfig(coinName, i, miningPoolsConfigUrls[i]));
-		}
+    const promises = [];
 
-		await Promise.all(promises);
+    console.log(`${miningPoolsConfigUrls.length} mining pool config(s) found for ${coinName}`);
 
-		console.log(`Refreshed ${miningPoolsConfigUrls.length} mining pool config(s) for ${coinName}\n---------------------------------------------`);
+    for (let i = 0; i < miningPoolsConfigUrls.length; i++) {
+      promises.push(refreshMiningPoolConfig(coinName, i, miningPoolsConfigUrls[i]));
+    }
 
-	} else {
-		console.log(`No mining pool URLs configured for ${coinName}`);
+    await Promise.all(promises);
 
-		throw new Error(`No mining pool URLs configured for ${coinName}`);
-	}
+    console.log(
+      `Refreshed ${miningPoolsConfigUrls.length} mining pool config(s) for ${coinName}\n---------------------------------------------`
+    );
+  } else {
+    console.log(`No mining pool URLs configured for ${coinName}`);
+
+    throw new Error(`No mining pool URLs configured for ${coinName}`);
+  }
 }
 
 async function refreshMiningPoolConfig(coinName, index, url) {
-	try {
-		const response = await axios.get(url, { transformResponse: res => res });
+  try {
+    const response = await axios.get(url, { transformResponse: (res) => res });
 
-		const filename = path.join(__dirname, "..", "public", "txt", "mining-pools-configs", coinName, index + ".json");
+    const filename = path.join(
+      __dirname,
+      '..',
+      'public',
+      'txt',
+      'mining-pools-configs',
+      coinName,
+      index + '.json'
+    );
 
-		fs.writeFileSync(filename, response.data, (err) => {
-			console.log(`Error writing file '${filename}': ${err}`);
-		});
+    fs.writeFileSync(filename, response.data, (err) => {
+      console.log(`Error writing file '${filename}': ${err}`);
+    });
 
-		console.log(`Wrote '${coinName}/${index}.json' with contents of url: ${url}`);
+    console.log(`Wrote '${coinName}/${index}.json' with contents of url: ${url}`);
+  } catch (err) {
+    console.log(`Error downloading mining pool config for ${coinName}: url=${url}`);
 
-	} catch (err) {
-		console.log(`Error downloading mining pool config for ${coinName}: url=${url}`);
-
-		throw err;
-	}
+    throw err;
+  }
 }
 
 async function refreshAllMiningPoolConfigs() {
-	const outerPromises = [];
+  const outerPromises = [];
 
-	for (let i = 0; i < coins.coins.length; i++) {
-		const coinName = coins.coins[i];
+  for (let i = 0; i < coins.coins.length; i++) {
+    const coinName = coins.coins[i];
 
-		await refreshMiningPoolsForCoin(coinName);
-	}
+    await refreshMiningPoolsForCoin(coinName);
+  }
 }
 
 refreshAllMiningPoolConfigs().then(() => {
-	process.exit();
+  process.exit();
 });

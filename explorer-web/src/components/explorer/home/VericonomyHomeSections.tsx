@@ -1,4 +1,4 @@
-import { FeatureTile } from "@/components/explorer/ExplorerUi";
+import { FeatureTile } from '@/components/explorer/ExplorerUi';
 
 export function VericonomyHomeStatic() {
   return (

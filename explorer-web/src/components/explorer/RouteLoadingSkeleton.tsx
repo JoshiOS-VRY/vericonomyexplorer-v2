@@ -1,5 +1,5 @@
 function PulseBlock({ className }: { className?: string }) {
-  return <div className={`animate-pulse rounded-md bg-bg-subtle ${className ?? ""}`} />;
+  return <div className={`animate-pulse rounded-md bg-bg-subtle ${className ?? ''}`} />;
 }
 
 function PanelSkeleton({ rows = 4 }: { rows?: number }) {
@@ -40,7 +40,10 @@ export function HomeLoadingSkeleton() {
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
         {Array.from({ length: 2 }).map((_, index) => (
-          <section key={index} className="overflow-hidden rounded-xl border border-border bg-bg-panel shadow-sm">
+          <section
+            key={index}
+            className="overflow-hidden rounded-xl border border-border bg-bg-panel shadow-sm"
+          >
             <div className="border-b border-border px-4 py-3">
               <PulseBlock className="h-4 w-32" />
             </div>

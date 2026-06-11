@@ -1,6 +1,6 @@
-import { LRUCache } from "lru-cache";
-import { isSqliteBusyError } from "../errors.js";
-import type { ChainId } from "../types.js";
+import { LRUCache } from 'lru-cache';
+import { isSqliteBusyError } from '../errors.js';
+import type { ChainId } from '../types.js';
 
 export type CacheValue = Record<string, unknown>;
 
@@ -23,11 +23,10 @@ export function getApiCacheTtlMs(defaultTtlMs: number): number {
 }
 
 export function createSwrCache<T extends CacheValue = CacheValue>(
-  options: SwrOptions<T>,
+  options: SwrOptions<T>
 ): LRUCache<string, T, unknown> {
   const baseTtlMs = options.ttlMs ?? 5_000;
-  const ttlMs =
-    options.useGlobalTtlOverride === false ? baseTtlMs : getApiCacheTtlMs(baseTtlMs);
+  const ttlMs = options.useGlobalTtlOverride === false ? baseTtlMs : getApiCacheTtlMs(baseTtlMs);
 
   return new LRUCache<string, T, unknown>({
     max: options.max ?? 64,
@@ -39,13 +38,13 @@ export function createSwrCache<T extends CacheValue = CacheValue>(
   });
 }
 
-export function cacheKey(chainId: ChainId, resource: string, suffix = ""): string {
-  return `${chainId}:${resource}${suffix ? `:${suffix}` : ""}`;
+export function cacheKey(chainId: ChainId, resource: string, suffix = ''): string {
+  return `${chainId}:${resource}${suffix ? `:${suffix}` : ''}`;
 }
 
 export function safeCacheDelete<T extends CacheValue>(
   cache: LRUCache<string, T, unknown>,
-  key: string,
+  key: string
 ): void {
   try {
     cache.delete(key);
@@ -56,7 +55,7 @@ export function safeCacheDelete<T extends CacheValue>(
 
 export async function refreshCacheInBackground(
   cache: LRUCache<string, CacheValue, unknown>,
-  key: string,
+  key: string
 ): Promise<void> {
   try {
     await cache.fetch(key, { forceRefresh: true });
@@ -68,13 +67,13 @@ export async function refreshCacheInBackground(
 export async function swrFetch<T>(
   cache: LRUCache<string, CacheValue, unknown>,
   key: string,
-  fallback: () => Promise<T>,
+  fallback: () => Promise<T>
 ): Promise<T> {
   try {
     const data = await cache.fetch(key);
     return (data ?? (await fallback())) as T;
   } catch (err) {
-    if (err instanceof Error && err.message === "deleted") {
+    if (err instanceof Error && err.message === 'deleted') {
       return fallback();
     }
 
@@ -91,7 +90,7 @@ export async function swrFetch<T>(
 
 export function invalidateChain(
   cache: LRUCache<string, CacheValue, unknown>,
-  chainId: ChainId,
+  chainId: ChainId
 ): void {
   for (const key of cache.keys()) {
     if (key.startsWith(`${chainId}:`)) {

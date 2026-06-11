@@ -1,16 +1,18 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import { headers } from "next/headers";
-import { AppShell } from "@/components/layout/AppShell";
-import { getUiThemeDefault } from "@/lib/env";
-import { rootMetadata } from "@/lib/seo/metadata";
-import "./globals.css";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import { headers } from 'next/headers';
+import { AppShell } from '@/components/layout/AppShell';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { getUiThemeDefault } from '@/lib/env';
+import { rootMetadata } from '@/lib/seo/metadata';
+import { organizationJsonLd } from '@/lib/seo/jsonld';
+import './globals.css';
 
 const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-  variable: "--font-inter",
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-inter',
 });
 
 export const metadata: Metadata = rootMetadata;
@@ -21,7 +23,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const defaultTheme = getUiThemeDefault();
-  const pathname = (await headers()).get("x-pathname") ?? "/";
+  const pathname = (await headers()).get('x-pathname') ?? '/';
 
   return (
     <html
@@ -35,14 +37,9 @@ export default async function RootLayout({
         {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script src="/theme-boot.js" />
       </head>
-      <body
-        className={`${inter.className} min-h-full bg-bg text-fg antialiased`}
-      >
-        <AppShell
-          pathname={pathname}
-          initialVrmSummary={null}
-          initialVrcSummary={null}
-        >
+      <body className={`${inter.className} min-h-full bg-bg text-fg antialiased`}>
+        <JsonLd data={organizationJsonLd()} />
+        <AppShell pathname={pathname} initialVrmSummary={null} initialVrcSummary={null}>
           {children}
         </AppShell>
         <script src="/explorer-ui.js" defer />

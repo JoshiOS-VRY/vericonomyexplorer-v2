@@ -1,4 +1,4 @@
-import type { HomeMarketPayload, HomeNetworkPayload } from "@/lib/api/types";
+import type { HomeMarketPayload, HomeNetworkPayload } from '@/lib/api/types';
 
 export function emptyMarketPayload(): HomeMarketPayload {
   const empty = {
@@ -8,7 +8,7 @@ export function emptyMarketPayload(): HomeMarketPayload {
     volume24h: null,
     change24h: null,
     circulatingSupply: null,
-    source: "unavailable" as const,
+    source: 'unavailable' as const,
     updatedAt: null,
     priceHistory24h: [],
   };

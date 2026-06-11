@@ -1,11 +1,7 @@
-import Link from "next/link";
-import { cn } from "@/lib/utils";
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
-export function Breadcrumb({
-  items,
-}: {
-  items: { label: React.ReactNode; href?: string }[];
-}) {
+export function Breadcrumb({ items }: { items: { label: React.ReactNode; href?: string }[] }) {
   return (
     <nav aria-label="Breadcrumb" className="text-xs text-fg-subtle">
       <ol className="flex flex-wrap items-center gap-1.5">
@@ -19,7 +15,7 @@ export function Breadcrumb({
                   {item.label}
                 </Link>
               ) : (
-                <span className={cn(last && "font-medium text-fg")}>{item.label}</span>
+                <span className={cn(last && 'font-medium text-fg')}>{item.label}</span>
               )}
             </li>
           );

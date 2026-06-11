@@ -1,20 +1,18 @@
-import { buildFetchInit, type CacheFetchOptions } from "@/lib/api/fetchInit";
-import { loadRootEnv } from "@/lib/env";
+import { buildFetchInit, type CacheFetchOptions } from '@/lib/api/fetchInit';
+import { loadRootEnv } from '@/lib/env';
 
-export type { getClientV1Url, getTipStreamUrl } from "@/lib/api/v1Urls";
+export type { getClientV1Url, getTipStreamUrl } from '@/lib/api/v1Urls';
 
 export type V1FetchOptions = CacheFetchOptions;
 
-const DEFAULT_V1_FETCH_TIMEOUT_MS = Number(
-  process.env.VCEXP_WEB_FETCH_TIMEOUT_MS ?? 8_000,
-);
+const DEFAULT_V1_FETCH_TIMEOUT_MS = Number(process.env.VCEXP_WEB_FETCH_TIMEOUT_MS ?? 8_000);
 
 export class V1FetchError extends Error {
   status: number;
 
   constructor(message: string, status: number) {
     super(message);
-    this.name = "V1FetchError";
+    this.name = 'V1FetchError';
     this.status = status;
   }
 }
@@ -23,24 +21,24 @@ export function getFastApiBaseUrl(): string {
   loadRootEnv();
   const explicit =
     process.env.EXPLORER_FAST_API_URL ?? process.env.NEXT_PUBLIC_EXPLORER_FAST_API_URL;
-  if (explicit) return explicit.replace(/\/$/, "");
+  if (explicit) return explicit.replace(/\/$/, '');
 
-  const host = process.env.VCEXP_FAST_API_HOST ?? "127.0.0.1";
-  const port = process.env.VCEXP_FAST_API_PORT ?? "3003";
-  return `http://${host}:${port}`.replace(/\/$/, "");
+  const host = process.env.VCEXP_FAST_API_HOST ?? '127.0.0.1';
+  const port = process.env.VCEXP_FAST_API_PORT ?? '3003';
+  return `http://${host}:${port}`.replace(/\/$/, '');
 }
 
 export async function v1Fetch<T>(path: string, options: V1FetchOptions = {}): Promise<T> {
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  const v1Path = normalized.startsWith("/v1/") ? normalized : `/v1${normalized}`;
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  const v1Path = normalized.startsWith('/v1/') ? normalized : `/v1${normalized}`;
   const url = `${getFastApiBaseUrl()}${v1Path}`;
   const init = buildFetchInit(options, {
-    headers: { Accept: "application/json" },
+    headers: { Accept: 'application/json' },
   });
   const timeoutMs = options.timeoutMs ?? DEFAULT_V1_FETCH_TIMEOUT_MS;
   const signal =
     init.signal ??
-    (typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
+    (typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal
       ? AbortSignal.timeout(timeoutMs)
       : undefined);
 
@@ -60,8 +58,8 @@ export async function v1Fetch<T>(path: string, options: V1FetchOptions = {}): Pr
 }
 
 export async function v1FetchText(path: string, options: V1FetchOptions = {}): Promise<string> {
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  const v1Path = normalized.startsWith("/v1/") ? normalized : `/v1${normalized}`;
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  const v1Path = normalized.startsWith('/v1/') ? normalized : `/v1${normalized}`;
   const url = `${getFastApiBaseUrl()}${v1Path}`;
   const init = buildFetchInit(options);
   const response = await fetch(url, init);

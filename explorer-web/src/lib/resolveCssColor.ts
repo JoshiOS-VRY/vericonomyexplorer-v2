@@ -5,7 +5,9 @@
 export function normalizeSvgColor(value: string): string {
   if (!value) return value;
 
-  const rgbMatch = value.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?\s*\)$/i);
+  const rgbMatch = value.match(
+    /^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)(?:[,\s/]+([\d.]+))?\s*\)$/i
+  );
   if (rgbMatch) {
     const [, r, g, b, a] = rgbMatch;
     if (a != null) {
@@ -18,11 +20,11 @@ export function normalizeSvgColor(value: string): string {
 }
 
 export function resolveCssColor(value: string, element: Element | null = null): string {
-  if (typeof window === "undefined") {
+  if (typeof window === 'undefined') {
     return normalizeSvgColor(value);
   }
 
-  if (!value.startsWith("var(")) {
+  if (!value.startsWith('var(')) {
     return normalizeSvgColor(value);
   }
 
@@ -36,17 +38,17 @@ export function resolveCssColor(value: string, element: Element | null = null): 
   return normalizeSvgColor(resolved || match[2]?.trim() || value);
 }
 
-export function getChainChartColor(chainId: "vrm" | "vrc"): string {
+export function getChainChartColor(chainId: 'vrm' | 'vrc'): string {
   const fallbacks = {
-    vrm: "rgb(70, 80, 90)",
-    vrc: "rgb(65, 139, 202)",
+    vrm: 'rgb(70, 80, 90)',
+    vrc: 'rgb(65, 139, 202)',
   };
 
-  if (typeof window === "undefined") {
+  if (typeof window === 'undefined') {
     return fallbacks[chainId];
   }
 
-  const cssVar = chainId === "vrm" ? "--chain-vrm" : "--chain-vrc";
+  const cssVar = chainId === 'vrm' ? '--chain-vrm' : '--chain-vrc';
   const resolved = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim();
   return normalizeSvgColor(resolved) || fallbacks[chainId];
 }

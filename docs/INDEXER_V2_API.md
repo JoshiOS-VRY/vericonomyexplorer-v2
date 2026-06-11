@@ -8,22 +8,22 @@ Set `VCEXP_INDEXER_SQLITE_PATH` to the index database path before starting the i
 
 ## Fast API (explorer-api :3003)
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /v1/health` | Service health |
-| `GET /v1/indexer/status` | Indexer health for all chains |
-| `GET /v1/landing` | Home dashboard bundle (both chains) |
-| `GET /v1/vrm/dashboard` | Verium explorer dashboard bundle |
-| `GET /v1/:chain/tip` | Live tip `{ height, hash, time }` (in-memory) |
-| `GET /v1/:chain/tip/height` | Plain-text tip height (sub-ms) |
-| `GET /v1/:chain/tip/stream` | SSE stream of tip updates |
-| `GET /v1/:chain/summary` | Chain summary |
-| `GET /v1/:chain/richlist` | Rich list |
-| `GET /v1/:chain/leaderboard` | Leaderboard |
-| `GET /v1/:chain/address/:address` | Address detail |
-| `GET /v1/:chain/tx/:txid` | Transaction detail |
-| `GET /v1/:chain/block/:hashOrHeight` | Block detail |
-| `GET /v1/:chain/search?q=` | Search disambiguation |
+| Endpoint                             | Description                                   |
+| ------------------------------------ | --------------------------------------------- |
+| `GET /v1/health`                     | Service health                                |
+| `GET /v1/indexer/status`             | Indexer health for all chains                 |
+| `GET /v1/landing`                    | Home dashboard bundle (both chains)           |
+| `GET /v1/vrm/dashboard`              | Verium explorer dashboard bundle              |
+| `GET /v1/:chain/tip`                 | Live tip `{ height, hash, time }` (in-memory) |
+| `GET /v1/:chain/tip/height`          | Plain-text tip height (sub-ms)                |
+| `GET /v1/:chain/tip/stream`          | SSE stream of tip updates                     |
+| `GET /v1/:chain/summary`             | Chain summary                                 |
+| `GET /v1/:chain/richlist`            | Rich list                                     |
+| `GET /v1/:chain/leaderboard`         | Leaderboard                                   |
+| `GET /v1/:chain/address/:address`    | Address detail                                |
+| `GET /v1/:chain/tx/:txid`            | Transaction detail                            |
+| `GET /v1/:chain/block/:hashOrHeight` | Block detail                                  |
+| `GET /v1/:chain/search?q=`           | Search disambiguation                         |
 
 Next.js rewrites `/v1/*` to explorer-api. Client live data uses SSE (`/v1/:chain/tip/stream`) instead of polling legacy `/api/blocks/tip/height`.
 

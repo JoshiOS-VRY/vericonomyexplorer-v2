@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { BcPanel } from "@/components/explorer/BlockchairUi";
-import { AddressChartSkeleton } from "@/components/explorer/address/AddressSectionSkeleton";
-import { cn } from "@/lib/utils";
+import { BcPanel } from '@/components/explorer/BlockchairUi';
+import { AddressChartSkeleton } from '@/components/explorer/address/AddressSectionSkeleton';
+import { cn } from '@/lib/utils';
 
 export function InsightsChartPanel({
   title,
@@ -23,17 +23,17 @@ export function InsightsChartPanel({
   footer?: string | null;
   children?: React.ReactNode;
   className?: string;
-  chainId?: "vrm" | "vrc";
+  chainId?: 'vrm' | 'vrc';
 }) {
   return (
     <BcPanel
       title={title}
       action={action}
       className={cn(
-        "insights-chart-panel overflow-visible",
-        chainId === "vrm" && "insights-chart-panel-vrm",
-        chainId === "vrc" && "insights-chart-panel-vrc",
-        className,
+        'insights-chart-panel overflow-visible',
+        chainId === 'vrm' && 'insights-chart-panel-vrm',
+        chainId === 'vrc' && 'insights-chart-panel-vrc',
+        className
       )}
     >
       {error ? (
@@ -50,8 +50,8 @@ export function InsightsChartPanel({
       ) : (
         <div
           className={cn(
-            "overflow-visible transition-opacity duration-300",
-            loading && "pointer-events-none opacity-70",
+            'overflow-visible transition-opacity duration-300',
+            loading && 'pointer-events-none opacity-70'
           )}
         >
           {children}
@@ -59,7 +59,7 @@ export function InsightsChartPanel({
       )}
       {footer ? (
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
-          {footer.split(" · ").map((part, index) => (
+          {footer.split(' · ').map((part, index) => (
             <span
               key={`${part}-${index}`}
               className="inline-flex items-center rounded-full bg-bg-subtle px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-fg-subtle"

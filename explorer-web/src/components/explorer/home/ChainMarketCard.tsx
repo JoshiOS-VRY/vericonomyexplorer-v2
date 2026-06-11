@@ -1,22 +1,18 @@
-import { AnimatedStatValue } from "@/components/explorer/AnimatedStatValue";
-import type { ChainMarket } from "@/lib/api/types";
-import { CHAIN_EXPLORERS } from "@/lib/chainDisplay";
+import { AnimatedStatValue } from '@/components/explorer/AnimatedStatValue';
+import type { ChainMarket } from '@/lib/api/types';
+import { CHAIN_EXPLORERS } from '@/lib/chainDisplay';
 import {
   formatBtcPrice,
   formatPercentChange,
   formatUsdCompact,
   formatUsdPrice,
-} from "@/lib/formatMarket";
-import { cn } from "@/lib/utils";
-import {
-  ChainHubSectionHead,
-  ChainHubStatCell,
-  ChainHubStatRow,
-} from "./ChainHubStats";
-import { LazyPriceSparkline } from "./LazyPriceSparkline";
+} from '@/lib/formatMarket';
+import { cn } from '@/lib/utils';
+import { ChainHubSectionHead, ChainHubStatCell, ChainHubStatRow } from './ChainHubStats';
+import { LazyPriceSparkline } from './LazyPriceSparkline';
 
 interface ChainMarketCardProps {
-  chainId: "vrm" | "vrc";
+  chainId: 'vrm' | 'vrc';
   market: ChainMarket;
   embedded?: boolean;
   animated?: boolean;
@@ -34,8 +30,7 @@ export function ChainMarketCard({
   const config = CHAIN_EXPLORERS[chainId];
   const changePositive = market.change24h != null && market.change24h >= 0;
   const showOptionalMarketStats = !hubLayout;
-  const sourceLabel =
-    market.source !== "unavailable" ? market.source : "price unavailable";
+  const sourceLabel = market.source !== 'unavailable' ? market.source : 'price unavailable';
 
   const hubBody = (
     <ChainHubStatRow cols={3}>
@@ -99,7 +94,7 @@ export function ChainMarketCard({
             numericValue={market.change24h}
             formatFn={(n) => formatPercentChange(n)}
             animated={animated}
-            valueClassName={changePositive ? "text-success" : "text-danger"}
+            valueClassName={changePositive ? 'text-success' : 'text-danger'}
           />
         ) : null}
         {showOptionalMarketStats && market.volume24h != null ? (
@@ -115,10 +110,7 @@ export function ChainMarketCard({
 
       {market.priceHistory24h.length > 1 ? (
         <div className="border-t border-border px-2 py-2">
-          <LazyPriceSparkline
-            data={market.priceHistory24h}
-            ticker={config.ticker}
-          />
+          <LazyPriceSparkline data={market.priceHistory24h} ticker={config.ticker} />
         </div>
       ) : null}
     </>
@@ -126,7 +118,7 @@ export function ChainMarketCard({
 
   if (embedded) {
     return (
-      <div className={hubLayout ? "chain-hub-market" : undefined}>
+      <div className={hubLayout ? 'chain-hub-market' : undefined}>
         {hubLayout ? (
           <ChainHubSectionHead title="Market" meta={sourceLabel} />
         ) : (
@@ -179,15 +171,15 @@ function MarketStat({
   formatFn?: (value: number) => string;
 }) {
   return (
-    <div className={cn("px-4 py-3", className)}>
+    <div className={cn('px-4 py-3', className)}>
       <div className="text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">
         {label}
       </div>
       <div
         className={cn(
-          "mt-1 text-lg font-bold tabular-nums text-fg",
-          mono && "text-base",
-          valueClassName,
+          'mt-1 text-lg font-bold tabular-nums text-fg',
+          mono && 'text-base',
+          valueClassName
         )}
       >
         {animated ? (

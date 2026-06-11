@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import type { AddressBalanceHistoryPeriodId } from "@/lib/api/types";
-import { INSIGHTS_HISTORY_PERIODS } from "@/lib/insightsChartConfig";
-import { cn } from "@/lib/utils";
+import type { AddressBalanceHistoryPeriodId } from '@/lib/api/types';
+import { INSIGHTS_HISTORY_PERIODS } from '@/lib/insightsChartConfig';
+import { cn } from '@/lib/utils';
 
 export function ChartPeriodControls({
   period,
@@ -27,17 +27,15 @@ export function ChartPeriodControls({
               disabled={loading}
               onClick={() => onPeriodChange(item.id)}
               className={cn(
-                "rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide transition-all duration-200",
-                active
-                  ? "shadow-sm"
-                  : "text-fg-muted hover:bg-bg-panel hover:text-fg",
-                loading && !active && "opacity-60",
+                'rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide transition-all duration-200',
+                active ? 'shadow-sm' : 'text-fg-muted hover:bg-bg-panel hover:text-fg',
+                loading && !active && 'opacity-60'
               )}
               style={
                 active
                   ? {
-                      background: accentVar ?? "var(--accent)",
-                      color: "var(--chain-btn-fg)",
+                      background: accentVar ?? 'var(--accent)',
+                      color: 'var(--chain-btn-fg)',
                     }
                   : undefined
               }
@@ -52,9 +50,7 @@ export function ChartPeriodControls({
         <select
           value={period}
           disabled={loading}
-          onChange={(event) =>
-            onPeriodChange(event.target.value as AddressBalanceHistoryPeriodId)
-          }
+          onChange={(event) => onPeriodChange(event.target.value as AddressBalanceHistoryPeriodId)}
           className="appearance-none rounded-md border border-border bg-bg-subtle py-1.5 pl-2.5 pr-8 text-xs font-medium text-fg"
         >
           {INSIGHTS_HISTORY_PERIODS.map((item) => (

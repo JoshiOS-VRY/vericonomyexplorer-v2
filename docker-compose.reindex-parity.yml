@@ -10,39 +10,39 @@
 
 services:
   postgres-reindex:
-    profiles: ["reindex-parity"]
+    profiles: ['reindex-parity']
     image: postgres:16
     container_name: vericonomy-postgres-reindex
     restart: unless-stopped
-    shm_size: "256mb"
+    shm_size: '256mb'
     environment:
       POSTGRES_USER: ${VCEXP_PG_USER:-vericonomy}
       POSTGRES_PASSWORD: ${VCEXP_PG_PASSWORD:?set VCEXP_PG_PASSWORD in .env.production}
       POSTGRES_DB: ${VCEXP_REINDEX_PG_DB:-vericonomy_reindex}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+      POSTGRES_INITDB_ARGS: '--encoding=UTF8 --locale=C'
     command:
-      - "postgres"
-      - "-c"
-      - "shared_buffers=512MB"
-      - "-c"
-      - "effective_cache_size=2GB"
-      - "-c"
-      - "maintenance_work_mem=512MB"
-      - "-c"
-      - "work_mem=32MB"
-      - "-c"
-      - "max_wal_size=8GB"
-      - "-c"
-      - "synchronous_commit=off"
-      - "-c"
-      - "max_connections=40"
+      - 'postgres'
+      - '-c'
+      - 'shared_buffers=512MB'
+      - '-c'
+      - 'effective_cache_size=2GB'
+      - '-c'
+      - 'maintenance_work_mem=512MB'
+      - '-c'
+      - 'work_mem=32MB'
+      - '-c'
+      - 'max_wal_size=8GB'
+      - '-c'
+      - 'synchronous_commit=off'
+      - '-c'
+      - 'max_connections=40'
     volumes:
       - vericonomy-pg-reindex:/var/lib/postgresql/data
     healthcheck:
       test:
         [
-          "CMD-SHELL",
-          "pg_isready -U ${VCEXP_PG_USER:-vericonomy} -d ${VCEXP_REINDEX_PG_DB:-vericonomy_reindex}",
+          'CMD-SHELL',
+          'pg_isready -U ${VCEXP_PG_USER:-vericonomy} -d ${VCEXP_REINDEX_PG_DB:-vericonomy_reindex}',
         ]
       interval: 10s
       timeout: 5s
@@ -51,7 +51,7 @@ services:
       - private
 
   vrm-reindex-worker:
-    profiles: ["reindex-parity"]
+    profiles: ['reindex-parity']
     container_name: vericonomy-vrm-reindex-worker
     build:
       context: .
@@ -69,19 +69,19 @@ services:
       VCEXP_VRM_RPC_HOST: ${VCEXP_VRM_RPC_HOST:-172.18.0.1}
       VCEXP_INDEXER_BLOCKS_PER_PASS: ${VCEXP_REINDEX_BLOCKS_PER_PASS:-500}
       VCEXP_INDEX_ONLY_RPC_BATCH: ${VCEXP_REINDEX_RPC_BATCH:-50}
-      VCEXP_INDEXER_YIELD_MS: "10"
+      VCEXP_INDEXER_YIELD_MS: '10'
       VCEXP_REINDEX_LOG_EVERY: ${VCEXP_REINDEX_LOG_EVERY:-500}
     volumes:
       - ./configs/chains.json:/app/configs/chains.json:ro
       - ./bin/reindex-parity-run.js:/app/bin/reindex-parity-run.js:ro
       - ./deploy/option-a/reindex-parity:/app/deploy/option-a/reindex-parity:ro
-    command: ["node", "./bin/reindex-parity-run.js", "--chain", "vrm"]
+    command: ['node', './bin/reindex-parity-run.js', '--chain', 'vrm']
     networks:
       - private
-    restart: "no"
+    restart: 'no'
 
   vrc-reindex-worker:
-    profiles: ["reindex-parity"]
+    profiles: ['reindex-parity']
     container_name: vericonomy-vrc-reindex-worker
     build:
       context: .
@@ -99,16 +99,16 @@ services:
       VCEXP_VRC_RPC_HOST: ${VCEXP_VRC_RPC_HOST:-172.18.0.1}
       VCEXP_INDEXER_BLOCKS_PER_PASS: ${VCEXP_REINDEX_BLOCKS_PER_PASS:-500}
       VCEXP_INDEX_ONLY_RPC_BATCH: ${VCEXP_REINDEX_RPC_BATCH:-50}
-      VCEXP_INDEXER_YIELD_MS: "10"
+      VCEXP_INDEXER_YIELD_MS: '10'
       VCEXP_REINDEX_LOG_EVERY: ${VCEXP_REINDEX_LOG_EVERY:-2000}
     volumes:
       - ./configs/chains.json:/app/configs/chains.json:ro
       - ./bin/reindex-parity-run.js:/app/bin/reindex-parity-run.js:ro
       - ./deploy/option-a/reindex-parity:/app/deploy/option-a/reindex-parity:ro
-    command: ["node", "./bin/reindex-parity-run.js", "--chain", "vrc"]
+    command: ['node', './bin/reindex-parity-run.js', '--chain', 'vrc']
     networks:
       - private
-    restart: "no"
+    restart: 'no'
 
 volumes:
   vericonomy-pg-reindex:

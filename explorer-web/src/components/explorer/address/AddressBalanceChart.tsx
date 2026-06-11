@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -12,40 +12,40 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts";
-import { BcPanel } from "@/components/explorer/BlockchairUi";
-import { AddressChartSkeleton } from "@/components/explorer/address/AddressSectionSkeleton";
-import { useChartTheme } from "@/hooks/useChartTheme";
-import { useTheme } from "@/hooks/useTheme";
+} from 'recharts';
+import { BcPanel } from '@/components/explorer/BlockchairUi';
+import { AddressChartSkeleton } from '@/components/explorer/address/AddressSectionSkeleton';
+import { useChartTheme } from '@/hooks/useChartTheme';
+import { useTheme } from '@/hooks/useTheme';
 import {
   ADDRESS_BALANCE_HISTORY_PERIODS,
   fetchAddressBalanceHistoryClient,
-} from "@/lib/addressBalanceHistory";
-import { useAddressBalanceHistoryPoll } from "@/hooks/useAddressBalanceHistoryPoll";
+} from '@/lib/addressBalanceHistory';
+import { useAddressBalanceHistoryPoll } from '@/hooks/useAddressBalanceHistoryPoll';
 import type {
   AddressBalanceChartView,
   AddressBalanceHistoryPeriodId,
   AddressBalanceHistoryResult,
-} from "@/lib/api/types";
+} from '@/lib/api/types';
 import {
   formatActivityBucketAxisLabel,
   formatChartAxisDate,
   formatChartDateTime,
   formatChartTooltipDate,
-} from "@/lib/chartDates";
-import { cn } from "@/lib/utils";
-import type { RechartsTooltipContentProps } from "@/components/explorer/charts/ThemedChartTooltip";
+} from '@/lib/chartDates';
+import { cn } from '@/lib/utils';
+import type { RechartsTooltipContentProps } from '@/components/explorer/charts/ThemedChartTooltip';
 
 const CHART_VIEWS: { id: AddressBalanceChartView; label: string }[] = [
-  { id: "activity", label: "Activity" },
-  { id: "balance", label: "Balance" },
+  { id: 'activity', label: 'Activity' },
+  { id: 'balance', label: 'Balance' },
 ];
 
 const CATEGORY_COLORS: Record<string, keyof ReturnType<typeof useChartTheme>> = {
-  mined: "success",
-  staked: "warning",
-  received: "accent",
-  spent: "danger",
+  mined: 'success',
+  staked: 'warning',
+  received: 'accent',
+  spent: 'danger',
 };
 
 function ChartHeaderControls({
@@ -73,11 +73,9 @@ function ChartHeaderControls({
               disabled={loading}
               onClick={() => onViewChange(item.id)}
               className={cn(
-                "rounded px-2.5 py-1 text-[11px] font-semibold transition",
-                active
-                  ? "bg-bg-panel text-fg shadow-sm"
-                  : "text-fg-muted hover:text-fg",
-                loading && !active && "opacity-60",
+                'rounded px-2.5 py-1 text-[11px] font-semibold transition',
+                active ? 'bg-bg-panel text-fg shadow-sm' : 'text-fg-muted hover:text-fg',
+                loading && !active && 'opacity-60'
               )}
             >
               {item.label}
@@ -107,10 +105,10 @@ type ActivityChartRow = {
 };
 
 const ACTIVITY_TOOLTIP_SERIES: { key: keyof ActivityChartRow; name: string }[] = [
-  { key: "mined", name: "Mined" },
-  { key: "staked", name: "Staked" },
-  { key: "received", name: "Received" },
-  { key: "spent", name: "Spent" },
+  { key: 'mined', name: 'Mined' },
+  { key: 'staked', name: 'Staked' },
+  { key: 'received', name: 'Received' },
+  { key: 'spent', name: 'Spent' },
 ];
 
 function ActivityChartTooltip({
@@ -129,10 +127,10 @@ function ActivityChartTooltip({
     return null;
   }
 
-  const ticker = row.ticker ?? "VRM";
+  const ticker = row.ticker ?? 'VRM';
   const entries = ACTIVITY_TOOLTIP_SERIES.map((series) => ({
     name: series.name,
-    value: series.key === "spent" ? Math.abs(row.spent) : Number(row[series.key]),
+    value: series.key === 'spent' ? Math.abs(row.spent) : Number(row[series.key]),
   }))
     .filter((item) => item.value > 0)
     .sort((a, b) => b.value - a.value);
@@ -158,10 +156,7 @@ function ActivityChartTooltip({
       </p>
       <ul className="mt-2 space-y-1">
         {entries.map((item) => (
-          <li
-            key={item.name}
-            className="flex items-center justify-between gap-4 text-xs"
-          >
+          <li key={item.name} className="flex items-center justify-between gap-4 text-xs">
             <span className="font-medium" style={{ color: colors.fgMuted }}>
               {item.name}
             </span>
@@ -187,17 +182,19 @@ function BalanceChartTooltip({
     return null;
   }
 
-  const point = payload[0]?.payload as {
-    ticker?: string;
-    time?: number;
-    height?: number | null;
-    balance?: number;
-  } | undefined;
-  const ticker = point?.ticker ?? "VRM";
+  const point = payload[0]?.payload as
+    | {
+        ticker?: string;
+        time?: number;
+        height?: number | null;
+        balance?: number;
+      }
+    | undefined;
+  const ticker = point?.ticker ?? 'VRM';
   const value =
-    typeof point?.balance === "number"
+    typeof point?.balance === 'number'
       ? point.balance
-      : typeof payload[0]?.value === "number"
+      : typeof payload[0]?.value === 'number'
         ? payload[0].value
         : null;
   const time = point?.time != null ? formatChartDateTime(point.time) : null;
@@ -221,9 +218,9 @@ function BalanceChartTooltip({
         {title}
       </p>
       <p className="mt-1 text-sm font-semibold tabular-nums">
-        {typeof value === "number"
+        {typeof value === 'number'
           ? `${value.toLocaleString(undefined, { maximumFractionDigits: 8 })} ${ticker}`
-          : "—"}
+          : '—'}
       </p>
       {time ? (
         <p className="mt-0.5 text-[11px]" style={{ color: colors.fgSubtle }}>
@@ -255,11 +252,11 @@ function BalanceHistoryPeriodControls({
               disabled={loading}
               onClick={() => onPeriodChange(item.id)}
               className={cn(
-                "rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide transition",
+                'rounded-md px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide transition',
                 active
-                  ? "bg-accent text-accent-fg shadow-sm"
-                  : "bg-bg-subtle text-fg-muted hover:bg-bg-panel hover:text-fg",
-                loading && !active && "opacity-60",
+                  ? 'bg-accent text-accent-fg shadow-sm'
+                  : 'bg-bg-subtle text-fg-muted hover:bg-bg-panel hover:text-fg',
+                loading && !active && 'opacity-60'
               )}
             >
               {item.label}
@@ -295,23 +292,28 @@ function ActivityBarChart({
   colors: ReturnType<typeof useChartTheme>;
   period: AddressBalanceHistoryPeriodId;
 }) {
-  const categoryFill = (id: string) => colors[CATEGORY_COLORS[id] ?? "accent"];
+  const categoryFill = (id: string) => colors[CATEGORY_COLORS[id] ?? 'accent'];
 
   const formatActivityTick = (value: string | number) => {
     const row = chartData.find((item) => item.bucketKey === String(value));
-    return row?.axisLabel ?? "";
+    return row?.axisLabel ?? '';
   };
 
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart data={chartData} margin={{ top: 12, right: 12, left: 4, bottom: 4 }}>
-        <CartesianGrid stroke={colors.border} strokeOpacity={0.5} strokeDasharray="3 3" vertical={false} />
+        <CartesianGrid
+          stroke={colors.border}
+          strokeOpacity={0.5}
+          strokeDasharray="3 3"
+          vertical={false}
+        />
         <XAxis
           dataKey="bucketKey"
           tick={{ fill: colors.fgSubtle, fontSize: 11 }}
           tickLine={false}
           axisLine={{ stroke: colors.border, strokeOpacity: 0.6 }}
-          minTickGap={period === "7d" ? 16 : 28}
+          minTickGap={period === '7d' ? 16 : 28}
           dy={6}
           tickFormatter={formatActivityTick}
         />
@@ -332,10 +334,10 @@ function ActivityBarChart({
           wrapperStyle={{ fontSize: 11, color: colors.fgMuted }}
           formatter={(value) => <span style={{ color: colors.fgMuted }}>{value}</span>}
         />
-        <Bar dataKey="mined" name="Mined" fill={categoryFill("mined")} maxBarSize={28} />
-        <Bar dataKey="staked" name="Staked" fill={categoryFill("staked")} maxBarSize={28} />
-        <Bar dataKey="received" name="Received" fill={categoryFill("received")} maxBarSize={28} />
-        <Bar dataKey="spent" name="Spent" fill={categoryFill("spent")} maxBarSize={28} />
+        <Bar dataKey="mined" name="Mined" fill={categoryFill('mined')} maxBarSize={28} />
+        <Bar dataKey="staked" name="Staked" fill={categoryFill('staked')} maxBarSize={28} />
+        <Bar dataKey="received" name="Received" fill={categoryFill('received')} maxBarSize={28} />
+        <Bar dataKey="spent" name="Spent" fill={categoryFill('spent')} maxBarSize={28} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -370,15 +372,20 @@ function CumulativeBalanceChart({
             <stop offset="100%" stopColor={colors.accent} stopOpacity={fillBottomOpacity} />
           </linearGradient>
         </defs>
-        <CartesianGrid stroke={colors.border} strokeOpacity={0.5} strokeDasharray="3 3" vertical={false} />
+        <CartesianGrid
+          stroke={colors.border}
+          strokeOpacity={0.5}
+          strokeDasharray="3 3"
+          vertical={false}
+        />
         <XAxis
           dataKey="time"
           type="number"
-          domain={["dataMin", "dataMax"]}
+          domain={['dataMin', 'dataMax']}
           tick={{ fill: colors.fgSubtle, fontSize: 11 }}
           tickLine={false}
           axisLine={{ stroke: colors.border, strokeOpacity: 0.6 }}
-          minTickGap={period === "7d" ? 24 : 32}
+          minTickGap={period === '7d' ? 24 : 32}
           dy={6}
           tickFormatter={(value: number) => formatChartAxisDate(value)}
         />
@@ -392,7 +399,7 @@ function CumulativeBalanceChart({
           }
         />
         <Tooltip
-          cursor={{ stroke: colors.border, strokeWidth: 1, strokeDasharray: "4 4" }}
+          cursor={{ stroke: colors.border, strokeWidth: 1, strokeDasharray: '4 4' }}
           content={<BalanceChartTooltip colors={colors} />}
         />
         <Area
@@ -425,14 +432,16 @@ export function AddressBalanceChart({
 }) {
   const colors = useChartTheme();
   const { resolved } = useTheme();
-  const gradientId = useId().replace(/:/g, "");
-  const fillTopOpacity = resolved === "light" ? 0.28 : 0.38;
-  const fillBottomOpacity = resolved === "light" ? 0.06 : 0.03;
+  const gradientId = useId().replace(/:/g, '');
+  const fillTopOpacity = resolved === 'light' ? 0.28 : 0.38;
+  const fillBottomOpacity = resolved === 'light' ? 0.06 : 0.03;
 
   const allHistoryRef = useRef<AddressBalanceHistoryResult | null>(initialHistory ?? null);
-  const [view, setView] = useState<AddressBalanceChartView>("activity");
-  const [period, setPeriod] = useState<AddressBalanceHistoryPeriodId>("all");
-  const [history, setHistory] = useState<AddressBalanceHistoryResult | null>(initialHistory ?? null);
+  const [view, setView] = useState<AddressBalanceChartView>('activity');
+  const [period, setPeriod] = useState<AddressBalanceHistoryPeriodId>('all');
+  const [history, setHistory] = useState<AddressBalanceHistoryResult | null>(
+    initialHistory ?? null
+  );
   const [loading, setLoading] = useState(!initialHistory);
   const [error, setError] = useState<string | null>(null);
 
@@ -466,14 +475,14 @@ export function AddressBalanceChart({
       setError(null);
 
       try {
-        const nextHistory = await fetchAddressBalanceHistoryClient(chainId, address, "all");
+        const nextHistory = await fetchAddressBalanceHistoryClient(chainId, address, 'all');
         if (!cancelled) {
           allHistoryRef.current = nextHistory;
           setHistory(nextHistory);
         }
       } catch {
         if (!cancelled) {
-          setError("Unable to load chart data.");
+          setError('Unable to load chart data.');
         }
       } finally {
         if (!cancelled) {
@@ -497,12 +506,12 @@ export function AddressBalanceChart({
         setHistory(nextHistory);
         setPeriod(nextPeriod);
       } catch {
-        setError("Unable to load chart data for this period.");
+        setError('Unable to load chart data for this period.');
       } finally {
         setLoading(false);
       }
     },
-    [address, chainId],
+    [address, chainId]
   );
 
   const handlePeriodChange = (next: AddressBalanceHistoryPeriodId) => {
@@ -510,11 +519,11 @@ export function AddressBalanceChart({
       return;
     }
 
-    if (next === "all") {
+    if (next === 'all') {
       if (allHistoryRef.current) {
         setHistory(allHistoryRef.current);
       }
-      setPeriod("all");
+      setPeriod('all');
       setError(null);
       return;
     }
@@ -523,7 +532,7 @@ export function AddressBalanceChart({
   };
 
   const periodMeta = ADDRESS_BALANCE_HISTORY_PERIODS.find((item) => item.id === period);
-  const panelTitle = view === "balance" ? "Cumulative balance" : "Balance activity";
+  const panelTitle = view === 'balance' ? 'Cumulative balance' : 'Balance activity';
 
   if (loading && !history) {
     return <AddressChartSkeleton />;
@@ -532,7 +541,7 @@ export function AddressBalanceChart({
   if (!history) {
     return (
       <BcPanel title={panelTitle}>
-        <p className="text-sm text-fg-muted">{error ?? "Unable to load chart data."}</p>
+        <p className="text-sm text-fg-muted">{error ?? 'Unable to load chart data.'}</p>
       </BcPanel>
     );
   }
@@ -552,8 +561,8 @@ export function AddressBalanceChart({
         }
       >
         <p className="text-sm text-fg-muted">
-          Chart data is unavailable for this address ({history.eventCount?.toLocaleString()} events exceed the
-          activity limit).
+          Chart data is unavailable for this address ({history.eventCount?.toLocaleString()} events
+          exceed the activity limit).
         </p>
       </BcPanel>
     );
@@ -579,10 +588,10 @@ export function AddressBalanceChart({
   }));
 
   const hasActivity = activityData.some(
-    (row) => row.mined > 0 || row.staked > 0 || row.received > 0 || row.spent < 0,
+    (row) => row.mined > 0 || row.staked > 0 || row.received > 0 || row.spent < 0
   );
   const hasBalance = balanceData.length > 0;
-  const hasData = view === "balance" ? hasBalance : hasActivity;
+  const hasData = view === 'balance' ? hasBalance : hasActivity;
   const ready = Boolean(colors.accent);
 
   return (
@@ -602,17 +611,18 @@ export function AddressBalanceChart({
 
       {!hasData ? (
         <p className="text-sm text-fg-muted">
-          No {view === "balance" ? "balance history" : "activity"} in the {periodMeta?.label ?? "selected"} period.
+          No {view === 'balance' ? 'balance history' : 'activity'} in the{' '}
+          {periodMeta?.label ?? 'selected'} period.
         </p>
       ) : (
         <div
           className={cn(
-            "address-balance-chart h-80 w-full sm:h-96",
-            loading && "pointer-events-none opacity-60",
+            'address-balance-chart h-80 w-full sm:h-96',
+            loading && 'pointer-events-none opacity-60'
           )}
         >
           {ready ? (
-            view === "balance" ? (
+            view === 'balance' ? (
               <CumulativeBalanceChart
                 chartData={balanceData}
                 colors={colors}
@@ -625,20 +635,22 @@ export function AddressBalanceChart({
               <ActivityBarChart chartData={activityData} colors={colors} period={period} />
             )
           ) : (
-            <div className="flex h-full items-center justify-center text-sm text-fg-muted">Loading chart…</div>
+            <div className="flex h-full items-center justify-center text-sm text-fg-muted">
+              Loading chart…
+            </div>
           )}
         </div>
       )}
 
       <p className="mt-3 text-xs text-fg-subtle">
-        {loading ? "Updating…" : null}
+        {loading ? 'Updating…' : null}
         {!loading && hasData ? (
           <>
-            {view === "balance"
-              ? `${history.points.length.toLocaleString()} point${history.points.length === 1 ? "" : "s"}`
-              : `${history.buckets.length.toLocaleString()} period${history.buckets.length === 1 ? "" : "s"}`}
-            {periodMeta?.label ? ` · ${periodMeta.label}` : ""}
-            {history.eventCount != null ? ` · ${history.eventCount.toLocaleString()} events` : ""}
+            {view === 'balance'
+              ? `${history.points.length.toLocaleString()} point${history.points.length === 1 ? '' : 's'}`
+              : `${history.buckets.length.toLocaleString()} period${history.buckets.length === 1 ? '' : 's'}`}
+            {periodMeta?.label ? ` · ${periodMeta.label}` : ''}
+            {history.eventCount != null ? ` · ${history.eventCount.toLocaleString()} events` : ''}
           </>
         ) : null}
       </p>

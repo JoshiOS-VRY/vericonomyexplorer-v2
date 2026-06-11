@@ -1,10 +1,10 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getInternalApi } from "@/lib/api/legacy";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { getInternalApi } from '@/lib/api/legacy';
 
 export default async function RpcBrowserPage() {
   let methods: unknown = [];
   try {
-    methods = await getInternalApi("/utils/getrpcinfo/[]");
+    methods = await getInternalApi('/utils/getrpcinfo/[]');
   } catch {
     methods = [];
   }

@@ -1,4 +1,4 @@
-import type { ChainId } from "../types.js";
+import type { ChainId } from '../types.js';
 
 type ChainRefreshHandler = (chainId: ChainId) => Promise<void>;
 type GlobalRefreshHandler = { key: string; refresh: () => Promise<void> };
@@ -20,7 +20,7 @@ export function registerGlobalTipRefresh(key: string, refresh: () => Promise<voi
 function scheduleCoalesced(
   inFlight: Map<string, Promise<void>>,
   key: string,
-  task: () => Promise<void>,
+  task: () => Promise<void>
 ): void {
   if (inFlight.has(key)) {
     return;

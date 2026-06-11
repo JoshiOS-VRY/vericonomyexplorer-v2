@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 export function CsrfInput() {
-  const [token, setToken] = useState("");
+  const [token, setToken] = useState('');
 
   useEffect(() => {
-    fetch("/api/csrf")
+    fetch('/api/csrf')
       .then((res) => res.json())
-      .then((data: { token?: string }) => setToken(data.token ?? ""))
-      .catch(() => setToken(""));
+      .then((data: { token?: string }) => setToken(data.token ?? ''))
+      .catch(() => setToken(''));
   }, []);
 
   if (!token) return null;

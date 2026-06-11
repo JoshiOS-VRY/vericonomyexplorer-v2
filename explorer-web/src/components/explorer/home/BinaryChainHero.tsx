@@ -1,8 +1,8 @@
-import Image from "next/image";
-import { ChainExploreButton } from "@/components/explorer/home/ChainExploreButton";
-import { StatusDot } from "@/components/explorer/ExplorerUi";
-import { CHAIN_EXPLORERS } from "@/lib/chainDisplay";
-import { cn } from "@/lib/utils";
+import Image from 'next/image';
+import { ChainExploreButton } from '@/components/explorer/home/ChainExploreButton';
+import { StatusDot } from '@/components/explorer/ExplorerUi';
+import { CHAIN_EXPLORERS } from '@/lib/chainDisplay';
+import { cn } from '@/lib/utils';
 
 interface BinaryChainHeroProps {
   vrmLive: boolean;

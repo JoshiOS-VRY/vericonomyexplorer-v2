@@ -1,4 +1,5 @@
 # DNS and SSL Setup Guide
+
 ## Domain: verium-explorer.vericonomy.com
 
 ## ✅ Completed Steps
@@ -35,6 +36,7 @@ nslookup verium-explorer.vericonomy.com
 The domain should resolve to your VPS IP address.
 
 **Note:** DNS propagation can take 5 minutes to 48 hours. You can check propagation status at:
+
 - https://www.whatsmydns.net/#A/verium-explorer.vericonomy.com
 
 ### Step 2: Run SSL Setup
@@ -47,6 +49,7 @@ sudo ./setup-ssl.sh
 ```
 
 The script will:
+
 1. Install nginx configuration
 2. Start nginx
 3. Obtain SSL certificate from Let's Encrypt
@@ -74,6 +77,7 @@ docker-compose restart verium-explorer
 ### Step 4: Verify Setup
 
 1. **Check HTTPS access:**
+
    ```
    https://verium-explorer.vericonomy.com
    ```
@@ -84,6 +88,7 @@ docker-compose restart verium-explorer
    - HTTPS redirect working
 
 3. **Check nginx status:**
+
    ```bash
    sudo systemctl status nginx
    ```
@@ -114,6 +119,7 @@ sudo certbot --nginx -d verium-explorer.vericonomy.com
 ```
 
 Follow the prompts:
+
 - Enter email address
 - Agree to terms
 - Choose redirect HTTP to HTTPS
@@ -129,22 +135,26 @@ sudo systemctl status certbot.timer
 ## 🔍 Troubleshooting
 
 ### DNS not resolving
+
 - Wait longer for propagation
 - Check DNS records at your domain registrar
 - Verify A record points to correct IP
 
 ### SSL certificate fails
+
 - Ensure DNS is fully propagated
 - Check that port 80 is open and accessible
 - Verify nginx is running: `sudo systemctl status nginx`
 - Check nginx logs: `sudo tail -f /var/log/nginx/error.log`
 
 ### 502 Bad Gateway
+
 - Verify explorer is running on port 3003: `netstat -tlnp | grep 3003`
 - Check nginx proxy settings
 - Verify firewall allows port 443
 
 ### Certificate renewal fails
+
 - Check certbot logs: `sudo journalctl -u certbot.timer`
 - Manually renew: `sudo certbot renew --dry-run`
 - Verify nginx is running during renewal
@@ -166,8 +176,8 @@ sudo systemctl status certbot.timer
 ## 📞 Support
 
 If you encounter issues:
+
 1. Check nginx error logs: `sudo tail -f /var/log/nginx/error.log`
 2. Check explorer logs
 3. Verify DNS propagation
 4. Test SSL certificate: `openssl s_client -connect verium-explorer.vericonomy.com:443`
-

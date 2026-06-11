@@ -7,19 +7,21 @@ This document outlines what's needed to convert the current Verium (VRM) explore
 ## Key Differences: Vericoin vs Verium
 
 ### Consensus Mechanism
+
 - **Vericoin (VRC)**: Proof-of-Stake-Time (PoST) - Staking/Minting
 - **Verium (VRM)**: Proof-of-Work (PoW) - Mining
 
 ### Network Parameters
+
 Based on the Vericoin codebase and explorer:
 
-| Parameter | Vericoin (VRC) | Verium (VRM) | Notes |
-|-----------|----------------|--------------|-------|
-| **Consensus** | PoST (Staking) | PoW (Mining) | Fundamental difference |
-| **Block Time** | Variable (PoST) | 5 minutes | Vericoin uses time-based staking |
+| Parameter         | Vericoin (VRC)         | Verium (VRM)        | Notes                                  |
+| ----------------- | ---------------------- | ------------------- | -------------------------------------- |
+| **Consensus**     | PoST (Staking)         | PoW (Mining)        | Fundamental difference                 |
+| **Block Time**    | Variable (PoST)        | 5 minutes           | Vericoin uses time-based staking       |
 | **Reward System** | Interest-based staking | Block reward mining | Vericoin rewards based on staking time |
-| **Network Port** | TBD (check source) | 36988 | Different default ports |
-| **RPC Port** | TBD (check source) | 36987 | Different RPC ports |
+| **Network Port**  | TBD (check source)     | 36988               | Different default ports                |
+| **RPC Port**      | TBD (check source)     | 36987               | Different RPC ports                    |
 
 ## Required Changes for Vericoin Support
 
@@ -28,6 +30,7 @@ Based on the Vericoin codebase and explorer:
 Create a new coin configuration file similar to `verium.js`:
 
 **Required Parameters:**
+
 ```javascript
 {
   name: "Vericoin",
@@ -55,6 +58,7 @@ Create a new coin configuration file similar to `verium.js`:
 ```
 
 **Extract from Vericoin Source:**
+
 - Genesis block hash from `src/chainparams.cpp`
 - Genesis transaction ID
 - Network port from `src/chainparams.cpp`
@@ -96,6 +100,7 @@ Based on the explorer showing "Extraction" (staking), you'll need:
    - `getmempoolinfo`
 
 **Action Required:**
+
 - Check Vericoin source code (`src/rpc/`) for exact RPC method names
 - Test each method with a Vericoin node
 - Add error handling for unsupported methods (like we did for Verium)
@@ -105,9 +110,11 @@ Based on the explorer showing "Extraction" (staking), you'll need:
 Based on [explorer-vrc.vericonomy.com](https://explorer-vrc.vericonomy.com/#homePeers):
 
 #### A. Extraction/Staking Section
+
 **Current Status:** Not implemented in btc-rpc-explorer
 
 **Required:**
+
 - New route: `/extraction` or `/staking`
 - New view: `views/extraction.pug`
 - API endpoint: `/api/extraction` or `/api/staking`
@@ -118,19 +125,22 @@ Based on [explorer-vrc.vericonomy.com](https://explorer-vrc.vericonomy.com/#home
   - Staking rewards
 
 **Implementation:**
+
 ```javascript
 // routes/baseRouter.js
-router.get("/extraction", async (req, res) => {
-  const stakingInfo = await rpcApi.getRpcData("getstakinginfo");
-  const mintInfo = await rpcApi.getRpcData("getmintinfo");
+router.get('/extraction', async (req, res) => {
+  const stakingInfo = await rpcApi.getRpcData('getstakinginfo');
+  const mintInfo = await rpcApi.getRpcData('getmintinfo');
   // ... render extraction page
 });
 ```
 
 #### B. Orphaned Blocks
+
 **Current Status:** Partially supported (database has `orphaned_blocks` table)
 
 **Required:**
+
 - Route: `/orphans`
 - View: `views/orphans.pug`
 - Display orphaned blocks with:
@@ -140,13 +150,16 @@ router.get("/extraction", async (req, res) => {
   - Status
 
 **Implementation:**
+
 - Query `orphaned_blocks` table from SQLite
 - Or use RPC method if available (check Vericoin source)
 
 #### C. Peers Display
+
 **Current Status:** Supported via `getpeerinfo`
 
 **Required:**
+
 - Enhanced peer display showing:
   - Sub. Version
   - Protocol version
@@ -154,31 +167,37 @@ router.get("/extraction", async (req, res) => {
   - AddNode functionality
 
 **Implementation:**
+
 - Already available via `getpeerinfo` RPC
 - May need UI enhancements
 
 #### D. Rich List
+
 **Current Status:** Database supports this (`address_balances` table)
 
 **Required:**
+
 - Route: `/richlist`
 - View: `views/richlist.pug`
 - Query SQLite `address_balances` table
 - Display top 100 addresses by balance
 
 **Implementation:**
+
 ```javascript
 // routes/baseRouter.js
-router.get("/richlist", async (req, res) => {
+router.get('/richlist', async (req, res) => {
   const topAddresses = await sqliteAddressApi.getTopAddresses(100);
   // ... render richlist
 });
 ```
 
 #### E. Interest Rate Display
+
 **Current Status:** Not implemented
 
 **Required:**
+
 - Display current interest rate on homepage
 - Interest rate history chart
 - RPC call: `getinterest` or `getinterestrate`
@@ -188,6 +207,7 @@ router.get("/richlist", async (req, res) => {
 **Issue:** Vericoin uses PoST, not PoW, so "network hashrate" doesn't apply
 
 **Solution:**
+
 - Replace "Network Hashrate" with "Network Staking Weight" or "Total Staked"
 - Use `getstakinginfo` to get total staking weight
 - Display as "Total Staked" or "Network Staking Weight"
@@ -195,12 +215,14 @@ router.get("/richlist", async (req, res) => {
 ### 5. Block Display Changes
 
 **PoST-Specific Fields:**
+
 - Remove "Mined by" (miner address)
 - Add "Minted by" (staker address)
 - Display staking reward instead of mining reward
 - Show interest earned in block
 
 **Block Reward:**
+
 - Vericoin blocks have staking rewards, not mining rewards
 - Extract reward calculation from Vericoin source
 - Display as "Staking Reward" or "Mint Reward"
@@ -208,6 +230,7 @@ router.get("/richlist", async (req, res) => {
 ### 6. Address Format Support
 
 **Required:**
+
 - Extract address prefixes from Vericoin source
 - Update `app/utils.js` to handle Vericoin addresses
 - Support Vericoin bech32 format (likely "vrc" HRP)
@@ -215,24 +238,27 @@ router.get("/richlist", async (req, res) => {
 ### 7. Configuration Updates
 
 **`app/coins.js`:**
+
 ```javascript
-const vericoin = require("./coins/vericoin.js");
+const vericoin = require('./coins/vericoin.js');
 
 module.exports = {
-  "BTC": btc,
-  "VRM": verium,
-  "VRC": vericoin, // Add Vericoin
-  "coins": ["BTC", "VRM", "VRC"]
+  BTC: btc,
+  VRM: verium,
+  VRC: vericoin, // Add Vericoin
+  coins: ['BTC', 'VRM', 'VRC'],
 };
 ```
 
 **`app/config.js`:**
+
 - Update default coin option to support VRC
 - Add Vericoin-specific defaults
 
 ### 8. Branding Assets
 
 **Required:**
+
 - Create `public/img/network-vericoin/` directory
 - Add Vericoin logo (`logo.svg`)
 - Add favicon files
@@ -244,11 +270,13 @@ module.exports = {
 **Current Status:** SQLite schema should work as-is
 
 **May Need:**
+
 - `staking_info` table for staking statistics
 - `mints` table for minting history
 - `interest_rates` table for interest rate history
 
 **Or:**
+
 - Use existing `blocks` and `transactions` tables
 - Add staking-specific fields if needed
 
@@ -274,6 +302,7 @@ module.exports = {
    - Use strong RPC credentials
 
 4. **Configuration:**
+
    ```bash
    # In .env or docker-compose.yml
    BTCEXP_BITCOIND_HOST=remote-node-ip
@@ -283,6 +312,7 @@ module.exports = {
    ```
 
 5. **Node Configuration:**
+
    ```ini
    # On remote Vericoin node
    server=1
@@ -305,24 +335,28 @@ module.exports = {
 ## Implementation Priority
 
 ### Phase 1: Basic Vericoin Support
+
 1. ✅ Create `app/coins/vericoin.js` with basic parameters
 2. ✅ Extract genesis block and network parameters from source
 3. ✅ Add Vericoin to coin registry
 4. ✅ Test basic block/transaction viewing
 
 ### Phase 2: PoST Features
+
 1. ✅ Implement staking info display
 2. ✅ Add extraction/staking page
 3. ✅ Replace "hashrate" with "staking weight"
 4. ✅ Update block display for PoST
 
 ### Phase 3: Advanced Features
+
 1. ✅ Rich list implementation
 2. ✅ Orphaned blocks page
 3. ✅ Interest rate display
 4. ✅ Enhanced peer display
 
 ### Phase 4: Polish
+
 1. ✅ Branding assets
 2. ✅ UI/UX improvements
 3. ✅ Performance optimization
@@ -369,4 +403,3 @@ module.exports = {
    - Configure remote Vericoin node
    - Test connection and performance
    - Optimize caching if needed
-

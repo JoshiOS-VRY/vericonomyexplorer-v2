@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-"use strict";
+'use strict';
 
-require("../app/indexerV2/loadEnv.js");
+require('../app/indexerV2/loadEnv.js');
 
 const args = parseArgs(process.argv.slice(2));
 
@@ -11,32 +11,29 @@ if (args.help) {
 }
 
 if (!args.chain) {
-  console.error("Missing required --chain");
+  console.error('Missing required --chain');
   printHelp();
   process.exit(1);
 }
 
-const { syncRange } = require("../app/indexerV2/worker.js");
-const dbModule = require("../app/indexerV2/db.js");
-const writeLock = require("../app/indexerV2/writeLock.js");
-const { yieldToReaders } = require("../app/indexerV2/yield.js");
+const { syncRange } = require('../app/indexerV2/worker.js');
+const dbModule = require('../app/indexerV2/db.js');
+const writeLock = require('../app/indexerV2/writeLock.js');
+const { yieldToReaders } = require('../app/indexerV2/yield.js');
 
-const idleMs = Number(args["idle-ms"] === undefined ? 5000 : args["idle-ms"]);
-const errorMs = Number(
-  args["error-ms"] === undefined ? 10000 : args["error-ms"],
-);
-const logEvery = getLogEvery(args["log-every"]);
+const idleMs = Number(args['idle-ms'] === undefined ? 5000 : args['idle-ms']);
+const errorMs = Number(args['error-ms'] === undefined ? 10000 : args['error-ms']);
+const logEvery = getLogEvery(args['log-every']);
 const chain = args.chain;
 // The SQLite file write-lock serializes writers against one shared file. On
 // Postgres each chain writes its own partitions with MVCC, so the lock is not
 // needed and would needlessly serialize the per-chain indexers.
-const usesWriteLock =
-  String(process.env.VCEXP_DB_BACKEND || "sqlite").toLowerCase() !== "postgres";
+const usesWriteLock = String(process.env.VCEXP_DB_BACKEND || 'sqlite').toLowerCase() !== 'postgres';
 
 let stopping = false;
 
-process.on("SIGINT", handleStop);
-process.on("SIGTERM", handleStop);
+process.on('SIGINT', handleStop);
+process.on('SIGTERM', handleStop);
 
 function handleStop() {
   if (stopping) {
@@ -54,13 +51,13 @@ runLoop().catch((err) => {
 });
 
 async function runLoop() {
-  const indexOnly = args["index-only"] === true;
+  const indexOnly = args['index-only'] === true;
   console.log(
-    `[${chain}] indexer loop started (idle-ms=${idleMs}, error-ms=${errorMs}${indexOnly ? ", index-only=1" : ""})`,
+    `[${chain}] indexer loop started (idle-ms=${idleMs}, error-ms=${errorMs}${indexOnly ? ', index-only=1' : ''})`
   );
   if (indexOnly) {
     console.log(
-      `[${chain}] index-only mode: skipping live insights buckets/fees; run backfills after tip`,
+      `[${chain}] index-only mode: skipping live insights buckets/fees; run backfills after tip`
     );
   }
 
@@ -69,9 +66,7 @@ async function runLoop() {
       ? writeLock.tryAcquireWriteLock(chain)
       : { skipped: false, fd: null };
     if (lock.skipped) {
-      console.log(
-        `[${chain}] waiting for SQLite write lock (held by ${lock.holder || "unknown"})`,
-      );
+      console.log(`[${chain}] waiting for SQLite write lock (held by ${lock.holder || 'unknown'})`);
       await sleep(Math.min(errorMs, 5000));
       continue;
     }
@@ -86,13 +81,11 @@ async function runLoop() {
 
       const waitMs = getIdleWaitMs(result);
       if (waitMs > 0 && result.caughtUp) {
-        console.log(
-          `[${chain}] caught up at height ${result.endHeight}; waiting ${waitMs}ms`,
-        );
+        console.log(`[${chain}] caught up at height ${result.endHeight}; waiting ${waitMs}ms`);
         const checkpoint = dbModule.maybeCheckpointWal();
         if (checkpoint.ran) {
           console.log(
-            `[${chain}] wal checkpoint ${checkpoint.walSizeMbBefore?.toFixed(1)}MB -> ${checkpoint.walSizeMbAfter?.toFixed(1)}MB`,
+            `[${chain}] wal checkpoint ${checkpoint.walSizeMbBefore?.toFixed(1)}MB -> ${checkpoint.walSizeMbAfter?.toFixed(1)}MB`
           );
         }
         await sleep(waitMs);
@@ -124,22 +117,17 @@ function buildSyncOptions() {
     endHeight: args.end === undefined ? undefined : Number(args.end),
     configPath: args.config,
     force: args.force === true,
-    batchSize:
-      args["batch-size"] === undefined ? undefined : Number(args["batch-size"]),
-    pauseMs:
-      args["pause-ms"] === undefined ? undefined : Number(args["pause-ms"]),
-    storeRawJson: parseStoreRawJson(args["store-raw-json"]),
-    autoRollback: parseAutoRollback(args["auto-rollback"]),
-    indexOnly: args["index-only"] === true,
-    rpcBatchSize:
-      args["rpc-batch-size"] === undefined
-        ? undefined
-        : Number(args["rpc-batch-size"]),
+    batchSize: args['batch-size'] === undefined ? undefined : Number(args['batch-size']),
+    pauseMs: args['pause-ms'] === undefined ? undefined : Number(args['pause-ms']),
+    storeRawJson: parseStoreRawJson(args['store-raw-json']),
+    autoRollback: parseAutoRollback(args['auto-rollback']),
+    indexOnly: args['index-only'] === true,
+    rpcBatchSize: args['rpc-batch-size'] === undefined ? undefined : Number(args['rpc-batch-size']),
     onProgress: (info) => {
       if (info.rolledBack) {
         const rollback = info.rollback || {};
         console.log(
-          `[${info.chainId}] rolled back from block ${rollback.fromHeight} to ${rollback.newTipHeight === null ? "empty" : rollback.newTipHeight}`,
+          `[${info.chainId}] rolled back from block ${rollback.fromHeight} to ${rollback.newTipHeight === null ? 'empty' : rollback.newTipHeight}`
         );
         return;
       }
@@ -148,12 +136,12 @@ function buildSyncOptions() {
         return;
       }
 
-      const action = info.skipped ? "skipped" : "indexed";
+      const action = info.skipped ? 'skipped' : 'indexed';
       const memory = info.memory
         ? ` rss=${info.memory.rssMb}MB heap=${info.memory.heapUsedMb}/${info.memory.heapTotalMb}MB`
-        : "";
+        : '';
       console.log(
-        `[${info.chainId}] ${action} block ${info.height}/${info.endHeight} ${info.hash}${memory}`,
+        `[${info.chainId}] ${action} block ${info.height}/${info.endHeight} ${info.hash}${memory}`
       );
     },
   };
@@ -174,14 +162,14 @@ function parseArgs(argv) {
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
 
-    if (arg === "--help" || arg === "-h") {
+    if (arg === '--help' || arg === '-h') {
       result.help = true;
-    } else if (arg === "--force") {
+    } else if (arg === '--force') {
       result.force = true;
-    } else if (arg.startsWith("--")) {
+    } else if (arg.startsWith('--')) {
       const key = arg.substring(2);
       const next = argv[i + 1];
-      if (!next || next.startsWith("--")) {
+      if (!next || next.startsWith('--')) {
         result[key] = true;
       } else {
         result[key] = next;
@@ -198,7 +186,7 @@ function parseStoreRawJson(value) {
     return undefined;
   }
 
-  return !["0", "false", "no", "off"].includes(String(value).toLowerCase());
+  return !['0', 'false', 'no', 'off'].includes(String(value).toLowerCase());
 }
 
 function parseAutoRollback(value) {
@@ -206,7 +194,7 @@ function parseAutoRollback(value) {
     return undefined;
   }
 
-  return !["0", "false", "no", "off"].includes(String(value).toLowerCase());
+  return !['0', 'false', 'no', 'off'].includes(String(value).toLowerCase());
 }
 
 function getLogEvery(value) {

@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useMemo } from "react";
-import { BcPanel } from "@/components/explorer/BlockchairUi";
-import { RichlistBalanceList } from "@/components/explorer/home/RichlistBalanceList";
-import { useHomeNetworkLive } from "@/hooks/useHomeNetworkLive";
+import Link from 'next/link';
+import { useMemo } from 'react';
+import { BcPanel } from '@/components/explorer/BlockchairUi';
+import { RichlistBalanceList } from '@/components/explorer/home/RichlistBalanceList';
+import { useHomeNetworkLive } from '@/hooks/useHomeNetworkLive';
 import type {
   ChainMarket,
   ChainSummary,
   HomeNetworkPayload,
   RichlistResult,
-} from "@/lib/api/types";
-import { CHAIN_EXPLORERS, chainAddressPath } from "@/lib/chainDisplay";
-import { enrichHomeNetworkPayload } from "@/lib/enrichNetwork";
-import { formatExplorerUserMessage } from "@/lib/explorerCopy";
-import { emptyNetworkPayload } from "@/lib/homeDefaults";
-import { resolveRichlistTotalSupply } from "@/lib/richlistSupply";
-import { cn } from "@/lib/utils";
+} from '@/lib/api/types';
+import { CHAIN_EXPLORERS, chainAddressPath } from '@/lib/chainDisplay';
+import { enrichHomeNetworkPayload } from '@/lib/enrichNetwork';
+import { formatExplorerUserMessage } from '@/lib/explorerCopy';
+import { emptyNetworkPayload } from '@/lib/homeDefaults';
+import { resolveRichlistTotalSupply } from '@/lib/richlistSupply';
+import { cn } from '@/lib/utils';
 
 interface VericonomyHomeRichlistsProps {
   vrmRichlist: RichlistResult;
@@ -29,12 +29,12 @@ interface VericonomyHomeRichlistsProps {
 }
 
 function resolveRichlistSupply(
-  chainId: "vrm" | "vrc",
+  chainId: 'vrm' | 'vrc',
   network: HomeNetworkPayload,
-  initialNetwork?: HomeNetworkPayload,
+  initialNetwork?: HomeNetworkPayload
 ): number | null {
-  const chainNetwork = chainId === "vrm" ? network.vrm : network.vrc;
-  const initialChain = chainId === "vrm" ? initialNetwork?.vrm : initialNetwork?.vrc;
+  const chainNetwork = chainId === 'vrm' ? network.vrm : network.vrc;
+  const initialChain = chainId === 'vrm' ? initialNetwork?.vrm : initialNetwork?.vrc;
   const supply = chainNetwork.supply ?? initialChain?.supply ?? null;
   return supply != null && supply > 0 ? supply : null;
 }
@@ -51,16 +51,16 @@ export function VericonomyHomeRichlists({
   const { network } = useHomeNetworkLive(initialNetwork ?? emptyNetworkPayload());
   const enrichedNetwork = useMemo(
     () => enrichHomeNetworkPayload(network, vrmSummary, vrcSummary),
-    [network, vrmSummary, vrcSummary],
+    [network, vrmSummary, vrcSummary]
   );
 
   const vrmSupply = resolveRichlistTotalSupply(
-    resolveRichlistSupply("vrm", enrichedNetwork, initialNetwork),
-    vrmMarket,
+    resolveRichlistSupply('vrm', enrichedNetwork, initialNetwork),
+    vrmMarket
   );
   const vrcSupply = resolveRichlistTotalSupply(
-    resolveRichlistSupply("vrc", enrichedNetwork, initialNetwork),
-    vrcMarket,
+    resolveRichlistSupply('vrc', enrichedNetwork, initialNetwork),
+    vrcMarket
   );
 
   return (
@@ -78,17 +78,17 @@ function ChainRichlistPanel({
   richlist: RichlistResult;
   totalSupply: number | null;
 }) {
-  const config = CHAIN_EXPLORERS[richlist.chainId as "vrm" | "vrc"];
+  const config = CHAIN_EXPLORERS[richlist.chainId as 'vrm' | 'vrc'];
   if (!config) return null;
 
-  const chainId = richlist.chainId as "vrm" | "vrc";
+  const chainId = richlist.chainId as 'vrm' | 'vrc';
   const action =
     config.richlistHref && richlist.enabled !== false ? (
       <Link
         href={config.richlistHref}
         className={cn(
-          "rounded-md px-2.5 py-1 text-sm font-semibold transition-colors hover:underline",
-          chainId === "vrm" ? "text-[var(--chain-vrm)]" : "text-[var(--chain-vrc)]",
+          'rounded-md px-2.5 py-1 text-sm font-semibold transition-colors hover:underline',
+          chainId === 'vrm' ? 'text-[var(--chain-vrm)]' : 'text-[var(--chain-vrc)]'
         )}
         prefetch
       >
@@ -101,8 +101,8 @@ function ChainRichlistPanel({
       title={`Top ${config.ticker} balances`}
       action={action}
       className={cn(
-        "home-richlist-panel",
-        chainId === "vrm" ? "home-richlist-panel--vrm" : "home-richlist-panel--vrc",
+        'home-richlist-panel',
+        chainId === 'vrm' ? 'home-richlist-panel--vrm' : 'home-richlist-panel--vrc'
       )}
       flush
     >
@@ -117,9 +117,7 @@ function ChainRichlistPanel({
           chainId={chainId}
           items={richlist.items}
           totalSupply={totalSupply}
-          addressHref={(address) =>
-            config.exploreHref ? chainAddressPath(chainId, address) : "#"
-          }
+          addressHref={(address) => (config.exploreHref ? chainAddressPath(chainId, address) : '#')}
         />
       )}
     </BcPanel>

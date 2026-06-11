@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { Loader2 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
-import { AddressRichlistCard } from "@/components/explorer/address/AddressRichlistCard";
-import { BcPanel } from "@/components/explorer/BlockchairUi";
-import { useLivePoll } from "@/hooks/useLivePoll";
-import { fetchAddressClient } from "@/lib/addressLive";
-import type { AddressRichlistInfo } from "@/lib/api/types";
-import type { ChainId } from "@/lib/chainDisplay";
-import { ENTITY_LIVE_POLL_MS } from "@/lib/liveDataConfig";
+import { Loader2 } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
+import { AddressRichlistCard } from '@/components/explorer/address/AddressRichlistCard';
+import { BcPanel } from '@/components/explorer/BlockchairUi';
+import { useLivePoll } from '@/hooks/useLivePoll';
+import { fetchAddressClient } from '@/lib/addressLive';
+import type { AddressRichlistInfo } from '@/lib/api/types';
+import type { ChainId } from '@/lib/chainDisplay';
+import { ENTITY_LIVE_POLL_MS } from '@/lib/liveDataConfig';
 
 export function AddressRichlistRankClient({
   chainId,

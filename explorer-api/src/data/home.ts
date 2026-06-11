@@ -1,12 +1,6 @@
-import { fetchHomeMarket, applyOnChainMarketCap } from "../market/index.js";
-import {
-  fetchVrcNetworkStats,
-  fetchVrmNetworkStats,
-} from "../network/index.js";
-import {
-  fetchVrcNetworkStatsLite,
-  fetchVrmNetworkStatsLite,
-} from "../network/lite.js";
+import { fetchHomeMarket, applyOnChainMarketCap } from '../market/index.js';
+import { fetchVrcNetworkStats, fetchVrmNetworkStats } from '../network/index.js';
+import { fetchVrcNetworkStatsLite, fetchVrmNetworkStatsLite } from '../network/lite.js';
 import type {
   HomeMarketPayload,
   HomeNetworkPayload,
@@ -14,9 +8,9 @@ import type {
   HomeShellPayload,
   VrcNetworkStats,
   VrmNetworkStats,
-} from "../types/home.js";
-import { fetchLandingData } from "./legacy.js";
-import { withTimeout } from "../util/timeout.js";
+} from '../types/home.js';
+import { fetchLandingData } from './legacy.js';
+import { withTimeout } from '../util/timeout.js';
 
 const homeNetworkTimeoutMs = Number(process.env.VCEXP_HOME_NETWORK_TIMEOUT_MS ?? 6_000);
 
@@ -86,7 +80,7 @@ export async function fetchHomeNetwork(): Promise<HomeNetworkPayload> {
       };
     })(),
     homeNetworkTimeoutMs,
-    "fetchHomeNetwork",
+    'fetchHomeNetwork'
   );
 }
 
@@ -97,8 +91,8 @@ export async function fetchHomeData(): Promise<HomePayload> {
     fetchHomeMarketOnly(),
   ]);
 
-  const vrmMarket = applyOnChainMarketCap(market.vrm, "vrm", network.vrm.supply);
-  const vrcMarket = applyOnChainMarketCap(market.vrc, "vrc", network.vrc.supply);
+  const vrmMarket = applyOnChainMarketCap(market.vrm, 'vrm', network.vrm.supply);
+  const vrcMarket = applyOnChainMarketCap(market.vrc, 'vrc', network.vrc.supply);
 
   return {
     vrm: {
@@ -127,8 +121,8 @@ export async function fetchHomeMarketOnly(): Promise<HomeMarketPayload> {
   const market = await fetchHomeMarket(vrmNetwork.supply, vrcNetwork.supply);
 
   return {
-    vrm: applyOnChainMarketCap(market.vrm, "vrm", vrmNetwork.supply),
-    vrc: applyOnChainMarketCap(market.vrc, "vrc", vrcNetwork.supply),
+    vrm: applyOnChainMarketCap(market.vrm, 'vrm', vrmNetwork.supply),
+    vrc: applyOnChainMarketCap(market.vrc, 'vrc', vrcNetwork.supply),
     fetchedAt: market.fetchedAt,
   };
 }

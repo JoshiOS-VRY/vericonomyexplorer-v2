@@ -1,132 +1,153 @@
-"use strict";
+'use strict';
 
-const { parentPort } = require("node:worker_threads");
-const path = require("node:path");
+const { parentPort } = require('node:worker_threads');
+const path = require('node:path');
 
-require(path.join(__dirname, "..", "..", "..", "app", "indexerV2", "loadEnv.js"));
+require(path.join(__dirname, '..', '..', '..', 'app', 'indexerV2', 'loadEnv.js'));
 
-const Database = require("better-sqlite3");
-const dbModule = require(path.join(__dirname, "..", "..", "..", "app", "indexerV2", "db.js"));
-const query = require(path.join(__dirname, "..", "..", "..", "app", "indexerV2", "query.js"));
-const health = require(path.join(__dirname, "..", "..", "..", "app", "indexerV2", "health.js"));
+const Database = require('better-sqlite3');
+const dbModule = require(path.join(__dirname, '..', '..', '..', 'app', 'indexerV2', 'db.js'));
+const query = require(path.join(__dirname, '..', '..', '..', 'app', 'indexerV2', 'query.js'));
+const health = require(path.join(__dirname, '..', '..', '..', 'app', 'indexerV2', 'health.js'));
 
 let db = null;
 
 function getWorkerDb() {
-	if (db) {
-		return db;
-	}
+  if (db) {
+    return db;
+  }
 
-	if (dbModule.getBackend && dbModule.getBackend() === "postgres") {
-		db = require(path.join(__dirname, "..", "..", "..", "app", "indexerV2", "pgClient.js")).openPostgres();
-		return db;
-	}
+  if (dbModule.getBackend && dbModule.getBackend() === 'postgres') {
+    db = require(
+      path.join(__dirname, '..', '..', '..', 'app', 'indexerV2', 'pgClient.js')
+    ).openPostgres();
+    return db;
+  }
 
-	const dbPath =
-		process.env.VCEXP_INDEXER_SQLITE_PATH ??
-		process.env.BTCEXP_INDEXER_SQLITE_PATH ??
-		path.join(process.cwd(), "database", "vericonomy-index.sqlite");
+  const dbPath =
+    process.env.VCEXP_INDEXER_SQLITE_PATH ??
+    process.env.BTCEXP_INDEXER_SQLITE_PATH ??
+    path.join(process.cwd(), 'database', 'vericonomy-index.sqlite');
 
-	db = new Database(dbPath, { readonly: true });
-	db.defaultSafeIntegers(true);
-	db.pragma("foreign_keys = ON");
-	dbModule.applyReadPragmas(db);
-	if (dbModule.augmentSqlite) {
-		dbModule.augmentSqlite(db);
-	}
+  db = new Database(dbPath, { readonly: true });
+  db.defaultSafeIntegers(true);
+  db.pragma('foreign_keys = ON');
+  dbModule.applyReadPragmas(db);
+  if (dbModule.augmentSqlite) {
+    dbModule.augmentSqlite(db);
+  }
 
-	return db;
+  return db;
 }
 
 async function getLandingBundle(options = {}) {
-	const workerDb = getWorkerDb();
-	const shared = Object.assign({}, options, { db: workerDb, skipLiveBlocks: true, skipBlockEnrichment: true });
-	const vrmHealth = await health.getChainHealth("vrm", shared);
-	const vrcHealth = await health.getChainHealth("vrc", shared);
-	const vrmOpts = Object.assign({}, shared, { chainHealth: vrmHealth });
-	const vrcOpts = Object.assign({}, shared, { chainHealth: vrcHealth });
+  const workerDb = getWorkerDb();
+  const shared = Object.assign({}, options, {
+    db: workerDb,
+    skipLiveBlocks: true,
+    skipBlockEnrichment: true,
+  });
+  const vrmHealth = await health.getChainHealth('vrm', shared);
+  const vrcHealth = await health.getChainHealth('vrc', shared);
+  const vrmOpts = Object.assign({}, shared, { chainHealth: vrmHealth });
+  const vrcOpts = Object.assign({}, shared, { chainHealth: vrcHealth });
 
-	return {
-		vrmSummary: await query.getChainSummary("vrm", vrmOpts),
-		vrcSummary: await query.getChainSummary("vrc", vrcOpts),
-		vrmRichlist: await query.getRichlist("vrm", Object.assign({}, vrmOpts, { limit: 5 })),
-		vrcRichlist: await query.getRichlist("vrc", Object.assign({}, vrcOpts, { limit: 5 })),
-		vrmLeaderboard: await query.getLeaderboard("vrm", Object.assign({}, vrmOpts, {
-			period: "month",
-			sort: "activity",
-			limit: 5
-		}))
-	};
+  return {
+    vrmSummary: await query.getChainSummary('vrm', vrmOpts),
+    vrcSummary: await query.getChainSummary('vrc', vrcOpts),
+    vrmRichlist: await query.getRichlist('vrm', Object.assign({}, vrmOpts, { limit: 5 })),
+    vrcRichlist: await query.getRichlist('vrc', Object.assign({}, vrcOpts, { limit: 5 })),
+    vrmLeaderboard: await query.getLeaderboard(
+      'vrm',
+      Object.assign({}, vrmOpts, {
+        period: 'month',
+        sort: 'activity',
+        limit: 5,
+      })
+    ),
+  };
 }
 
 async function getVrmDashboardBundle(options = {}) {
-	const workerDb = getWorkerDb();
-	const shared = Object.assign({}, options, { db: workerDb, skipLiveBlocks: true, skipBlockEnrichment: true });
-	const vrmHealth = await health.getChainHealth("vrm", shared);
-	const vrmOpts = Object.assign({}, shared, { chainHealth: vrmHealth });
+  const workerDb = getWorkerDb();
+  const shared = Object.assign({}, options, {
+    db: workerDb,
+    skipLiveBlocks: true,
+    skipBlockEnrichment: true,
+  });
+  const vrmHealth = await health.getChainHealth('vrm', shared);
+  const vrmOpts = Object.assign({}, shared, { chainHealth: vrmHealth });
 
-	return {
-		summary: await query.getChainSummary("vrm", vrmOpts),
-		richlist: await query.getRichlist("vrm", Object.assign({}, vrmOpts, { limit: 5 })),
-		leaderboard: await query.getLeaderboard("vrm", Object.assign({}, vrmOpts, {
-			period: "month",
-			sort: "activity",
-			limit: 5
-		})),
-		miners: await query.getMinedLeaderboard("vrm", Object.assign({}, vrmOpts, {
-			period: "month",
-			limit: 5
-		}))
-	};
+  return {
+    summary: await query.getChainSummary('vrm', vrmOpts),
+    richlist: await query.getRichlist('vrm', Object.assign({}, vrmOpts, { limit: 5 })),
+    leaderboard: await query.getLeaderboard(
+      'vrm',
+      Object.assign({}, vrmOpts, {
+        period: 'month',
+        sort: 'activity',
+        limit: 5,
+      })
+    ),
+    miners: await query.getMinedLeaderboard(
+      'vrm',
+      Object.assign({}, vrmOpts, {
+        period: 'month',
+        limit: 5,
+      })
+    ),
+  };
 }
 
 const handlers = {
-	getChainSummaryIndexed: query.getChainSummary,
-	getChainSummaryLiteIndexed: query.getChainSummaryLite,
-	getLatestBlocksIndexed: query.getLatestBlocks,
-	getBlocksPageIndexed: query.getBlocksPage,
-	getBlockIndexed: query.getBlock,
-	getIndexerHealthIndexed: health.getIndexerHealth,
-	getLandingBundle,
-	getVrmDashboardBundle,
-	getRichlist: query.getRichlist,
-	getLeaderboard: query.getLeaderboard,
-	getMinedLeaderboard: query.getMinedLeaderboard,
-	getAddress: query.getAddress,
-	getAddressBalanceHistory: query.getAddressBalanceHistory,
-	getChainActivityHistory: query.getChainActivityHistory,
-	getNetworkMetricHistory: query.getNetworkMetricHistory,
-	getAddressUtxos: query.getAddressUtxos,
-	getTransaction: query.getTransaction,
-	getTransactionRelatedAddresses: query.getTransactionRelatedAddresses,
-	getChainHealth: health.getChainHealth,
-	enrichBlockInterestRatesIndexed: query.enrichBlockInterestRates,
-	getIndexedSupplyAtHeight: query.getIndexedSupplyAtHeight,
-	getIndexedHashrate7dAvg: query.getIndexedHashrate7dAvg,
+  getChainSummaryIndexed: query.getChainSummary,
+  getChainSummaryLiteIndexed: query.getChainSummaryLite,
+  getLatestBlocksIndexed: query.getLatestBlocks,
+  getBlocksPageIndexed: query.getBlocksPage,
+  getBlockIndexed: query.getBlock,
+  getIndexerHealthIndexed: health.getIndexerHealth,
+  getLandingBundle,
+  getVrmDashboardBundle,
+  getRichlist: query.getRichlist,
+  getLeaderboard: query.getLeaderboard,
+  getMinedLeaderboard: query.getMinedLeaderboard,
+  getAddress: query.getAddress,
+  getAddressBalanceHistory: query.getAddressBalanceHistory,
+  getChainActivityHistory: query.getChainActivityHistory,
+  getNetworkMetricHistory: query.getNetworkMetricHistory,
+  getAddressUtxos: query.getAddressUtxos,
+  getTransaction: query.getTransaction,
+  getTransactionRelatedAddresses: query.getTransactionRelatedAddresses,
+  getChainHealth: health.getChainHealth,
+  enrichBlockInterestRatesIndexed: query.enrichBlockInterestRates,
+  getIndexedSupplyAtHeight: query.getIndexedSupplyAtHeight,
+  getIndexedHashrate7dAvg: query.getIndexedHashrate7dAvg,
 };
 
-parentPort.on("message", (message) => {
-	const { id, method, args, options } = message;
+parentPort.on('message', (message) => {
+  const { id, method, args, options } = message;
 
-	try {
-		const handler = handlers[method];
-		if (typeof handler !== "function") {
-			throw new Error(`Unknown query worker method: ${method}`);
-		}
+  try {
+    const handler = handlers[method];
+    if (typeof handler !== 'function') {
+      throw new Error(`Unknown query worker method: ${method}`);
+    }
 
-		const workerDb = getWorkerDb();
-		Promise.resolve(handler(...args, { ...(options || {}), db: workerDb }))
-			.then((result) => parentPort.postMessage({ id, result }))
-			.catch((error) => parentPort.postMessage({
-				id,
-				error: error instanceof Error ? error.message : String(error),
-			}));
-	} catch (error) {
-		parentPort.postMessage({
-			id,
-			error: error instanceof Error ? error.message : String(error),
-		});
-	}
+    const workerDb = getWorkerDb();
+    Promise.resolve(handler(...args, { ...(options || {}), db: workerDb }))
+      .then((result) => parentPort.postMessage({ id, result }))
+      .catch((error) =>
+        parentPort.postMessage({
+          id,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      );
+  } catch (error) {
+    parentPort.postMessage({
+      id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 });
 
 parentPort.postMessage({ ready: true });

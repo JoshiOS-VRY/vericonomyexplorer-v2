@@ -1,4 +1,4 @@
-import { BcPanel } from "@/components/explorer/BlockchairUi";
+import { BcPanel } from '@/components/explorer/BlockchairUi';
 
 export function AddressChartSkeleton() {
   return (

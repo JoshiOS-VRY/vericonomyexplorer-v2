@@ -1,12 +1,15 @@
-"use client";
+'use client';
 
-import { ExplorerSearchCombobox, type RecentBlocksByChain } from "@/components/explorer/ExplorerSearchCombobox";
+import {
+  ExplorerSearchCombobox,
+  type RecentBlocksByChain,
+} from '@/components/explorer/ExplorerSearchCombobox';
 
 export function SearchForm({
-  variant = "default",
+  variant = 'default',
   recentBlocks,
 }: {
-  variant?: "default" | "blockchair";
+  variant?: 'default' | 'blockchair';
   recentBlocks?: RecentBlocksByChain;
 }) {
   return <ExplorerSearchCombobox variant={variant} recentBlocks={recentBlocks} />;

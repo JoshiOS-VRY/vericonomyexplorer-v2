@@ -1,16 +1,16 @@
-import Link from "next/link";
-import { cookies } from "next/headers";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { apiFetch } from "@/lib/api/config";
+import Link from 'next/link';
+import { cookies } from 'next/headers';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { apiFetch } from '@/lib/api/config';
 
 export default async function UserSettingsPage() {
   const cookieStore = await cookies();
-  const raw = cookieStore.get("explorer_prefs")?.value;
+  const raw = cookieStore.get('explorer_prefs')?.value;
   const prefs = raw ? JSON.parse(raw) : {};
 
   let expressSession: unknown = null;
   try {
-    expressSession = await apiFetch("/session-data");
+    expressSession = await apiFetch('/session-data');
   } catch {
     expressSession = null;
   }

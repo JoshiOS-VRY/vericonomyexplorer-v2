@@ -1,30 +1,27 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
-import { BcPanel, BcTableLink } from "@/components/explorer/BlockchairUi";
-import { TxTypeBadge, formatHeight } from "@/components/explorer/ExplorerUi";
-import type { ChainSummary, IndexedTransaction } from "@/lib/api/types";
-import { CHAIN_EXPLORERS } from "@/lib/chainDisplay";
-import { cn, ellipsizeMiddle } from "@/lib/utils";
+import Link from 'next/link';
+import { LiveRelativeTime } from '@/components/explorer/LiveRelativeTime';
+import { BcPanel, BcTableLink } from '@/components/explorer/BlockchairUi';
+import { TxTypeBadge, formatHeight } from '@/components/explorer/ExplorerUi';
+import type { ChainSummary, IndexedTransaction } from '@/lib/api/types';
+import { CHAIN_EXPLORERS } from '@/lib/chainDisplay';
+import { cn, ellipsizeMiddle } from '@/lib/utils';
 
 interface BinaryChainActivityProps {
   vrmSummary: ChainSummary;
   vrcSummary: ChainSummary;
 }
 
-export function BinaryChainActivity({
-  vrmSummary,
-  vrcSummary,
-}: BinaryChainActivityProps) {
+export function BinaryChainActivity({ vrmSummary, vrcSummary }: BinaryChainActivityProps) {
   const combined = [
     ...vrmSummary.recentTransactions.map((tx) => ({
       tx,
-      chainId: "vrm" as const,
+      chainId: 'vrm' as const,
     })),
     ...vrcSummary.recentTransactions.map((tx) => ({
       tx,
-      chainId: "vrc" as const,
+      chainId: 'vrc' as const,
     })),
   ]
     .sort((a, b) => (b.tx.time ?? 0) - (a.tx.time ?? 0))
@@ -33,9 +30,7 @@ export function BinaryChainActivity({
   return (
     <BcPanel title="Recent activity" flush>
       {combined.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-fg-muted">
-          No recent transactions.
-        </p>
+        <p className="px-4 py-6 text-sm text-fg-muted">No recent transactions.</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="bc-table">
@@ -50,11 +45,7 @@ export function BinaryChainActivity({
             </thead>
             <tbody>
               {combined.map(({ tx, chainId }) => (
-                <ActivityRow
-                  key={`${chainId}-${tx.txid}`}
-                  tx={tx}
-                  chainId={chainId}
-                />
+                <ActivityRow key={`${chainId}-${tx.txid}`} tx={tx} chainId={chainId} />
               ))}
             </tbody>
           </table>
@@ -64,15 +55,9 @@ export function BinaryChainActivity({
   );
 }
 
-function ActivityRow({
-  tx,
-  chainId,
-}: {
-  tx: IndexedTransaction;
-  chainId: "vrm" | "vrc";
-}) {
+function ActivityRow({ tx, chainId }: { tx: IndexedTransaction; chainId: 'vrm' | 'vrc' }) {
   const config = CHAIN_EXPLORERS[chainId];
-  const txHref = chainId === "vrm" ? `/vrm/tx/${tx.txid}` : null;
+  const txHref = chainId === 'vrm' ? `/vrm/tx/${tx.txid}` : null;
   const blockHref = config.blockHref?.(tx.blockHeight);
 
   return (
@@ -97,15 +82,13 @@ function ActivityRow({
             {formatHeight(tx.blockHeight)}
           </BcTableLink>
         ) : (
-          <span className="tabular-nums text-sm text-fg">
-            {formatHeight(tx.blockHeight)}
-          </span>
+          <span className="tabular-nums text-sm text-fg">{formatHeight(tx.blockHeight)}</span>
         )}
       </td>
       <td>
         <TxTypeBadge isCoinbase={tx.isCoinbase} isCoinstake={tx.isCoinstake} />
       </td>
-      <td className={cn("bc-col-age text-fg-muted")}>
+      <td className={cn('bc-col-age text-fg-muted')}>
         <LiveRelativeTime time={tx.time} interval="minute" fixedWidth />
       </td>
     </tr>

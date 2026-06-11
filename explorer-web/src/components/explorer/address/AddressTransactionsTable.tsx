@@ -1,19 +1,15 @@
-import Link from "next/link";
-import { BcPanel } from "@/components/explorer/BlockchairUi";
+import Link from 'next/link';
+import { BcPanel } from '@/components/explorer/BlockchairUi';
 import {
   MonoLink,
   PaginationLinks,
   TimeCell,
   TxTypeBadge,
   formatHeight,
-} from "@/components/explorer/ExplorerUi";
-import type { AddressResult } from "@/lib/api/types";
-import {
-  chainBlockPath,
-  chainTxPath,
-  type ChainId,
-} from "@/lib/chainDisplay";
-import { ADDRESS_UTXOS_ENABLED } from "@/lib/featureFlags";
+} from '@/components/explorer/ExplorerUi';
+import type { AddressResult } from '@/lib/api/types';
+import { chainBlockPath, chainTxPath, type ChainId } from '@/lib/chainDisplay';
+import { ADDRESS_UTXOS_ENABLED } from '@/lib/featureFlags';
 
 export function AddressTransactionsTable({
   chainId,
@@ -75,7 +71,7 @@ export function AddressTransactionsTable({
                     </td>
                     <td
                       className={`text-right font-medium tabular-nums ${
-                        tx.netDeltaAtomic.startsWith("-") ? "text-danger" : "text-success"
+                        tx.netDeltaAtomic.startsWith('-') ? 'text-danger' : 'text-success'
                       }`}
                     >
                       {tx.netDelta.amount} {tx.netDelta.ticker}

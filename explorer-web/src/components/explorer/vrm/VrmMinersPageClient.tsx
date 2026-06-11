@@ -1,23 +1,16 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { VrmAddressLink } from "@/components/explorer/address/VrmAddressLink";
-import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
-import {
-  DataTable,
-  PaginationLinks,
-  formatHeight,
-} from "@/components/explorer/ExplorerUi";
-import { MinersPeriodPicker } from "@/components/explorer/vrm/MinersPeriodPicker";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { fetchMinersLeaderboardClient } from "@/lib/api/client";
-import type { MinersLeaderboardResult } from "@/lib/api/types";
-import {
-  normalizeMinersPeriod,
-  type MinersPeriodId,
-} from "@/lib/minersPeriods";
-import { cn } from "@/lib/utils";
+import Link from 'next/link';
+import { VrmAddressLink } from '@/components/explorer/address/VrmAddressLink';
+import { useRouter } from 'next/navigation';
+import { useCallback, useState } from 'react';
+import { DataTable, PaginationLinks, formatHeight } from '@/components/explorer/ExplorerUi';
+import { MinersPeriodPicker } from '@/components/explorer/vrm/MinersPeriodPicker';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { fetchMinersLeaderboardClient } from '@/lib/api/client';
+import type { MinersLeaderboardResult } from '@/lib/api/types';
+import { normalizeMinersPeriod, type MinersPeriodId } from '@/lib/minersPeriods';
+import { cn } from '@/lib/utils';
 
 export function VrmMinersPageClient({
   initialMiners,
@@ -32,9 +25,7 @@ export function VrmMinersPageClient({
 }) {
   const router = useRouter();
   const [miners, setMiners] = useState(initialMiners);
-  const [period, setPeriod] = useState<MinersPeriodId>(
-    normalizeMinersPeriod(initialPeriod),
-  );
+  const [period, setPeriod] = useState<MinersPeriodId>(normalizeMinersPeriod(initialPeriod));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,24 +41,24 @@ export function VrmMinersPageClient({
 
       const params = new URLSearchParams({ period: nextPeriod });
       if (limit !== 50) {
-        params.set("limit", String(limit));
+        params.set('limit', String(limit));
       }
       router.replace(`/vrm/miners?${params.toString()}`, { scroll: false });
 
       try {
-        const result = await fetchMinersLeaderboardClient("vrm", {
+        const result = await fetchMinersLeaderboardClient('vrm', {
           period: nextPeriod,
           limit,
           offset: 0,
         });
         setMiners(result);
       } catch {
-        setError("Unable to load miners for this period.");
+        setError('Unable to load miners for this period.');
       } finally {
         setLoading(false);
       }
     },
-    [limit, loading, period, router],
+    [limit, loading, period, router]
   );
 
   return (
@@ -90,14 +81,14 @@ export function VrmMinersPageClient({
             </div>
           ) : miners.items.length === 0 ? (
             <p className="py-8 text-sm text-fg-muted">
-              {period === "all"
-                ? "No mining rewards recorded yet."
-                : "No mining rewards recorded for this period. Recent blocks appear here as the indexer catches up to the chain tip."}
+              {period === 'all'
+                ? 'No mining rewards recorded yet.'
+                : 'No mining rewards recorded for this period. Recent blocks appear here as the indexer catches up to the chain tip.'}
             </p>
           ) : (
-            <div className={cn(loading && "pointer-events-none opacity-60")}>
+            <div className={cn(loading && 'pointer-events-none opacity-60')}>
               <DataTable
-                headers={["Rank", "Address", "Mined", "Blocks", "Last block"]}
+                headers={['Rank', 'Address', 'Mined', 'Blocks', 'Last block']}
                 rows={miners.items.map((item) => [
                   `#${item.rank}`,
                   <VrmAddressLink
@@ -113,7 +104,7 @@ export function VrmMinersPageClient({
                       {formatHeight(item.lastMinedHeight)}
                     </Link>
                   ) : (
-                    "N/A"
+                    'N/A'
                   ),
                 ])}
               />

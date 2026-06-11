@@ -1,17 +1,11 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { CopyButton } from "@/components/explorer/BlockDetail";
-import { CHAIN_EXPLORERS, chainAddressPath, type ChainId } from "@/lib/chainDisplay";
+import { useState } from 'react';
+import { CopyButton } from '@/components/explorer/BlockDetail';
+import { CHAIN_EXPLORERS, chainAddressPath, type ChainId } from '@/lib/chainDisplay';
 
-export function AddressShareActions({
-  chainId,
-  address,
-}: {
-  chainId: ChainId;
-  address: string;
-}) {
-  const [shareLabel, setShareLabel] = useState("Share");
+export function AddressShareActions({ chainId, address }: { chainId: ChainId; address: string }) {
+  const [shareLabel, setShareLabel] = useState('Share');
   const chain = CHAIN_EXPLORERS[chainId];
 
   async function handleShare() {
@@ -27,11 +21,11 @@ export function AddressShareActions({
       }
 
       await navigator.clipboard.writeText(shareUrl);
-      setShareLabel("Copied");
-      window.setTimeout(() => setShareLabel("Share"), 1500);
+      setShareLabel('Copied');
+      window.setTimeout(() => setShareLabel('Share'), 1500);
     } catch {
-      setShareLabel("Share failed");
-      window.setTimeout(() => setShareLabel("Share"), 1500);
+      setShareLabel('Share failed');
+      window.setTimeout(() => setShareLabel('Share'), 1500);
     }
   }
 

@@ -1,11 +1,11 @@
-import Link from "next/link";
-import { chainAddressPath } from "@/lib/chainDisplay";
+import Link from 'next/link';
+import { chainAddressPath } from '@/lib/chainDisplay';
 import {
   VERIUM_POOL_DISPLAY_NAME,
   isVeriumPoolPayoutAddress,
   veriumPoolPillClassName,
-} from "@/lib/veriumPoolExtracted";
-import { cn, ellipsizeMiddle } from "@/lib/utils";
+} from '@/lib/veriumPoolExtracted';
+import { cn, ellipsizeMiddle } from '@/lib/utils';
 
 export function VrmAddressLabel({
   address,
@@ -15,9 +15,7 @@ export function VrmAddressLabel({
   maxLength?: number;
 }) {
   if (isVeriumPoolPayoutAddress(address)) {
-    return (
-      <span className={veriumPoolPillClassName()}>{VERIUM_POOL_DISPLAY_NAME}</span>
-    );
+    return <span className={veriumPoolPillClassName()}>{VERIUM_POOL_DISPLAY_NAME}</span>;
   }
 
   return <>{ellipsizeMiddle(address, maxLength)}</>;
@@ -46,14 +44,14 @@ export function VrmAddressLink({
 
   return (
     <Link
-      href={chainAddressPath("vrm", address)}
+      href={chainAddressPath('vrm', address)}
       title={address}
       prefetch={prefetch}
       className={cn(
         isPool
           ? veriumPoolPillClassName()
-          : "text-sm font-medium text-accent hover:underline hash-mono",
-        className,
+          : 'text-sm font-medium text-accent hover:underline hash-mono',
+        className
       )}
     >
       {display}

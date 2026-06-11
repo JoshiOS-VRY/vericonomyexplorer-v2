@@ -237,13 +237,13 @@ start_db_writers
 
 **What backfills do and do not cover**
 
-| Insights chart | VRC backfill command |
-| --- | --- |
-| Address growth | `backfill-vrc-address-growth` |
-| Difficulty, supply | `backfill-vrc-network-metrics` |
-| Chain activity | `backfill-vrc-stats` |
+| Insights chart                           | VRC backfill command                                                           |
+| ---------------------------------------- | ------------------------------------------------------------------------------ |
+| Address growth                           | `backfill-vrc-address-growth`                                                  |
+| Difficulty, supply                       | `backfill-vrc-network-metrics`                                                 |
+| Chain activity                           | `backfill-vrc-stats`                                                           |
 | Interest, staking %, expected stake time | Live snapshots only (since `explorer-api` records RPC mining info on new tips) |
-| Market price (USD/BTC) | External APIs (`/v1/:chain/insights/market-history`), not the indexer DB |
+| Market price (USD/BTC)                   | External APIs (`/v1/:chain/insights/market-history`), not the indexer DB       |
 
 Equivalent raw compose invocations:
 

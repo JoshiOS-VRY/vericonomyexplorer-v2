@@ -1,37 +1,37 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { EntityHero } from "@/components/explorer/BlockDetail";
-import { TxAddressStory } from "@/components/explorer/tx/TxAddressStory";
-import { TxAdvancedPanel } from "@/components/explorer/tx/TxAdvancedPanel";
-import { TxBlockNav } from "@/components/explorer/tx/TxBlockNav";
-import { TxFlowDiagram } from "@/components/explorer/tx/TxFlowDiagram";
-import { TxMetricStrip } from "@/components/explorer/tx/TxMetricStrip";
-import { TxRelatedActivityClient } from "@/components/explorer/tx/TxRelatedActivityClient";
-import { TxShareActions } from "@/components/explorer/tx/TxShareActions";
-import { TxStatusBar } from "@/components/explorer/tx/TxStatusBar";
-import { useLivePoll } from "@/hooks/useLivePoll";
-import { useStableChainLive } from "@/hooks/useStableChainLive";
-import { fetchTransactionClient } from "@/lib/api/client";
-import type { ChainSummary, TransactionResult } from "@/lib/api/types";
-import { CHAIN_EXPLORERS, type ChainId } from "@/lib/chainDisplay";
-import { snapshotFromSummary } from "@/lib/chainLive/store";
-import { ENTITY_LIVE_POLL_MS, NEAR_TIP_BLOCK_THRESHOLD } from "@/lib/liveDataConfig";
-import { ellipsizeMiddle } from "@/lib/utils";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { EntityHero } from '@/components/explorer/BlockDetail';
+import { TxAddressStory } from '@/components/explorer/tx/TxAddressStory';
+import { TxAdvancedPanel } from '@/components/explorer/tx/TxAdvancedPanel';
+import { TxBlockNav } from '@/components/explorer/tx/TxBlockNav';
+import { TxFlowDiagram } from '@/components/explorer/tx/TxFlowDiagram';
+import { TxMetricStrip } from '@/components/explorer/tx/TxMetricStrip';
+import { TxRelatedActivityClient } from '@/components/explorer/tx/TxRelatedActivityClient';
+import { TxShareActions } from '@/components/explorer/tx/TxShareActions';
+import { TxStatusBar } from '@/components/explorer/tx/TxStatusBar';
+import { useLivePoll } from '@/hooks/useLivePoll';
+import { useStableChainLive } from '@/hooks/useStableChainLive';
+import { fetchTransactionClient } from '@/lib/api/client';
+import type { ChainSummary, TransactionResult } from '@/lib/api/types';
+import { CHAIN_EXPLORERS, type ChainId } from '@/lib/chainDisplay';
+import { snapshotFromSummary } from '@/lib/chainLive/store';
+import { ENTITY_LIVE_POLL_MS, NEAR_TIP_BLOCK_THRESHOLD } from '@/lib/liveDataConfig';
+import { ellipsizeMiddle } from '@/lib/utils';
 
 function txLiveSignature(result: TransactionResult): string {
   const tx = result.transaction;
   if (!tx) {
-    return "missing";
+    return 'missing';
   }
 
   return [
     tx.blockHeight,
     tx.txid,
-    result.confirmations ?? "",
+    result.confirmations ?? '',
     result.inputs.length,
     result.outputs.length,
-  ].join(":");
+  ].join(':');
 }
 
 export function TransactionDetailLive({
@@ -48,13 +48,11 @@ export function TransactionDetailLive({
   const [result, setResult] = useState(initialResult);
   const signatureRef = useRef(txLiveSignature(initialResult));
   const inFlightRef = useRef(false);
-  const resolvedSummary =
-    initialSummary ?? snapshotFromSummary(chainId, null).summary;
+  const resolvedSummary = initialSummary ?? snapshotFromSummary(chainId, null).summary;
   const live = useStableChainLive(chainId, resolvedSummary);
   const tx = result.transaction!;
   const chainHeight = live.chainHeight;
-  const nearTip =
-    chainHeight != null && tx.blockHeight >= chainHeight - NEAR_TIP_BLOCK_THRESHOLD;
+  const nearTip = chainHeight != null && tx.blockHeight >= chainHeight - NEAR_TIP_BLOCK_THRESHOLD;
   const chain = CHAIN_EXPLORERS[chainId];
 
   useEffect(() => {

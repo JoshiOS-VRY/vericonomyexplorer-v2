@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-"use strict";
+'use strict';
 
 // Watermark-driven, incremental analytics refresher (Postgres steady state).
 //
@@ -24,11 +24,11 @@
 //
 // Usage: node app/indexerV2/refreshAnalytics.js vrm|vrc
 
-require("./loadEnv.js");
+require('./loadEnv.js');
 
-const dbModule = require("./db.js");
-const { toSafeInteger } = require("./periodStats.js");
-const { computeBlockTotalsRawAsync } = require("./blockTotals.js");
+const dbModule = require('./db.js');
+const { toSafeInteger } = require('./periodStats.js');
+const { computeBlockTotalsRawAsync } = require('./blockTotals.js');
 
 const HEIGHT_CHUNK = Number(process.env.VCEXP_REFRESH_HEIGHT_CHUNK ?? 100000);
 const BLOCK_TOTALS_BATCH = Number(process.env.VCEXP_REFRESH_TOTALS_BATCH ?? 2000);
@@ -36,101 +36,110 @@ const BLOCK_TOTALS_BATCH = Number(process.env.VCEXP_REFRESH_TOTALS_BATCH ?? 2000
 // Unix timestamp (seconds) of the UTC week (Monday)/month start of a block
 // time. AT TIME ZONE 'UTC' makes the truncation independent of session TZ and
 // matches periodStats.getPeriodBoundsForTime.
-const WEEK_START = "extract(epoch FROM date_trunc('week', to_timestamp(time) AT TIME ZONE 'UTC'))::bigint";
-const WEEK_END = "extract(epoch FROM date_trunc('week', to_timestamp(time) AT TIME ZONE 'UTC') + interval '7 days')::bigint";
-const MONTH_START = "extract(epoch FROM date_trunc('month', to_timestamp(time) AT TIME ZONE 'UTC'))::bigint";
-const MONTH_END = "extract(epoch FROM date_trunc('month', to_timestamp(time) AT TIME ZONE 'UTC') + interval '1 month')::bigint";
+const WEEK_START =
+  "extract(epoch FROM date_trunc('week', to_timestamp(time) AT TIME ZONE 'UTC'))::bigint";
+const WEEK_END =
+  "extract(epoch FROM date_trunc('week', to_timestamp(time) AT TIME ZONE 'UTC') + interval '7 days')::bigint";
+const MONTH_START =
+  "extract(epoch FROM date_trunc('month', to_timestamp(time) AT TIME ZONE 'UTC'))::bigint";
+const MONTH_END =
+  "extract(epoch FROM date_trunc('month', to_timestamp(time) AT TIME ZONE 'UTC') + interval '1 month')::bigint";
 
 function num(value) {
-	return toSafeInteger(value);
+  return toSafeInteger(value);
 }
 
 function log(message) {
-	process.stderr.write(`[refresh-analytics] ${message}\n`);
+  process.stderr.write(`[refresh-analytics] ${message}\n`);
 }
 
 async function getMaxHeight(db, chain) {
-	const row = await db.get(
-		"SELECT MAX(height) AS h FROM blocks WHERE chain_id = ? AND status = 'main'",
-		[chain]
-	);
-	return row && row.h != null ? num(row.h) : -1;
+  const row = await db.get(
+    "SELECT MAX(height) AS h FROM blocks WHERE chain_id = ? AND status = 'main'",
+    [chain]
+  );
+  return row && row.h != null ? num(row.h) : -1;
 }
 
 async function getWatermark(db, chain, rollup) {
-	const row = await db.get(
-		"SELECT last_height FROM rollup_state WHERE chain_id = ? AND rollup = ?",
-		[chain, rollup]
-	);
-	return row && row.last_height != null ? num(row.last_height) : -1;
+  const row = await db.get(
+    'SELECT last_height FROM rollup_state WHERE chain_id = ? AND rollup = ?',
+    [chain, rollup]
+  );
+  return row && row.last_height != null ? num(row.last_height) : -1;
 }
 
 async function setWatermark(db, chain, rollup, lastHeight) {
-	await db.run(
-		`INSERT INTO rollup_state (chain_id, rollup, last_height, updated_at)
+  await db.run(
+    `INSERT INTO rollup_state (chain_id, rollup, last_height, updated_at)
 		 VALUES (?, ?, ?, ?)
 		 ON CONFLICT (chain_id, rollup) DO UPDATE SET
 			last_height = excluded.last_height,
 			updated_at = excluded.updated_at`,
-		[chain, rollup, lastHeight, Date.now()]
-	);
+    [chain, rollup, lastHeight, Date.now()]
+  );
 }
 
 // blocks.fee_sats / total_output_sats for blocks the indexer added in
 // --index-only mode (NULL totals). The one-time bulk seed is the set-based
 // backfill-block-totals.sql; here we only compute the NULL tail.
 async function refreshBlockTotals(db, chain, maxHeight) {
-	let wm = await getWatermark(db, chain, "block_totals");
-	let processed = 0;
+  let wm = await getWatermark(db, chain, 'block_totals');
+  let processed = 0;
 
-	while (wm < maxHeight) {
-		const rows = await db.all(
-			`SELECT height, tx_count FROM blocks
+  while (wm < maxHeight) {
+    const rows = await db.all(
+      `SELECT height, tx_count FROM blocks
 			 WHERE chain_id = ? AND status = 'main' AND height > ? AND height <= ?
 				AND total_output_sats IS NULL
 			 ORDER BY height ASC LIMIT ?`,
-			[chain, wm, maxHeight, BLOCK_TOTALS_BATCH]
-		);
+      [chain, wm, maxHeight, BLOCK_TOTALS_BATCH]
+    );
 
-		if (rows.length === 0) {
-			break;
-		}
+    if (rows.length === 0) {
+      break;
+    }
 
-		await db.runTransaction(async (txdb) => {
-			const update = txdb.prepare(
-				"UPDATE blocks SET fee_sats = ?, total_output_sats = ? WHERE chain_id = ? AND height = ?"
-			);
-			for (const block of rows) {
-				const totals = await computeBlockTotalsRawAsync(txdb, chain, num(block.height), num(block.tx_count));
-				await update.run(
-					totals.feeSats === null ? null : totals.feeSats,
-					totals.totalOutputSats,
-					chain,
-					num(block.height)
-				);
-			}
-		});
+    await db.runTransaction(async (txdb) => {
+      const update = txdb.prepare(
+        'UPDATE blocks SET fee_sats = ?, total_output_sats = ? WHERE chain_id = ? AND height = ?'
+      );
+      for (const block of rows) {
+        const totals = await computeBlockTotalsRawAsync(
+          txdb,
+          chain,
+          num(block.height),
+          num(block.tx_count)
+        );
+        await update.run(
+          totals.feeSats === null ? null : totals.feeSats,
+          totals.totalOutputSats,
+          chain,
+          num(block.height)
+        );
+      }
+    });
 
-		wm = num(rows[rows.length - 1].height);
-		processed += rows.length;
-		await setWatermark(db, chain, "block_totals", wm);
-	}
+    wm = num(rows[rows.length - 1].height);
+    processed += rows.length;
+    await setWatermark(db, chain, 'block_totals', wm);
+  }
 
-	await setWatermark(db, chain, "block_totals", maxHeight);
-	return processed;
+  await setWatermark(db, chain, 'block_totals', maxHeight);
+  return processed;
 }
 
 // chain_activity_buckets: per-hour mined/staked/received tx counts + block_count.
 async function refreshChainActivity(db, chain, maxHeight) {
-	let wm = await getWatermark(db, chain, "chain_activity");
-	let chunks = 0;
+  let wm = await getWatermark(db, chain, 'chain_activity');
+  let chunks = 0;
 
-	while (wm < maxHeight) {
-		const hi = Math.min(wm + HEIGHT_CHUNK, maxHeight);
-		const now = Date.now();
+  while (wm < maxHeight) {
+    const hi = Math.min(wm + HEIGHT_CHUNK, maxHeight);
+    const now = Date.now();
 
-		await db.run(
-			`INSERT INTO chain_activity_buckets
+    await db.run(
+      `INSERT INTO chain_activity_buckets
 				(chain_id, bucket_start, mined_count, staked_count, received_count, block_count, updated_at)
 			 SELECT chain_id,
 					(time / 3600) * 3600,
@@ -147,11 +156,11 @@ async function refreshChainActivity(db, chain, maxHeight) {
 				staked_count = chain_activity_buckets.staked_count + excluded.staked_count,
 				received_count = chain_activity_buckets.received_count + excluded.received_count,
 				updated_at = excluded.updated_at`,
-			[now, chain, wm, hi]
-		);
+      [now, chain, wm, hi]
+    );
 
-		await db.run(
-			`INSERT INTO chain_activity_buckets
+    await db.run(
+      `INSERT INTO chain_activity_buckets
 				(chain_id, bucket_start, mined_count, staked_count, received_count, block_count, updated_at)
 			 SELECT chain_id, (time / 3600) * 3600, 0, 0, 0, COUNT(*), ?
 			 FROM blocks
@@ -160,35 +169,35 @@ async function refreshChainActivity(db, chain, maxHeight) {
 			 ON CONFLICT (chain_id, bucket_start) DO UPDATE SET
 				block_count = chain_activity_buckets.block_count + excluded.block_count,
 				updated_at = excluded.updated_at`,
-			[now, chain, wm, hi]
-		);
+      [now, chain, wm, hi]
+    );
 
-		wm = hi;
-		chunks += 1;
-		await setWatermark(db, chain, "chain_activity", wm);
-		log(`${chain} chain_activity: heights<=${wm}/${maxHeight}`);
-	}
+    wm = hi;
+    chunks += 1;
+    await setWatermark(db, chain, 'chain_activity', wm);
+    log(`${chain} chain_activity: heights<=${wm}/${maxHeight}`);
+  }
 
-	return chunks;
+  return chunks;
 }
 
 // address_period_stats (week+month) + address_balance_buckets (hourly) from
 // new events. A txid lives in exactly one block height, so COUNT(DISTINCT txid)
 // per chunk sums exactly across chunks.
 async function refreshAddressStats(db, chain, maxHeight) {
-	let wm = await getWatermark(db, chain, "address_stats");
-	let chunks = 0;
+  let wm = await getWatermark(db, chain, 'address_stats');
+  let chunks = 0;
 
-	while (wm < maxHeight) {
-		const hi = Math.min(wm + HEIGHT_CHUNK, maxHeight);
-		const now = Date.now();
+  while (wm < maxHeight) {
+    const hi = Math.min(wm + HEIGHT_CHUNK, maxHeight);
+    const now = Date.now();
 
-		for (const period of [
-			{ name: "week", start: WEEK_START, end: WEEK_END },
-			{ name: "month", start: MONTH_START, end: MONTH_END }
-		]) {
-			await db.run(
-				`INSERT INTO address_period_stats
+    for (const period of [
+      { name: 'week', start: WEEK_START, end: WEEK_END },
+      { name: 'month', start: MONTH_START, end: MONTH_END },
+    ]) {
+      await db.run(
+        `INSERT INTO address_period_stats
 					(chain_id, period, period_start, period_end, address,
 					 received_sats, sent_sats, net_sats, tx_count,
 					 last_seen_height, last_seen_time, updated_at)
@@ -215,12 +224,12 @@ async function refreshAddressStats(db, chain, maxHeight) {
 					last_seen_height = GREATEST(address_period_stats.last_seen_height, excluded.last_seen_height),
 					last_seen_time = GREATEST(address_period_stats.last_seen_time, excluded.last_seen_time),
 					updated_at = excluded.updated_at`,
-				[now, chain, wm, hi]
-			);
-		}
+        [now, chain, wm, hi]
+      );
+    }
 
-		await db.run(
-			`INSERT INTO address_balance_buckets
+    await db.run(
+      `INSERT INTO address_balance_buckets
 				(chain_id, address, bucket_start, mined_sats, staked_sats, received_sats, spent_sats, delta_sats, updated_at)
 			 SELECT e.chain_id,
 					e.address,
@@ -252,27 +261,27 @@ async function refreshAddressStats(db, chain, maxHeight) {
 				spent_sats = address_balance_buckets.spent_sats + excluded.spent_sats,
 				delta_sats = address_balance_buckets.delta_sats + excluded.delta_sats,
 				updated_at = excluded.updated_at`,
-			[now, chain, wm, hi]
-		);
+      [now, chain, wm, hi]
+    );
 
-		wm = hi;
-		chunks += 1;
-		await setWatermark(db, chain, "address_stats", wm);
-		log(`${chain} address_stats: heights<=${wm}/${maxHeight}`);
-	}
+    wm = hi;
+    chunks += 1;
+    await setWatermark(db, chain, 'address_stats', wm);
+    log(`${chain} address_stats: heights<=${wm}/${maxHeight}`);
+  }
 
-	return chunks;
+  return chunks;
 }
 
 // miner_stats: daily per-miner blocks_mined / mined_sats from coinbase outputs.
 async function refreshMinerStats(db, chain, maxHeight) {
-	let wm = await getWatermark(db, chain, "miner_stats");
-	let chunks = 0;
+  let wm = await getWatermark(db, chain, 'miner_stats');
+  let chunks = 0;
 
-	while (wm < maxHeight) {
-		const hi = Math.min(wm + HEIGHT_CHUNK, maxHeight);
-		await db.run(
-			`INSERT INTO miner_stats (chain_id, address, day_start, blocks_mined, mined_sats, last_height, updated_at)
+  while (wm < maxHeight) {
+    const hi = Math.min(wm + HEIGHT_CHUNK, maxHeight);
+    await db.run(
+      `INSERT INTO miner_stats (chain_id, address, day_start, blocks_mined, mined_sats, last_height, updated_at)
 			 SELECT t.chain_id,
 					v.address,
 					(b.time / 86400) * 86400,
@@ -295,16 +304,16 @@ async function refreshMinerStats(db, chain, maxHeight) {
 				mined_sats = miner_stats.mined_sats + excluded.mined_sats,
 				last_height = GREATEST(miner_stats.last_height, excluded.last_height),
 				updated_at = excluded.updated_at`,
-			[Date.now(), chain, wm, hi]
-		);
+      [Date.now(), chain, wm, hi]
+    );
 
-		wm = hi;
-		chunks += 1;
-		await setWatermark(db, chain, "miner_stats", wm);
-		log(`${chain} miner_stats: heights<=${wm}/${maxHeight}`);
-	}
+    wm = hi;
+    chunks += 1;
+    await setWatermark(db, chain, 'miner_stats', wm);
+    log(`${chain} miner_stats: heights<=${wm}/${maxHeight}`);
+  }
 
-	return chunks;
+  return chunks;
 }
 
 // block_mint: per-height coin issuance + running total. mint_sats = coinbase
@@ -313,24 +322,23 @@ async function refreshMinerStats(db, chain, maxHeight) {
 // circulating supply at any height is an indexed `height <= H ORDER BY height
 // DESC LIMIT 1`. Computed set-based with grouped CTEs (no correlated subqueries).
 async function refreshBlockMint(db, chain, maxHeight) {
-	let wm = await getWatermark(db, chain, "block_mint");
-	let chunks = 0;
+  let wm = await getWatermark(db, chain, 'block_mint');
+  let chunks = 0;
 
-	while (wm < maxHeight) {
-		const hi = Math.min(wm + HEIGHT_CHUNK, maxHeight);
+  while (wm < maxHeight) {
+    const hi = Math.min(wm + HEIGHT_CHUNK, maxHeight);
 
-		const baseRow = await db.get(
-			`SELECT cumulative_sats FROM block_mint
+    const baseRow = await db.get(
+      `SELECT cumulative_sats FROM block_mint
 			 WHERE chain_id = ? AND height <= ?
 			 ORDER BY height DESC LIMIT 1`,
-			[chain, wm]
-		);
-		const base = baseRow && baseRow.cumulative_sats != null
-			? BigInt(baseRow.cumulative_sats).toString()
-			: "0";
+      [chain, wm]
+    );
+    const base =
+      baseRow && baseRow.cumulative_sats != null ? BigInt(baseRow.cumulative_sats).toString() : '0';
 
-		await db.run(
-			`INSERT INTO block_mint (chain_id, height, mint_sats, cumulative_sats)
+    await db.run(
+      `INSERT INTO block_mint (chain_id, height, mint_sats, cumulative_sats)
 			 WITH txs AS (
 				SELECT txid, block_height AS height, is_coinbase, is_coinstake
 				FROM transactions
@@ -372,31 +380,31 @@ async function refreshBlockMint(db, chain, maxHeight) {
 			 ON CONFLICT (chain_id, height) DO UPDATE SET
 				mint_sats = excluded.mint_sats,
 				cumulative_sats = excluded.cumulative_sats`,
-			[chain, wm, hi, chain, chain, chain, base]
-		);
+      [chain, wm, hi, chain, chain, chain, base]
+    );
 
-		wm = hi;
-		chunks += 1;
-		await setWatermark(db, chain, "block_mint", wm);
-		log(`${chain} block_mint: heights<=${wm}/${maxHeight}`);
-	}
+    wm = hi;
+    chunks += 1;
+    await setWatermark(db, chain, 'block_mint', wm);
+    log(`${chain} block_mint: heights<=${wm}/${maxHeight}`);
+  }
 
-	return chunks;
+  return chunks;
 }
 
 // network_metric_buckets.supply from block_mint: each hour bucket's supply is
 // the running total at the last main-chain block in that hour. Set-based; runs
 // after refreshBlockMint so the lookup always finds a covering row.
 async function refreshSupplyBuckets(db, chain, maxHeight) {
-	let wm = await getWatermark(db, chain, "supply_buckets");
-	let chunks = 0;
+  let wm = await getWatermark(db, chain, 'supply_buckets');
+  let chunks = 0;
 
-	while (wm < maxHeight) {
-		const hi = Math.min(wm + HEIGHT_CHUNK, maxHeight);
-		const now = Date.now();
+  while (wm < maxHeight) {
+    const hi = Math.min(wm + HEIGHT_CHUNK, maxHeight);
+    const now = Date.now();
 
-		await db.run(
-			`INSERT INTO network_metric_buckets (chain_id, bucket_start, supply, updated_at)
+    await db.run(
+      `INSERT INTO network_metric_buckets (chain_id, bucket_start, supply, updated_at)
 			 SELECT lb.chain_id, lb.bucket_start, (s.cumulative_sats::numeric / 100000000.0), ?
 			 FROM (
 				SELECT DISTINCT ON ((time / 3600) * 3600)
@@ -414,71 +422,71 @@ async function refreshSupplyBuckets(db, chain, maxHeight) {
 			 ON CONFLICT (chain_id, bucket_start) DO UPDATE SET
 				supply = excluded.supply,
 				updated_at = excluded.updated_at`,
-			[now, chain, wm, hi]
-		);
+      [now, chain, wm, hi]
+    );
 
-		wm = hi;
-		chunks += 1;
-		await setWatermark(db, chain, "supply_buckets", wm);
-		log(`${chain} supply_buckets: heights<=${wm}/${maxHeight}`);
-	}
+    wm = hi;
+    chunks += 1;
+    await setWatermark(db, chain, 'supply_buckets', wm);
+    log(`${chain} supply_buckets: heights<=${wm}/${maxHeight}`);
+  }
 
-	return chunks;
+  return chunks;
 }
 
 async function main() {
-	const chain = String(process.argv[2] || "").toLowerCase();
-	if (!["vrm", "vrc"].includes(chain)) {
-		console.error("Usage: node app/indexerV2/refreshAnalytics.js vrm|vrc");
-		process.exit(1);
-	}
+  const chain = String(process.argv[2] || '').toLowerCase();
+  if (!['vrm', 'vrc'].includes(chain)) {
+    console.error('Usage: node app/indexerV2/refreshAnalytics.js vrm|vrc');
+    process.exit(1);
+  }
 
-	if (dbModule.getBackend() !== "postgres") {
-		console.error("[refresh-analytics] requires VCEXP_DB_BACKEND=postgres");
-		process.exit(1);
-	}
+  if (dbModule.getBackend() !== 'postgres') {
+    console.error('[refresh-analytics] requires VCEXP_DB_BACKEND=postgres');
+    process.exit(1);
+  }
 
-	const db = dbModule.openDatabase(undefined, { skipSeed: true });
-	const maxHeight = await getMaxHeight(db, chain);
-	if (maxHeight < 0) {
-		log(`${chain}: no indexed blocks, nothing to do`);
-		return;
-	}
+  const db = dbModule.openDatabase(undefined, { skipSeed: true });
+  const maxHeight = await getMaxHeight(db, chain);
+  if (maxHeight < 0) {
+    log(`${chain}: no indexed blocks, nothing to do`);
+    return;
+  }
 
-	const startedAt = Date.now();
-	log(`${chain}: refreshing analytics up to height ${maxHeight}`);
+  const startedAt = Date.now();
+  log(`${chain}: refreshing analytics up to height ${maxHeight}`);
 
-	const totals = await refreshBlockTotals(db, chain, maxHeight);
-	const activity = await refreshChainActivity(db, chain, maxHeight);
-	const addressStats = await refreshAddressStats(db, chain, maxHeight);
-	const miners = await refreshMinerStats(db, chain, maxHeight);
-	const mint = await refreshBlockMint(db, chain, maxHeight);
-	const supply = await refreshSupplyBuckets(db, chain, maxHeight);
+  const totals = await refreshBlockTotals(db, chain, maxHeight);
+  const activity = await refreshChainActivity(db, chain, maxHeight);
+  const addressStats = await refreshAddressStats(db, chain, maxHeight);
+  const miners = await refreshMinerStats(db, chain, maxHeight);
+  const mint = await refreshBlockMint(db, chain, maxHeight);
+  const supply = await refreshSupplyBuckets(db, chain, maxHeight);
 
-	log(
-		`${chain}: done in ${((Date.now() - startedAt) / 1000).toFixed(1)}s `
-		+ `(block_totals=${totals}, chain_activity_chunks=${activity}, `
-		+ `address_chunks=${addressStats}, miner_chunks=${miners}, `
-		+ `block_mint_chunks=${mint}, supply_chunks=${supply})`
-	);
+  log(
+    `${chain}: done in ${((Date.now() - startedAt) / 1000).toFixed(1)}s ` +
+      `(block_totals=${totals}, chain_activity_chunks=${activity}, ` +
+      `address_chunks=${addressStats}, miner_chunks=${miners}, ` +
+      `block_mint_chunks=${mint}, supply_chunks=${supply})`
+  );
 }
 
 if (require.main === module) {
-	main()
-		.then(() => {
-			dbModule.closeDatabase();
-		})
-		.catch((err) => {
-			console.error(err);
-			process.exit(1);
-		});
+  main()
+    .then(() => {
+      dbModule.closeDatabase();
+    })
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
+    });
 }
 
 module.exports = {
-	refreshBlockTotals,
-	refreshChainActivity,
-	refreshAddressStats,
-	refreshMinerStats,
-	refreshBlockMint,
-	refreshSupplyBuckets
+  refreshBlockTotals,
+  refreshChainActivity,
+  refreshAddressStats,
+  refreshMinerStats,
+  refreshBlockMint,
+  refreshSupplyBuckets,
 };

@@ -1,5 +1,5 @@
-import { ChainLeaderboardPreview } from "@/components/explorer/chain/ChainLeaderboardPreview";
-import type { LeaderboardResult } from "@/lib/api/types";
+import { ChainLeaderboardPreview } from '@/components/explorer/chain/ChainLeaderboardPreview';
+import type { LeaderboardResult } from '@/lib/api/types';
 
 /** @deprecated Use ChainLeaderboardPreview */
 export function VrmLeaderboardPreview({ leaderboard }: { leaderboard: LeaderboardResult }) {

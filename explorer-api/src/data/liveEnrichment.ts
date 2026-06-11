@@ -1,8 +1,8 @@
-import { createRequire } from "node:module";
-import { runIndexerQuery } from "../db/queryPool.js";
-import { repoRoot, getSummaryLiveBlockLimit } from "../env.js";
-import { getTip } from "../live/brokers.js";
-import type { ChainId } from "../types.js";
+import { createRequire } from 'node:module';
+import { runIndexerQuery } from '../db/queryPool.js';
+import { repoRoot, getSummaryLiveBlockLimit } from '../env.js';
+import { getTip } from '../live/brokers.js';
+import type { ChainId } from '../types.js';
 
 const require = createRequire(import.meta.url);
 
@@ -12,8 +12,8 @@ const health = require(`${repoRoot}/app/indexerV2/health.js`);
 const liveChain = require(`${repoRoot}/app/indexerV2/liveChain.js`);
 
 const offlineStatus = {
-  label: "Offline",
-  message: "Unable to reach the chain node.",
+  label: 'Offline',
+  message: 'Unable to reach the chain node.',
   syncing: false,
 };
 
@@ -60,7 +60,7 @@ function topBlockNeedsRpcEnrichment(blocks: BlockRecord[]): boolean {
   return (
     top.size == null ||
     difficulty == null ||
-    difficulty === "" ||
+    difficulty === '' ||
     top.time == null ||
     !Number.isFinite(Number(top.time))
   );
@@ -71,7 +71,7 @@ function shouldFetchLiveBlocks(
   _indexedHeight: number | null,
   latestBlockHeight: number | null,
   options: Record<string, unknown>,
-  indexedBlocks: BlockRecord[] = [],
+  indexedBlocks: BlockRecord[] = []
 ): boolean {
   if (options.skipLiveBlocks === true) {
     return false;
@@ -85,10 +85,7 @@ function shouldFetchLiveBlocks(
     return true;
   }
 
-  return (
-    tip.height === latestBlockHeight &&
-    topBlockNeedsRpcEnrichment(indexedBlocks)
-  );
+  return tip.height === latestBlockHeight && topBlockNeedsRpcEnrichment(indexedBlocks);
 }
 
 function computeLiveBlockCount(
@@ -96,7 +93,7 @@ function computeLiveBlockCount(
   indexedHeight: number | null,
   latestBlockHeight: number | null,
   maxCount: number,
-  indexedBlocks: BlockRecord[] = [],
+  indexedBlocks: BlockRecord[] = []
 ): number {
   if (
     latestBlockHeight != null &&
@@ -120,7 +117,7 @@ function computeLiveBlockCount(
 function mergeLatestBlocksWithRpc(
   indexedBlocks: BlockRecord[],
   rpcBlocks: BlockRecord[],
-  maxCount = 10,
+  maxCount = 10
 ): BlockRecord[] {
   const byHeight = new Map<number, BlockRecord>();
 
@@ -144,11 +141,10 @@ function mergeLatestBlocksWithRpc(
             size: block.size ?? indexed.size ?? null,
             difficulty: block.difficulty ?? indexed.difficulty ?? null,
             extractedBy: block.extractedBy ?? indexed.extractedBy ?? null,
-            extractedByAddress:
-              block.extractedByAddress ?? indexed.extractedByAddress ?? null,
+            extractedByAddress: block.extractedByAddress ?? indexed.extractedByAddress ?? null,
             outputCount: block.outputCount ?? indexed.outputCount ?? null,
           }
-        : block,
+        : block
     );
   }
 
@@ -159,7 +155,7 @@ function mergeLatestBlocksWithRpc(
 
 async function resolveTip(
   chainId: ChainId,
-  options: Record<string, unknown>,
+  options: Record<string, unknown>
 ): Promise<{ height: number; hash: string } | null> {
   const skipLiveRpc = options.skipLiveRpc === true || options.skipLiveBlocks === true;
   const brokerTip = getTip(chainId);
@@ -177,9 +173,9 @@ async function resolveTip(
 async function enrichVrcBlockInterestRates(
   blocks: BlockRecord[],
   chainId: ChainId,
-  options: Record<string, unknown>,
+  options: Record<string, unknown>
 ): Promise<BlockRecord[]> {
-  if (chainId !== "vrc" || blocks.length === 0) {
+  if (chainId !== 'vrc' || blocks.length === 0) {
     return blocks;
   }
 
@@ -189,9 +185,9 @@ async function enrichVrcBlockInterestRates(
 
   try {
     return (await runIndexerQuery<BlockRecord[]>(
-      "enrichBlockInterestRatesIndexed",
+      'enrichBlockInterestRatesIndexed',
       [chainId, blocks],
-      options,
+      options
     )) as BlockRecord[];
   } catch {
     return blocks;
@@ -201,12 +197,12 @@ async function enrichVrcBlockInterestRates(
 export async function enrichLatestBlocksLive(
   latestBlocks: unknown,
   chainId: ChainId,
-  summaryHealth: SummaryPayload["health"],
-  options: Record<string, unknown> = {},
+  summaryHealth: SummaryPayload['health'],
+  options: Record<string, unknown> = {}
 ): Promise<BlockRecord[]> {
   const indexedBlocks = Array.isArray(latestBlocks)
     ? (latestBlocks.filter(
-        (block): block is BlockRecord => block != null && typeof block === "object",
+        (block): block is BlockRecord => block != null && typeof block === 'object'
       ) as BlockRecord[])
     : [];
 
@@ -219,15 +215,7 @@ export async function enrichLatestBlocksLive(
     const indexedHeight = summaryHealth?.heights?.maxIndexedHeight ?? null;
     const latestBlockHeight = getLatestBlockHeight(indexedBlocks);
 
-    if (
-      !shouldFetchLiveBlocks(
-        tip,
-        indexedHeight,
-        latestBlockHeight,
-        options,
-        indexedBlocks,
-      )
-    ) {
+    if (!shouldFetchLiveBlocks(tip, indexedHeight, latestBlockHeight, options, indexedBlocks)) {
       return enrichVrcBlockInterestRates(indexedBlocks, chainId, options);
     }
 
@@ -237,7 +225,7 @@ export async function enrichLatestBlocksLive(
       indexedHeight,
       latestBlockHeight,
       maxCount,
-      indexedBlocks,
+      indexedBlocks
     );
     let fromHeight: number | undefined;
     if (indexedHeight != null && tip.height > indexedHeight) {
@@ -258,7 +246,7 @@ export async function enrichLatestBlocksLive(
         fromHeight,
         blockVerbosity: 1,
       })) as BlockRecord[],
-      options,
+      options
     )) as BlockRecord[];
 
     const merged = mergeLatestBlocksWithRpc(indexedBlocks, rpcBlocks, maxCount);
@@ -271,7 +259,7 @@ export async function enrichLatestBlocksLive(
 export async function enrichChainSummary(
   summary: SummaryPayload,
   chainId: ChainId,
-  options: Record<string, unknown> = {},
+  options: Record<string, unknown> = {}
 ): Promise<SummaryPayload> {
   try {
     const tip = await resolveTip(chainId, options);
@@ -288,7 +276,7 @@ export async function enrichChainSummary(
       summary.latestBlocks,
       chainId,
       summary.health,
-      options,
+      options
     );
   } catch {
     /* block enrichment failure should not mark the chain offline */
@@ -299,7 +287,7 @@ export async function enrichChainSummary(
 
 export async function enrichIndexerHealth(
   baseHealth: IndexerHealthPayload,
-  options: Record<string, unknown> = {},
+  options: Record<string, unknown> = {}
 ): Promise<IndexerHealthPayload> {
   const chains = await Promise.all(
     (baseHealth.chains ?? []).map(async (chainHealth) => {
@@ -313,7 +301,7 @@ export async function enrichIndexerHealth(
           explorerStatus: offlineStatus,
         };
       }
-    }),
+    })
   );
 
   return { ...baseHealth, chains };
@@ -323,7 +311,7 @@ export async function fetchBlockWithRpcFallback(
   chainId: ChainId,
   hashOrHeight: string,
   indexed: Record<string, unknown>,
-  options: Record<string, unknown> = {},
+  options: Record<string, unknown> = {}
 ): Promise<Record<string, unknown>> {
   if (indexed.found) {
     return indexed;
@@ -349,7 +337,7 @@ export async function fetchTransactionWithRpcFallback(
   chainId: ChainId,
   txid: string,
   indexed: Record<string, unknown>,
-  options: Record<string, unknown> = {},
+  options: Record<string, unknown> = {}
 ): Promise<Record<string, unknown>> {
   if (indexed.found) {
     return indexed;
@@ -371,7 +359,7 @@ export async function fetchAddressWithRpcFallback(
   chainId: ChainId,
   address: string,
   indexed: Record<string, unknown>,
-  options: Record<string, unknown> = {},
+  options: Record<string, unknown> = {}
 ): Promise<Record<string, unknown>> {
   if (indexed.found) {
     return indexed;

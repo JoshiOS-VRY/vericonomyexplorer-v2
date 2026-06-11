@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useTipStream } from "@/components/explorer/TipStreamProvider";
-import { fetchHomeNetwork } from "@/lib/api/client";
-import { usePageVisible } from "@/hooks/usePageVisible";
-import type { HomeNetworkPayload, VrcNetworkStats, VrmNetworkStats } from "@/lib/api/types";
-import { mergeHomeNetworkPayload } from "@/lib/enrichNetwork";
-import { NETWORK_LIVE_POLL_MS } from "@/lib/liveDataConfig";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTipStream } from '@/components/explorer/TipStreamProvider';
+import { fetchHomeNetwork } from '@/lib/api/client';
+import { usePageVisible } from '@/hooks/usePageVisible';
+import type { HomeNetworkPayload, VrcNetworkStats, VrmNetworkStats } from '@/lib/api/types';
+import { mergeHomeNetworkPayload } from '@/lib/enrichNetwork';
+import { NETWORK_LIVE_POLL_MS } from '@/lib/liveDataConfig';
 
 const NETWORK_POLL_MS = NETWORK_LIVE_POLL_MS;
 
@@ -32,7 +32,7 @@ function vrcNetworkReceived(stats: VrcNetworkStats): boolean {
 
 function applyNetworkRefresh(
   prev: HomeNetworkPayload,
-  next: HomeNetworkPayload,
+  next: HomeNetworkPayload
 ): HomeNetworkPayload {
   const merged = mergeHomeNetworkPayload(prev, next);
 
@@ -44,7 +44,7 @@ function applyNetworkRefresh(
 }
 
 export function useHomeNetworkLive(initialNetwork: HomeNetworkPayload) {
-  const { subscribe } = useTipStream("vrm");
+  const { subscribe } = useTipStream('vrm');
   const visible = usePageVisible();
   const [network, setNetwork] = useState(initialNetwork);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -61,7 +61,7 @@ export function useHomeNetworkLive(initialNetwork: HomeNetworkPayload) {
       setNetwork((prev) => applyNetworkRefresh(prev, next));
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to refresh network");
+      setError(err instanceof Error ? err.message : 'Failed to refresh network');
     } finally {
       inFlightRef.current = false;
       setIsRefreshing(false);
@@ -73,10 +73,10 @@ export function useHomeNetworkLive(initialNetwork: HomeNetworkPayload) {
 
     void refresh();
 
-    const unsubVrm = subscribe("vrm", () => {
+    const unsubVrm = subscribe('vrm', () => {
       void refresh();
     });
-    const unsubVrc = subscribe("vrc", () => {
+    const unsubVrc = subscribe('vrc', () => {
       void refresh();
     });
 

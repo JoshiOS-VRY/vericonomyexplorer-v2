@@ -19,9 +19,21 @@ export function isSqliteBusyError(error) {
     const message = error.message.toLowerCase();
     return message.includes("database is locked") || message.includes("sqlite_busy");
 }
+function isTooManyRequestsError(error) {
+    if (error instanceof Error) {
+        return error.message === "Too many requests";
+    }
+    if (typeof error === "object" && error !== null && "error" in error) {
+        return error.error === "Too many requests";
+    }
+    return false;
+}
 export function mapErrorToResponse(error) {
     if (error instanceof ApiError) {
         return { statusCode: error.statusCode, error: error.message };
+    }
+    if (isTooManyRequestsError(error)) {
+        return { statusCode: 429, error: "Too many requests" };
     }
     if (error instanceof Error) {
         if (error.message.includes("Query worker timed out")) {

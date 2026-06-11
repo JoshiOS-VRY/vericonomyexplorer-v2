@@ -1,8 +1,17 @@
-"use client";
+'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { getTipStreamUrl } from "@/lib/api/client";
-import { usePageVisible } from "@/hooks/usePageVisible";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import { getTipStreamUrl } from '@/lib/api/client';
+import { usePageVisible } from '@/hooks/usePageVisible';
 
 interface TipEvent {
   height: number;
@@ -24,12 +33,17 @@ interface TipStreamContextValue {
 
 const TipStreamContext = createContext<TipStreamContextValue | null>(null);
 
-const CHAINS = ["vrm", "vrc"] as const;
+const CHAINS = ['vrm', 'vrc'] as const;
 
 export function TipStreamProvider({ children }: { children: ReactNode }) {
   const visible = usePageVisible();
   const listenersRef = useRef(new Map<string, Set<TipListener>>());
-  const tipRef = useRef(new Map<string, number | null>([["vrm", null], ["vrc", null]]));
+  const tipRef = useRef(
+    new Map<string, number | null>([
+      ['vrm', null],
+      ['vrc', null],
+    ])
+  );
   const [chainState, setChainState] = useState<Record<string, ChainTipState>>({
     vrm: { height: null, online: true },
     vrc: { height: null, online: true },
@@ -49,7 +63,7 @@ export function TipStreamProvider({ children }: { children: ReactNode }) {
 
   const getChainState = useCallback(
     (chainId: string) => chainState[chainId] ?? { height: null, online: false },
-    [chainState],
+    [chainState]
   );
 
   useEffect(() => {
@@ -60,7 +74,7 @@ export function TipStreamProvider({ children }: { children: ReactNode }) {
     const sources = CHAINS.map((chainId) => {
       const source = new EventSource(getTipStreamUrl(chainId));
 
-      source.addEventListener("tip", (event) => {
+      source.addEventListener('tip', (event) => {
         try {
           const tip = JSON.parse(event.data) as TipEvent;
           const previous = tipRef.current.get(chainId) ?? null;
@@ -96,10 +110,7 @@ export function TipStreamProvider({ children }: { children: ReactNode }) {
     };
   }, [visible]);
 
-  const value = useMemo(
-    () => ({ subscribe, getChainState }),
-    [getChainState, subscribe],
-  );
+  const value = useMemo(() => ({ subscribe, getChainState }), [getChainState, subscribe]);
 
   return <TipStreamContext.Provider value={value}>{children}</TipStreamContext.Provider>;
 }
@@ -107,7 +118,7 @@ export function TipStreamProvider({ children }: { children: ReactNode }) {
 export function useTipStream(_chainId: string) {
   const context = useContext(TipStreamContext);
   if (!context) {
-    throw new Error("useTipStream must be used within TipStreamProvider");
+    throw new Error('useTipStream must be used within TipStreamProvider');
   }
   return context;
 }

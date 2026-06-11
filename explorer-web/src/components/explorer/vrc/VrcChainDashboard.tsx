@@ -1,28 +1,28 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { ChainMarketCard } from "@/components/explorer/home/ChainMarketCard";
-import { ChainNetworkCard } from "@/components/explorer/home/ChainNetworkCard";
-import { ChainBlocksPanel } from "@/components/explorer/chain/ChainBlocksPanel";
-import { LazyChainActivityChart } from "@/components/explorer/chain/LazyChainActivityChart";
-import { ChainMetricStrip } from "@/components/explorer/chain/ChainMetricStrip";
-import { ChainQuickNav } from "@/components/explorer/chain/ChainQuickNav";
-import { ChainLeaderboardPreview } from "@/components/explorer/chain/ChainLeaderboardPreview";
-import { ChainRichlistPreview } from "@/components/explorer/chain/ChainRichlistPreview";
-import { ChainTransactionsPanel } from "@/components/explorer/chain/ChainTransactionsPanel";
-import { ChainExplorerHero } from "@/components/explorer/vrm/VrmChainHero";
-import { useStableChainLive } from "@/hooks/useStableChainLive";
+import { useEffect, useState } from 'react';
+import { ChainMarketCard } from '@/components/explorer/home/ChainMarketCard';
+import { ChainNetworkCard } from '@/components/explorer/home/ChainNetworkCard';
+import { ChainBlocksPanel } from '@/components/explorer/chain/ChainBlocksPanel';
+import { LazyChainActivityChart } from '@/components/explorer/chain/LazyChainActivityChart';
+import { ChainMetricStrip } from '@/components/explorer/chain/ChainMetricStrip';
+import { ChainQuickNav } from '@/components/explorer/chain/ChainQuickNav';
+import { ChainLeaderboardPreview } from '@/components/explorer/chain/ChainLeaderboardPreview';
+import { ChainRichlistPreview } from '@/components/explorer/chain/ChainRichlistPreview';
+import { ChainTransactionsPanel } from '@/components/explorer/chain/ChainTransactionsPanel';
+import { ChainExplorerHero } from '@/components/explorer/vrm/VrmChainHero';
+import { useStableChainLive } from '@/hooks/useStableChainLive';
 import type {
   ChainMarket,
   ChainSummary,
   LeaderboardResult,
   RichlistResult,
   VrcNetworkStats,
-} from "@/lib/api/types";
-import { fetchHomeMarket, fetchHomeNetwork } from "@/lib/api/client";
-import { applyOnChainMarketCap } from "@/lib/enrichMarket";
-import { emptyMarketPayload, emptyNetworkPayload } from "@/lib/homeDefaults";
-import { resolveRichlistTotalSupply } from "@/lib/richlistSupply";
+} from '@/lib/api/types';
+import { fetchHomeMarket, fetchHomeNetwork } from '@/lib/api/client';
+import { applyOnChainMarketCap } from '@/lib/enrichMarket';
+import { emptyMarketPayload, emptyNetworkPayload } from '@/lib/homeDefaults';
+import { resolveRichlistTotalSupply } from '@/lib/richlistSupply';
 
 export function VrcChainDashboard({
   summary: initialSummary,
@@ -37,19 +37,14 @@ export function VrcChainDashboard({
   initialMarket?: ChainMarket;
   initialNetwork?: VrcNetworkStats;
 }) {
-  const [market, setMarket] = useState<ChainMarket>(
-    initialMarket ?? emptyMarketPayload().vrc,
-  );
+  const [market, setMarket] = useState<ChainMarket>(initialMarket ?? emptyMarketPayload().vrc);
   const [network, setNetwork] = useState<VrcNetworkStats>(
-    initialNetwork ?? emptyNetworkPayload().vrc,
+    initialNetwork ?? emptyNetworkPayload().vrc
   );
-  const {
-    summary,
-    chainHeight,
-    addressCount,
-    latestBlocks,
-    heightPulse,
-  } = useStableChainLive("vrc", initialSummary);
+  const { summary, chainHeight, addressCount, latestBlocks, heightPulse } = useStableChainLive(
+    'vrc',
+    initialSummary
+  );
 
   useEffect(() => {
     if (initialMarket && initialNetwork) {
@@ -65,7 +60,7 @@ export function VrcChainDashboard({
           fetchHomeNetwork(),
         ]);
         if (!cancelled) {
-          setMarket(applyOnChainMarketCap(marketPayload.vrc, "vrc", networkPayload.vrc.supply));
+          setMarket(applyOnChainMarketCap(marketPayload.vrc, 'vrc', networkPayload.vrc.supply));
           setNetwork(networkPayload.vrc);
         }
       } catch {
@@ -121,10 +116,7 @@ export function VrcChainDashboard({
             richlist={initialRichlist}
             totalSupply={richlistSupply}
           />
-          <ChainLeaderboardPreview
-            chainId="vrc"
-            leaderboard={initialLeaderboard}
-          />
+          <ChainLeaderboardPreview chainId="vrc" leaderboard={initialLeaderboard} />
         </div>
       </div>
 

@@ -1,17 +1,12 @@
-import { AddressDetailLive } from "@/components/explorer/address/AddressDetailLive";
-import { BcPageHeader } from "@/components/explorer/BlockchairUi";
-import { Breadcrumb } from "@/components/explorer/Breadcrumb";
-import {
-  AlertBanner,
-} from "@/components/explorer/ExplorerUi";
-import { getAddress } from "@/lib/api/indexer";
-import {
-  CHAIN_EXPLORERS,
-  type ChainId,
-} from "@/lib/chainDisplay";
-import { VrmAddressLabel } from "@/components/explorer/address/VrmAddressLink";
-import { isVeriumPoolPayoutAddress } from "@/lib/veriumPoolExtracted";
-import { ellipsizeMiddle, normalizeLimit, normalizeOffset } from "@/lib/utils";
+import { AddressDetailLive } from '@/components/explorer/address/AddressDetailLive';
+import { BcPageHeader } from '@/components/explorer/BlockchairUi';
+import { Breadcrumb } from '@/components/explorer/Breadcrumb';
+import { AlertBanner } from '@/components/explorer/ExplorerUi';
+import { getAddress } from '@/lib/api/indexer';
+import { CHAIN_EXPLORERS, type ChainId } from '@/lib/chainDisplay';
+import { VrmAddressLabel } from '@/components/explorer/address/VrmAddressLink';
+import { isVeriumPoolPayoutAddress } from '@/lib/veriumPoolExtracted';
+import { ellipsizeMiddle, normalizeLimit, normalizeOffset } from '@/lib/utils';
 
 export async function AddressDetailPage({
   chainId,
@@ -43,10 +38,10 @@ export async function AddressDetailPage({
       <Breadcrumb
         items={[
           { label: chain.name, href: chain.exploreHref! },
-          { label: "Rich list", href: chain.richlistHref! },
+          { label: 'Rich list', href: chain.richlistHref! },
           {
             label:
-              chainId === "vrm" && isVeriumPoolPayoutAddress(result.address) ? (
+              chainId === 'vrm' && isVeriumPoolPayoutAddress(result.address) ? (
                 <VrmAddressLabel address={result.address} maxLength={16} />
               ) : (
                 ellipsizeMiddle(result.address, 16)
@@ -58,9 +53,7 @@ export async function AddressDetailPage({
       <BcPageHeader
         title="Address"
         subtitle={
-          result.found
-            ? `${chain.name} address activity and holdings.`
-            : "Address not found."
+          result.found ? `${chain.name} address activity and holdings.` : 'Address not found.'
         }
       />
 

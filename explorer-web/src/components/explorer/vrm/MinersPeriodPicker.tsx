@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { MINERS_PERIODS, type MinersPeriodId } from "@/lib/minersPeriods";
+import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
+import { MINERS_PERIODS, type MinersPeriodId } from '@/lib/minersPeriods';
 
 export function MinersPeriodPicker({
   period,
@@ -19,7 +19,7 @@ export function MinersPeriodPicker({
         <Button
           key={option.id}
           type="button"
-          variant={period === option.id ? "primary" : "secondary"}
+          variant={period === option.id ? 'primary' : 'secondary'}
           size="sm"
           disabled={loading}
           onClick={() => onSelect(option.id)}

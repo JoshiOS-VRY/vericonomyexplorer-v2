@@ -15,6 +15,7 @@ npm run dev:full
 ```
 
 This starts:
+
 - Express API (`npm start`) on `BTCEXP_PORT` (default 3002)
 - VRM indexer worker (`npm run indexer:vrm`)
 - Next.js UI on port 3000
@@ -44,14 +45,14 @@ cd explorer-web && npm run clean && npm run dev
 
 Next.js loads the repo root `.env` and `.env.local` automatically (see `next.config.ts` and `src/lib/env.ts`).
 
-| Variable | Description |
-|---|---|
+| Variable                      | Description                                             |
+| ----------------------------- | ------------------------------------------------------- |
 | `BTCEXP_HOST` / `BTCEXP_PORT` | Used to derive API URL when `EXPLORER_API_URL` is unset |
-| `BTCEXP_BASEURL` | Optional base path prefix for API calls |
-| `BTCEXP_UI_THEME` | Default theme (`dark`, `light`, `system`) |
-| `EXPLORER_API_URL` | Explicit Express backend URL override |
-| `EXPLORER_ADMIN_TOKEN` | Optional cookie gate for `/admin/*` |
-| `PORT` | Next.js port (default 3000) |
+| `BTCEXP_BASEURL`              | Optional base path prefix for API calls                 |
+| `BTCEXP_UI_THEME`             | Default theme (`dark`, `light`, `system`)               |
+| `EXPLORER_API_URL`            | Explicit Express backend URL override                   |
+| `EXPLORER_ADMIN_TOKEN`        | Optional cookie gate for `/admin/*`                     |
+| `PORT`                        | Next.js port (default 3000)                             |
 
 All `VCEXP_*` indexer vars are consumed by the Express/indexer processes, not Next directly.
 
@@ -66,13 +67,13 @@ Tips for faster local iteration:
 - After bulk indexing, checkpoint SQLite WAL: `npm run indexer:checkpoint` (stop indexer + api first if it blocks)
 - For perf testing without HMR noise: `npm run web:build && npm run web:start`
 
-| Variable | Description |
-|---|---|
-| `EXPLORER_FAST_API_URL` | Fast `/v1/*` API used by Next (default `http://127.0.0.1:3003`) |
-| `VCEXP_API_CACHE_TTL_MS` | explorer-api in-memory cache TTL override (ms) |
-| `VCEXP_WAL_CHECKPOINT_MB` | Auto-checkpoint WAL when idle and WAL exceeds this size |
-| `VCEXP_LCW_API_KEY` | LiveCoinWatch API key for home page market data (set in repo root `.env`) |
-| `VCEXP_MARKET_CACHE_TTL_MS` | Market data cache TTL in explorer-api (default 120000) |
+| Variable                    | Description                                                               |
+| --------------------------- | ------------------------------------------------------------------------- |
+| `EXPLORER_FAST_API_URL`     | Fast `/v1/*` API used by Next (default `http://127.0.0.1:3003`)           |
+| `VCEXP_API_CACHE_TTL_MS`    | explorer-api in-memory cache TTL override (ms)                            |
+| `VCEXP_WAL_CHECKPOINT_MB`   | Auto-checkpoint WAL when idle and WAL exceeds this size                   |
+| `VCEXP_LCW_API_KEY`         | LiveCoinWatch API key for home page market data (set in repo root `.env`) |
+| `VCEXP_MARKET_CACHE_TTL_MS` | Market data cache TTL in explorer-api (default 120000)                    |
 
 The home page (`/`) uses `GET /v1/home` from explorer-api with live SSE tip updates and periodic market refresh.
 

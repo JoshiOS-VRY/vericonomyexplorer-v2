@@ -17,14 +17,14 @@ It **is** a persistent difference between **Verium wallet accounting** (user nod
 
 ## Compared numbers (sats → VRM)
 
-| Metric | Production | RPC reindex |
-|--------|------------|-------------|
-| Balance | 5,864,557,204,978 | 5,864,557,204,978 |
-| Received | 9,934,554,033,548 | 9,934,554,033,548 |
-| Sent | 4,069,996,828,570 | 4,069,996,828,570 |
-| Tx count | 571 | 571 |
-| Coinbase txs (flagged) | 0 | 0 |
-| Events | 602 | 602 |
+| Metric                 | Production        | RPC reindex       |
+| ---------------------- | ----------------- | ----------------- |
+| Balance                | 5,864,557,204,978 | 5,864,557,204,978 |
+| Received               | 9,934,554,033,548 | 9,934,554,033,548 |
+| Sent                   | 4,069,996,828,570 | 4,069,996,828,570 |
+| Tx count               | 571               | 571               |
+| Coinbase txs (flagged) | 0                 | 0                 |
+| Events                 | 602               | 602               |
 
 Wallet reference: **Available ~65,469.93 VRM** → gap **~6,824.36 VRM** vs explorer balance **58,645.57 VRM**.
 

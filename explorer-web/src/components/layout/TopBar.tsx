@@ -1,15 +1,15 @@
-import { getPageTitle } from "@/lib/pageTitles";
-import { MobileNav } from "@/components/layout/Sidebar";
-import { SyncStatusPills } from "@/components/layout/SyncStatusPills";
-import type { ChainSummary } from "@/lib/api/types";
-import { cn } from "@/lib/utils";
+import { getPageTitle } from '@/lib/pageTitles';
+import { MobileNav } from '@/components/layout/Sidebar';
+import { SyncStatusPills } from '@/components/layout/SyncStatusPills';
+import type { ChainSummary } from '@/lib/api/types';
+import { cn } from '@/lib/utils';
 
-type ThemeMode = "light" | "dark" | "system";
+type ThemeMode = 'light' | 'dark' | 'system';
 
 const themeOptions: { mode: ThemeMode; label: string }[] = [
-  { mode: "system", label: "System theme" },
-  { mode: "light", label: "Light theme" },
-  { mode: "dark", label: "Dark theme" },
+  { mode: 'system', label: 'System theme' },
+  { mode: 'light', label: 'Light theme' },
+  { mode: 'dark', label: 'Dark theme' },
 ];
 
 /** Active state is applied client-side by explorer-ui.js after hydration. */
@@ -28,11 +28,11 @@ function ThemeToggle() {
           aria-pressed="false"
           suppressHydrationWarning
           className={cn(
-            "theme-toggle-btn inline-flex h-8 items-center rounded px-2.5 text-[11px] font-medium transition-colors",
-            "text-fg-muted hover:bg-bg-panel hover:text-fg",
+            'theme-toggle-btn inline-flex h-8 items-center rounded px-2.5 text-[11px] font-medium transition-colors',
+            'text-fg-muted hover:bg-bg-panel hover:text-fg'
           )}
         >
-          {optionMode === "system" ? "Auto" : optionMode === "light" ? "Light" : "Dark"}
+          {optionMode === 'system' ? 'Auto' : optionMode === 'light' ? 'Light' : 'Dark'}
         </button>
       ))}
     </div>

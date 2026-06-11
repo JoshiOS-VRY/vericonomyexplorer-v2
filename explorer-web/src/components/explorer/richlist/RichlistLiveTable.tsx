@@ -1,22 +1,19 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { BcHashLink, BcPanel } from "@/components/explorer/BlockchairUi";
-import { PaginationLinks, formatHeight } from "@/components/explorer/ExplorerUi";
-import { useLivePoll } from "@/hooks/useLivePoll";
-import { fetchRichlistClient } from "@/lib/api/client";
-import type { RichlistResult } from "@/lib/api/types";
-import type { ChainId } from "@/lib/chainDisplay";
-import { ENTITY_LIVE_POLL_MS } from "@/lib/liveDataConfig";
-import { formatCoinAmount } from "@/lib/utils";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { BcHashLink, BcPanel } from '@/components/explorer/BlockchairUi';
+import { PaginationLinks, formatHeight } from '@/components/explorer/ExplorerUi';
+import { useLivePoll } from '@/hooks/useLivePoll';
+import { fetchRichlistClient } from '@/lib/api/client';
+import type { RichlistResult } from '@/lib/api/types';
+import type { ChainId } from '@/lib/chainDisplay';
+import { ENTITY_LIVE_POLL_MS } from '@/lib/liveDataConfig';
+import { formatCoinAmount } from '@/lib/utils';
 
 function richlistSignature(data: RichlistResult): string {
   return data.items
-    .map(
-      (item) =>
-        `${item.rank}:${item.address}:${item.balance.amount}:${item.txCount}`,
-    )
-    .join("|");
+    .map((item) => `${item.rank}:${item.address}:${item.balance.amount}:${item.txCount}`)
+    .join('|');
 }
 
 export function RichlistLiveTable({
@@ -74,7 +71,7 @@ export function RichlistLiveTable({
     total: richlist.items.length,
     hasMore: false,
   };
-  const addressPathPrefix = `${basePath.replace(/\/richlist$/, "")}/address`;
+  const addressPathPrefix = `${basePath.replace(/\/richlist$/, '')}/address`;
 
   return (
     <BcPanel title="Addresses" flush>
@@ -95,7 +92,11 @@ export function RichlistLiveTable({
               <tr key={item.address}>
                 <td className="tabular-nums text-fg-subtle">{item.rank}</td>
                 <td>
-                  <BcHashLink href={`${addressPathPrefix}/${item.address}`} value={item.address} prefetch />
+                  <BcHashLink
+                    href={`${addressPathPrefix}/${item.address}`}
+                    value={item.address}
+                    prefetch
+                  />
                 </td>
                 <td className="text-right font-medium tabular-nums">
                   {formatCoinAmount(item.balance.amount)} {item.balance.ticker}
@@ -106,7 +107,9 @@ export function RichlistLiveTable({
                 <td className="text-right tabular-nums text-fg-muted">
                   {formatCoinAmount(item.totalSent.amount)}
                 </td>
-                <td className="text-right tabular-nums text-fg-muted">{formatHeight(item.txCount)}</td>
+                <td className="text-right tabular-nums text-fg-muted">
+                  {formatHeight(item.txCount)}
+                </td>
               </tr>
             ))}
           </tbody>

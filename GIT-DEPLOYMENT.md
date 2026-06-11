@@ -1,6 +1,7 @@
 # Verium RPC Explorer - Git Repository Deployment
 
 ## Repository Information
+
 - **Git URL**: `http://192.168.1.186:3000/jayhines91/btc-rpc-explorer.git`
 - **Branch**: `verium-explorer`
 - **Port**: `3003` (updated from 3002)
@@ -16,6 +17,7 @@
 ```
 
 This script will:
+
 1. Clone/update from your Git repository
 2. Create environment configuration
 3. Build and deploy the Docker container
@@ -109,6 +111,7 @@ docker-compose up -d --build
 ## Access the Explorer
 
 Once deployed, access your Verium explorer at:
+
 - **Local**: `http://localhost:3003`
 - **Network**: `http://192.168.1.186:3003` (if accessible from network)
 
@@ -119,7 +122,7 @@ Once deployed, access your Verium explorer at:
 ✅ **Git Integration**: Automated deployment from your repository  
 ✅ **Docker Optimized**: Multi-stage build, security hardening  
 ✅ **Health Checks**: Container monitoring and auto-restart  
-✅ **Volume Persistence**: Cache data preserved between restarts  
+✅ **Volume Persistence**: Cache data preserved between restarts
 
 ## Configuration Files
 
@@ -131,21 +134,25 @@ Once deployed, access your Verium explorer at:
 ## Troubleshooting
 
 ### Check Container Status
+
 ```bash
 docker-compose ps
 ```
 
 ### View Logs
+
 ```bash
 docker-compose logs -f verium-explorer
 ```
 
 ### Check Health
+
 ```bash
 curl http://localhost:3003/
 ```
 
 ### Restart Service
+
 ```bash
 docker-compose restart
 ```
@@ -184,6 +191,7 @@ For production deployment:
 ## Support
 
 The deployment includes:
+
 - Health checks every 30 seconds
 - Automatic restart on failure
 - Volume persistence for cache

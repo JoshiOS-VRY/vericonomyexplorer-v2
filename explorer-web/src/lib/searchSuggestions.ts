@@ -1,28 +1,28 @@
-export type SearchQueryKind = "height" | "hash" | "address" | "unknown";
+export type SearchQueryKind = 'height' | 'hash' | 'address' | 'unknown';
 
-export type SearchEntityType = "block" | "tx" | "address";
+export type SearchEntityType = 'block' | 'tx' | 'address';
 
 /** Strip formatting copied from UI stats (commas, spaces, labels, tickers). */
 export function sanitizeSearchQuery(raw: string): string {
   let value = raw.trim();
-  value = value.replace(/,/g, "").replace(/\s+/g, "");
-  value = value.replace(/^(balance|received|sent|transactions)/i, "");
-  value = value.replace(/^(\d+(?:\.\d+)?)(?:VRC|VRM)$/i, "$1");
+  value = value.replace(/,/g, '').replace(/\s+/g, '');
+  value = value.replace(/^(balance|received|sent|transactions)/i, '');
+  value = value.replace(/^(\d+(?:\.\d+)?)(?:VRC|VRM)$/i, '$1');
   return value;
 }
 
 export function classifySearchQuery(query: string): SearchQueryKind {
   const trimmed = sanitizeSearchQuery(query);
-  if (!trimmed) return "unknown";
-  if (/^\d+$/.test(trimmed)) return "height";
-  if (/^[a-fA-F0-9]{64}$/.test(trimmed)) return "hash";
-  return "address";
+  if (!trimmed) return 'unknown';
+  if (/^\d+$/.test(trimmed)) return 'height';
+  if (/^[a-fA-F0-9]{64}$/.test(trimmed)) return 'hash';
+  return 'address';
 }
 
 export function entityTypeFromPath(path: string): SearchEntityType {
-  if (path.includes("/tx/")) return "tx";
-  if (path.includes("/block/")) return "block";
-  return "address";
+  if (path.includes('/tx/')) return 'tx';
+  if (path.includes('/block/')) return 'block';
+  return 'address';
 }
 
 export type SearchSuggestion = {
@@ -30,50 +30,47 @@ export type SearchSuggestion = {
   label: string;
   sublabel?: string;
   path: string;
-  chainId: "vrm" | "vrc";
+  chainId: 'vrm' | 'vrc';
   entityType: SearchEntityType;
   primary?: boolean;
   tentative?: boolean;
 };
 
 export function heightSuggestions(height: string): SearchSuggestion[] {
-  return (["vrm", "vrc"] as const).map((chainId) => ({
+  return (['vrm', 'vrc'] as const).map((chainId) => ({
     id: `${chainId}-block-${height}`,
     label: `Block #${height}`,
     sublabel: chainId.toUpperCase(),
     path: `/${chainId}/block/${height}`,
     chainId,
-    entityType: "block" as const,
+    entityType: 'block' as const,
   }));
 }
 
-export function fallbackSuggestions(
-  query: string,
-  kind: SearchQueryKind,
-): SearchSuggestion[] {
+export function fallbackSuggestions(query: string, kind: SearchQueryKind): SearchSuggestion[] {
   const trimmed = sanitizeSearchQuery(query);
   if (!trimmed) return [];
 
-  return (["vrm", "vrc"] as const).map((chainId) => {
-    if (kind === "height") {
+  return (['vrm', 'vrc'] as const).map((chainId) => {
+    if (kind === 'height') {
       return {
         id: `${chainId}-block-${trimmed}`,
         label: `Block #${trimmed}`,
         sublabel: `${chainId.toUpperCase()} · try`,
         path: `/${chainId}/block/${trimmed}`,
         chainId,
-        entityType: "block" as const,
+        entityType: 'block' as const,
         tentative: true,
       };
     }
-    if (kind === "hash") {
+    if (kind === 'hash') {
       return {
         id: `${chainId}-hash-${trimmed}`,
-        label: "Search hash",
+        label: 'Search hash',
         sublabel: `${chainId.toUpperCase()} · tx or block`,
         path: `/${chainId}/tx/${trimmed}`,
         chainId,
-        entityType: "tx" as const,
+        entityType: 'tx' as const,
         tentative: true,
       };
     }
@@ -83,16 +80,16 @@ export function fallbackSuggestions(
       sublabel: `${chainId.toUpperCase()} address · try`,
       path: `/${chainId}/address/${encodeURIComponent(trimmed)}`,
       chainId,
-      entityType: "address" as const,
+      entityType: 'address' as const,
       tentative: true,
     };
   });
 }
 
 export function recentBlockSuggestions(
-  chainId: "vrm" | "vrc",
+  chainId: 'vrm' | 'vrc',
   blocks: { height: number; hash: string }[],
-  limit = 4,
+  limit = 4
 ): SearchSuggestion[] {
   return blocks.slice(0, limit).map((block) => ({
     id: `${chainId}-recent-${block.hash}`,
@@ -100,36 +97,36 @@ export function recentBlockSuggestions(
     sublabel: `${chainId.toUpperCase()} · recent`,
     path: `/${chainId}/block/${block.height}`,
     chainId,
-    entityType: "block" as const,
+    entityType: 'block' as const,
   }));
 }
 
 export function mergeSearchResults(
   vrmPath: string | null,
   vrcPath: string | null,
-  query: string,
+  query: string
 ): SearchSuggestion[] {
   const kind = classifySearchQuery(query);
   const hits: SearchSuggestion[] = [];
 
   if (vrmPath) {
     hits.push({
-      id: "vrm-hit",
+      id: 'vrm-hit',
       label: suggestionLabelFromPath(vrmPath, query, kind),
-      sublabel: "Verium",
+      sublabel: 'Verium',
       path: vrmPath,
-      chainId: "vrm",
+      chainId: 'vrm',
       entityType: entityTypeFromPath(vrmPath),
       primary: vrcPath == null,
     });
   }
   if (vrcPath) {
     hits.push({
-      id: "vrc-hit",
+      id: 'vrc-hit',
       label: suggestionLabelFromPath(vrcPath, query, kind),
-      sublabel: "VeriCoin",
+      sublabel: 'VeriCoin',
       path: vrcPath,
-      chainId: "vrc",
+      chainId: 'vrc',
       entityType: entityTypeFromPath(vrcPath),
       primary: vrmPath == null,
     });
@@ -146,15 +143,11 @@ export function mergeSearchResults(
   return hits;
 }
 
-function suggestionLabelFromPath(
-  path: string,
-  query: string,
-  kind: SearchQueryKind,
-): string {
-  if (kind === "height") return `Block #${sanitizeSearchQuery(query)}`;
-  if (path.includes("/tx/")) return "Transaction";
-  if (path.includes("/block/")) return "Block hash";
-  if (path.includes("/address/")) {
+function suggestionLabelFromPath(path: string, query: string, kind: SearchQueryKind): string {
+  if (kind === 'height') return `Block #${sanitizeSearchQuery(query)}`;
+  if (path.includes('/tx/')) return 'Transaction';
+  if (path.includes('/block/')) return 'Block hash';
+  if (path.includes('/address/')) {
     const trimmed = sanitizeSearchQuery(query);
     return trimmed.length > 24 ? `${trimmed.slice(0, 12)}…${trimmed.slice(-8)}` : trimmed;
   }

@@ -1,19 +1,13 @@
-"use client";
+'use client';
 
-import { useId } from "react";
-import {
-  Area,
-  AreaChart,
-  ResponsiveContainer,
-  Tooltip,
-  YAxis,
-} from "recharts";
-import type { PriceHistoryPoint } from "@/lib/api/types";
-import { gradientId } from "@/lib/chartVisuals";
-import { getChainAccentVar } from "@/lib/insightsChartConfig";
-import { formatUsdPrice } from "@/lib/formatMarket";
-import { formatChartTooltipDate } from "@/lib/chartDates";
-import { useResolvedCssColor } from "@/hooks/useResolvedCssColor";
+import { useId } from 'react';
+import { Area, AreaChart, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
+import type { PriceHistoryPoint } from '@/lib/api/types';
+import { gradientId } from '@/lib/chartVisuals';
+import { getChainAccentVar } from '@/lib/insightsChartConfig';
+import { formatUsdPrice } from '@/lib/formatMarket';
+import { formatChartTooltipDate } from '@/lib/chartDates';
+import { useResolvedCssColor } from '@/hooks/useResolvedCssColor';
 
 interface PriceSparklineProps {
   data: PriceHistoryPoint[];
@@ -22,8 +16,8 @@ interface PriceSparklineProps {
 
 export function PriceSparkline({ data, ticker }: PriceSparklineProps) {
   const baseId = useId();
-  const fillGradientId = gradientId(baseId, "spark-fill");
-  const chainVar = ticker === "VRM" ? getChainAccentVar("vrm") : getChainAccentVar("vrc");
+  const fillGradientId = gradientId(baseId, 'spark-fill');
+  const chainVar = ticker === 'VRM' ? getChainAccentVar('vrm') : getChainAccentVar('vrc');
   const chainAccent = useResolvedCssColor(chainVar);
   const chartData = data.map((point) => ({
     time: point.time,
@@ -40,7 +34,7 @@ export function PriceSparkline({ data, ticker }: PriceSparklineProps) {
               <stop offset="100%" stopColor={chainAccent} stopOpacity={0} />
             </linearGradient>
           </defs>
-          <YAxis hide domain={["dataMin", "dataMax"]} />
+          <YAxis hide domain={['dataMin', 'dataMax']} />
           <Tooltip
             content={({ active, payload }) => {
               if (!active || !payload?.[0]) return null;
@@ -68,7 +62,7 @@ export function PriceSparkline({ data, ticker }: PriceSparklineProps) {
             activeDot={{
               r: 3,
               fill: chainAccent,
-              stroke: "var(--bg-panel)",
+              stroke: 'var(--bg-panel)',
               strokeWidth: 1.5,
             }}
           />

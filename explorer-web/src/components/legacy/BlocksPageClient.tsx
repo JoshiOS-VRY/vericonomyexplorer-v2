@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import { BlocksTable, PaginationBar, type RpcBlockRow } from "@/components/legacy/LegacyShared";
-import { AlertBanner } from "@/components/explorer/ExplorerUi";
-import { Button } from "@/components/ui/Button";
-import { fetchLegacyBlockTip, fetchLegacyBlocksByHeight } from "@/lib/api/client";
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { BlocksTable, PaginationBar, type RpcBlockRow } from '@/components/legacy/LegacyShared';
+import { AlertBanner } from '@/components/explorer/ExplorerUi';
+import { Button } from '@/components/ui/Button';
+import { fetchLegacyBlockTip, fetchLegacyBlocksByHeight } from '@/lib/api/client';
 
 const DEFAULT_LIMIT = 25;
 
@@ -16,7 +16,7 @@ export function BlocksPageClient({
 }: {
   limit: number;
   offset: number;
-  sort: "asc" | "desc";
+  sort: 'asc' | 'desc';
 }) {
   const [blocks, setBlocks] = useState<RpcBlockRow[]>([]);
   const [blockCount, setBlockCount] = useState<number | null>(null);
@@ -31,7 +31,7 @@ export function BlocksPageClient({
         const count = tip.height;
         const heights: number[] = [];
 
-        if (sort === "desc") {
+        if (sort === 'desc') {
           for (let i = count - offset; i > count - offset - limit; i--) {
             if (i >= 0) heights.push(i);
           }
@@ -41,9 +41,7 @@ export function BlocksPageClient({
           }
         }
 
-        const rows = heights.length
-          ? await fetchLegacyBlocksByHeight<RpcBlockRow[]>(heights)
-          : [];
+        const rows = heights.length ? await fetchLegacyBlocksByHeight<RpcBlockRow[]>(heights) : [];
 
         if (!cancelled) {
           setBlockCount(count);
@@ -64,9 +62,7 @@ export function BlocksPageClient({
 
   if (failed) {
     return (
-      <AlertBanner title="Blocks Unavailable">
-        Unable to load blocks from the node.
-      </AlertBanner>
+      <AlertBanner title="Blocks Unavailable">Unable to load blocks from the node.</AlertBanner>
     );
   }
 
@@ -85,12 +81,12 @@ export function BlocksPageClient({
         <h1 className="text-2xl font-semibold">Blocks</h1>
         <div className="flex gap-2">
           <Link href={`/blocks?limit=${limit}&offset=0&sort=desc`}>
-            <Button variant={sort === "desc" ? "primary" : "secondary"} size="sm">
+            <Button variant={sort === 'desc' ? 'primary' : 'secondary'} size="sm">
               Newest first
             </Button>
           </Link>
           <Link href={`/blocks?limit=${limit}&offset=0&sort=asc`}>
-            <Button variant={sort === "asc" ? "primary" : "secondary"} size="sm">
+            <Button variant={sort === 'asc' ? 'primary' : 'secondary'} size="sm">
               Oldest first
             </Button>
           </Link>

@@ -1,34 +1,25 @@
-import Image from "next/image";
-import Link from "next/link";
-import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
-import {
-  BcPanel,
-  BcStat,
-  BcStatGrid,
-  BcTableLink,
-} from "@/components/explorer/BlockchairUi";
-import { VrmAddressLabel } from "@/components/explorer/address/VrmAddressLink";
+import Image from 'next/image';
+import Link from 'next/link';
+import { LiveRelativeTime } from '@/components/explorer/LiveRelativeTime';
+import { BcPanel, BcStat, BcStatGrid, BcTableLink } from '@/components/explorer/BlockchairUi';
+import { VrmAddressLabel } from '@/components/explorer/address/VrmAddressLink';
 import {
   FeatureTile,
   PageHero,
   RankList,
   StatusDot,
   formatHeight,
-} from "@/components/explorer/ExplorerUi";
-import type {
-  ChainSummary,
-  LeaderboardResult,
-  RichlistResult,
-} from "@/lib/api/types";
+} from '@/components/explorer/ExplorerUi';
+import type { ChainSummary, LeaderboardResult, RichlistResult } from '@/lib/api/types';
 import {
   CHAIN_EXPLORERS,
   getChainStatusTone,
   getChainSyncLabel,
   getChainTipHeight,
   isChainAtTip,
-} from "@/lib/chainDisplay";
-import { formatExplorerUserMessage } from "@/lib/explorerCopy";
-import { cn, ellipsizeMiddle } from "@/lib/utils";
+} from '@/lib/chainDisplay';
+import { formatExplorerUserMessage } from '@/lib/explorerCopy';
+import { cn, ellipsizeMiddle } from '@/lib/utils';
 
 interface ExplorerHomeDashboardProps {
   vrmSummary: ChainSummary;
@@ -103,7 +94,7 @@ export function ExplorerHomeDashboard({
 }
 
 function ChainOverviewPanel({ summary }: { summary: ChainSummary }) {
-  const config = CHAIN_EXPLORERS[summary.chainId as "vrm" | "vrc"];
+  const config = CHAIN_EXPLORERS[summary.chainId as 'vrm' | 'vrc'];
   if (!config) return null;
 
   const health = summary.health;
@@ -154,10 +145,7 @@ function ChainOverviewPanel({ summary }: { summary: ChainSummary }) {
 
       <BcStatGrid>
         <BcStat label="Block height" value={formatHeight(tipHeight)} />
-        <BcStat
-          label="Addresses"
-          value={formatHeight(health.counts.addressCount)}
-        />
+        <BcStat label="Addresses" value={formatHeight(health.counts.addressCount)} />
         <BcStat
           label="Latest block"
           value={
@@ -168,17 +156,14 @@ function ChainOverviewPanel({ summary }: { summary: ChainSummary }) {
                 className="text-xl font-bold sm:text-xl"
               />
             ) : (
-              "—"
+              '—'
             )
           }
         />
       </BcStatGrid>
 
       <div className="grid gap-px border-t border-border bg-border sm:grid-cols-3">
-        <OverviewFact
-          label="Blocks"
-          value={formatHeight(health.counts.indexedBlockCount)}
-        />
+        <OverviewFact label="Blocks" value={formatHeight(health.counts.indexedBlockCount)} />
         <OverviewFact
           label="Recent txs"
           value={formatHeight(summary.recentTransactions.length)}
@@ -186,12 +171,8 @@ function ChainOverviewPanel({ summary }: { summary: ChainSummary }) {
         />
         <OverviewFact
           label="Explorer"
-          value={exploreReady ? "Available" : "Coming soon"}
-          hint={
-            exploreReady
-              ? "Search, blocks, addresses"
-              : "Home stats only for now"
-          }
+          value={exploreReady ? 'Available' : 'Coming soon'}
+          hint={exploreReady ? 'Search, blocks, addresses' : 'Home stats only for now'}
         />
       </div>
     </section>
@@ -212,26 +193,19 @@ function OverviewFact({
       <div className="text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">
         {label}
       </div>
-      <div className="mt-1 text-sm font-semibold tabular-nums text-fg">
-        {value}
-      </div>
-      {hint ? (
-        <div className="mt-0.5 text-[11px] text-fg-subtle">{hint}</div>
-      ) : null}
+      <div className="mt-1 text-sm font-semibold tabular-nums text-fg">{value}</div>
+      {hint ? <div className="mt-0.5 text-[11px] text-fg-subtle">{hint}</div> : null}
     </div>
   );
 }
 
 function ChainBlocksPanel({ summary }: { summary: ChainSummary }) {
-  const config = CHAIN_EXPLORERS[summary.chainId as "vrm" | "vrc"];
+  const config = CHAIN_EXPLORERS[summary.chainId as 'vrm' | 'vrc'];
   if (!config) return null;
 
   const blocks = summary.latestBlocks.slice(0, 8);
   const action = config.exploreHref ? (
-    <Link
-      href={config.exploreHref}
-      className="text-xs font-semibold text-accent hover:underline"
-    >
+    <Link href={config.exploreHref} className="text-xs font-semibold text-accent hover:underline">
       View all
     </Link>
   ) : null;
@@ -261,17 +235,11 @@ function ChainBlocksPanel({ summary }: { summary: ChainSummary }) {
                           {formatHeight(block.height)}
                         </BcTableLink>
                       ) : (
-                        <span className="tabular-nums text-fg">
-                          {formatHeight(block.height)}
-                        </span>
+                        <span className="tabular-nums text-fg">{formatHeight(block.height)}</span>
                       )}
                     </td>
                     <td className="bc-col-age text-fg-muted">
-                      <LiveRelativeTime
-                        time={block.time}
-                        interval="second"
-                        fixedWidth
-                      />
+                      <LiveRelativeTime time={block.time} interval="second" fixedWidth />
                     </td>
                     <td className="text-right tabular-nums text-fg-muted">
                       {formatHeight(block.txCount)}
@@ -288,7 +256,7 @@ function ChainBlocksPanel({ summary }: { summary: ChainSummary }) {
 }
 
 function ChainRichlistPanel({ richlist }: { richlist: RichlistResult }) {
-  const config = CHAIN_EXPLORERS[richlist.chainId as "vrm" | "vrc"];
+  const config = CHAIN_EXPLORERS[richlist.chainId as 'vrm' | 'vrc'];
   if (!config) return null;
 
   const action =
@@ -304,9 +272,7 @@ function ChainRichlistPanel({ richlist }: { richlist: RichlistResult }) {
   return (
     <BcPanel title={`Top ${config.ticker} balances`} action={action}>
       {!richlist.enabled && richlist.message ? (
-        <p className={cn("text-sm text-fg-muted")}>
-          {formatExplorerUserMessage(richlist.message)}
-        </p>
+        <p className={cn('text-sm text-fg-muted')}>{formatExplorerUserMessage(richlist.message)}</p>
       ) : richlist.items.length === 0 ? (
         <p className="text-sm text-fg-muted">No ranked balances yet.</p>
       ) : config.exploreHref ? (

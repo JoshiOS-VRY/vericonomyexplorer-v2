@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useRelativeTimeTick } from "@/components/explorer/RelativeTimeProvider";
-import { cn, formatBlockAge, formatUnixTime } from "@/lib/utils";
-import { useEffect, useState } from "react";
+import { useRelativeTimeTick } from '@/components/explorer/RelativeTimeProvider';
+import { cn, formatBlockAge, formatUnixTime } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
-export type LiveRelativeTimeInterval = "second" | "minute";
+export type LiveRelativeTimeInterval = 'second' | 'minute';
 
 export function LiveRelativeTime({
   time,
   className,
-  interval = "second",
+  interval = 'second',
   fixedWidth = false,
 }: {
   time: number | null;
@@ -31,12 +31,12 @@ export function LiveRelativeTime({
   }
 
   const title = formatUnixTime(time);
-  const classes = cn(fixedWidth && "bc-age-text", className);
+  const classes = cn(fixedWidth && 'bc-age-text', className);
 
   if (!mounted) {
     return (
       <span className={classes} title={title} aria-hidden="true">
-        {"\u00a0"}
+        {'\u00a0'}
       </span>
     );
   }

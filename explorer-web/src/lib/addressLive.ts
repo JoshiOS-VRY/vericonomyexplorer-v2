@@ -1,27 +1,24 @@
-import { clientApiFetch } from "@/lib/api/client";
-import type { AddressResult } from "@/lib/api/types";
+import { clientApiFetch } from '@/lib/api/client';
+import type { AddressResult } from '@/lib/api/types';
 
 export async function fetchAddressClient(
   chainId: string,
   address: string,
-  params: { limit?: number; offset?: number; includeRank?: boolean } = {},
+  params: { limit?: number; offset?: number; includeRank?: boolean } = {}
 ): Promise<AddressResult> {
   const search = new URLSearchParams();
-  if (params.limit != null) search.set("limit", String(params.limit));
-  if (params.offset != null) search.set("offset", String(params.offset));
-  if (params.includeRank) search.set("includeRank", "1");
+  if (params.limit != null) search.set('limit', String(params.limit));
+  if (params.offset != null) search.set('offset', String(params.offset));
+  if (params.includeRank) search.set('includeRank', '1');
   const qs = search.toString();
 
   return clientApiFetch<AddressResult>(
-    `/${chainId}/address/${encodeURIComponent(address)}${qs ? `?${qs}` : ""}`,
+    `/${chainId}/address/${encodeURIComponent(address)}${qs ? `?${qs}` : ''}`
   );
 }
 
 /** True when balance, counts, and the visible tx head are unchanged. */
-export function isSameAddressLiveSnapshot(
-  previous: AddressResult,
-  next: AddressResult,
-): boolean {
+export function isSameAddressLiveSnapshot(previous: AddressResult, next: AddressResult): boolean {
   const prevBalance = previous.balance;
   const nextBalance = next.balance;
 

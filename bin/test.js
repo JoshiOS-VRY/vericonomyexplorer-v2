@@ -1,21 +1,22 @@
-const utils = require("../app/utils.js");
+const utils = require('../app/utils.js');
 
-console.log("test");
+console.log('test');
 
-global.activeBlockchain = "main";
-
-
+global.activeBlockchain = 'main';
 
 (async () => {
-	const perfResults = {};
+  const perfResults = {};
 
-	await utils.timePromise("abc", async () => {
-		const x = utils.estimatedSupply(4802177);
-		console.log("xxx: " + x);
+  await utils.timePromise(
+    'abc',
+    async () => {
+      const x = utils.estimatedSupply(4802177);
+      console.log('xxx: ' + x);
+    },
+    perfResults
+  );
 
-	}, perfResults);
+  console.log('perfResults: ' + JSON.stringify(perfResults));
 
-	console.log("perfResults: " + JSON.stringify(perfResults));
-
-	process.exit(0);
+  process.exit(0);
 })();

@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
-    "build": "tsc",
+    "build": "npm run format:check && tsc",
     "test": "node --test --import tsx test/*.test.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "bench": "node bench/tip.mjs",
     "bench:hotpaths": "node bench/hotpaths.mjs",
     "bench:explain": "node bench/explain-hotpaths.mjs",
@@ -34,6 +36,7 @@
     "@types/pg": "^8.11.10",
     "autocannon": "^8.0.0",
     "npm-check-updates": "^18.0.1",
+    "prettier": "^3.6.2",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3"
   },

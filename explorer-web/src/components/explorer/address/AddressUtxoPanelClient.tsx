@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { AddressUtxoPanel } from "@/components/explorer/address/AddressUtxoPanel";
-import { AddressUtxoPanelSkeleton } from "@/components/explorer/address/AddressSectionSkeleton";
-import { fetchAddressUtxosClient } from "@/lib/api/client";
-import type { AddressUtxosResult } from "@/lib/api/types";
-import { ADDRESS_UTXOS_ENABLED } from "@/lib/featureFlags";
-import type { ChainId } from "@/lib/chainDisplay";
+import { useEffect, useState } from 'react';
+import { AddressUtxoPanel } from '@/components/explorer/address/AddressUtxoPanel';
+import { AddressUtxoPanelSkeleton } from '@/components/explorer/address/AddressSectionSkeleton';
+import { fetchAddressUtxosClient } from '@/lib/api/client';
+import type { AddressUtxosResult } from '@/lib/api/types';
+import { ADDRESS_UTXOS_ENABLED } from '@/lib/featureFlags';
+import type { ChainId } from '@/lib/chainDisplay';
 
 export function AddressUtxoPanelClient({
   chainId,

@@ -1,21 +1,21 @@
-import Database from "better-sqlite3";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import Database from 'better-sqlite3';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(__dirname, "..", "..");
+const repoRoot = path.resolve(__dirname, '..', '..');
 const dbPath =
   process.env.VCEXP_INDEXER_SQLITE_PATH ??
-  path.join(repoRoot, "database", "vericonomy-index.sqlite");
+  path.join(repoRoot, 'database', 'vericonomy-index.sqlite');
 
-const chain = process.env.BENCH_CHAIN ?? "vrm";
-const sampleAddress = process.env.BENCH_ADDRESS ?? "";
+const chain = process.env.BENCH_CHAIN ?? 'vrm';
+const sampleAddress = process.env.BENCH_ADDRESS ?? '';
 const sampleBlock = Number(process.env.BENCH_BLOCK ?? 1);
-const sampleTx = process.env.BENCH_TX ?? "";
+const sampleTx = process.env.BENCH_TX ?? '';
 
 const plans = [
   {
-    name: "richlist top 50",
+    name: 'richlist top 50',
     sql: `
       SELECT address, balance_sats
       FROM address_balances
@@ -26,7 +26,7 @@ const plans = [
     params: [chain],
   },
   {
-    name: "leaderboard activity",
+    name: 'leaderboard activity',
     sql: `
       SELECT address, tx_count
       FROM address_period_stats
@@ -39,7 +39,7 @@ const plans = [
     params: [chain, chain],
   },
   {
-    name: "latest blocks",
+    name: 'latest blocks',
     sql: `
       SELECT height, hash FROM blocks
       WHERE chain_id = ? AND status = 'main'
@@ -49,7 +49,7 @@ const plans = [
     params: [chain],
   },
   {
-    name: "block txs page",
+    name: 'block txs page',
     sql: `
       SELECT txid FROM transactions
       WHERE chain_id = ? AND block_height = ?
@@ -62,7 +62,7 @@ const plans = [
 
 if (sampleAddress) {
   plans.push({
-    name: "address tx list",
+    name: 'address tx list',
     sql: `
       SELECT address_transactions.txid, COALESCE(address_transactions.net_delta_sats, 0)
       FROM address_transactions
@@ -79,7 +79,7 @@ if (sampleAddress) {
 
 if (sampleTx) {
   plans.push({
-    name: "tx lookup",
+    name: 'tx lookup',
     sql: `SELECT txid FROM transactions WHERE chain_id = ? AND txid = ?`,
     params: [chain, sampleTx],
   });
@@ -95,7 +95,7 @@ for (const plan of plans) {
   for (const row of rows) {
     console.log(row.detail);
   }
-  console.log("");
+  console.log('');
 }
 
 db.close();

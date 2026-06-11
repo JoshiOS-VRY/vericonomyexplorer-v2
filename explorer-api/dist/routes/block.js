@@ -4,7 +4,8 @@ import { fetchBlock } from "../data/legacy.js";
 import { parseChainId } from "../types.js";
 export const blockCache = createSwrCache({
     max: 128,
-    ttlMs: 60_000,
+    ttlMs: 5_000,
+    useGlobalTtlOverride: false,
     fetch: async (key, signal) => {
         if (signal.aborted)
             throw new Error("aborted");

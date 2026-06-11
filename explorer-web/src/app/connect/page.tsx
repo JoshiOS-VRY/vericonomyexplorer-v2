@@ -1,5 +1,5 @@
-import { ConnectForm } from "@/components/legacy/ConnectForm";
-import { Card, CardContent } from "@/components/ui/Card";
+import { ConnectForm } from '@/components/legacy/ConnectForm';
+import { Card, CardContent } from '@/components/ui/Card';
 
 export default function ConnectPage() {
   return (

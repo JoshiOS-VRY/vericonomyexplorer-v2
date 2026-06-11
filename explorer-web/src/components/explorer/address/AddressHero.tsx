@@ -1,21 +1,15 @@
-import Link from "next/link";
-import { VrmAddressLabel } from "@/components/explorer/address/VrmAddressLink";
-import { EntityHero } from "@/components/explorer/BlockDetail";
-import { TimeCell, formatHeight } from "@/components/explorer/ExplorerUi";
-import { AddressRichlistBadge } from "@/components/explorer/address/AddressRichlistBadge";
-import { AddressShareActions } from "@/components/explorer/address/AddressShareActions";
-import type { AddressResult } from "@/lib/api/types";
-import { CHAIN_EXPLORERS, chainBlockPath, type ChainId } from "@/lib/chainDisplay";
-import { isVeriumPoolPayoutAddress } from "@/lib/veriumPoolExtracted";
-import { ellipsizeMiddle } from "@/lib/utils";
+import Link from 'next/link';
+import { VrmAddressLabel } from '@/components/explorer/address/VrmAddressLink';
+import { EntityHero } from '@/components/explorer/BlockDetail';
+import { TimeCell, formatHeight } from '@/components/explorer/ExplorerUi';
+import { AddressRichlistBadge } from '@/components/explorer/address/AddressRichlistBadge';
+import { AddressShareActions } from '@/components/explorer/address/AddressShareActions';
+import type { AddressResult } from '@/lib/api/types';
+import { CHAIN_EXPLORERS, chainBlockPath, type ChainId } from '@/lib/chainDisplay';
+import { isVeriumPoolPayoutAddress } from '@/lib/veriumPoolExtracted';
+import { ellipsizeMiddle } from '@/lib/utils';
 
-export function AddressHero({
-  chainId,
-  result,
-}: {
-  chainId: ChainId;
-  result: AddressResult;
-}) {
+export function AddressHero({ chainId, result }: { chainId: ChainId; result: AddressResult }) {
   const chain = CHAIN_EXPLORERS[chainId];
   const { balance } = result;
 
@@ -23,7 +17,7 @@ export function AddressHero({
     <EntityHero
       eyebrow={`${chain.name} address`}
       title={
-        chainId === "vrm" && isVeriumPoolPayoutAddress(result.address) ? (
+        chainId === 'vrm' && isVeriumPoolPayoutAddress(result.address) ? (
           <VrmAddressLabel address={result.address} maxLength={28} />
         ) : (
           ellipsizeMiddle(result.address, 28)
@@ -42,7 +36,7 @@ export function AddressHero({
             <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-muted">
               {balance.firstSeenHeight != null ? (
                 <span>
-                  First seen{" "}
+                  First seen{' '}
                   <Link
                     href={chainBlockPath(chainId, balance.firstSeenHeight)}
                     className="font-semibold text-accent hover:underline"
@@ -51,7 +45,7 @@ export function AddressHero({
                   </Link>
                   {balance.firstSeenTime != null ? (
                     <>
-                      {" "}
+                      {' '}
                       · <TimeCell time={balance.firstSeenTime} absolute />
                     </>
                   ) : null}
@@ -59,7 +53,7 @@ export function AddressHero({
               ) : null}
               {balance.lastSeenHeight != null ? (
                 <span>
-                  Last active{" "}
+                  Last active{' '}
                   <Link
                     href={chainBlockPath(chainId, balance.lastSeenHeight)}
                     className="font-semibold text-accent hover:underline"

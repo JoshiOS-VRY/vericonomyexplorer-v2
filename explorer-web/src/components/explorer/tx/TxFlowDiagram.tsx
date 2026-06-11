@@ -1,18 +1,14 @@
-import Link from "next/link";
-import { MonoLink } from "@/components/explorer/ExplorerUi";
-import type { TransactionResult } from "@/lib/api/types";
-import {
-  chainAddressPath,
-  chainBlockPath,
-  type ChainId,
-} from "@/lib/chainDisplay";
+import Link from 'next/link';
+import { MonoLink } from '@/components/explorer/ExplorerUi';
+import type { TransactionResult } from '@/lib/api/types';
+import { chainAddressPath, chainBlockPath, type ChainId } from '@/lib/chainDisplay';
 import {
   classifyOutputRole,
   formatAmountPair,
   isCoinbaseTx,
   outputRoleLabel,
-} from "@/lib/txLabels";
-import { cn, ellipsizeMiddle } from "@/lib/utils";
+} from '@/lib/txLabels';
+import { cn, ellipsizeMiddle } from '@/lib/utils';
 
 function FlowArrow() {
   return (
@@ -38,31 +34,24 @@ function FlowNode({
   address,
   amount,
   chainId,
-  tone = "neutral",
+  tone = 'neutral',
 }: {
   label: string;
   address?: string | null;
   amount: string;
   chainId: ChainId;
-  tone?: "neutral" | "accent" | "success" | "muted";
+  tone?: 'neutral' | 'accent' | 'success' | 'muted';
 }) {
   const toneClasses = {
-    neutral: "border-border bg-bg-panel/60",
-    accent: "border-accent/30 bg-accent/10",
-    success: "border-success/30 bg-success/10",
-    muted: "border-border/70 bg-bg-subtle/50",
+    neutral: 'border-border bg-bg-panel/60',
+    accent: 'border-accent/30 bg-accent/10',
+    success: 'border-success/30 bg-success/10',
+    muted: 'border-border/70 bg-bg-subtle/50',
   };
 
   return (
-    <div
-      className={cn(
-        "min-w-0 flex-1 rounded-lg border px-3 py-2.5",
-        toneClasses[tone],
-      )}
-    >
-      <div className="text-[10px] font-medium uppercase tracking-wide text-fg-subtle">
-        {label}
-      </div>
+    <div className={cn('min-w-0 flex-1 rounded-lg border px-3 py-2.5', toneClasses[tone])}>
+      <div className="text-[10px] font-medium uppercase tracking-wide text-fg-subtle">{label}</div>
       {address ? (
         <div className="mt-1">
           <MonoLink
@@ -75,9 +64,7 @@ function FlowNode({
       ) : (
         <div className="mt-1 text-xs text-fg-muted">coinbase</div>
       )}
-      <div className="mt-1 text-sm font-semibold tabular-nums text-fg">
-        {amount}
-      </div>
+      <div className="mt-1 text-sm font-semibold tabular-nums text-fg">{amount}</div>
     </div>
   );
 }
@@ -95,8 +82,8 @@ function CompactFlowSummary({
     <details className="rounded-xl border border-border bg-bg-panel shadow-sm">
       <summary className="cursor-pointer list-none px-5 py-4 text-sm font-medium text-fg">
         <span className="text-fg-muted">
-          {inputCount} input{inputCount === 1 ? "" : "s"} → {outputCount} output
-          {outputCount === 1 ? "" : "s"}
+          {inputCount} input{inputCount === 1 ? '' : 's'} → {outputCount} output
+          {outputCount === 1 ? '' : 's'}
         </span>
         <span className="ml-2 text-xs text-fg-subtle">(expand flow)</span>
       </summary>
@@ -123,9 +110,7 @@ export function TxFlowDiagram({
       <FlowNode
         label="Mining reward"
         address={result.outputs[0]?.address}
-        amount={
-          result.outputs[0] ? formatAmountPair(result.outputs[0].value) : "N/A"
-        }
+        amount={result.outputs[0] ? formatAmountPair(result.outputs[0].value) : 'N/A'}
         chainId={chainId}
         tone="accent"
       />
@@ -133,16 +118,14 @@ export function TxFlowDiagram({
   ) : (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
       <div className="flex min-w-0 flex-1 flex-col gap-2">
-        <div className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
-          Inputs
-        </div>
+        <div className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">Inputs</div>
         <div className="flex flex-col gap-2">
           {result.inputs.map((input) => (
             <FlowNode
               key={`in-${input.n}`}
               label={`Input #${input.n}`}
               address={input.address}
-              amount={input.value ? formatAmountPair(input.value) : "N/A"}
+              amount={input.value ? formatAmountPair(input.value) : 'N/A'}
               chainId={chainId}
             />
           ))}
@@ -165,13 +148,7 @@ export function TxFlowDiagram({
                 address={output.address}
                 amount={formatAmountPair(output.value)}
                 chainId={chainId}
-                tone={
-                  role === "change"
-                    ? "muted"
-                    : role === "payment"
-                      ? "success"
-                      : "neutral"
-                }
+                tone={role === 'change' ? 'muted' : role === 'payment' ? 'success' : 'neutral'}
               />
             );
           })}
@@ -195,10 +172,7 @@ export function TxFlowDiagram({
 
   if (showCompact) {
     return (
-      <CompactFlowSummary
-        inputCount={result.inputs.length}
-        outputCount={result.outputs.length}
-      >
+      <CompactFlowSummary inputCount={result.inputs.length} outputCount={result.outputs.length}>
         {flowBody}
       </CompactFlowSummary>
     );
@@ -207,9 +181,7 @@ export function TxFlowDiagram({
   return (
     <section className="rounded-xl border border-border bg-bg-panel shadow-sm">
       <div className="border-b border-border px-5 py-4">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted">
-          Value flow
-        </h2>
+        <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted">Value flow</h2>
       </div>
       <div className="px-5 py-4">{flowBody}</div>
     </section>
@@ -224,17 +196,12 @@ export function TxFlowMetaLink({
   chainId: ChainId;
 }) {
   return (
-    <Link
-      href={chainBlockPath(chainId, blockHeight)}
-      className="text-accent hover:underline"
-    >
+    <Link href={chainBlockPath(chainId, blockHeight)} className="text-accent hover:underline">
       block {blockHeight.toLocaleString()}
     </Link>
   );
 }
 
 export function TxFlowHashHint({ txid }: { txid: string }) {
-  return (
-    <span className="text-xs text-fg-subtle">{ellipsizeMiddle(txid, 20)}</span>
-  );
+  return <span className="text-xs text-fg-subtle">{ellipsizeMiddle(txid, 20)}</span>;
 }

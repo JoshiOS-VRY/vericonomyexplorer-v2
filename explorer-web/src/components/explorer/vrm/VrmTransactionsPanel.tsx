@@ -1,8 +1,8 @@
-import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
-import { BcHashLink, BcPanel, BcTableLink } from "@/components/explorer/BlockchairUi";
-import { TxTypeBadge, formatHeight } from "@/components/explorer/ExplorerUi";
-import type { IndexedTransaction } from "@/lib/api/types";
-import { ellipsizeMiddle } from "@/lib/utils";
+import { LiveRelativeTime } from '@/components/explorer/LiveRelativeTime';
+import { BcHashLink, BcPanel, BcTableLink } from '@/components/explorer/BlockchairUi';
+import { TxTypeBadge, formatHeight } from '@/components/explorer/ExplorerUi';
+import type { IndexedTransaction } from '@/lib/api/types';
+import { ellipsizeMiddle } from '@/lib/utils';
 
 export function VrmTransactionsPanel({ transactions }: { transactions: IndexedTransaction[] }) {
   return (
@@ -27,7 +27,10 @@ export function VrmTransactionsPanel({ transactions }: { transactions: IndexedTr
                     <BcHashLink href={`/vrm/tx/${tx.txid}`} value={ellipsizeMiddle(tx.txid, 32)} />
                   </td>
                   <td>
-                    <BcTableLink href={`/vrm/block/${tx.blockHeight}`} className="tabular-nums text-sm">
+                    <BcTableLink
+                      href={`/vrm/block/${tx.blockHeight}`}
+                      className="tabular-nums text-sm"
+                    >
                       {formatHeight(tx.blockHeight)}
                     </BcTableLink>
                   </td>

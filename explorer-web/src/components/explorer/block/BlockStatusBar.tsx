@@ -1,6 +1,6 @@
-import { TimeCell } from "@/components/explorer/ExplorerUi";
-import type { BlockResult } from "@/lib/api/types";
-import { formatBlockConfirmationLabel, formatAmountPair, isTipBlock } from "@/lib/blockLabels";
+import { TimeCell } from '@/components/explorer/ExplorerUi';
+import type { BlockResult } from '@/lib/api/types';
+import { formatBlockConfirmationLabel, formatAmountPair, isTipBlock } from '@/lib/blockLabels';
 
 export function BlockStatusBar({ result }: { result: BlockResult }) {
   const block = result.block!;

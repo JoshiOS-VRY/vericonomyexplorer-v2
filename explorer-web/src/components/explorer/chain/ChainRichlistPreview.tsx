@@ -1,10 +1,10 @@
-import { BcPanel } from "@/components/explorer/BlockchairUi";
-import { RichlistBalanceList } from "@/components/explorer/home/RichlistBalanceList";
-import { ChainPanelLink } from "@/components/explorer/chain/ChainPanelLink";
-import type { RichlistResult } from "@/lib/api/types";
-import { CHAIN_EXPLORERS, chainAddressPath, type ChainId } from "@/lib/chainDisplay";
-import { formatExplorerUserMessage } from "@/lib/explorerCopy";
-import { cn } from "@/lib/utils";
+import { BcPanel } from '@/components/explorer/BlockchairUi';
+import { RichlistBalanceList } from '@/components/explorer/home/RichlistBalanceList';
+import { ChainPanelLink } from '@/components/explorer/chain/ChainPanelLink';
+import type { RichlistResult } from '@/lib/api/types';
+import { CHAIN_EXPLORERS, chainAddressPath, type ChainId } from '@/lib/chainDisplay';
+import { formatExplorerUserMessage } from '@/lib/explorerCopy';
+import { cn } from '@/lib/utils';
 
 export function ChainRichlistPreview({
   chainId,
@@ -22,9 +22,7 @@ export function ChainRichlistPreview({
     <BcPanel
       title="Rich list"
       flush
-      className={cn(
-        chainId === "vrm" ? "home-richlist-panel--vrm" : "home-richlist-panel--vrc",
-      )}
+      className={cn(chainId === 'vrm' ? 'home-richlist-panel--vrm' : 'home-richlist-panel--vrc')}
       action={<ChainPanelLink href={richlistHref} label="View all" />}
     >
       {!richlist.enabled && richlist.message ? (

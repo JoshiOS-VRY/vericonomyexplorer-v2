@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Area,
@@ -13,16 +13,16 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts";
+} from 'recharts';
 import {
   chartGridProps,
   chartXAxisProps,
   chartYAxisProps,
-} from "@/components/explorer/charts/chartAxis";
-import { ThemedChartTooltip } from "@/components/explorer/charts/ThemedChartTooltip";
-import { useChartTheme } from "@/hooks/useChartTheme";
-import { CHART_ANIMATION, CHART_MARGINS, formatCompactAxisValue } from "@/lib/chartVisuals";
-import type { InsightsChartView } from "@/lib/insightsChartConfig";
+} from '@/components/explorer/charts/chartAxis';
+import { ThemedChartTooltip } from '@/components/explorer/charts/ThemedChartTooltip';
+import { useChartTheme } from '@/hooks/useChartTheme';
+import { CHART_ANIMATION, CHART_MARGINS, formatCompactAxisValue } from '@/lib/chartVisuals';
+import type { InsightsChartView } from '@/lib/insightsChartConfig';
 
 export interface TimeSeriesPoint {
   label: string;
@@ -47,7 +47,7 @@ export function InsightsTimeSeriesChart({
   valueFormatter?: (value: number) => string;
   referenceValue?: number | null;
   referenceLabel?: string;
-  chainId?: "vrm" | "vrc";
+  chainId?: 'vrm' | 'vrc';
 }) {
   const colors = useChartTheme();
   const chartData = data.filter((point) => point.value != null && Number.isFinite(point.value));
@@ -69,13 +69,13 @@ export function InsightsTimeSeriesChart({
     width: 76,
     tickFormatter: (value) => formatCompactAxisValue(Number(value)),
   });
-  const tickFill = colors.fgSubtle || "#64748b";
-  const axisStroke = colors.border || "#94a3b8";
+  const tickFill = colors.fgSubtle || '#64748b';
+  const axisStroke = colors.border || '#94a3b8';
 
   return (
     <div className="address-balance-chart h-80 w-full min-h-[320px] sm:h-96">
       <ResponsiveContainer width="100%" height="100%">
-        {view === "bar" ? (
+        {view === 'bar' ? (
           <BarChart data={chartData} margin={CHART_MARGINS}>
             <CartesianGrid {...grid} />
             <XAxis {...xAxis} />
@@ -95,10 +95,10 @@ export function InsightsTimeSeriesChart({
                 stroke={axisStroke}
                 strokeDasharray="4 4"
                 label={{
-                  value: referenceLabel ?? "Max",
+                  value: referenceLabel ?? 'Max',
                   fill: tickFill,
                   fontSize: 10,
-                  position: "insideTopRight",
+                  position: 'insideTopRight',
                 }}
               />
             ) : null}
@@ -112,7 +112,7 @@ export function InsightsTimeSeriesChart({
               animationDuration={CHART_ANIMATION.duration}
             />
           </BarChart>
-        ) : view === "area" ? (
+        ) : view === 'area' ? (
           <AreaChart data={chartData} margin={CHART_MARGINS}>
             <CartesianGrid {...grid} />
             <XAxis {...xAxis} />
@@ -132,10 +132,10 @@ export function InsightsTimeSeriesChart({
                 stroke={axisStroke}
                 strokeDasharray="4 4"
                 label={{
-                  value: referenceLabel ?? "Max",
+                  value: referenceLabel ?? 'Max',
                   fill: tickFill,
                   fontSize: 10,
-                  position: "insideTopRight",
+                  position: 'insideTopRight',
                 }}
               />
             ) : null}
@@ -171,10 +171,10 @@ export function InsightsTimeSeriesChart({
                 stroke={axisStroke}
                 strokeDasharray="4 4"
                 label={{
-                  value: referenceLabel ?? "Max",
+                  value: referenceLabel ?? 'Max',
                   fill: tickFill,
                   fontSize: 10,
-                  position: "insideTopRight",
+                  position: 'insideTopRight',
                 }}
               />
             ) : null}

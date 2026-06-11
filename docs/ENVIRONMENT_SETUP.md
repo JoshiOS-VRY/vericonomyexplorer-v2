@@ -210,4 +210,3 @@ VRC node becomes unstable:
 - reduce RPC concurrency.
 - tune the VeriCoin node `dbcache`.
 - run VRC indexing sequentially, not at the same time as VRM.
-

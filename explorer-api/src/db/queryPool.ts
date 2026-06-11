@@ -1,8 +1,8 @@
-import os from "node:os";
-import { Worker } from "node:worker_threads";
-import path from "node:path";
-import { loadEnv, repoRoot } from "../env.js";
-import { isSqliteBusyError, WorkerTimeoutError } from "../errors.js";
+import os from 'node:os';
+import { Worker } from 'node:worker_threads';
+import path from 'node:path';
+import { loadEnv, repoRoot } from '../env.js';
+import { isSqliteBusyError, WorkerTimeoutError } from '../errors.js';
 
 loadEnv();
 
@@ -32,9 +32,9 @@ interface QueuedRequest {
 
 /** Entity lookups that must stay fast even when summary/dashboard queries saturate workers. */
 const FAST_QUERY_METHODS = new Set([
-  "getTransaction",
-  "getBlockIndexed",
-  "getTransactionRelatedAddresses",
+  'getTransaction',
+  'getBlockIndexed',
+  'getTransactionRelatedAddresses',
 ]);
 
 const METHOD_PRIORITY: Record<string, number> = {
@@ -91,7 +91,7 @@ const mainWorkerCount = Math.max(1, totalWorkerCount - fastWorkerCount);
 const defaultWorkerTimeoutMs = Number(process.env.VCEXP_API_DB_WORKER_TIMEOUT_MS ?? 45_000);
 const sqliteBusyRetryAttempts = Number(process.env.VCEXP_SQLITE_BUSY_RETRY_ATTEMPTS ?? 4);
 const sqliteBusyRetryDelayMs = Number(process.env.VCEXP_SQLITE_BUSY_RETRY_DELAY_MS ?? 75);
-const workerFile = path.join(repoRoot, "explorer-api", "src", "db", "queryWorker.cjs");
+const workerFile = path.join(repoRoot, 'explorer-api', 'src', 'db', 'queryWorker.cjs');
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -101,9 +101,9 @@ function sleep(ms: number): Promise<void> {
 
 export function resolveQueryPriority(
   method: string,
-  queryOptions: { priority?: number } = {},
+  queryOptions: { priority?: number } = {}
 ): number {
-  if (typeof queryOptions.priority === "number") {
+  if (typeof queryOptions.priority === 'number') {
     return queryOptions.priority;
   }
 
@@ -129,7 +129,7 @@ class QueryWorkerSlot {
       env: process.env,
     });
 
-    worker.on("message", (message: WorkerResponse & { ready?: boolean }) => {
+    worker.on('message', (message: WorkerResponse & { ready?: boolean }) => {
       if (message.ready) {
         this.ready = true;
         this.respawning = false;
@@ -155,7 +155,7 @@ class QueryWorkerSlot {
       this.pump();
     });
 
-    worker.on("error", (error) => {
+    worker.on('error', (error) => {
       this.failPending(error instanceof Error ? error : new Error(String(error)));
       if (!this.terminated) {
         this.onFatalError();
@@ -163,7 +163,7 @@ class QueryWorkerSlot {
       }
     });
 
-    worker.on("exit", (code) => {
+    worker.on('exit', (code) => {
       if (code !== 0 && !this.terminated && !this.respawning) {
         this.failPending(new Error(`Query worker exited with code ${code}`));
         this.onFatalError();
@@ -217,7 +217,7 @@ class QueryWorkerSlot {
     args: unknown[],
     options: Record<string, unknown>,
     timeoutMs = defaultWorkerTimeoutMs,
-    priority = 1,
+    priority = 1
   ): Promise<unknown> {
     return new Promise((resolve, reject) => {
       const id = this.nextId++;
@@ -297,7 +297,7 @@ class QueryPool {
       this.slots.push(
         new QueryWorkerSlot(() => {
           /* slot respawns itself */
-        }),
+        })
       );
     }
   }
@@ -307,10 +307,10 @@ class QueryPool {
     args: unknown[],
     options: Record<string, unknown> = {},
     timeoutMs = defaultWorkerTimeoutMs,
-    priority = 1,
+    priority = 1
   ): Promise<unknown> {
     if (this.slots.length === 0) {
-      return Promise.reject(new Error("Query worker pool is not initialized"));
+      return Promise.reject(new Error('Query worker pool is not initialized'));
     }
 
     let slot = this.slots[0];
@@ -362,7 +362,7 @@ function getQueryPoolForMethod(method: string): QueryPool {
 function buildCoalesceKey(
   method: string,
   args: unknown[],
-  options: Record<string, unknown>,
+  options: Record<string, unknown>
 ): string {
   return `${method}:${JSON.stringify(args)}:${JSON.stringify(options)}`;
 }
@@ -373,15 +373,12 @@ export const queryPool = {
     args: unknown[],
     options: Record<string, unknown> = {},
     timeoutMs = defaultWorkerTimeoutMs,
-    priority = 1,
+    priority = 1
   ): Promise<unknown> {
     return getQueryPoolForMethod(method).run(method, args, options, timeoutMs, priority);
   },
   async terminate(): Promise<void> {
-    await Promise.all([
-      fastQueryPoolInstance?.terminate(),
-      mainQueryPoolInstance?.terminate(),
-    ]);
+    await Promise.all([fastQueryPoolInstance?.terminate(), mainQueryPoolInstance?.terminate()]);
     fastQueryPoolInstance = null;
     mainQueryPoolInstance = null;
   },
@@ -396,7 +393,7 @@ export async function runIndexerQuery<T>(
     timeoutMs?: number;
     retryOnWorkerError?: boolean;
     priority?: number;
-  } = {},
+  } = {}
 ): Promise<T> {
   const coalesce = queryOptions.coalesce !== false;
   const timeoutMs = queryOptions.timeoutMs ?? defaultWorkerTimeoutMs;
@@ -424,8 +421,8 @@ export async function runIndexerQuery<T>(
 
         if (queryOptions.retryOnWorkerError !== false && error instanceof Error) {
           const retriable =
-            error.message.includes("Query worker exited") ||
-            error.message.includes("Unknown query worker method");
+            error.message.includes('Query worker exited') ||
+            error.message.includes('Unknown query worker method');
           if (retriable) {
             return (await queryPool.run(method, args, options, timeoutMs, priority)) as T;
           }
@@ -451,10 +448,6 @@ export async function runIndexerQuery<T>(
   return promise;
 }
 
-export const searchQueryTimeoutMs = Number(
-  process.env.VCEXP_API_SEARCH_TIMEOUT_MS ?? 15_000,
-);
+export const searchQueryTimeoutMs = Number(process.env.VCEXP_API_SEARCH_TIMEOUT_MS ?? 15_000);
 
-export const txLookupTimeoutMs = Number(
-  process.env.VCEXP_API_TX_LOOKUP_TIMEOUT_MS ?? 30_000,
-);
+export const txLookupTimeoutMs = Number(process.env.VCEXP_API_TX_LOOKUP_TIMEOUT_MS ?? 30_000);

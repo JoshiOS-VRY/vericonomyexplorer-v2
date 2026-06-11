@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { Radio } from "lucide-react";
-import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
-import { BcPanel, BcTableLink } from "@/components/explorer/BlockchairUi";
-import { formatHeight } from "@/components/explorer/ExplorerUi";
-import { useLatestBlocksPoll } from "@/hooks/useLatestBlocksPoll";
-import type { IndexedBlock } from "@/lib/api/types";
-import { LATEST_BLOCKS_COUNT } from "@/lib/chainBlocksDisplay";
-import { CHAIN_EXPLORERS } from "@/lib/chainDisplay";
-import { cn } from "@/lib/utils";
+import Link from 'next/link';
+import { Radio } from 'lucide-react';
+import { LiveRelativeTime } from '@/components/explorer/LiveRelativeTime';
+import { BcPanel, BcTableLink } from '@/components/explorer/BlockchairUi';
+import { formatHeight } from '@/components/explorer/ExplorerUi';
+import { useLatestBlocksPoll } from '@/hooks/useLatestBlocksPoll';
+import type { IndexedBlock } from '@/lib/api/types';
+import { LATEST_BLOCKS_COUNT } from '@/lib/chainBlocksDisplay';
+import { CHAIN_EXPLORERS } from '@/lib/chainDisplay';
+import { cn } from '@/lib/utils';
 
 interface LiveBlocksFeedProps {
-  chainId: "vrm" | "vrc";
+  chainId: 'vrm' | 'vrc';
   seedBlocks: IndexedBlock[];
 }
 
@@ -22,10 +22,7 @@ export function LiveBlocksFeed({ chainId, seedBlocks }: LiveBlocksFeedProps) {
   const rows = blocks.slice(0, LATEST_BLOCKS_COUNT);
   const action =
     config.exploreHref != null ? (
-      <Link
-        href={config.exploreHref}
-        className="text-xs font-semibold text-accent hover:underline"
-      >
+      <Link href={config.exploreHref} className="text-xs font-semibold text-accent hover:underline">
         View all
       </Link>
     ) : null;
@@ -37,10 +34,7 @@ export function LiveBlocksFeed({ chainId, seedBlocks }: LiveBlocksFeedProps) {
       action={
         <>
           <span className="mr-3 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-success">
-            <Radio
-              className={cn("h-2.5 w-2.5", isRefreshing && "animate-pulse")}
-              aria-hidden
-            />
+            <Radio className={cn('h-2.5 w-2.5', isRefreshing && 'animate-pulse')} aria-hidden />
             Live
           </span>
           {action}
@@ -69,25 +63,15 @@ export function LiveBlocksFeed({ chainId, seedBlocks }: LiveBlocksFeedProps) {
                   >
                     <td>
                       {blockHref ? (
-                        <BcTableLink
-                          href={blockHref}
-                          className="tabular-nums"
-                          prefetch
-                        >
+                        <BcTableLink href={blockHref} className="tabular-nums" prefetch>
                           {formatHeight(block.height)}
                         </BcTableLink>
                       ) : (
-                        <span className="tabular-nums text-fg">
-                          {formatHeight(block.height)}
-                        </span>
+                        <span className="tabular-nums text-fg">{formatHeight(block.height)}</span>
                       )}
                     </td>
                     <td className="bc-col-age text-fg-muted">
-                      <LiveRelativeTime
-                        time={block.time}
-                        interval="second"
-                        fixedWidth
-                      />
+                      <LiveRelativeTime time={block.time} interval="second" fixedWidth />
                     </td>
                     <td className="text-right tabular-nums text-fg-muted">
                       {formatHeight(block.txCount)}

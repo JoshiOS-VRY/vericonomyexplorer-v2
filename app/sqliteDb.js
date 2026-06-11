@@ -1,63 +1,63 @@
-"use strict";
+'use strict';
 
-const Database = require("better-sqlite3");
-const fs = require("fs");
-const path = require("path");
-const debug = require("debug");
-const debugLog = debug("btcexp:sqlite");
+const Database = require('better-sqlite3');
+const fs = require('fs');
+const path = require('path');
+const debug = require('debug');
+const debugLog = debug('btcexp:sqlite');
 
-const config = require("./config.js");
-const utils = require("./utils.js");
+const config = require('./config.js');
+const utils = require('./utils.js');
 
 let db = null;
 
 function getDatabase() {
-	if (!config.sqliteEnabled) {
-		return null;
-	}
+  if (!config.sqliteEnabled) {
+    return null;
+  }
 
-	if (db) {
-		return db;
-	}
+  if (db) {
+    return db;
+  }
 
-	try {
-		// Ensure database directory exists
-		const dbDir = path.dirname(config.sqlitePath);
-		if (!fs.existsSync(dbDir)) {
-			fs.mkdirSync(dbDir, { recursive: true });
-			debugLog(`Created database directory: ${dbDir}`);
-		}
+  try {
+    // Ensure database directory exists
+    const dbDir = path.dirname(config.sqlitePath);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+      debugLog(`Created database directory: ${dbDir}`);
+    }
 
-		// Open database connection
-		db = new Database(config.sqlitePath);
-		
-		// Enable WAL mode for better concurrency
-		db.pragma("journal_mode = WAL");
-		
-		// Enable foreign keys
-		db.pragma("foreign_keys = ON");
-		
-		// Set busy timeout
-		db.pragma("busy_timeout = 5000");
+    // Open database connection
+    db = new Database(config.sqlitePath);
 
-		debugLog(`SQLite database opened: ${config.sqlitePath}`);
-		
-		// Create tables if they don't exist
-		createTables();
-		
-		return db;
-	} catch (err) {
-		utils.logError("sqlite-db-connection", err, {path: config.sqlitePath});
-		return null;
-	}
+    // Enable WAL mode for better concurrency
+    db.pragma('journal_mode = WAL');
+
+    // Enable foreign keys
+    db.pragma('foreign_keys = ON');
+
+    // Set busy timeout
+    db.pragma('busy_timeout = 5000');
+
+    debugLog(`SQLite database opened: ${config.sqlitePath}`);
+
+    // Create tables if they don't exist
+    createTables();
+
+    return db;
+  } catch (err) {
+    utils.logError('sqlite-db-connection', err, { path: config.sqlitePath });
+    return null;
+  }
 }
 
 function createTables() {
-	if (!db) {
-		return;
-	}
+  if (!db) {
+    return;
+  }
 
-	const createBlocksTable = `
+  const createBlocksTable = `
 		CREATE TABLE IF NOT EXISTS blocks (
 			height INTEGER PRIMARY KEY,
 			hash TEXT UNIQUE NOT NULL,
@@ -79,7 +79,7 @@ function createTables() {
 		);
 	`;
 
-	const createTransactionsTable = `
+  const createTransactionsTable = `
 		CREATE TABLE IF NOT EXISTS transactions (
 			txid TEXT PRIMARY KEY,
 			block_height INTEGER,
@@ -97,7 +97,7 @@ function createTables() {
 		);
 	`;
 
-	const createAddressTxsTable = `
+  const createAddressTxsTable = `
 		CREATE TABLE IF NOT EXISTS address_txs (
 			address TEXT NOT NULL,
 			txid TEXT NOT NULL,
@@ -113,7 +113,7 @@ function createTables() {
 		);
 	`;
 
-	const createAddressBalancesTable = `
+  const createAddressBalancesTable = `
 		CREATE TABLE IF NOT EXISTS address_balances (
 			address TEXT PRIMARY KEY,
 			balance REAL NOT NULL DEFAULT 0,
@@ -123,7 +123,7 @@ function createTables() {
 		);
 	`;
 
-	const createOrphanedBlocksTable = `
+  const createOrphanedBlocksTable = `
 		CREATE TABLE IF NOT EXISTS orphaned_blocks (
 			hash TEXT PRIMARY KEY,
 			height INTEGER,
@@ -134,7 +134,7 @@ function createTables() {
 		);
 	`;
 
-	const createSyncMetadataTable = `
+  const createSyncMetadataTable = `
 		CREATE TABLE IF NOT EXISTS sync_metadata (
 			key TEXT PRIMARY KEY,
 			value TEXT NOT NULL,
@@ -142,8 +142,8 @@ function createTables() {
 		);
 	`;
 
-	// Create indexes for performance
-	const createIndexes = `
+  // Create indexes for performance
+  const createIndexes = `
 		CREATE INDEX IF NOT EXISTS idx_blocks_hash ON blocks(hash);
 		CREATE INDEX IF NOT EXISTS idx_blocks_time ON blocks(time);
 		CREATE INDEX IF NOT EXISTS idx_blocks_orphan ON blocks(is_orphan);
@@ -163,118 +163,120 @@ function createTables() {
 		CREATE INDEX IF NOT EXISTS idx_orphaned_blocks_discovered ON orphaned_blocks(discovered_at DESC);
 	`;
 
-	try {
-		db.exec(createBlocksTable);
-		db.exec(createTransactionsTable);
-		db.exec(createAddressTxsTable);
-		db.exec(createAddressBalancesTable);
-		db.exec(createOrphanedBlocksTable);
-		db.exec(createSyncMetadataTable);
-		db.exec(createIndexes);
-		
-		debugLog("SQLite tables and indexes created successfully");
-	} catch (err) {
-		utils.logError("sqlite-create-tables", err);
-		throw err;
-	}
+  try {
+    db.exec(createBlocksTable);
+    db.exec(createTransactionsTable);
+    db.exec(createAddressTxsTable);
+    db.exec(createAddressBalancesTable);
+    db.exec(createOrphanedBlocksTable);
+    db.exec(createSyncMetadataTable);
+    db.exec(createIndexes);
+
+    debugLog('SQLite tables and indexes created successfully');
+  } catch (err) {
+    utils.logError('sqlite-create-tables', err);
+    throw err;
+  }
 }
 
 function closeDatabase() {
-	if (db) {
-		try {
-			db.close();
-			db = null;
-			debugLog("SQLite database closed");
-		} catch (err) {
-			utils.logError("sqlite-close", err);
-		}
-	}
+  if (db) {
+    try {
+      db.close();
+      db = null;
+      debugLog('SQLite database closed');
+    } catch (err) {
+      utils.logError('sqlite-close', err);
+    }
+  }
 }
 
 // Test function for Phase 1
 function test() {
-	console.log("=== SQLite Database Test ===");
-	
-	if (!config.sqliteEnabled) {
-		console.log("❌ SQLite is not enabled (BTCEXP_USE_SQLITE not set to true)");
-		return false;
-	}
-	
-	try {
-		const testDb = getDatabase();
-		if (!testDb) {
-			console.log("❌ Failed to open database");
-			return false;
-		}
-		
-		console.log("✅ Database connection successful");
-		console.log(`   Path: ${config.sqlitePath}`);
-		
-		// Test table existence
-		const tables = testDb.prepare(`
+  console.log('=== SQLite Database Test ===');
+
+  if (!config.sqliteEnabled) {
+    console.log('❌ SQLite is not enabled (BTCEXP_USE_SQLITE not set to true)');
+    return false;
+  }
+
+  try {
+    const testDb = getDatabase();
+    if (!testDb) {
+      console.log('❌ Failed to open database');
+      return false;
+    }
+
+    console.log('✅ Database connection successful');
+    console.log(`   Path: ${config.sqlitePath}`);
+
+    // Test table existence
+    const tables = testDb
+      .prepare(
+        `
 			SELECT name FROM sqlite_master 
 			WHERE type='table' 
 			ORDER BY name
-		`).all();
-		
-		console.log(`✅ Found ${tables.length} tables:`);
-		tables.forEach(table => {
-			console.log(`   - ${table.name}`);
-		});
-		
-		// Test insert and query
-		const now = Date.now();
-		const testKey = `test-${now}`;
-		const testValue = `test-value-${now}`;
-		
-		// Insert test metadata
-		const insertStmt = testDb.prepare(`
+		`
+      )
+      .all();
+
+    console.log(`✅ Found ${tables.length} tables:`);
+    tables.forEach((table) => {
+      console.log(`   - ${table.name}`);
+    });
+
+    // Test insert and query
+    const now = Date.now();
+    const testKey = `test-${now}`;
+    const testValue = `test-value-${now}`;
+
+    // Insert test metadata
+    const insertStmt = testDb.prepare(`
 			INSERT OR REPLACE INTO sync_metadata (key, value, updated_at)
 			VALUES (?, ?, ?)
 		`);
-		insertStmt.run(testKey, testValue, now);
-		console.log("✅ Test insert successful");
-		
-		// Query test metadata
-		const selectStmt = testDb.prepare(`
+    insertStmt.run(testKey, testValue, now);
+    console.log('✅ Test insert successful');
+
+    // Query test metadata
+    const selectStmt = testDb.prepare(`
 			SELECT value FROM sync_metadata WHERE key = ?
 		`);
-		const result = selectStmt.get(testKey);
-		
-		if (result && result.value === testValue) {
-			console.log("✅ Test query successful");
-			console.log(`   Retrieved: ${result.value}`);
-		} else {
-			console.log("❌ Test query failed");
-			return false;
-		}
-		
-		// Clean up test data
-		const deleteStmt = testDb.prepare(`DELETE FROM sync_metadata WHERE key = ?`);
-		deleteStmt.run(testKey);
-		console.log("✅ Test cleanup successful");
-		
-		// Get database file size
-		if (fs.existsSync(config.sqlitePath)) {
-			const stats = fs.statSync(config.sqlitePath);
-			const sizeMB = (stats.size / 1024 / 1024).toFixed(2);
-			console.log(`✅ Database file size: ${sizeMB} MB`);
-		}
-		
-		console.log("\n=== All Tests Passed ===");
-		return true;
-		
-	} catch (err) {
-		console.log(`❌ Test failed: ${err.message}`);
-		console.error(err);
-		return false;
-	}
+    const result = selectStmt.get(testKey);
+
+    if (result && result.value === testValue) {
+      console.log('✅ Test query successful');
+      console.log(`   Retrieved: ${result.value}`);
+    } else {
+      console.log('❌ Test query failed');
+      return false;
+    }
+
+    // Clean up test data
+    const deleteStmt = testDb.prepare(`DELETE FROM sync_metadata WHERE key = ?`);
+    deleteStmt.run(testKey);
+    console.log('✅ Test cleanup successful');
+
+    // Get database file size
+    if (fs.existsSync(config.sqlitePath)) {
+      const stats = fs.statSync(config.sqlitePath);
+      const sizeMB = (stats.size / 1024 / 1024).toFixed(2);
+      console.log(`✅ Database file size: ${sizeMB} MB`);
+    }
+
+    console.log('\n=== All Tests Passed ===');
+    return true;
+  } catch (err) {
+    console.log(`❌ Test failed: ${err.message}`);
+    console.error(err);
+    return false;
+  }
 }
 
 module.exports = {
-	getDatabase: getDatabase,
-	closeDatabase: closeDatabase,
-	active: config.sqliteEnabled,
-	test: test
+  getDatabase: getDatabase,
+  closeDatabase: closeDatabase,
+  active: config.sqliteEnabled,
+  test: test,
 };
-

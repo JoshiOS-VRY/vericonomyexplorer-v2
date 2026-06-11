@@ -1,7 +1,7 @@
-import { createRequire } from "node:module";
-import { repoRoot } from "../env.js";
-import type { ChainId } from "../types.js";
-import { createRpcPool, type RpcClient } from "./pool.js";
+import { createRequire } from 'node:module';
+import { repoRoot } from '../env.js';
+import type { ChainId } from '../types.js';
+import { createRpcPool, type RpcClient } from './pool.js';
 
 const require = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-require-imports

@@ -1,8 +1,8 @@
-import { getTipPollMs, getZmqUrl } from "../env.js";
-import { getRpcClient } from "../rpc/index.js";
-import type { ChainId, TipState } from "../types.js";
-import { CHAIN_IDS } from "../types.js";
-import { TipBroker } from "./tipBroker.js";
+import { getTipPollMs, getZmqUrl } from '../env.js';
+import { getRpcClient } from '../rpc/index.js';
+import type { ChainId, TipState } from '../types.js';
+import { CHAIN_IDS } from '../types.js';
+import { TipBroker } from './tipBroker.js';
 
 const brokers = new Map<ChainId, TipBroker>();
 
@@ -12,7 +12,7 @@ export async function initBrokers(): Promise<void> {
       chainId,
       getRpcClient(chainId),
       getTipPollMs(),
-      getZmqUrl(chainId),
+      getZmqUrl(chainId)
     );
     await broker.start();
     brokers.set(chainId, broker);
@@ -38,13 +38,11 @@ export function getTip(chainId: ChainId): TipState | null {
 
 export function onTip(chainId: ChainId, listener: (tip: TipState) => void): () => void {
   const broker = getBroker(chainId);
-  broker.on("tip", listener);
-  return () => broker.off("tip", listener);
+  broker.on('tip', listener);
+  return () => broker.off('tip', listener);
 }
 
 export function onAnyTip(listener: (chainId: ChainId, tip: TipState) => void): () => void {
-  const unsubs = CHAIN_IDS.map((chainId) =>
-    onTip(chainId, (tip) => listener(chainId, tip)),
-  );
+  const unsubs = CHAIN_IDS.map((chainId) => onTip(chainId, (tip) => listener(chainId, tip)));
   return () => unsubs.forEach((unsub) => unsub());
 }

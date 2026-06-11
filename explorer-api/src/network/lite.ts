@@ -1,14 +1,9 @@
-import { runIndexerQuery } from "../db/queryPool.js";
-import { rpc } from "../rpc/index.js";
-import type { ChainId } from "../types.js";
-import type { VrcNetworkStats, VrmNetworkStats } from "../types/home.js";
-import { fetchCanonicalVrmHashrate } from "./hashrateLive.js";
-import {
-  getMaxSupply,
-  parseRpcNumber,
-  parseVrcMiningInfo,
-  type RpcCall,
-} from "./stats.js";
+import { runIndexerQuery } from '../db/queryPool.js';
+import { rpc } from '../rpc/index.js';
+import type { ChainId } from '../types.js';
+import type { VrcNetworkStats, VrmNetworkStats } from '../types/home.js';
+import { fetchCanonicalVrmHashrate } from './hashrateLive.js';
+import { getMaxSupply, parseRpcNumber, parseVrcMiningInfo, type RpcCall } from './stats.js';
 
 const HOT_RPC_TIMEOUT_MS = Number(process.env.VCEXP_HOT_RPC_TIMEOUT_MS ?? 4_000);
 const HOT_INDEXER_TIMEOUT_MS = Number(process.env.VCEXP_HOT_INDEXER_TIMEOUT_MS ?? 3_000);
@@ -22,10 +17,10 @@ function rpcCall(chainId: ChainId): RpcCall {
 async function fetchIndexedTipHeight(chainId: ChainId): Promise<number | null> {
   try {
     const summary = (await runIndexerQuery(
-      "getChainSummaryLiteIndexed",
+      'getChainSummaryLiteIndexed',
       [chainId],
       { skipLiveBlocks: true, skipLiveRpc: true, limit: 1 },
-      { timeoutMs: HOT_INDEXER_TIMEOUT_MS, priority: 0 },
+      { timeoutMs: HOT_INDEXER_TIMEOUT_MS, priority: 0 }
     )) as { latestBlocks?: { height: number }[] };
 
     return summary?.latestBlocks?.[0]?.height ?? null;
@@ -37,29 +32,25 @@ async function fetchIndexedTipHeight(chainId: ChainId): Promise<number | null> {
 async function fetchIndexedSupply(chainId: ChainId, height: number): Promise<number | null> {
   try {
     const result = (await runIndexerQuery(
-      "getIndexedSupplyAtHeight",
+      'getIndexedSupplyAtHeight',
       [chainId],
       { height },
-      { timeoutMs: HOT_INDEXER_TIMEOUT_MS, priority: 0 },
+      { timeoutMs: HOT_INDEXER_TIMEOUT_MS, priority: 0 }
     )) as { supply?: number | null };
 
     const supply = result?.supply;
-    return typeof supply === "number" && Number.isFinite(supply) && supply > 0
-      ? supply
-      : null;
+    return typeof supply === 'number' && Number.isFinite(supply) && supply > 0 ? supply : null;
   } catch {
     return null;
   }
 }
 
-function mapHashrateSource(
-  source: string,
-): VrmNetworkStats["hashrateSource"] {
+function mapHashrateSource(source: string): VrmNetworkStats['hashrateSource'] {
   if (
-    source === "networkhashps" ||
-    source === "nethashrate" ||
-    source === "getnetworkhashps" ||
-    source === "difficulty"
+    source === 'networkhashps' ||
+    source === 'nethashrate' ||
+    source === 'getnetworkhashps' ||
+    source === 'difficulty'
   ) {
     return source;
   }
@@ -68,12 +59,12 @@ function mapHashrateSource(
 
 /** Lightweight network stats for hot paths (home, SSR). Uses canonical hashrate resolver. */
 export async function fetchVrmNetworkStatsLite(): Promise<VrmNetworkStats> {
-  const call = rpcCall("vrm");
+  const call = rpcCall('vrm');
 
   try {
     const [blockchainInfo, miningInfo] = await Promise.all([
-      call("getblockchaininfo").catch(() => null),
-      call("getmininginfo").catch(() => null),
+      call('getblockchaininfo').catch(() => null),
+      call('getmininginfo').catch(() => null),
     ]);
 
     const hashrateResolved = await fetchCanonicalVrmHashrate(call, {
@@ -96,7 +87,7 @@ export async function fetchVrmNetworkStatsLite(): Promise<VrmNetworkStats> {
     const difficulty = parseRpcNumber(blockchain?.difficulty);
 
     if (blocks == null) {
-      blocks = await fetchIndexedTipHeight("vrm");
+      blocks = await fetchIndexedTipHeight('vrm');
     }
 
     const rpcSupply = parseRpcNumber(blockchain?.totalsupply);
@@ -104,7 +95,7 @@ export async function fetchVrmNetworkStatsLite(): Promise<VrmNetworkStats> {
       rpcSupply != null && rpcSupply > 0
         ? rpcSupply
         : blocks != null
-          ? await fetchIndexedSupply("vrm", blocks)
+          ? await fetchIndexedSupply('vrm', blocks)
           : null;
 
     const blocksPerHour = parseRpcNumber(mining?.blocksperhour);
@@ -124,11 +115,11 @@ export async function fetchVrmNetworkStatsLite(): Promise<VrmNetworkStats> {
       difficulty,
       blocks,
       supply,
-      maxSupply: getMaxSupply("vrm"),
+      maxSupply: getMaxSupply('vrm'),
     };
   } catch {
-    const blocks = await fetchIndexedTipHeight("vrm");
-    const supply = blocks != null ? await fetchIndexedSupply("vrm", blocks) : null;
+    const blocks = await fetchIndexedTipHeight('vrm');
+    const supply = blocks != null ? await fetchIndexedSupply('vrm', blocks) : null;
 
     return {
       hashrateKhPerMin: null,
@@ -138,19 +129,19 @@ export async function fetchVrmNetworkStatsLite(): Promise<VrmNetworkStats> {
       difficulty: null,
       blocks,
       supply,
-      maxSupply: getMaxSupply("vrm"),
+      maxSupply: getMaxSupply('vrm'),
     };
   }
 }
 
 /** Lightweight VRC network stats for hot paths. Skips gettxoutsetinfo and legacy staking fallbacks. */
 export async function fetchVrcNetworkStatsLite(): Promise<VrcNetworkStats> {
-  const call = rpcCall("vrc");
+  const call = rpcCall('vrc');
 
   try {
     const [blockchainInfo, miningInfo] = await Promise.all([
-      call("getblockchaininfo").catch(() => null),
-      call("getmininginfo").catch(() => null),
+      call('getblockchaininfo').catch(() => null),
+      call('getmininginfo').catch(() => null),
     ]);
 
     const blockchain = blockchainInfo as {
@@ -172,7 +163,7 @@ export async function fetchVrcNetworkStatsLite(): Promise<VrcNetworkStats> {
       rpcSupply != null && rpcSupply > 0
         ? rpcSupply
         : blocks != null
-          ? await fetchIndexedSupply("vrc", blocks)
+          ? await fetchIndexedSupply('vrc', blocks)
           : null;
 
     let percentStaked: number | null = null;
@@ -185,7 +176,7 @@ export async function fetchVrcNetworkStatsLite(): Promise<VrcNetworkStats> {
       difficulty,
       blocks,
       supply,
-      maxSupply: getMaxSupply("vrc"),
+      maxSupply: getMaxSupply('vrc'),
       interestRatePercent: miningMetrics.interestRatePercent,
       netStakeWeight,
       percentStaked,
@@ -196,7 +187,7 @@ export async function fetchVrcNetworkStatsLite(): Promise<VrcNetworkStats> {
       difficulty: null,
       blocks: null,
       supply: null,
-      maxSupply: getMaxSupply("vrc"),
+      maxSupply: getMaxSupply('vrc'),
       interestRatePercent: null,
       netStakeWeight: null,
       percentStaked: null,

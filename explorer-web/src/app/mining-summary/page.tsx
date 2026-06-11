@@ -1,11 +1,11 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { AlertBanner, SummaryGrid } from "@/components/explorer/ExplorerUi";
-import { getInternalApi, getNextBlock } from "@/lib/api/legacy";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { AlertBanner, SummaryGrid } from '@/components/explorer/ExplorerUi';
+import { getInternalApi, getNextBlock } from '@/lib/api/legacy';
 
 export default async function MiningSummaryPage() {
   try {
     const [summary, nextBlock] = await Promise.all([
-      getInternalApi<Record<string, unknown>>("/get-mining-summary"),
+      getInternalApi<Record<string, unknown>>('/get-mining-summary'),
       getNextBlock(),
     ]);
     return (
@@ -21,10 +21,7 @@ export default async function MiningSummaryPage() {
                 .slice(0, 8)
                 .map(([key, value]) => ({
                   label: key,
-                  value:
-                    typeof value === "object"
-                      ? JSON.stringify(value)
-                      : String(value),
+                  value: typeof value === 'object' ? JSON.stringify(value) : String(value),
                 }))}
             />
           </CardContent>
@@ -44,9 +41,7 @@ export default async function MiningSummaryPage() {
   } catch (error) {
     return (
       <AlertBanner title="Mining Summary Unavailable">
-        {error instanceof Error
-          ? error.message
-          : "Unable to load mining summary."}
+        {error instanceof Error ? error.message : 'Unable to load mining summary.'}
       </AlertBanner>
     );
   }

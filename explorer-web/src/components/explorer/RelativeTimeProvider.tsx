@@ -1,8 +1,16 @@
-"use client";
+'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 
-type Interval = "second" | "minute";
+type Interval = 'second' | 'minute';
 
 interface RelativeTimeContextValue {
   tick: number;
@@ -18,7 +26,7 @@ export function RelativeTimeProvider({ children }: { children: ReactNode }) {
   const [minuteCount, setMinuteCount] = useState(0);
 
   const registerInterval = useCallback((interval: Interval) => {
-    if (interval === "second") {
+    if (interval === 'second') {
       setSecondCount((value) => value + 1);
     } else {
       setMinuteCount((value) => value + 1);
@@ -26,7 +34,7 @@ export function RelativeTimeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const unregisterInterval = useCallback((interval: Interval) => {
-    if (interval === "second") {
+    if (interval === 'second') {
       setSecondCount((value) => Math.max(0, value - 1));
     } else {
       setMinuteCount((value) => Math.max(0, value - 1));
@@ -48,14 +56,10 @@ export function RelativeTimeProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({ tick, registerInterval, unregisterInterval }),
-    [registerInterval, tick, unregisterInterval],
+    [registerInterval, tick, unregisterInterval]
   );
 
-  return (
-    <RelativeTimeContext.Provider value={value}>
-      {children}
-    </RelativeTimeContext.Provider>
-  );
+  return <RelativeTimeContext.Provider value={value}>{children}</RelativeTimeContext.Provider>;
 }
 
 export function useRelativeTimeTick(interval: Interval): number {

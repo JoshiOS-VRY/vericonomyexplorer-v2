@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { AlertBanner } from "@/components/explorer/ExplorerUi";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { AlertBanner } from '@/components/explorer/ExplorerUi';
 
 export function LegacyJsonView({
   title,
@@ -16,13 +16,9 @@ export function LegacyJsonView({
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">{title}</h1>
-        {subtitle ? (
-          <p className="mt-1 text-sm text-fg-muted">{subtitle}</p>
-        ) : null}
+        {subtitle ? <p className="mt-1 text-sm text-fg-muted">{subtitle}</p> : null}
       </div>
-      {error ? (
-        <AlertBanner title="Data Unavailable">{error}</AlertBanner>
-      ) : null}
+      {error ? <AlertBanner title="Data Unavailable">{error}</AlertBanner> : null}
       <Card>
         <CardHeader>
           <CardTitle>Response</CardTitle>
@@ -37,13 +33,7 @@ export function LegacyJsonView({
   );
 }
 
-export function StaticInfoPage({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+export function StaticInfoPage({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">{title}</h1>
@@ -56,14 +46,12 @@ export function StaticInfoPage({
   );
 }
 
-async function loadLegacy<T>(
-  loader: () => Promise<T>,
-): Promise<{ data?: T; error?: string }> {
+async function loadLegacy<T>(loader: () => Promise<T>): Promise<{ data?: T; error?: string }> {
   try {
     return { data: await loader() };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Request failed",
+      error: error instanceof Error ? error.message : 'Request failed',
     };
   }
 }

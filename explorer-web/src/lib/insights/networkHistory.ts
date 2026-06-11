@@ -1,10 +1,10 @@
-import { clientApiFetch } from "@/lib/api/client";
-import type { AddressBalanceHistoryPeriodId } from "@/lib/api/types";
+import { clientApiFetch } from '@/lib/api/client';
+import type { AddressBalanceHistoryPeriodId } from '@/lib/api/types';
 import {
   getInsightsHistoryMaxPoints,
   getInsightsHistorySince,
   type InsightsHistoryGroupBy,
-} from "@/lib/insightsChartConfig";
+} from '@/lib/insightsChartConfig';
 
 export interface NetworkMetricBucket {
   startTime: number;
@@ -34,17 +34,17 @@ export interface NetworkMetricHistoryResult {
 export async function fetchNetworkHistoryClient(
   chainId: string,
   periodId: AddressBalanceHistoryPeriodId,
-  groupBy: InsightsHistoryGroupBy,
+  groupBy: InsightsHistoryGroupBy
 ): Promise<NetworkMetricHistoryResult> {
   const search = new URLSearchParams();
-  search.set("maxPoints", String(getInsightsHistoryMaxPoints(periodId)));
-  search.set("groupBy", groupBy);
+  search.set('maxPoints', String(getInsightsHistoryMaxPoints(periodId)));
+  search.set('groupBy', groupBy);
   const since = getInsightsHistorySince(periodId);
   if (since != null) {
-    search.set("since", String(since));
+    search.set('since', String(since));
   }
 
   return clientApiFetch<NetworkMetricHistoryResult>(
-    `/${chainId}/insights/network-history?${search.toString()}`,
+    `/${chainId}/insights/network-history?${search.toString()}`
   );
 }

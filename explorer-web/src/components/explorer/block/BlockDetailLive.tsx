@@ -1,25 +1,25 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { BlockAdvancedPanel } from "@/components/explorer/block/BlockAdvancedPanel";
-import { BlockDetailHero } from "@/components/explorer/BlockDetail";
-import { BlockMetricStrip } from "@/components/explorer/block/BlockMetricStrip";
-import { BlockMiningCard } from "@/components/explorer/block/BlockMiningCard";
-import { BlockShareActions } from "@/components/explorer/block/BlockShareActions";
-import { BlockStatusBar } from "@/components/explorer/block/BlockStatusBar";
-import { BlockTxTable } from "@/components/explorer/block/BlockTxTable";
-import { useLivePoll } from "@/hooks/useLivePoll";
-import { useStableChainLive } from "@/hooks/useStableChainLive";
-import { fetchBlockClient } from "@/lib/api/client";
-import type { BlockResult, ChainSummary } from "@/lib/api/types";
-import { type ChainId } from "@/lib/chainDisplay";
-import { snapshotFromSummary } from "@/lib/chainLive/store";
-import { ENTITY_LIVE_POLL_MS, NEAR_TIP_BLOCK_THRESHOLD } from "@/lib/liveDataConfig";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { BlockAdvancedPanel } from '@/components/explorer/block/BlockAdvancedPanel';
+import { BlockDetailHero } from '@/components/explorer/BlockDetail';
+import { BlockMetricStrip } from '@/components/explorer/block/BlockMetricStrip';
+import { BlockMiningCard } from '@/components/explorer/block/BlockMiningCard';
+import { BlockShareActions } from '@/components/explorer/block/BlockShareActions';
+import { BlockStatusBar } from '@/components/explorer/block/BlockStatusBar';
+import { BlockTxTable } from '@/components/explorer/block/BlockTxTable';
+import { useLivePoll } from '@/hooks/useLivePoll';
+import { useStableChainLive } from '@/hooks/useStableChainLive';
+import { fetchBlockClient } from '@/lib/api/client';
+import type { BlockResult, ChainSummary } from '@/lib/api/types';
+import { type ChainId } from '@/lib/chainDisplay';
+import { snapshotFromSummary } from '@/lib/chainLive/store';
+import { ENTITY_LIVE_POLL_MS, NEAR_TIP_BLOCK_THRESHOLD } from '@/lib/liveDataConfig';
 
 function blockLiveSignature(result: BlockResult): string {
   const block = result.block;
   if (!block) {
-    return "missing";
+    return 'missing';
   }
 
   const head = result.transactions[0];
@@ -28,8 +28,8 @@ function blockLiveSignature(result: BlockResult): string {
     block.hash,
     block.txCount,
     result.transactions.length,
-    head?.txid ?? "",
-  ].join(":");
+    head?.txid ?? '',
+  ].join(':');
 }
 
 export function BlockDetailLive({
@@ -50,13 +50,11 @@ export function BlockDetailLive({
   const [result, setResult] = useState(initialResult);
   const signatureRef = useRef(blockLiveSignature(initialResult));
   const inFlightRef = useRef(false);
-  const resolvedSummary =
-    initialSummary ?? snapshotFromSummary(chainId, null).summary;
+  const resolvedSummary = initialSummary ?? snapshotFromSummary(chainId, null).summary;
   const live = useStableChainLive(chainId, resolvedSummary);
   const block = result.block!;
   const chainHeight = live.chainHeight;
-  const nearTip =
-    chainHeight != null && block.height >= chainHeight - NEAR_TIP_BLOCK_THRESHOLD;
+  const nearTip = chainHeight != null && block.height >= chainHeight - NEAR_TIP_BLOCK_THRESHOLD;
 
   useEffect(() => {
     signatureRef.current = blockLiveSignature(initialResult);
@@ -103,9 +101,7 @@ export function BlockDetailLive({
         difficulty={block.difficulty}
         previousHash={block.previousHash}
         nextHash={block.nextHash}
-        actions={
-          <BlockShareActions chainId={chainId} hash={block.hash} height={block.height} />
-        }
+        actions={<BlockShareActions chainId={chainId} hash={block.hash} height={block.height} />}
       />
 
       <BlockStatusBar result={result} />

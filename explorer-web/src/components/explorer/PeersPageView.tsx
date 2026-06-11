@@ -1,10 +1,10 @@
-import { AlertBanner, formatHeight } from "@/components/explorer/ExplorerUi";
-import { BcPageHeader, BcPanel, BcStat, BcStatGrid } from "@/components/explorer/BlockchairUi";
-import { getPeers } from "@/lib/api/indexer";
-import { formatBlockAge } from "@/lib/utils";
+import { AlertBanner, formatHeight } from '@/components/explorer/ExplorerUi';
+import { BcPageHeader, BcPanel, BcStat, BcStatGrid } from '@/components/explorer/BlockchairUi';
+import { getPeers } from '@/lib/api/indexer';
+import { formatBlockAge } from '@/lib/utils';
 
 function formatConnected(seconds: number | null): string {
-  if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) return "—";
+  if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) return '—';
   const mins = Math.floor(seconds / 60);
   if (mins < 60) return `${mins}m`;
   const hours = Math.floor(mins / 60);
@@ -21,13 +21,7 @@ function isoToUnix(iso: string | null): number | null {
   return Number.isFinite(ms) ? Math.floor(ms / 1000) : null;
 }
 
-export async function PeersPageView({
-  chainId,
-  coinName,
-}: {
-  chainId: string;
-  coinName: string;
-}) {
+export async function PeersPageView({ chainId, coinName }: { chainId: string; coinName: string }) {
   let peers;
   try {
     peers = await getPeers(chainId, { limit: 300 });
@@ -79,10 +73,8 @@ export async function PeersPageView({
             <tbody>
               {peers.versions.map((group) => (
                 <tr key={`${group.subversion}-${group.protocolVersion}`}>
-                  <td className="font-mono text-[13px]">{group.subversion || "—"}</td>
-                  <td className="tabular-nums text-fg-muted">
-                    {group.protocolVersion ?? "—"}
-                  </td>
+                  <td className="font-mono text-[13px]">{group.subversion || '—'}</td>
+                  <td className="tabular-nums text-fg-muted">{group.protocolVersion ?? '—'}</td>
                   <td className="text-right font-medium tabular-nums">
                     {formatHeight(group.count)}
                   </td>
@@ -113,18 +105,14 @@ export async function PeersPageView({
                 <tr key={`${peer.id}-${peer.address}`}>
                   <td className="tabular-nums text-fg-subtle">{index + 1}</td>
                   <td className="font-mono text-[13px]">{peer.address}</td>
-                  <td className="font-mono text-[13px] text-fg-muted">
-                    {peer.subversion || "—"}
-                  </td>
-                  <td className="tabular-nums text-fg-muted">
-                    {peer.protocolVersion ?? "—"}
-                  </td>
-                  <td className="text-fg-muted">{peer.inbound ? "Inbound" : "Outbound"}</td>
+                  <td className="font-mono text-[13px] text-fg-muted">{peer.subversion || '—'}</td>
+                  <td className="tabular-nums text-fg-muted">{peer.protocolVersion ?? '—'}</td>
+                  <td className="text-fg-muted">{peer.inbound ? 'Inbound' : 'Outbound'}</td>
                   <td className="text-right tabular-nums text-fg-muted">
                     {formatConnected(peer.connectedSeconds)}
                   </td>
                   <td className="text-right tabular-nums text-fg-muted">
-                    {peer.pingMs != null ? `${peer.pingMs} ms` : "—"}
+                    {peer.pingMs != null ? `${peer.pingMs} ms` : '—'}
                   </td>
                   <td className="text-right tabular-nums text-fg-muted">
                     {formatBlockAge(isoToUnix(peer.lastSeen))}

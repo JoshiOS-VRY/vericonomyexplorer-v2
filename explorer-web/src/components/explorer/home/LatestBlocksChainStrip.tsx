@@ -1,45 +1,39 @@
-"use client";
+'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import { Blocks, ChevronRight, ExternalLink, Radio } from "lucide-react";
-import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
-import { BcTableLink } from "@/components/explorer/BlockchairUi";
-import { ExtractedByCell } from "@/components/explorer/block/ExtractedByCell";
-import { formatHeight } from "@/components/explorer/ExplorerUi";
-import { ChainMarketCard } from "@/components/explorer/home/ChainMarketCard";
-import { ChainNetworkCard } from "@/components/explorer/home/ChainNetworkCard";
-import {
-  ChainHubStatCell,
-  ChainHubStatRow,
-} from "@/components/explorer/home/ChainHubStats";
-import { useLatestBlocksPoll } from "@/hooks/useLatestBlocksPoll";
+import Image from 'next/image';
+import Link from 'next/link';
+import { Blocks, ChevronRight, ExternalLink, Radio } from 'lucide-react';
+import { LiveRelativeTime } from '@/components/explorer/LiveRelativeTime';
+import { BcTableLink } from '@/components/explorer/BlockchairUi';
+import { ExtractedByCell } from '@/components/explorer/block/ExtractedByCell';
+import { formatHeight } from '@/components/explorer/ExplorerUi';
+import { ChainMarketCard } from '@/components/explorer/home/ChainMarketCard';
+import { ChainNetworkCard } from '@/components/explorer/home/ChainNetworkCard';
+import { ChainHubStatCell, ChainHubStatRow } from '@/components/explorer/home/ChainHubStats';
+import { useLatestBlocksPoll } from '@/hooks/useLatestBlocksPoll';
 import type {
   ChainMarket,
   ChainSummary,
   IndexedBlock,
   VrcNetworkStats,
   VrmNetworkStats,
-} from "@/lib/api/types";
+} from '@/lib/api/types';
 import {
   LATEST_BLOCKS_COUNT,
   LATEST_BLOCKS_POLL_MS,
   LATEST_BLOCKS_STRIP_COUNT,
-} from "@/lib/chainBlocksDisplay";
+} from '@/lib/chainBlocksDisplay';
 import {
   CHAIN_EXPLORERS,
   CHAIN_THEME,
   getChainTipHeight,
   isChainAtTip,
   type ChainId,
-} from "@/lib/chainDisplay";
-import {
-  isIndexedBlockTableReady,
-  isOptimisticTipBlock,
-} from "@/lib/liveBlocksMerge";
-import { formatPercent } from "@/lib/formatMarket";
-import { isVeriumPoolExtracted } from "@/lib/veriumPoolExtracted";
-import { cn, formatDifficulty } from "@/lib/utils";
+} from '@/lib/chainDisplay';
+import { isIndexedBlockTableReady, isOptimisticTipBlock } from '@/lib/liveBlocksMerge';
+import { formatPercent } from '@/lib/formatMarket';
+import { isVeriumPoolExtracted } from '@/lib/veriumPoolExtracted';
+import { cn, formatDifficulty } from '@/lib/utils';
 
 export interface ChainHubSectionProps {
   chainId: ChainId;
@@ -74,24 +68,22 @@ export function ChainHubSection({
   const tipBlock = displayBlocks[0];
   const atTip = isChainAtTip(health, tipBlock?.height, chainHeight);
   const displayHeight = chainHeight ?? getChainTipHeight(health);
-  const stripBlocks = [
-    ...displayBlocks.slice(0, LATEST_BLOCKS_STRIP_COUNT),
-  ].reverse();
+  const stripBlocks = [...displayBlocks.slice(0, LATEST_BLOCKS_STRIP_COUNT)].reverse();
   const tableRows = displayBlocks.slice(0, LATEST_BLOCKS_COUNT);
-  const producerColumnLabel = chainId === "vrm" ? "Extracted by" : "Interest";
+  const producerColumnLabel = chainId === 'vrm' ? 'Extracted by' : 'Interest';
 
   return (
     <section
       className={cn(
-        "chain-hub-section block-chain-section flex h-full flex-col overflow-hidden rounded-xl border border-border bg-bg-panel shadow-sm",
-        "chain-hub-section--accent",
+        'chain-hub-section block-chain-section flex h-full flex-col overflow-hidden rounded-xl border border-border bg-bg-panel shadow-sm',
+        'chain-hub-section--accent'
       )}
       data-chain={chainId}
       style={
         {
-          "--block-chain-accent": theme.accent,
-          "--block-chain-accent-soft": theme.accentSoft,
-          "--block-strip-columns": LATEST_BLOCKS_STRIP_COUNT,
+          '--block-chain-accent': theme.accent,
+          '--block-chain-accent-soft': theme.accentSoft,
+          '--block-strip-columns': LATEST_BLOCKS_STRIP_COUNT,
         } as React.CSSProperties
       }
     >
@@ -123,10 +115,8 @@ export function ChainHubSection({
             href={config.exploreHref}
             prefetch
             className={cn(
-              "chain-explore-btn shrink-0 rounded-md px-3 py-1.5 text-xs sm:text-sm",
-              chainId === "vrm"
-                ? "chain-explore-btn-vrm"
-                : "chain-explore-btn-vrc",
+              'chain-explore-btn shrink-0 rounded-md px-3 py-1.5 text-xs sm:text-sm',
+              chainId === 'vrm' ? 'chain-explore-btn-vrm' : 'chain-explore-btn-vrc'
             )}
           >
             <span className="inline-flex items-center gap-1">
@@ -149,15 +139,10 @@ export function ChainHubSection({
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-base font-bold text-fg sm:text-lg">
-                  Latest blocks
-                </h3>
+                <h3 className="text-base font-bold text-fg sm:text-lg">Latest blocks</h3>
                 <span className="chain-hub-blocks-live inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success">
                   <Radio
-                    className={cn(
-                      "h-2.5 w-2.5",
-                      isRefreshing && "animate-pulse",
-                    )}
+                    className={cn('h-2.5 w-2.5', isRefreshing && 'animate-pulse')}
                     aria-hidden
                   />
                   Live
@@ -169,10 +154,8 @@ export function ChainHubSection({
             <Link
               href={config.exploreHref}
               className={cn(
-                "chain-hub-blocks-head__link inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-sm font-semibold transition-colors",
-                chainId === "vrm"
-                  ? "text-[var(--chain-vrm)]"
-                  : "text-[var(--chain-vrc)]",
+                'chain-hub-blocks-head__link inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-sm font-semibold transition-colors',
+                chainId === 'vrm' ? 'text-[var(--chain-vrm)]' : 'text-[var(--chain-vrc)]'
               )}
             >
               View all
@@ -190,9 +173,7 @@ export function ChainHubSection({
         {tableRows.length === 0 ? (
           <div className="chain-hub-blocks-empty mx-3 my-6 rounded-lg border border-dashed border-border px-4 py-10 text-center">
             <Blocks className="mx-auto h-8 w-8 text-fg-subtle/50" aria-hidden />
-            <p className="mt-3 text-sm font-medium text-fg-muted">
-              No blocks indexed yet
-            </p>
+            <p className="mt-3 text-sm font-medium text-fg-muted">No blocks indexed yet</p>
             <p className="mt-1 text-xs text-fg-subtle">
               Blocks will appear here as the chain syncs.
             </p>
@@ -225,8 +206,7 @@ export function ChainHubSection({
                           isTip={index === stripBlocks.length - 1}
                           tipLive={atTip && index === stripBlocks.length - 1}
                           indexing={
-                            index === stripBlocks.length - 1 &&
-                            isOptimisticTipBlock(block, chainId)
+                            index === stripBlocks.length - 1 && isOptimisticTipBlock(block, chainId)
                           }
                           ageIndex={index}
                           totalCount={stripBlocks.length}
@@ -247,8 +227,7 @@ export function ChainHubSection({
                       isTip={index === stripBlocks.length - 1}
                       tipLive={atTip && index === stripBlocks.length - 1}
                       indexing={
-                        index === stripBlocks.length - 1 &&
-                        isOptimisticTipBlock(block, chainId)
+                        index === stripBlocks.length - 1 && isOptimisticTipBlock(block, chainId)
                       }
                     />
                   ))}
@@ -275,54 +254,50 @@ export function ChainHubSection({
                   aria-describedby={`${chainId}-latest-blocks-caption`}
                 >
                   <caption id={`${chainId}-latest-blocks-caption`} className="sr-only">
-                    Latest {tableRows.length} {config.ticker} blocks with hash, producer,
-                    mined time, transactions, size, and difficulty.
+                    Latest {tableRows.length} {config.ticker} blocks with hash, producer, mined
+                    time, transactions, size, and difficulty.
                   </caption>
-                <colgroup>
-                  <col className="block-chain-table__col--height" />
-                  <col className="block-chain-table__col--hash" />
-                  <col className="block-chain-table__col--producer" />
-                  <col className="block-chain-table__col--age" />
-                  <col className="block-chain-table__col--txs" />
-                  <col className="block-chain-table__col--size" />
-                  <col className="block-chain-table__col--diff" />
-                </colgroup>
-                <thead>
-                  <tr>
-                    <th className="block-chain-table__col block-chain-table__col--height">
-                      Height
-                    </th>
-                    <th className="block-chain-table__col block-chain-table__col--hash">
-                      Hash
-                    </th>
-                    <th className="block-chain-table__col block-chain-table__col--producer">
-                      {producerColumnLabel}
-                    </th>
-                    <th className="block-chain-table__col block-chain-table__col--age">
-                      Mined
-                    </th>
-                    <th className="block-chain-table__col block-chain-table__col--txs text-right">
-                      Txs
-                    </th>
-                    <th className="block-chain-table__col block-chain-table__col--size text-right">
-                      Size
-                    </th>
-                    <th className="block-chain-table__col block-chain-table__col--diff text-right">
-                      Difficulty
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tableRows.map((block, index) => (
-                    <BlockChainTableRow
-                      key={block.hash}
-                      block={block}
-                      chainId={chainId}
-                      blockHref={config.blockHref?.(block.height)}
-                      isNewest={index === 0}
-                    />
-                  ))}
-                </tbody>
+                  <colgroup>
+                    <col className="block-chain-table__col--height" />
+                    <col className="block-chain-table__col--hash" />
+                    <col className="block-chain-table__col--producer" />
+                    <col className="block-chain-table__col--age" />
+                    <col className="block-chain-table__col--txs" />
+                    <col className="block-chain-table__col--size" />
+                    <col className="block-chain-table__col--diff" />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th className="block-chain-table__col block-chain-table__col--height">
+                        Height
+                      </th>
+                      <th className="block-chain-table__col block-chain-table__col--hash">Hash</th>
+                      <th className="block-chain-table__col block-chain-table__col--producer">
+                        {producerColumnLabel}
+                      </th>
+                      <th className="block-chain-table__col block-chain-table__col--age">Mined</th>
+                      <th className="block-chain-table__col block-chain-table__col--txs text-right">
+                        Txs
+                      </th>
+                      <th className="block-chain-table__col block-chain-table__col--size text-right">
+                        Size
+                      </th>
+                      <th className="block-chain-table__col block-chain-table__col--diff text-right">
+                        Difficulty
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tableRows.map((block, index) => (
+                      <BlockChainTableRow
+                        key={block.hash}
+                        block={block}
+                        chainId={chainId}
+                        blockHref={config.blockHref?.(block.height)}
+                        isNewest={index === 0}
+                      />
+                    ))}
+                  </tbody>
                 </table>
               </div>
             </div>
@@ -330,10 +305,7 @@ export function ChainHubSection({
         )}
       </div>
 
-      <ChainHubStatRow
-        cols={3}
-        className="chain-hub-quick-stats shrink-0 border-y border-border"
-      >
+      <ChainHubStatRow cols={3} className="chain-hub-quick-stats shrink-0 border-y border-border">
         <ChainHubStatCell
           label="Height"
           value={formatHeight(displayHeight)}
@@ -351,33 +323,17 @@ export function ChainHubSection({
           label="Latest"
           value={
             tipBlock ? (
-              <LiveRelativeTime
-                time={tipBlock.time}
-                interval="second"
-                className="truncate"
-              />
+              <LiveRelativeTime time={tipBlock.time} interval="second" className="truncate" />
             ) : (
-              "—"
+              '—'
             )
           }
         />
       </ChainHubStatRow>
 
       <div className="chain-hub-section__metrics shrink-0">
-        <ChainMarketCard
-          chainId={chainId}
-          market={market}
-          embedded
-          animated
-          hubLayout
-        />
-        <ChainNetworkCard
-          chainId={chainId}
-          network={network}
-          embedded
-          animated
-          hubLayout
-        />
+        <ChainMarketCard chainId={chainId} market={market} embedded animated hubLayout />
+        <ChainNetworkCard chainId={chainId} network={network} embedded animated hubLayout />
       </div>
     </section>
   );
@@ -406,7 +362,7 @@ function BlockChainStripCell({
   const tooltip = indexing
     ? `Block #${formatHeight(block.height)} · indexing…`
     : `Block #${formatHeight(block.height)} · ${block.txCount} transaction${
-        block.txCount === 1 ? "" : "s"
+        block.txCount === 1 ? '' : 's'
       }`;
 
   const nodeSlot = (
@@ -414,17 +370,17 @@ function BlockChainStripCell({
       className="block-chain-strip__node-slot"
       style={
         {
-          "--block-recency": recency,
-          "--block-stagger": `${ageIndex * 45}ms`,
+          '--block-recency': recency,
+          '--block-stagger': `${ageIndex * 45}ms`,
         } as React.CSSProperties
       }
     >
       <span
         className={cn(
-          "block-chain-strip__node",
-          isTip && "block-chain-strip__node--tip",
-          tipLive && "block-chain-strip__node--live",
-          indexing && "block-chain-strip__node--indexing",
+          'block-chain-strip__node',
+          isTip && 'block-chain-strip__node--tip',
+          tipLive && 'block-chain-strip__node--live',
+          indexing && 'block-chain-strip__node--indexing'
         )}
         title={tooltip}
       >
@@ -444,7 +400,7 @@ function BlockChainStripCell({
   return (
     <div
       className="block-chain-strip__cell"
-      style={{ "--block-stagger": `${ageIndex * 45}ms` } as React.CSSProperties}
+      style={{ '--block-stagger': `${ageIndex * 45}ms` } as React.CSSProperties}
     >
       {blockHref ? (
         <Link
@@ -461,16 +417,12 @@ function BlockChainStripCell({
       )}
       <span
         className={cn(
-          "block-chain-strip__label tabular-nums",
-          isTip && "block-chain-strip__label--tip",
+          'block-chain-strip__label tabular-nums',
+          isTip && 'block-chain-strip__label--tip'
         )}
       >
-        {isTip && tipLive ? (
-          <span className="block-chain-strip__label-dot" aria-hidden />
-        ) : null}
-        <span className="block-chain-strip__label-height">
-          #{formatHeight(block.height)}
-        </span>
+        {isTip && tipLive ? <span className="block-chain-strip__label-dot" aria-hidden /> : null}
+        <span className="block-chain-strip__label-height">#{formatHeight(block.height)}</span>
       </span>
       <span className="block-chain-strip__txs tabular-nums" aria-hidden>
         {`${block.txCount} tx`}
@@ -496,14 +448,12 @@ function BlockChainStripMobileCard({
     <>
       <div className="block-chain-strip-mobile__head">
         <span className="tabular-nums">#{formatHeight(block.height)}</span>
-        {isTip && tipLive ? (
-          <span className="block-chain-strip-mobile__live">Live</span>
-        ) : null}
+        {isTip && tipLive ? <span className="block-chain-strip-mobile__live">Live</span> : null}
       </div>
       <div className="block-chain-strip-mobile__meta">
         <span className="tabular-nums">{formatHeight(block.txCount)} tx</span>
         <span className="truncate">
-          {indexing ? "indexing…" : <LiveRelativeTime time={block.time} interval="second" />}
+          {indexing ? 'indexing…' : <LiveRelativeTime time={block.time} interval="second" />}
         </span>
       </div>
     </>
@@ -567,7 +517,10 @@ function BlockChainMobileCard({
             {hashShort}
           </BcTableLink>
         ) : (
-          <span className="block-chain-table__hash-link tabular-nums text-fg-muted" title={block.hash}>
+          <span
+            className="block-chain-table__hash-link tabular-nums text-fg-muted"
+            title={block.hash}
+          >
             {hashShort}
           </span>
         )}
@@ -576,7 +529,7 @@ function BlockChainMobileCard({
       <div className="block-chain-mobile-card__row">
         <span className="block-chain-mobile-card__label">{producerColumnLabel}</span>
         <div className="min-w-0">
-          {chainId === "vrm" ? (
+          {chainId === 'vrm' ? (
             indexing ? (
               <BlockFieldLoading label="Extracted by" />
             ) : (
@@ -586,7 +539,7 @@ function BlockChainMobileCard({
                 className={
                   isVeriumPoolExtracted(block)
                     ? undefined
-                    : "block-chain-table__producer-text text-sm font-medium text-[var(--chain-vrm)] hover:underline"
+                    : 'block-chain-table__producer-text text-sm font-medium text-[var(--chain-vrm)] hover:underline'
                 }
               />
             )
@@ -613,7 +566,7 @@ function BlockChainMobileCard({
             ) : sizePending ? (
               <BlockFieldLoading />
             ) : (
-              "—"
+              '—'
             )}
           </div>
         </div>
@@ -625,7 +578,7 @@ function BlockChainMobileCard({
             ) : difficultyPending ? (
               <BlockFieldLoading />
             ) : (
-              "—"
+              '—'
             )}
           </div>
         </div>
@@ -653,9 +606,9 @@ function BlockChainTableRow({
   return (
     <tr
       className={cn(
-        "block-chain-table-row transition-colors hover:bg-bg-subtle/80",
-        isNewest && "block-chain-table-row--latest",
-        indexing && "block-chain-table-row--indexing",
+        'block-chain-table-row transition-colors hover:bg-bg-subtle/80',
+        isNewest && 'block-chain-table-row--latest',
+        indexing && 'block-chain-table-row--indexing'
       )}
       aria-busy={indexing}
     >
@@ -669,9 +622,7 @@ function BlockChainTableRow({
               {formatHeight(block.height)}
             </BcTableLink>
           ) : (
-            <span className="tabular-nums text-fg">
-              {formatHeight(block.height)}
-            </span>
+            <span className="tabular-nums text-fg">{formatHeight(block.height)}</span>
           )}
         </div>
       </td>
@@ -698,11 +649,11 @@ function BlockChainTableRow({
         )}
       </td>
       <td
-        data-label={chainId === "vrm" ? "Extracted by" : "Interest"}
+        data-label={chainId === 'vrm' ? 'Extracted by' : 'Interest'}
         className="block-chain-table__col block-chain-table__col--producer"
       >
         <div className="block-chain-table__producer-inner">
-          {chainId === "vrm" ? (
+          {chainId === 'vrm' ? (
             indexing ? (
               <BlockFieldLoading label="Extracted by" />
             ) : (
@@ -712,7 +663,7 @@ function BlockChainTableRow({
                 className={
                   isVeriumPoolExtracted(block)
                     ? undefined
-                    : "block-chain-table__producer-text text-sm font-medium text-[var(--chain-vrm)] hover:underline"
+                    : 'block-chain-table__producer-text text-sm font-medium text-[var(--chain-vrm)] hover:underline'
                 }
               />
             )
@@ -746,7 +697,7 @@ function BlockChainTableRow({
         ) : sizePending ? (
           <BlockFieldLoading align="right" />
         ) : (
-          "—"
+          '—'
         )}
       </td>
       <td
@@ -758,7 +709,7 @@ function BlockChainTableRow({
         ) : difficultyPending ? (
           <BlockFieldLoading align="right" />
         ) : (
-          "—"
+          '—'
         )}
       </td>
     </tr>
@@ -767,16 +718,16 @@ function BlockChainTableRow({
 
 function BlockFieldLoading({
   label,
-  align = "left",
+  align = 'left',
 }: {
   label?: string;
-  align?: "left" | "right";
+  align?: 'left' | 'right';
 }) {
   return (
     <span
-      className={cn("inline-flex items-center", align === "right" && "ml-auto")}
+      className={cn('inline-flex items-center', align === 'right' && 'ml-auto')}
       role="status"
-      aria-label={label ? `${label} loading` : "Loading"}
+      aria-label={label ? `${label} loading` : 'Loading'}
     >
       <span className="block-field-loading" />
     </span>
@@ -784,16 +735,16 @@ function BlockFieldLoading({
 }
 
 function formatBlockHashShort(hash: string): string {
-  const h = hash.replace(/^0x/i, "");
+  const h = hash.replace(/^0x/i, '');
   if (h.length <= 20) return h;
   return `${h.slice(0, 10)}…${h.slice(-8)}`;
 }
 
 function formatDifficultyForChain(
   chainId: ChainId,
-  value: string | number | null | undefined,
+  value: string | number | null | undefined
 ): string {
-  if (chainId !== "vrm") return formatDifficulty(value);
+  if (chainId !== 'vrm') return formatDifficulty(value);
   const n = Number(value);
   if (!Number.isFinite(n) || n <= 0) return formatDifficulty(value);
   return n.toFixed(7);

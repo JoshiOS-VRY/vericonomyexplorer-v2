@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useLiveChainSummary } from "@/hooks/useLiveChainSummary";
-import type { ChainSummary } from "@/lib/api/types";
+import { useLiveChainSummary } from '@/hooks/useLiveChainSummary';
+import type { ChainSummary } from '@/lib/api/types';
 
 export interface DualChainLiveState {
   vrm: ReturnType<typeof useLiveChainSummary>;
@@ -10,10 +10,10 @@ export interface DualChainLiveState {
 
 export function useDualChainLive(
   initialVrmSummary: ChainSummary,
-  initialVrcSummary: ChainSummary,
+  initialVrcSummary: ChainSummary
 ): DualChainLiveState {
-  const vrm = useLiveChainSummary("vrm", initialVrmSummary);
-  const vrc = useLiveChainSummary("vrc", initialVrcSummary);
+  const vrm = useLiveChainSummary('vrm', initialVrmSummary);
+  const vrc = useLiveChainSummary('vrc', initialVrcSummary);
 
   return { vrm, vrc };
 }

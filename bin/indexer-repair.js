@@ -1,56 +1,56 @@
 #!/usr/bin/env node
-"use strict";
+'use strict';
 
-require("../app/indexerV2/loadEnv.js");
+require('../app/indexerV2/loadEnv.js');
 
-const { repairUnresolvedInputs } = require("../app/indexerV2/repair.js");
-const dbModule = require("../app/indexerV2/db.js");
+const { repairUnresolvedInputs } = require('../app/indexerV2/repair.js');
+const dbModule = require('../app/indexerV2/db.js');
 
 const args = parseArgs(process.argv.slice(2));
 
 if (args.help || !args.chain) {
-	printHelp();
-	process.exit(args.help ? 0 : 1);
+  printHelp();
+  process.exit(args.help ? 0 : 1);
 }
 
 try {
-	const result = repairUnresolvedInputs(args.chain, {
-		limit: args.limit === undefined ? undefined : Number(args.limit)
-	});
+  const result = repairUnresolvedInputs(args.chain, {
+    limit: args.limit === undefined ? undefined : Number(args.limit),
+  });
 
-	console.log(JSON.stringify(result, null, 2));
-	dbModule.closeDatabase();
+  console.log(JSON.stringify(result, null, 2));
+  dbModule.closeDatabase();
 } catch (err) {
-	console.error(err.stack || err.message);
-	dbModule.closeDatabase();
-	process.exit(1);
+  console.error(err.stack || err.message);
+  dbModule.closeDatabase();
+  process.exit(1);
 }
 
 function parseArgs(argv) {
-	const result = {};
+  const result = {};
 
-	for (let i = 0; i < argv.length; i++) {
-		const arg = argv[i];
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
 
-		if (arg === "--help" || arg === "-h") {
-			result.help = true;
-		} else if (arg.startsWith("--")) {
-			const key = arg.substring(2);
-			const next = argv[i + 1];
-			if (!next || next.startsWith("--")) {
-				result[key] = true;
-			} else {
-				result[key] = next;
-				i++;
-			}
-		}
-	}
+    if (arg === '--help' || arg === '-h') {
+      result.help = true;
+    } else if (arg.startsWith('--')) {
+      const key = arg.substring(2);
+      const next = argv[i + 1];
+      if (!next || next.startsWith('--')) {
+        result[key] = true;
+      } else {
+        result[key] = next;
+        i++;
+      }
+    }
+  }
 
-	return result;
+  return result;
 }
 
 function printHelp() {
-	console.log(`
+  console.log(`
 Usage:
   node bin/indexer-repair.js --chain vrm --limit 1000
 

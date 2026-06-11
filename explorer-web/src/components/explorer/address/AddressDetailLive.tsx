@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { AddressBalanceChartClient } from "@/components/explorer/address/AddressBalanceChartClient";
-import { AddressHero } from "@/components/explorer/address/AddressHero";
-import { AddressMetricStrip } from "@/components/explorer/address/AddressMetricStrip";
-import { AddressRichlistRankClient } from "@/components/explorer/address/AddressRichlistRankClient";
-import { AddressTransactionsTable } from "@/components/explorer/address/AddressTransactionsTable";
-import { AddressUtxoPanelClient } from "@/components/explorer/address/AddressUtxoPanelClient";
-import { useAddressLive } from "@/hooks/useAddressLive";
-import type { AddressResult } from "@/lib/api/types";
-import { chainAddressPath, type ChainId } from "@/lib/chainDisplay";
-import { ADDRESS_UTXOS_ENABLED } from "@/lib/featureFlags";
-import { cn } from "@/lib/utils";
+import Link from 'next/link';
+import { AddressBalanceChartClient } from '@/components/explorer/address/AddressBalanceChartClient';
+import { AddressHero } from '@/components/explorer/address/AddressHero';
+import { AddressMetricStrip } from '@/components/explorer/address/AddressMetricStrip';
+import { AddressRichlistRankClient } from '@/components/explorer/address/AddressRichlistRankClient';
+import { AddressTransactionsTable } from '@/components/explorer/address/AddressTransactionsTable';
+import { AddressUtxoPanelClient } from '@/components/explorer/address/AddressUtxoPanelClient';
+import { useAddressLive } from '@/hooks/useAddressLive';
+import type { AddressResult } from '@/lib/api/types';
+import { chainAddressPath, type ChainId } from '@/lib/chainDisplay';
+import { ADDRESS_UTXOS_ENABLED } from '@/lib/featureFlags';
+import { cn } from '@/lib/utils';
 
 export function AddressDetailLive({
   chainId,
@@ -28,16 +28,14 @@ export function AddressDetailLive({
   utxoLimit: number;
   utxoOffset: number;
 }) {
-  const { result, isRefreshing } = useAddressLive(
-    initialResult,
-    chainId,
-    initialResult.address,
-    { limit, offset },
-  );
+  const { result, isRefreshing } = useAddressLive(initialResult, chainId, initialResult.address, {
+    limit,
+    offset,
+  });
   const basePath = chainAddressPath(chainId, result.address);
 
   return (
-    <div className={cn(isRefreshing && "opacity-[0.98] transition-opacity")}>
+    <div className={cn(isRefreshing && 'opacity-[0.98] transition-opacity')}>
       <AddressHero chainId={chainId} result={result} />
       <AddressMetricStrip result={result} />
 

@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/Button";
-import { formatBlockAge, formatNumber } from "@/lib/utils";
+import Link from 'next/link';
+import { Button } from '@/components/ui/Button';
+import { formatBlockAge, formatNumber } from '@/lib/utils';
 
 export function PaginationBar({
   basePath,
@@ -24,9 +24,10 @@ export function PaginationBar({
       limit: String(limit),
       offset: String(next),
       ...Object.fromEntries(
-        Object.entries({ ...extraParams, ...(sort ? { sort } : {}) }).map(
-          ([k, v]) => [k, String(v)],
-        ),
+        Object.entries({ ...extraParams, ...(sort ? { sort } : {}) }).map(([k, v]) => [
+          k,
+          String(v),
+        ])
       ),
     });
     return `${basePath}?${params.toString()}`;
@@ -44,7 +45,7 @@ export function PaginationBar({
         ) : null}
       </div>
       <span className="text-sm text-fg-muted">
-        Showing {formatNumber(offset + 1)}–{formatNumber(Math.min(offset + limit, total))} of{" "}
+        Showing {formatNumber(offset + 1)}–{formatNumber(Math.min(offset + limit, total))} of{' '}
         {formatNumber(total)}
       </span>
       <div>
@@ -60,11 +61,7 @@ export function PaginationBar({
   );
 }
 
-export function SummaryRow({
-  items,
-}: {
-  items: { label: string; value: React.ReactNode }[];
-}) {
+export function SummaryRow({ items }: { items: { label: string; value: React.ReactNode }[] }) {
   return (
     <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((item) => (
@@ -117,11 +114,9 @@ export function BlocksTable({ blocks }: { blocks: RpcBlockRow[] }) {
               </td>
               <td className="px-4 py-3">{formatNumber(block.nTx ?? block.txCount ?? 0)}</td>
               <td className="px-4 py-3">
-                {block.size ? formatNumber(Math.round(block.size / 1000)) : "—"}
+                {block.size ? formatNumber(Math.round(block.size / 1000)) : '—'}
               </td>
-              <td className="px-4 py-3 text-fg-muted">
-                {block.miner?.name ?? "Unknown"}
-              </td>
+              <td className="px-4 py-3 text-fg-muted">{block.miner?.name ?? 'Unknown'}</td>
             </tr>
           ))}
         </tbody>

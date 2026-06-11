@@ -1,13 +1,13 @@
-import assert from "node:assert/strict";
-import { describe, it } from "node:test";
-import { resolveNetworkHashPerSec } from "@vericonomy/network-metrics";
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+import { resolveNetworkHashPerSec } from '@vericonomy/network-metrics';
 
 /**
  * Home network and /v1/vrm/network/hashrate share the same resolver inputs.
  * This test locks parity for a representative RPC fixture.
  */
-describe("home vs hashrate endpoint parity", () => {
-  it("returns identical hashrateKhPerMin for the same RPC inputs", () => {
+describe('home vs hashrate endpoint parity', () => {
+  it('returns identical hashrateKhPerMin for the same RPC inputs', () => {
     const miningInfo = { networkhashps: 1219.5 };
     const difficulty = 0.0000852;
 
@@ -21,7 +21,7 @@ describe("home vs hashrate endpoint parity", () => {
 
     assert.equal(homeResolved.hashrateKhPerMin, endpointResolved.hashrateKhPerMin);
     assert.equal(homeResolved.hashPerSec, endpointResolved.hashPerSec);
-    assert.equal(homeResolved.source, "networkhashps");
+    assert.equal(homeResolved.source, 'networkhashps');
     assert.equal(homeResolved.hashrateKhPerMin, 73.17);
   });
 });

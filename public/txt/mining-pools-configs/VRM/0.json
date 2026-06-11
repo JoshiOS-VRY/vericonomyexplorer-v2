@@ -1,30 +1,30 @@
 {
-	"coinbase_tags": {
-		"/VERIUMPOOL/": {
-			"name": "VeriumPool",
-			"link": "https://veriumpool.com"
-		},
-		"/VRMPOOL/": {
-			"name": "Verium Pool",
-			"link": "https://pool.vericonomy.com"
-		},
-		"/VERIUM/": {
-			"name": "Verium Mining",
-			"link": "https://veriummining.com"
-		},
-		"/VRM/": {
-			"name": "VRM",
-			"link": "https://verium.org"
-		}
-	},
-	"payout_addresses": {
-		"VRq98Nm2P6anLHPgnHdb6NnibJ6GoG3Jm9": {
-			"name": "Verium Pool",
-			"link": "https://pool.vericonomy.com"
-		},
-		"VXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX": {
-			"name": "VeriumPool",
-			"link": "https://veriumpool.com"
-		}
-	}
+  "coinbase_tags": {
+    "/VERIUMPOOL/": {
+      "name": "VeriumPool",
+      "link": "https://veriumpool.com"
+    },
+    "/VRMPOOL/": {
+      "name": "Verium Pool",
+      "link": "https://pool.vericonomy.com"
+    },
+    "/VERIUM/": {
+      "name": "Verium Mining",
+      "link": "https://veriummining.com"
+    },
+    "/VRM/": {
+      "name": "VRM",
+      "link": "https://verium.org"
+    }
+  },
+  "payout_addresses": {
+    "VRq98Nm2P6anLHPgnHdb6NnibJ6GoG3Jm9": {
+      "name": "Verium Pool",
+      "link": "https://pool.vericonomy.com"
+    },
+    "VXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX": {
+      "name": "VeriumPool",
+      "link": "https://veriumpool.com"
+    }
+  }
 }

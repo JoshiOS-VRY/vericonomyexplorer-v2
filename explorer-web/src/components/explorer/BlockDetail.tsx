@@ -1,18 +1,7 @@
-import Link from "next/link";
-import {
-  cn,
-  formatBlockAge,
-  formatDifficulty,
-  formatUnixTime,
-} from "@/lib/utils";
+import Link from 'next/link';
+import { cn, formatBlockAge, formatDifficulty, formatUnixTime } from '@/lib/utils';
 
-export function CopyButton({
-  value,
-  label = "Copy",
-}: {
-  value: string;
-  label?: string;
-}) {
+export function CopyButton({ value, label = 'Copy' }: { value: string; label?: string }) {
   return (
     <button
       type="button"
@@ -29,7 +18,7 @@ export function BlockChainNav({
   height,
   previousHash,
   nextHash,
-  chainPrefix = "/vrm/block",
+  chainPrefix = '/vrm/block',
 }: {
   height: number;
   previousHash?: string | null;
@@ -48,12 +37,8 @@ export function BlockChainNav({
           href={`${chainPrefix}/${previousHash}`}
           className="rounded-md border border-border bg-bg-panel/60 px-3 py-2 text-sm transition hover:bg-bg-panel"
         >
-          <span className="block text-[10px] uppercase tracking-wide text-fg-subtle">
-            Previous
-          </span>
-          <span className="text-xs text-fg-muted">
-            #{prevHeight?.toLocaleString() ?? "…"}
-          </span>
+          <span className="block text-[10px] uppercase tracking-wide text-fg-subtle">Previous</span>
+          <span className="text-xs text-fg-muted">#{prevHeight?.toLocaleString() ?? '…'}</span>
         </Link>
       ) : (
         <div className="rounded-md border border-dashed border-border px-3 py-2 text-xs text-fg-subtle">
@@ -62,9 +47,7 @@ export function BlockChainNav({
       )}
 
       <div className="rounded-md border border-accent/30 bg-accent/10 px-3 py-2 text-center">
-        <span className="block text-[10px] uppercase tracking-wide text-accent">
-          Current
-        </span>
+        <span className="block text-[10px] uppercase tracking-wide text-accent">Current</span>
         <span className="text-lg font-semibold tabular-nums text-fg">
           #{height.toLocaleString()}
         </span>
@@ -75,12 +58,8 @@ export function BlockChainNav({
           href={`${chainPrefix}/${nextHash}`}
           className="rounded-md border border-border bg-bg-panel/60 px-3 py-2 text-right text-sm transition hover:bg-bg-panel"
         >
-          <span className="block text-[10px] uppercase tracking-wide text-fg-subtle">
-            Next
-          </span>
-          <span className="text-xs text-fg-muted">
-            #{(height + 1).toLocaleString()}
-          </span>
+          <span className="block text-[10px] uppercase tracking-wide text-fg-subtle">Next</span>
+          <span className="text-xs text-fg-muted">#{(height + 1).toLocaleString()}</span>
         </Link>
       ) : (
         <div className="rounded-md border border-dashed border-border px-3 py-2 text-right text-xs text-fg-subtle">
@@ -143,12 +122,12 @@ export function BlockDetailHero({
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:min-w-[16rem]">
           {[
-            { label: "Transactions", value: txCount.toLocaleString() },
+            { label: 'Transactions', value: txCount.toLocaleString() },
             {
-              label: "Size",
-              value: size == null ? "—" : `${size.toLocaleString()} B`,
+              label: 'Size',
+              value: size == null ? '—' : `${size.toLocaleString()} B`,
             },
-            { label: "Difficulty", value: formatDifficulty(difficulty) },
+            { label: 'Difficulty', value: formatDifficulty(difficulty) },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -157,19 +136,13 @@ export function BlockDetailHero({
               <p className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
                 {stat.label}
               </p>
-              <p className="mt-1 text-sm font-semibold tabular-nums text-fg">
-                {stat.value}
-              </p>
+              <p className="mt-1 text-sm font-semibold tabular-nums text-fg">{stat.value}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <BlockChainNav
-        height={height}
-        previousHash={previousHash}
-        nextHash={nextHash}
-      />
+      <BlockChainNav height={height} previousHash={previousHash} nextHash={nextHash} />
     </section>
   );
 }
@@ -188,19 +161,12 @@ export function DetailSection({
   flush?: boolean;
 }) {
   return (
-    <section
-      className={cn(
-        "rounded-xl border border-border bg-bg-panel shadow-sm",
-        className,
-      )}
-    >
+    <section className={cn('rounded-xl border border-border bg-bg-panel shadow-sm', className)}>
       <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted">
-          {title}
-        </h2>
+        <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted">{title}</h2>
         {action}
       </div>
-      <div className={cn(flush ? "p-0" : "px-5 py-4")}>{children}</div>
+      <div className={cn(flush ? 'p-0' : 'px-5 py-4')}>{children}</div>
     </section>
   );
 }
@@ -227,12 +193,8 @@ export function EntityHero({
         {meta}
       </div>
       <div className="p-4 sm:p-5">
-        <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
-          {eyebrow}
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
-          {title}
-        </h1>
+        <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">{eyebrow}</p>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-fg sm:text-3xl">{title}</h1>
         {hash ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <code className="max-w-full break-all rounded-md border border-border/70 bg-bg-panel/50 px-2.5 py-1 text-xs text-fg-muted">

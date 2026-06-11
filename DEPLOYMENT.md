@@ -64,6 +64,7 @@ docker run -d \
 ### 1. Using Docker Compose (Recommended)
 
 The included `docker-compose.yml` is production-ready with:
+
 - Health checks
 - Automatic restarts
 - Volume persistence
@@ -72,15 +73,15 @@ The included `docker-compose.yml` is production-ready with:
 
 ### 2. Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `BTCEXP_COIN` | Coin type | `VRM` |
-| `BTCEXP_DISPLAY_CURRENCY` | Default currency | `vrm` |
-| `BTCEXP_BITCOIND_URI` | Verium node connection | `bitcoin://rpcuser:rpcpassword@127.0.0.1:36988/` |
-| `BTCEXP_UI_THEME` | UI theme | `dark` |
-| `BTCEXP_SLOW_DEVICE_MODE` | Performance mode | `false` |
-| `BTCEXP_PRIVACY_MODE` | Disable external APIs | `false` |
-| `BTCEXP_NO_RATES` | Disable exchange rates | `false` |
+| Variable                  | Description            | Default                                          |
+| ------------------------- | ---------------------- | ------------------------------------------------ |
+| `BTCEXP_COIN`             | Coin type              | `VRM`                                            |
+| `BTCEXP_DISPLAY_CURRENCY` | Default currency       | `vrm`                                            |
+| `BTCEXP_BITCOIND_URI`     | Verium node connection | `bitcoin://rpcuser:rpcpassword@127.0.0.1:36988/` |
+| `BTCEXP_UI_THEME`         | UI theme               | `dark`                                           |
+| `BTCEXP_SLOW_DEVICE_MODE` | Performance mode       | `false`                                          |
+| `BTCEXP_PRIVACY_MODE`     | Disable external APIs  | `false`                                          |
+| `BTCEXP_NO_RATES`         | Disable exchange rates | `false`                                          |
 
 ### 3. Security Considerations
 
@@ -95,7 +96,7 @@ The included `docker-compose.yml` is production-ready with:
 server {
     listen 80;
     server_name your-domain.com;
-    
+
     location / {
         proxy_pass http://localhost:3003;
         proxy_set_header Host $host;
@@ -138,6 +139,7 @@ docker stats verium-rpc-explorer
 ### Health Checks
 
 The container includes health checks that verify the explorer is responding:
+
 - Check interval: 30 seconds
 - Timeout: 10 seconds
 - Retries: 3
@@ -157,6 +159,7 @@ docker-compose up -d --build
 ## Backup
 
 The cache volume contains important data:
+
 ```bash
 # Backup cache
 docker run --rm -v verium-cache:/data -v $(pwd):/backup alpine tar czf /backup/verium-cache-backup.tar.gz -C /data .

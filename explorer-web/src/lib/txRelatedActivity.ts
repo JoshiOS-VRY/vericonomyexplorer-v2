@@ -1,7 +1,4 @@
-import type {
-  AddressTransaction,
-  TransactionRelatedAddressesResult,
-} from "@/lib/api/types";
+import type { AddressTransaction, TransactionRelatedAddressesResult } from '@/lib/api/types';
 
 export type TxRelatedActivityGroup = {
   address: string;
@@ -11,7 +8,7 @@ export type TxRelatedActivityGroup = {
 export function mapTransactionRelatedGroups(
   txid: string,
   result: TransactionRelatedAddressesResult,
-  maxPerAddress = 5,
+  maxPerAddress = 5
 ): TxRelatedActivityGroup[] {
   if (!result.found || !result.items?.length) {
     return [];
@@ -20,9 +17,7 @@ export function mapTransactionRelatedGroups(
   return result.items
     .map((group) => ({
       address: group.address,
-      transactions: group.transactions
-        .filter((tx) => tx.txid !== txid)
-        .slice(0, maxPerAddress),
+      transactions: group.transactions.filter((tx) => tx.txid !== txid).slice(0, maxPerAddress),
     }))
     .filter((group) => group.transactions.length > 0);
 }

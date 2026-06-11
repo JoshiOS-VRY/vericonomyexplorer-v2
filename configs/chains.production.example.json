@@ -1,56 +1,56 @@
 {
-	"chains": [
-		{
-			"id": "vrc",
-			"ticker": "VRC",
-			"name": "VeriCoin",
-			"network": "main",
-			"consensus": "PoST",
-			"rpc": {
-				"host": "127.0.0.1",
-				"hostEnv": "VCEXP_VRC_RPC_HOST",
-				"port": 58683,
-				"usernameEnv": "VCEXP_VRC_RPC_USER",
-				"passwordEnv": "VCEXP_VRC_RPC_PASS",
-				"cookiePathEnv": "VCEXP_VRC_RPC_COOKIE"
-			},
-			"features": {
-				"arbitraryTxQuery": true,
-				"addressBalances": "index",
-				"leaderboards": true,
-				"stakingLabels": true
-			},
-			"indexer": {
-				"storeRawJson": false,
-				"batchSize": 500,
-				"pauseMs": 0
-			}
-		},
-		{
-			"id": "vrm",
-			"ticker": "VRM",
-			"name": "Verium",
-			"network": "main",
-			"consensus": "PoWT",
-			"rpc": {
-				"host": "127.0.0.1",
-				"hostEnv": "VCEXP_VRM_RPC_HOST",
-				"port": 33987,
-				"usernameEnv": "VCEXP_VRM_RPC_USER",
-				"passwordEnv": "VCEXP_VRM_RPC_PASS",
-				"cookiePathEnv": "VCEXP_VRM_RPC_COOKIE"
-			},
-			"features": {
-				"arbitraryTxQuery": false,
-				"addressBalances": "index",
-				"leaderboards": true,
-				"txLookup": "index-first"
-			},
-			"indexer": {
-				"storeRawJson": false,
-				"batchSize": 500,
-				"pauseMs": 100
-			}
-		}
-	]
+  "chains": [
+    {
+      "id": "vrc",
+      "ticker": "VRC",
+      "name": "VeriCoin",
+      "network": "main",
+      "consensus": "PoST",
+      "rpc": {
+        "host": "127.0.0.1",
+        "hostEnv": "VCEXP_VRC_RPC_HOST",
+        "port": 58683,
+        "usernameEnv": "VCEXP_VRC_RPC_USER",
+        "passwordEnv": "VCEXP_VRC_RPC_PASS",
+        "cookiePathEnv": "VCEXP_VRC_RPC_COOKIE"
+      },
+      "features": {
+        "arbitraryTxQuery": true,
+        "addressBalances": "index",
+        "leaderboards": true,
+        "stakingLabels": true
+      },
+      "indexer": {
+        "storeRawJson": false,
+        "batchSize": 500,
+        "pauseMs": 0
+      }
+    },
+    {
+      "id": "vrm",
+      "ticker": "VRM",
+      "name": "Verium",
+      "network": "main",
+      "consensus": "PoWT",
+      "rpc": {
+        "host": "127.0.0.1",
+        "hostEnv": "VCEXP_VRM_RPC_HOST",
+        "port": 33987,
+        "usernameEnv": "VCEXP_VRM_RPC_USER",
+        "passwordEnv": "VCEXP_VRM_RPC_PASS",
+        "cookiePathEnv": "VCEXP_VRM_RPC_COOKIE"
+      },
+      "features": {
+        "arbitraryTxQuery": false,
+        "addressBalances": "index",
+        "leaderboards": true,
+        "txLookup": "index-first"
+      },
+      "indexer": {
+        "storeRawJson": false,
+        "batchSize": 500,
+        "pauseMs": 100
+      }
+    }
+  ]
 }

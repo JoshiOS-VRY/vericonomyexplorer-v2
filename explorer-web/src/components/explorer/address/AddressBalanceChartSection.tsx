@@ -1,5 +1,5 @@
-import { LazyAddressBalanceChart } from "@/components/explorer/address/LazyAddressBalanceChart";
-import { getAddressBalanceHistory } from "@/lib/api/indexer";
+import { LazyAddressBalanceChart } from '@/components/explorer/address/LazyAddressBalanceChart';
+import { getAddressBalanceHistory } from '@/lib/api/indexer';
 
 export async function AddressBalanceChartSection({
   chainId,

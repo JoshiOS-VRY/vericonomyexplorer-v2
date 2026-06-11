@@ -1,8 +1,8 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 /** Fixed locale so SSR and client hydration render identical number/date text. */
-export const EXPLORER_LOCALE = "en-US";
+export const EXPLORER_LOCALE = 'en-US';
 
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
@@ -15,14 +15,14 @@ export function ellipsizeMiddle(value: string, maxLength = 24): string {
 }
 
 export function formatNumber(value: number | null | undefined): string {
-  if (value == null || !Number.isFinite(value)) return "N/A";
+  if (value == null || !Number.isFinite(value)) return 'N/A';
   return value.toLocaleString(EXPLORER_LOCALE);
 }
 
 /** Full-precision coin amount with thousands separators (SSR-safe en-US). */
 export function formatCoinAmount(amount: string | number): string {
-  if (typeof amount === "number") {
-    if (!Number.isFinite(amount)) return "—";
+  if (typeof amount === 'number') {
+    if (!Number.isFinite(amount)) return '—';
     return amount.toLocaleString(EXPLORER_LOCALE, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 20,
@@ -31,9 +31,9 @@ export function formatCoinAmount(amount: string | number): string {
   }
 
   const trimmed = amount.trim();
-  if (trimmed === "" || trimmed === "—" || trimmed === "N/A") return trimmed;
+  if (trimmed === '' || trimmed === '—' || trimmed === 'N/A') return trimmed;
 
-  const normalized = trimmed.replace(/,/g, "");
+  const normalized = trimmed.replace(/,/g, '');
   const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(normalized);
   if (!match) return trimmed;
 
@@ -48,9 +48,9 @@ export function formatCoinAmount(amount: string | number): string {
 
 /** Compact coin balance for tables (e.g. 264.27K, 2.20M). */
 export function formatCompactBalance(amount: string | number): string {
-  const num = typeof amount === "string" ? Number.parseFloat(amount) : amount;
+  const num = typeof amount === 'string' ? Number.parseFloat(amount) : amount;
   if (!Number.isFinite(num)) {
-    return typeof amount === "string" ? amount : "—";
+    return typeof amount === 'string' ? amount : '—';
   }
 
   const abs = Math.abs(num);
@@ -67,8 +67,8 @@ export function formatCompactBalance(amount: string | number): string {
 }
 
 export function formatDifficulty(value: number | string | null | undefined): string {
-  if (value == null || value === "") return "N/A";
-  const num = typeof value === "string" ? Number(value) : value;
+  if (value == null || value === '') return 'N/A';
+  const num = typeof value === 'string' ? Number(value) : value;
   if (!Number.isFinite(num)) return String(value);
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(2)}M`;
   if (num >= 1_000) return `${(num / 1_000).toFixed(2)}K`;
@@ -80,20 +80,20 @@ export function formatDifficulty(value: number | string | null | undefined): str
 
 export function formatUnixTime(unixSeconds: number | null | undefined): string {
   if (unixSeconds == null || !Number.isFinite(unixSeconds) || unixSeconds <= 0) {
-    return "—";
+    return '—';
   }
   return new Date(unixSeconds * 1000).toLocaleString(EXPLORER_LOCALE, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
 export function formatBlockAge(unixSeconds: number | null | undefined): string {
   if (unixSeconds == null || !Number.isFinite(unixSeconds) || unixSeconds <= 0) {
-    return "—";
+    return '—';
   }
   const total = Math.max(0, Math.floor(Date.now() / 1000 - unixSeconds));
   if (total < 60) return `${total}s ago`;

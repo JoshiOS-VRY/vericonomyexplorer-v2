@@ -1,18 +1,13 @@
-"use client";
+'use client';
 
-import { BcStat, BcStatGrid } from "@/components/explorer/BlockchairUi";
-import { formatHeight } from "@/components/explorer/ExplorerUi";
-import type {
-  ChainMarket,
-  ChainSummary,
-  VrcNetworkStats,
-  VrmNetworkStats,
-} from "@/lib/api/types";
-import { CHAIN_EXPLORERS } from "@/lib/chainDisplay";
-import { formatHashrateKhPerMin, formatSupply } from "@/lib/formatMarket";
-import { getChainAccentVar } from "@/lib/insightsChartConfig";
-import { formatDifficulty } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { BcStat, BcStatGrid } from '@/components/explorer/BlockchairUi';
+import { formatHeight } from '@/components/explorer/ExplorerUi';
+import type { ChainMarket, ChainSummary, VrcNetworkStats, VrmNetworkStats } from '@/lib/api/types';
+import { CHAIN_EXPLORERS } from '@/lib/chainDisplay';
+import { formatHashrateKhPerMin, formatSupply } from '@/lib/formatMarket';
+import { getChainAccentVar } from '@/lib/insightsChartConfig';
+import { formatDifficulty } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 export function InsightsKpiStrip({
   chainId,
@@ -20,7 +15,7 @@ export function InsightsKpiStrip({
   network,
   market,
 }: {
-  chainId: "vrm" | "vrc";
+  chainId: 'vrm' | 'vrc';
   summary: ChainSummary;
   network: VrmNetworkStats | VrcNetworkStats;
   market: ChainMarket;
@@ -31,41 +26,41 @@ export function InsightsKpiStrip({
 
   const tiles = [
     {
-      label: "Block height",
-      value: formatHeight(network.blocks ?? health.heights.lastIndexedHeight ?? health.heights.maxIndexedHeight),
+      label: 'Block height',
+      value: formatHeight(
+        network.blocks ?? health.heights.lastIndexedHeight ?? health.heights.maxIndexedHeight
+      ),
     },
     {
-      label: "Addresses",
+      label: 'Addresses',
       value: formatHeight(health.counts.addressCount ?? 0),
     },
     {
-      label: "Supply",
+      label: 'Supply',
       value: formatSupply(network.supply, ticker),
     },
     {
-      label: "Difficulty",
-      value: network.difficulty != null ? formatDifficulty(String(network.difficulty)) : "—",
+      label: 'Difficulty',
+      value: network.difficulty != null ? formatDifficulty(String(network.difficulty)) : '—',
     },
-    chainId === "vrm"
+    chainId === 'vrm'
       ? {
-          label: "Hashrate",
-          value: formatHashrateKhPerMin(
-            (network as VrmNetworkStats).hashrateKhPerMin,
-          ),
+          label: 'Hashrate',
+          value: formatHashrateKhPerMin((network as VrmNetworkStats).hashrateKhPerMin),
         }
       : {
-          label: "Interest",
+          label: 'Interest',
           value:
             (network as VrcNetworkStats).interestRatePercent != null
               ? `${(network as VrcNetworkStats).interestRatePercent!.toFixed(2)}%`
-              : "—",
+              : '—',
         },
     {
-      label: "Price (USD)",
+      label: 'Price (USD)',
       value:
         market.usd != null
           ? `$${market.usd.toLocaleString(undefined, { maximumFractionDigits: 6 })}`
-          : "—",
+          : '—',
     },
   ];
 
@@ -75,7 +70,7 @@ export function InsightsKpiStrip({
         <div
           key={tile.label}
           className={cn(
-            "insights-kpi-tile relative overflow-hidden rounded-lg border border-border/60 bg-bg-subtle/40 px-3 py-2.5",
+            'insights-kpi-tile relative overflow-hidden rounded-lg border border-border/60 bg-bg-subtle/40 px-3 py-2.5'
           )}
           style={{
             boxShadow: `inset 3px 0 0 color-mix(in srgb, ${accent} 70%, transparent)`,

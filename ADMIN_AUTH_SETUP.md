@@ -12,6 +12,7 @@ cd /home/jhadmin/btc-rpc-explorer
 ```
 
 This will prompt you for:
+
 - Admin username
 - Admin password (input is hidden)
 - Password confirmation
@@ -44,6 +45,7 @@ Once credentials are configured:
 ## Admin Routes Protected
 
 All `/admin/*` routes are protected:
+
 - `/admin/dashboard` - Main admin dashboard
 - `/admin/os-stats` - OS statistics
 - `/admin/app-stats` - Application statistics
@@ -65,11 +67,13 @@ All `/admin/*` routes are protected:
 To change your admin credentials:
 
 1. Edit `.env` file:
+
    ```bash
    nano .env
    ```
 
 2. Update these lines:
+
    ```
    BTCEXP_ADMIN_USERNAME=new_username
    BTCEXP_ADMIN_PASSWORD=new_password
@@ -78,6 +82,7 @@ To change your admin credentials:
 3. Restart the explorer
 
 Or run the setup script again:
+
 ```bash
 ./setup-admin-auth.sh
 ```
@@ -87,6 +92,7 @@ Or run the setup script again:
 ### Can't access admin dashboard
 
 1. **Check credentials are set:**
+
    ```bash
    grep BTCEXP_ADMIN .env
    ```
@@ -111,12 +117,13 @@ Or run the setup script again:
 
 ## Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
+| Variable                | Description    | Required                |
+| ----------------------- | -------------- | ----------------------- |
 | `BTCEXP_ADMIN_USERNAME` | Admin username | Yes (for remote access) |
 | `BTCEXP_ADMIN_PASSWORD` | Admin password | Yes (for remote access) |
 
 **Alternative variable names** (also supported):
+
 - `BTCEXP_ADMIN_USER` (instead of `BTCEXP_ADMIN_USERNAME`)
 - `BTCEXP_ADMIN_PASS` (instead of `BTCEXP_ADMIN_PASSWORD`)
 
@@ -135,4 +142,3 @@ BTCEXP_ADMIN_PASSWORD=your_secure_password_here
 - Authentication uses HTTP Basic Auth (standard browser prompt)
 - Credentials are checked on every request to admin routes
 - No session cookies are used - browser handles authentication
-

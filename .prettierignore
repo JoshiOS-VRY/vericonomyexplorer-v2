@@ -1,0 +1,16 @@
+node_modules
+coverage
+.cache
+database
+public/style/*.min.css
+public/style/light.css
+public/style/dark.css
+public/style/dark-v1.css
+*.css.map
+package-lock.json
+explorer-web/.next
+explorer-web/out
+explorer-api/dist
+explorer-web/tmp-summary.json
+**/*.min.js
+**/*.min.css

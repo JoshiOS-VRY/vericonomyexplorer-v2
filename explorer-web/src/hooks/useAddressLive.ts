@@ -1,21 +1,18 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useLivePoll } from "@/hooks/useLivePoll";
-import {
-  fetchAddressClient,
-  isSameAddressLiveSnapshot,
-} from "@/lib/addressLive";
-import type { AddressResult } from "@/lib/api/types";
-import type { ChainId } from "@/lib/chainDisplay";
-import { ENTITY_LIVE_POLL_MS } from "@/lib/liveDataConfig";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLivePoll } from '@/hooks/useLivePoll';
+import { fetchAddressClient, isSameAddressLiveSnapshot } from '@/lib/addressLive';
+import type { AddressResult } from '@/lib/api/types';
+import type { ChainId } from '@/lib/chainDisplay';
+import { ENTITY_LIVE_POLL_MS } from '@/lib/liveDataConfig';
 
 export function useAddressLive(
   initial: AddressResult,
   chainId: ChainId,
   address: string,
   params: { limit: number; offset: number; includeRank?: boolean },
-  enabled = true,
+  enabled = true
 ) {
   const [result, setResult] = useState(initial);
   const [isRefreshing, setIsRefreshing] = useState(false);

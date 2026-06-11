@@ -1,16 +1,10 @@
-import Link from "next/link";
-import { ExtractedByCell } from "@/components/explorer/block/ExtractedByCell";
-import type { BlockResult } from "@/lib/api/types";
-import { chainTxPath, type ChainId } from "@/lib/chainDisplay";
-import { formatAmountPair } from "@/lib/blockLabels";
+import Link from 'next/link';
+import { ExtractedByCell } from '@/components/explorer/block/ExtractedByCell';
+import type { BlockResult } from '@/lib/api/types';
+import { chainTxPath, type ChainId } from '@/lib/chainDisplay';
+import { formatAmountPair } from '@/lib/blockLabels';
 
-export function BlockMiningCard({
-  result,
-  chainId,
-}: {
-  result: BlockResult;
-  chainId: ChainId;
-}) {
+export function BlockMiningCard({ result, chainId }: { result: BlockResult; chainId: ChainId }) {
   const block = result.block!;
   const coinbase = result.coinbase;
 
@@ -21,9 +15,7 @@ export function BlockMiningCard({
   return (
     <section className="rounded-xl border border-accent/20 bg-accent/5 shadow-sm">
       <div className="border-b border-accent/20 px-5 py-4">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted">
-          Mining
-        </h2>
+        <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted">Mining</h2>
       </div>
       <div className="grid gap-4 p-5 sm:grid-cols-3">
         {coinbase ? (

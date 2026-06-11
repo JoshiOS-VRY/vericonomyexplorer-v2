@@ -64,16 +64,19 @@ rpcbind=127.0.0.1
 ## Installation
 
 1. **Install Dependencies**:
+
    ```bash
    npm install
    ```
 
 2. **Start the Explorer**:
+
    ```bash
    npm start
    ```
 
    Or with specific configuration:
+
    ```bash
    BTCEXP_COIN=VRM BTCEXP_BITCOIND_PORT=8332 npm start
    ```
@@ -105,6 +108,7 @@ The following items still need customization:
 ### Network Assets
 
 Verium-specific branding assets have been created in:
+
 - `public/img/network-verium/` - Logos and icons
 - Uses Verium orange color scheme (#FF6B35)
 
@@ -160,6 +164,7 @@ Verium has several unique features compared to Bitcoin:
 ## Support
 
 For issues specific to this Verium modification, please check:
+
 1. Verium node logs
 2. Explorer console output
 3. RPC connection status

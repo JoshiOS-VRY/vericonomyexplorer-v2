@@ -5,14 +5,14 @@
 // by client subversion / protocol version. Sourced live from the node's
 // `getpeerinfo` RPC.
 
-import { rpc } from "../rpc/index.js";
-import type { ChainId } from "../types.js";
+import { rpc } from '../rpc/index.js';
+import type { ChainId } from '../types.js';
 
 const RPC_TIMEOUT_MS = 8_000;
 
 function toNumberOrNull(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim() !== "") {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
   }
@@ -23,8 +23,8 @@ function splitHostPort(addr: string): { ip: string; port: number | null } {
   // IPv6 form: [::1]:1234
   const bracket = addr.match(/^\[(.+)\]:(\d+)$/);
   if (bracket) return { ip: bracket[1], port: Number(bracket[2]) };
-  const lastColon = addr.lastIndexOf(":");
-  if (lastColon > -1 && addr.indexOf(":") === lastColon) {
+  const lastColon = addr.lastIndexOf(':');
+  if (lastColon > -1 && addr.indexOf(':') === lastColon) {
     return { ip: addr.slice(0, lastColon), port: Number(addr.slice(lastColon + 1)) };
   }
   return { ip: addr, port: null };
@@ -59,20 +59,17 @@ export interface PeersOverview {
   peers: PeerEntry[];
 }
 
-export async function buildChainPeers(
-  chainId: ChainId,
-  limit: number,
-): Promise<PeersOverview> {
+export async function buildChainPeers(chainId: ChainId, limit: number): Promise<PeersOverview> {
   const rawPeers = await rpc(chainId)
-    .call<unknown[]>("getpeerinfo", [], RPC_TIMEOUT_MS)
+    .call<unknown[]>('getpeerinfo', [], RPC_TIMEOUT_MS)
     .catch(() => null);
 
   const peers: PeerEntry[] = [];
   if (Array.isArray(rawPeers)) {
     for (const raw of rawPeers) {
-      if (raw == null || typeof raw !== "object") continue;
+      if (raw == null || typeof raw !== 'object') continue;
       const peer = raw as Record<string, unknown>;
-      const addr = typeof peer.addr === "string" ? peer.addr : null;
+      const addr = typeof peer.addr === 'string' ? peer.addr : null;
       if (addr == null) continue;
       const { ip, port } = splitHostPort(addr);
       const conntime = toNumberOrNull(peer.conntime);
@@ -82,7 +79,7 @@ export async function buildChainPeers(
         address: addr,
         ip,
         port,
-        subversion: typeof peer.subver === "string" ? peer.subver : "",
+        subversion: typeof peer.subver === 'string' ? peer.subver : '',
         protocolVersion: toNumberOrNull(peer.version),
         inbound: peer.inbound === true,
         connectedSeconds:
@@ -98,7 +95,7 @@ export async function buildChainPeers(
 
   const groups = new Map<string, PeerVersionGroup>();
   for (const peer of peers) {
-    const key = `${peer.subversion}|${peer.protocolVersion ?? ""}`;
+    const key = `${peer.subversion}|${peer.protocolVersion ?? ''}`;
     const existing = groups.get(key);
     if (existing) {
       existing.count += 1;

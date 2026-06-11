@@ -1,8 +1,8 @@
-import Link from "next/link";
-import { BcPanel } from "@/components/explorer/BlockchairUi";
-import { formatHeight } from "@/components/explorer/ExplorerUi";
-import type { AddressRichlistInfo } from "@/lib/api/types";
-import { CHAIN_EXPLORERS, type ChainId } from "@/lib/chainDisplay";
+import Link from 'next/link';
+import { BcPanel } from '@/components/explorer/BlockchairUi';
+import { formatHeight } from '@/components/explorer/ExplorerUi';
+import type { AddressRichlistInfo } from '@/lib/api/types';
+import { CHAIN_EXPLORERS, type ChainId } from '@/lib/chainDisplay';
 
 export function AddressRichlistCard({
   chainId,
@@ -29,8 +29,7 @@ export function AddressRichlistCard({
     return (
       <BcPanel title="Rich list">
         <p className="text-sm text-fg-muted">
-          This address has no positive balance and is not ranked on the rich
-          list.
+          This address has no positive balance and is not ranked on the rich list.
         </p>
         {richlistHref ? (
           <Link
@@ -46,9 +45,7 @@ export function AddressRichlistCard({
 
   const offset = Math.max(richlist.rank - 1, 0);
   const topPercent =
-    richlist.percentile != null
-      ? Math.max(1, Math.ceil(richlist.percentile * 100))
-      : null;
+    richlist.percentile != null ? Math.max(1, Math.ceil(richlist.percentile * 100)) : null;
 
   return (
     <BcPanel title="Rich list rank">
@@ -59,7 +56,7 @@ export function AddressRichlistCard({
           </div>
           <p className="mt-1 text-sm text-fg-muted">
             of {formatHeight(richlist.total)} addresses with a positive balance
-            {topPercent != null ? ` · top ${topPercent}%` : ""}
+            {topPercent != null ? ` · top ${topPercent}%` : ''}
           </p>
         </div>
         {richlistHref ? (

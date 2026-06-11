@@ -1,13 +1,10 @@
-import type { Metadata } from "next";
-import { getBlock, getTransaction, getAddress } from "@/lib/api/indexer";
-import { CHAIN_EXPLORERS, type ChainId } from "@/lib/chainDisplay";
-import { pageMetadata } from "@/lib/seo/metadata";
-import { shortenHex } from "@/lib/seo/site";
+import type { Metadata } from 'next';
+import { getBlock, getTransaction, getAddress } from '@/lib/api/indexer';
+import { CHAIN_EXPLORERS, type ChainId } from '@/lib/chainDisplay';
+import { pageMetadata } from '@/lib/seo/metadata';
+import { shortenHex } from '@/lib/seo/site';
 
-export async function blockPageMetadata(
-  chainId: ChainId,
-  hashOrHeight: string,
-): Promise<Metadata> {
+export async function blockPageMetadata(chainId: ChainId, hashOrHeight: string): Promise<Metadata> {
   const chain = CHAIN_EXPLORERS[chainId];
   const path = `/${chainId}/block/${encodeURIComponent(hashOrHeight)}`;
 
@@ -15,8 +12,8 @@ export async function blockPageMetadata(
     const result = await getBlock(chainId, hashOrHeight, { limit: 1, offset: 0 });
     if (result.found && result.block) {
       const { height, hash, txCount } = result.block;
-      const title = `${chain.ticker} Block #${height.toLocaleString("en-US")}`;
-      const description = `${chain.name} block at height ${height} with ${txCount} transaction${txCount === 1 ? "" : "s"}. Hash ${shortenHex(hash)}.`;
+      const title = `${chain.ticker} Block #${height.toLocaleString('en-US')}`;
+      const description = `${chain.name} block at height ${height} with ${txCount} transaction${txCount === 1 ? '' : 's'}. Hash ${shortenHex(hash)}.`;
       return pageMetadata({ title, description, path });
     }
   } catch {
@@ -30,10 +27,7 @@ export async function blockPageMetadata(
   });
 }
 
-export async function transactionPageMetadata(
-  chainId: ChainId,
-  txid: string,
-): Promise<Metadata> {
+export async function transactionPageMetadata(chainId: ChainId, txid: string): Promise<Metadata> {
   const chain = CHAIN_EXPLORERS[chainId];
   const path = `/${chainId}/tx/${encodeURIComponent(txid)}`;
 
@@ -49,7 +43,7 @@ export async function transactionPageMetadata(
         `in block #${tx.blockHeight}`,
         outputLabel != null ? `total output ${outputLabel}` : null,
       ].filter(Boolean);
-      const description = `${parts.join(" ")}. Txid ${shortenHex(txid)}.`;
+      const description = `${parts.join(' ')}. Txid ${shortenHex(txid)}.`;
       return pageMetadata({ title, description, path });
     }
   } catch {
@@ -63,10 +57,7 @@ export async function transactionPageMetadata(
   });
 }
 
-export async function addressPageMetadata(
-  chainId: ChainId,
-  address: string,
-): Promise<Metadata> {
+export async function addressPageMetadata(chainId: ChainId, address: string): Promise<Metadata> {
   const chain = CHAIN_EXPLORERS[chainId];
   const path = `/${chainId}/address/${encodeURIComponent(address)}`;
 
@@ -82,8 +73,8 @@ export async function addressPageMetadata(
       const txCount = result.balance?.txCount ?? 0;
       const rank = result.richlist?.rank;
       const title = `${chain.ticker} Address ${shortenHex(address, 6, 6)}`;
-      const rankPart = rank != null ? ` Rich list rank #${rank}.` : "";
-      const description = `${chain.name} address with balance ${balanceLabel ?? "—"} and ${txCount} indexed transaction${txCount === 1 ? "" : "s"}.${rankPart} Address ${shortenHex(address, 10, 10)}.`;
+      const rankPart = rank != null ? ` Rich list rank #${rank}.` : '';
+      const description = `${chain.name} address with balance ${balanceLabel ?? '—'} and ${txCount} indexed transaction${txCount === 1 ? '' : 's'}.${rankPart} Address ${shortenHex(address, 10, 10)}.`;
       return pageMetadata({ title, description, path });
     }
   } catch {

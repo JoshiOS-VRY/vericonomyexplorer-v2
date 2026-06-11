@@ -17,15 +17,15 @@ We built a **full RPC reindex from block 0** into a **separate** Postgres databa
 
 ## Reported vs indexed numbers
 
-| Source | VRM | Notes |
-|--------|-----|--------|
-| Explorer balance | **58,645.57204978** | `address_balances_vrm` |
-| Explorer received / sent | **99,345.54** / **40,699.97** | `received − sent = balance` |
-| Wallet Available (user screenshot) | **~65,469.93** | |
-| Wallet Unconfirmed | **~54.39** | Aligns with recent indexed unspent near tip |
-| Wallet Immature | **~2.58** | |
-| Wallet Total | **~65,526.90** | |
-| **Gap (Available − explorer balance)** | **~6,824.36** | Primary discrepancy |
+| Source                                 | VRM                           | Notes                                       |
+| -------------------------------------- | ----------------------------- | ------------------------------------------- |
+| Explorer balance                       | **58,645.57204978**           | `address_balances_vrm`                      |
+| Explorer received / sent               | **99,345.54** / **40,699.97** | `received − sent = balance`                 |
+| Wallet Available (user screenshot)     | **~65,469.93**                |                                             |
+| Wallet Unconfirmed                     | **~54.39**                    | Aligns with recent indexed unspent near tip |
+| Wallet Immature                        | **~2.58**                     |                                             |
+| Wallet Total                           | **~65,526.90**                |                                             |
+| **Gap (Available − explorer balance)** | **~6,824.36**                 | Primary discrepancy                         |
 
 Implied wallet lifetime received ≈ **106,170 VRM** vs index **99,345.54 VRM** (~**6,825 VRM** missing **receives** in the index if wallet receive totals are authoritative).
 
@@ -46,12 +46,12 @@ Production queries temporarily failed with **`No space left on device`** on `/de
 
 ## Bootstrap vs ETL (clarification)
 
-| Artifact | What it does | Affects explorer balances? |
-|----------|----------------|----------------------------|
-| `verium-bootstrap.zip` | Seeds `veriumd` block files on disk | **No** — does not write explorer tables |
-| Historical SQLite index | Built via RPC + `ingest.js` | Source of truth before Postgres |
-| `migrate-sqlite-to-postgres.mjs` | COPY into Postgres | **No RPC re-index** at migration time |
-| Running `vericonomy-vrm-indexer` | Continues same ingest into Postgres | Yes, ongoing |
+| Artifact                         | What it does                        | Affects explorer balances?              |
+| -------------------------------- | ----------------------------------- | --------------------------------------- |
+| `verium-bootstrap.zip`           | Seeds `veriumd` block files on disk | **No** — does not write explorer tables |
+| Historical SQLite index          | Built via RPC + `ingest.js`         | Source of truth before Postgres         |
+| `migrate-sqlite-to-postgres.mjs` | COPY into Postgres                  | **No RPC re-index** at migration time   |
+| Running `vericonomy-vrm-indexer` | Continues same ingest into Postgres | Yes, ongoing                            |
 
 Bad balances could come from **ingest logic** or **indexing while the node was catching up**, not from the bootstrap zip containing balance rows.
 
@@ -61,26 +61,26 @@ Bad balances could come from **ingest logic** or **indexing while the node was c
 
 ### Design
 
-| Component | Production (kept) | Parity test (removed after test) |
-|-----------|-------------------|----------------------------------|
-| Postgres | `vericonomy-postgres` / `vericonomy` | `vericonomy-postgres-reindex` / `vericonomy_reindex` |
-| Volume | `vericonomy-pg` | `vericonomy-pg-reindex` |
-| Indexer | `vericonomy-vrm-indexer` | `vericonomy-vrm-reindex-worker` (one-shot) |
-| Chain nodes | Host `veriumd` / `vericoind` | Same RPC, read-only |
+| Component   | Production (kept)                    | Parity test (removed after test)                     |
+| ----------- | ------------------------------------ | ---------------------------------------------------- |
+| Postgres    | `vericonomy-postgres` / `vericonomy` | `vericonomy-postgres-reindex` / `vericonomy_reindex` |
+| Volume      | `vericonomy-pg`                      | `vericonomy-pg-reindex`                              |
+| Indexer     | `vericonomy-vrm-indexer`             | `vericonomy-vrm-reindex-worker` (one-shot)           |
+| Chain nodes | Host `veriumd` / `vericoind`         | Same RPC, read-only                                  |
 
 - Ingest: **`indexOnly: true`** (blocks, txs, vins/vouts, `address_events`, `address_balances`; no insights/analytics buckets).
 - Repo: `docker-compose.reindex-parity.yml`, `bin/reindex-parity-run.js`, `deploy/option-a/reindex-parity/*`.
 
 ### Outcome at tip (height **1,100,575**)
 
-| Field | Production | RPC reindex | Delta |
-|-------|------------|-------------|-------|
-| balance_sats | 5,864,557,204,978 | 5,864,557,204,978 | **0** |
-| received_sats | 9,934,554,033,548 | 9,934,554,033,548 | **0** |
-| sent_sats | 4,069,996,828,570 | 4,069,996,828,570 | **0** |
-| tx_count | 571 | 571 | **0** |
-| events | 602 | 602 | **0** |
-| coinbase_txs (flagged) | 0 | 0 | **0** |
+| Field                  | Production        | RPC reindex       | Delta |
+| ---------------------- | ----------------- | ----------------- | ----- |
+| balance_sats           | 5,864,557,204,978 | 5,864,557,204,978 | **0** |
+| received_sats          | 9,934,554,033,548 | 9,934,554,033,548 | **0** |
+| sent_sats              | 4,069,996,828,570 | 4,069,996,828,570 | **0** |
+| tx_count               | 571               | 571               | **0** |
+| events                 | 602               | 602               | **0** |
+| coinbase_txs (flagged) | 0                 | 0                 | **0** |
 
 **Conclusion:** Rebuilding the index from genesis with current ingest reproduces production. The wallet vs explorer gap is **not** fixed by “re-copying” or “re-ETL” prod data.
 
@@ -107,14 +107,14 @@ Chain-level checks during investigation included `gettxout` for a large confirme
 
 ## Interpretation
 
-| Hypothesis | Result |
-|------------|--------|
-| SQLite→Postgres ETL corruption | **Ruled out** (RPC reindex = prod) |
-| `verium-bootstrap.zip` wrong balance data | **Ruled out** (zip does not populate index) |
-| Prod row drift / display math bug | **Ruled out** for this address (internally consistent; matches reindex) |
-| Ingest misses vouts with pubkey in script but no `address` field (this address) | **Ruled out** in SQL + spot RPC audit |
-| Wallet UI shows broader scope than one address | **Still open** |
-| User wallet node credits receives explorer does not | **Still open** — needs CLI on **user** node |
+| Hypothesis                                                                      | Result                                                                  |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| SQLite→Postgres ETL corruption                                                  | **Ruled out** (RPC reindex = prod)                                      |
+| `verium-bootstrap.zip` wrong balance data                                       | **Ruled out** (zip does not populate index)                             |
+| Prod row drift / display math bug                                               | **Ruled out** for this address (internally consistent; matches reindex) |
+| Ingest misses vouts with pubkey in script but no `address` field (this address) | **Ruled out** in SQL + spot RPC audit                                   |
+| Wallet UI shows broader scope than one address                                  | **Still open**                                                          |
+| User wallet node credits receives explorer does not                             | **Still open** — needs CLI on **user** node                             |
 
 ---
 
@@ -157,14 +157,14 @@ Removed to reclaim disk:
 
 ## Repo artifacts (kept for later)
 
-| Path | Purpose |
-|------|---------|
-| `deploy/option-a/docs/VRM-balance-investigation-summary.md` | This document |
-| `docker-compose.reindex-parity.yml` | Isolated parity compose |
-| `deploy/option-a/reindex-parity/` | Scripts (compare, start, teardown) |
-| `deploy/option-a/postgres/diagnostics-vee-*.sql` | Ad-hoc SQL probes |
-| `deploy/option-a/scripts/vrm-*.cjs` | RPC helpers |
-| `bin/reindex-parity-run.js` | Index-only genesis worker |
+| Path                                                        | Purpose                            |
+| ----------------------------------------------------------- | ---------------------------------- |
+| `deploy/option-a/docs/VRM-balance-investigation-summary.md` | This document                      |
+| `docker-compose.reindex-parity.yml`                         | Isolated parity compose            |
+| `deploy/option-a/reindex-parity/`                           | Scripts (compare, start, teardown) |
+| `deploy/option-a/postgres/diagnostics-vee-*.sql`            | Ad-hoc SQL probes                  |
+| `deploy/option-a/scripts/vrm-*.cjs`                         | RPC helpers                        |
+| `bin/reindex-parity-run.js`                                 | Index-only genesis worker          |
 
 ---
 

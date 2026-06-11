@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Explicit scan paths for Tailwind v4 (Next.js app router + src/) */
 @source "../**/*.{js,ts,jsx,tsx,mdx}";
@@ -65,9 +65,7 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
-  --font-sans:
-    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    sans-serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -75,7 +73,7 @@
   html,
   body {
     @apply h-full bg-bg text-fg antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
 }
 
@@ -262,7 +260,7 @@
   }
 
   /* Cells with no header label span the full row (e.g. action rows). */
-  .data-table--stack td[data-label=""]::before,
+  .data-table--stack td[data-label='']::before,
   .data-table--stack td:not([data-label])::before {
     content: none;
   }
@@ -283,7 +281,7 @@
   }
 }
 
-.copy-btn[data-copy-state="copied"] {
+.copy-btn[data-copy-state='copied'] {
   border-color: color-mix(in srgb, var(--success) 45%, transparent);
   color: var(--success);
 }
@@ -442,7 +440,7 @@
   overflow: hidden;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum";
+  font-feature-settings: 'tnum';
 }
 
 .bc-header {
@@ -493,9 +491,7 @@
     box-shadow 0.15s ease;
 }
 
-.chain-summary-card:not(.chain-hub-section):hover
-  .chain-summary-stat-grid
-  .bc-stat {
+.chain-summary-card:not(.chain-hub-section):hover .chain-summary-stat-grid .bc-stat {
   background-color: color-mix(in srgb, var(--bg-subtle) 35%, var(--bg-panel));
 }
 
@@ -513,13 +509,8 @@
 }
 
 .chain-hub-section__ticker {
-  border: 1px solid
-    color-mix(in srgb, var(--block-chain-accent) 22%, var(--border));
-  background: color-mix(
-    in srgb,
-    var(--block-chain-accent-soft) 55%,
-    var(--bg-subtle)
-  );
+  border: 1px solid color-mix(in srgb, var(--block-chain-accent) 22%, var(--border));
+  background: color-mix(in srgb, var(--block-chain-accent-soft) 55%, var(--bg-subtle));
   color: color-mix(in srgb, var(--block-chain-accent) 55%, var(--fg-muted));
 }
 
@@ -534,11 +525,7 @@
 }
 
 .chain-hub-blocks-head__link:hover {
-  background: color-mix(
-    in srgb,
-    var(--block-chain-accent) 8%,
-    var(--bg-subtle)
-  );
+  background: color-mix(in srgb, var(--block-chain-accent) 8%, var(--bg-subtle));
 }
 
 .chain-hub-blocks-empty {
@@ -641,35 +628,35 @@
 }
 
 /* Chain hub panels — white text on dark (Verium & VeriCoin) */
-html:not(.light) .chain-hub-section[data-chain="vrm"],
-html:not(.light) .chain-hub-section[data-chain="vrc"] {
+html:not(.light) .chain-hub-section[data-chain='vrm'],
+html:not(.light) .chain-hub-section[data-chain='vrc'] {
   --fg: rgb(255 255 255);
   --fg-muted: rgb(255 255 255);
   --fg-subtle: rgb(255 255 255);
 }
 
-html:not(.light) .chain-hub-section[data-chain="vrm"] .bc-table a,
-html:not(.light) .chain-hub-section[data-chain="vrc"] .bc-table a,
-html:not(.light) .chain-hub-section[data-chain="vrm"] .text-accent,
-html:not(.light) .chain-hub-section[data-chain="vrc"] .text-accent,
+html:not(.light) .chain-hub-section[data-chain='vrm'] .bc-table a,
+html:not(.light) .chain-hub-section[data-chain='vrc'] .bc-table a,
+html:not(.light) .chain-hub-section[data-chain='vrm'] .text-accent,
+html:not(.light) .chain-hub-section[data-chain='vrc'] .text-accent,
 html:not(.light)
-  .chain-hub-section[data-chain="vrm"]
+  .chain-hub-section[data-chain='vrm']
   a:not(.chain-explore-btn):not(.block-chain-strip__link),
 html:not(.light)
-  .chain-hub-section[data-chain="vrc"]
+  .chain-hub-section[data-chain='vrc']
   a:not(.chain-explore-btn):not(.block-chain-strip__link) {
   color: rgb(255 255 255);
 }
 
-html:not(.light) .chain-hub-section[data-chain="vrm"] .bc-table a:hover,
-html:not(.light) .chain-hub-section[data-chain="vrc"] .bc-table a:hover,
-html:not(.light) .chain-hub-section[data-chain="vrm"] .text-accent:hover,
-html:not(.light) .chain-hub-section[data-chain="vrc"] .text-accent:hover,
+html:not(.light) .chain-hub-section[data-chain='vrm'] .bc-table a:hover,
+html:not(.light) .chain-hub-section[data-chain='vrc'] .bc-table a:hover,
+html:not(.light) .chain-hub-section[data-chain='vrm'] .text-accent:hover,
+html:not(.light) .chain-hub-section[data-chain='vrc'] .text-accent:hover,
 html:not(.light)
-  .chain-hub-section[data-chain="vrm"]
+  .chain-hub-section[data-chain='vrm']
   a:not(.chain-explore-btn):not(.block-chain-strip__link):hover,
 html:not(.light)
-  .chain-hub-section[data-chain="vrc"]
+  .chain-hub-section[data-chain='vrc']
   a:not(.chain-explore-btn):not(.block-chain-strip__link):hover {
   color: rgb(255 255 255 / 0.88);
 }
@@ -678,8 +665,7 @@ html:not(.light)
 .block-chain-strip-panel {
   overflow: hidden;
   border-radius: 0.875rem;
-  border: 1px solid
-    color-mix(in srgb, var(--block-chain-accent) 22%, var(--border));
+  border: 1px solid color-mix(in srgb, var(--block-chain-accent) 22%, var(--border));
   background:
     radial-gradient(
       ellipse 90% 70% at 0% 100%,
@@ -775,12 +761,7 @@ html:not(.light)
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgb(255 255 255 / 0.55) 45%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, rgb(255 255 255 / 0.55) 45%, transparent 100%);
   transform: translateX(-120%);
   animation: block-chain-track-flow 3.2s ease-in-out infinite;
 }
@@ -1001,8 +982,7 @@ html:not(.light)
 }
 
 .block-chain-strip__cell:hover .block-chain-strip__txs,
-.block-chain-strip__cell:has(.block-chain-strip__link:focus-visible)
-  .block-chain-strip__txs {
+.block-chain-strip__cell:has(.block-chain-strip__link:focus-visible) .block-chain-strip__txs {
   opacity: 0.9;
   max-height: 0.75rem;
 }
@@ -1032,52 +1012,31 @@ html:not(.light)
   border-spacing: 0;
 }
 
-.home-page
-  .chain-hub-section
-  .block-chain-table
-  col.block-chain-table__col--height {
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col--height {
   width: 11%;
 }
 
-.home-page
-  .chain-hub-section
-  .block-chain-table
-  col.block-chain-table__col--hash {
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col--hash {
   width: 22%;
 }
 
-.home-page
-  .chain-hub-section
-  .block-chain-table
-  col.block-chain-table__col--producer {
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col--producer {
   width: 29%;
 }
 
-.home-page
-  .chain-hub-section
-  .block-chain-table
-  col.block-chain-table__col--age {
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col--age {
   width: 13%;
 }
 
-.home-page
-  .chain-hub-section
-  .block-chain-table
-  col.block-chain-table__col--txs {
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col--txs {
   width: 6%;
 }
 
-.home-page
-  .chain-hub-section
-  .block-chain-table
-  col.block-chain-table__col--size {
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col--size {
   width: 8%;
 }
 
-.home-page
-  .chain-hub-section
-  .block-chain-table
-  col.block-chain-table__col--diff {
+.home-page .chain-hub-section .block-chain-table col.block-chain-table__col--diff {
   width: 11%;
 }
 
@@ -1145,9 +1104,7 @@ html:not(.light)
     align-items: center;
   }
 
-  .data-table--stack
-    td.block-chain-table__col--producer
-    .block-chain-table__producer-inner {
+  .data-table--stack td.block-chain-table__col--producer .block-chain-table__producer-inner {
     min-width: auto;
     flex-shrink: 0;
   }
@@ -1164,12 +1121,7 @@ html:not(.light)
   color: var(--fg-subtle);
 }
 
-.home-page
-  .chain-hub-section
-  .block-chain-table
-  tbody
-  tr.block-chain-table-row
-  td {
+.home-page .chain-hub-section .block-chain-table tbody tr.block-chain-table-row td {
   height: var(--bct-row-body);
   box-sizing: border-box;
   vertical-align: middle;
@@ -1350,15 +1302,15 @@ html:not(.light)
   color: var(--block-chain-accent, var(--fg));
 }
 
-.block-chain-section[data-chain="vrm"] .block-chain-table a {
+.block-chain-section[data-chain='vrm'] .block-chain-table a {
   color: var(--chain-vrm);
 }
 
-.block-chain-section[data-chain="vrm"] .block-chain-table a.extracted-by-verium-pool {
+.block-chain-section[data-chain='vrm'] .block-chain-table a.extracted-by-verium-pool {
   color: var(--chain-btn-fg);
 }
 
-.block-chain-section[data-chain="vrc"] .block-chain-table a {
+.block-chain-section[data-chain='vrc'] .block-chain-table a {
   color: var(--chain-vrc);
 }
 
@@ -1477,8 +1429,8 @@ html:not(.light)
 }
 
 .search-dropdown-section + .search-dropdown-section,
-.search-dropdown-section + li[role="presentation"],
-li[role="presentation"] + .search-dropdown-section {
+.search-dropdown-section + li[role='presentation'],
+li[role='presentation'] + .search-dropdown-section {
   border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
 }
 
@@ -1550,11 +1502,7 @@ li[role="presentation"] + .search-dropdown-section {
 
 .insights-chart-panel-vrm > div:first-child,
 .insights-chart-panel-vrc > div:first-child {
-  border-bottom-color: color-mix(
-    in srgb,
-    var(--insights-accent, var(--border)) 18%,
-    var(--border)
-  );
+  border-bottom-color: color-mix(in srgb, var(--insights-accent, var(--border)) 18%, var(--border));
 }
 
 .insights-chart-panel-vrm {
@@ -1574,7 +1522,7 @@ li[role="presentation"] + .search-dropdown-section {
 }
 
 .insights-chart-panel > div:first-child::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   top: 0;
@@ -1619,12 +1567,7 @@ li[role="presentation"] + .search-dropdown-section {
 .insights-chart-grid .insights-chart-panel:hover {
   box-shadow:
     0 8px 24px color-mix(in srgb, var(--bg) 35%, transparent),
-    0 0 0 1px
-      color-mix(
-        in srgb,
-        var(--insights-accent, var(--border)) 12%,
-        var(--border)
-      );
+    0 0 0 1px color-mix(in srgb, var(--insights-accent, var(--border)) 12%, var(--border));
 }
 
 .recharts-default-legend .recharts-legend-item-text {
@@ -1729,11 +1672,7 @@ li[role="presentation"] + .search-dropdown-section {
   grid-template-columns: 2.75rem minmax(0, 1fr) 5.25rem minmax(5.5rem, auto);
   gap: 0.75rem 1rem;
   border-bottom: 1px solid var(--border);
-  background: color-mix(
-    in srgb,
-    var(--richlist-accent-soft) 22%,
-    var(--bg-subtle)
-  );
+  background: color-mix(in srgb, var(--richlist-accent-soft) 22%, var(--bg-subtle));
   padding: 0.625rem 1rem;
   font-size: 0.6875rem;
   font-weight: 700;
@@ -1792,7 +1731,7 @@ li[role="presentation"] + .search-dropdown-section {
 }
 
 .richlist-balance-list__row--podium::before {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   top: 0;
@@ -1807,8 +1746,7 @@ li[role="presentation"] + .search-dropdown-section {
 }
 
 .richlist-balance-list__row--first {
-  box-shadow: inset 0 1px 0
-    color-mix(in srgb, var(--richlist-accent) 18%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--richlist-accent) 18%, transparent);
 }
 
 .richlist-balance-list__row:hover .richlist-balance-list__addr {
@@ -1836,11 +1774,7 @@ li[role="presentation"] + .search-dropdown-section {
   justify-content: space-between;
   gap: 0.75rem 1.25rem;
   border-top: 1px solid var(--border);
-  background: color-mix(
-    in srgb,
-    var(--richlist-accent-soft) 25%,
-    var(--bg-subtle)
-  );
+  background: color-mix(in srgb, var(--richlist-accent-soft) 25%, var(--bg-subtle));
   padding: 0.875rem 1rem 1rem;
 }
 
@@ -1859,31 +1793,19 @@ li[role="presentation"] + .search-dropdown-section {
 
 .richlist-rank--gold {
   border: 1px solid rgb(234 179 8 / 0.45);
-  background: linear-gradient(
-    135deg,
-    rgb(250 204 21 / 0.35),
-    rgb(234 179 8 / 0.2)
-  );
+  background: linear-gradient(135deg, rgb(250 204 21 / 0.35), rgb(234 179 8 / 0.2));
   color: rgb(161 98 7);
 }
 
 .richlist-rank--silver {
   border: 1px solid rgb(148 163 184 / 0.5);
-  background: linear-gradient(
-    135deg,
-    rgb(226 232 240 / 0.55),
-    rgb(148 163 184 / 0.25)
-  );
+  background: linear-gradient(135deg, rgb(226 232 240 / 0.55), rgb(148 163 184 / 0.25));
   color: rgb(71 85 105);
 }
 
 .richlist-rank--bronze {
   border: 1px solid rgb(217 119 6 / 0.45);
-  background: linear-gradient(
-    135deg,
-    rgb(251 191 36 / 0.35),
-    rgb(217 119 6 / 0.18)
-  );
+  background: linear-gradient(135deg, rgb(251 191 36 / 0.35), rgb(217 119 6 / 0.18));
   color: rgb(146 64 14);
 }
 
@@ -1951,23 +1873,19 @@ html:not(.light) .richlist-rank--bronze {
 }
 
 .extracted-by-verium-pool::before {
-  content: "";
+  content: '';
   flex-shrink: 0;
   width: 0.4375rem;
   height: 0.4375rem;
   border-radius: 9999px;
-  background: linear-gradient(
-    145deg,
-    rgb(255 255 255 / 0.98) 0%,
-    rgb(255 255 255 / 0.72) 100%
-  );
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.98) 0%, rgb(255 255 255 / 0.72) 100%);
   box-shadow:
     0 0 0 1px rgb(255 255 255 / 0.35),
     0 0 7px rgb(255 255 255 / 0.45);
 }
 
 .extracted-by-verium-pool::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;

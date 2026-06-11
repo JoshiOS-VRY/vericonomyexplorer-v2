@@ -1,16 +1,16 @@
-import { fetchChainSummary } from "@/lib/api/client";
-import type { ChainSummary, IndexedBlock } from "@/lib/api/types";
-import { getChainTipHeight, mergeChainHealth } from "@/lib/chainDisplay";
-import { CHAIN_SUMMARY_POLL_MS } from "@/lib/liveDataConfig";
+import { fetchChainSummary } from '@/lib/api/client';
+import type { ChainSummary, IndexedBlock } from '@/lib/api/types';
+import { getChainTipHeight, mergeChainHealth } from '@/lib/chainDisplay';
+import { CHAIN_SUMMARY_POLL_MS } from '@/lib/liveDataConfig';
 import {
   createOptimisticTipBlock,
   enrichBlocksFromPrevious,
   mergeBlocksForDisplay,
   shouldApplyOptimisticTip,
-} from "@/lib/liveBlocksMerge";
-import { LATEST_BLOCKS_COUNT } from "@/lib/chainBlocksDisplay";
+} from '@/lib/liveBlocksMerge';
+import { LATEST_BLOCKS_COUNT } from '@/lib/chainBlocksDisplay';
 
-export type ChainId = "vrm" | "vrc";
+export type ChainId = 'vrm' | 'vrc';
 
 export interface TipEvent {
   height: number;
@@ -29,9 +29,9 @@ export interface ChainLiveSnapshot {
   error: string | null;
 }
 
-const CHAINS: ChainId[] = ["vrm", "vrc"];
+const CHAINS: ChainId[] = ['vrm', 'vrc'];
 const EMPTY_BLOCKS: IndexedBlock[] = [];
-const EMPTY_TRANSACTIONS: ChainSummary["recentTransactions"] = [];
+const EMPTY_TRANSACTIONS: ChainSummary['recentTransactions'] = [];
 const POLL_MS = CHAIN_SUMMARY_POLL_MS;
 const REFRESH_DEBOUNCE_MS = 2_000;
 
@@ -53,12 +53,12 @@ function emptySummary(chainId: ChainId): ChainSummary {
     health: {
       id: chainId,
       ticker: chainId.toUpperCase(),
-      name: chainId === "vrm" ? "Verium" : "VeriCoin",
+      name: chainId === 'vrm' ? 'Verium' : 'VeriCoin',
       consensus: null,
-      status: "unknown",
+      status: 'unknown',
       trusted: false,
-      trustLevel: "none",
-      message: "Loading…",
+      trustLevel: 'none',
+      message: 'Loading…',
       reasons: [],
       checks: {
         hasBlocks: false,
@@ -91,16 +91,16 @@ function emptySummary(chainId: ChainId): ChainSummary {
         lastIndexedHash: null,
       },
       sourceLabels: {
-        blocks: "rpc+index",
-        transactions: chainId === "vrm" ? "index-required" : "rpc-or-index",
-        addressBalances: "index",
-        richlist: "index",
-        leaderboards: "index",
+        blocks: 'rpc+index',
+        transactions: chainId === 'vrm' ? 'index-required' : 'rpc-or-index',
+        addressBalances: 'index',
+        richlist: 'index',
+        leaderboards: 'index',
       },
     },
     latestBlocks: EMPTY_BLOCKS,
     recentTransactions: EMPTY_TRANSACTIONS,
-    source: { label: "index", type: "index" },
+    source: { label: 'index', type: 'index' },
   };
 }
 
@@ -112,7 +112,7 @@ function createSnapshot(summary: ChainSummary): ChainLiveSnapshot {
 /** Stable snapshot for SSR / hydration (no Date.now(), uses props only). */
 export function snapshotFromSummary(
   chainId: ChainId,
-  summary?: ChainSummary | null,
+  summary?: ChainSummary | null
 ): ChainLiveSnapshot {
   const resolved = summary ?? emptySummary(chainId);
   return {
@@ -137,11 +137,7 @@ function emit(chainId: ChainId): void {
   listeners.get(chainId)?.forEach((listener) => listener());
 }
 
-function setSnapshot(
-  chainId: ChainId,
-  next: ChainLiveSnapshot,
-  notify = true,
-): void {
+function setSnapshot(chainId: ChainId, next: ChainLiveSnapshot, notify = true): void {
   snapshots.set(chainId, next);
   if (notify) {
     emit(chainId);
@@ -150,9 +146,9 @@ function setSnapshot(
 
 /** Lite summary polls omit txs; keep SSR/page-seeded rows until a full payload arrives. */
 export function mergeRecentTransactions(
-  prev: ChainSummary["recentTransactions"],
-  next: ChainSummary["recentTransactions"],
-): ChainSummary["recentTransactions"] {
+  prev: ChainSummary['recentTransactions'],
+  next: ChainSummary['recentTransactions']
+): ChainSummary['recentTransactions'] {
   return next.length > 0 ? next : prev;
 }
 
@@ -163,28 +159,22 @@ function mergeSummary(chainId: ChainId, next: ChainSummary): ChainLiveSnapshot {
 
   const mergedBlocks = mergeBlocksForDisplay(
     enrichBlocksFromPrevious(prev.summary.latestBlocks, next.latestBlocks),
-    chainId,
+    chainId
   );
-  const latestBlockHeight =
-    mergedBlocks[0]?.height ?? nextTopHeight ?? prevTopHeight ?? null;
+  const latestBlockHeight = mergedBlocks[0]?.height ?? nextTopHeight ?? prevTopHeight ?? null;
 
   const mergedSummary: ChainSummary = {
     ...next,
     latestBlocks: mergedBlocks,
     recentTransactions: mergeRecentTransactions(
       prev.summary.recentTransactions,
-      next.recentTransactions,
+      next.recentTransactions
     ),
-    health: mergeChainHealth(
-      prev.summary.health,
-      next.health,
-      latestBlockHeight,
-    ),
+    health: mergeChainHealth(prev.summary.health, next.health, latestBlockHeight),
   };
 
   const nextHeight =
-    mergedSummary.health.heights.bestRpcHeight ??
-    mergedSummary.health.heights.maxIndexedHeight;
+    mergedSummary.health.heights.bestRpcHeight ?? mergedSummary.health.heights.maxIndexedHeight;
   const hashes = knownHashes.get(chainId) ?? new Set<string>();
   mergedSummary.latestBlocks
     .filter((block) => !hashes.has(block.hash))
@@ -208,7 +198,7 @@ function mergeSummary(chainId: ChainId, next: ChainSummary): ChainLiveSnapshot {
         if (current?.heightPulse) {
           setSnapshot(chainId, { ...current, heightPulse: false });
         }
-      }, 700),
+      }, 700)
     );
   }
 
@@ -245,12 +235,9 @@ function applyOptimisticTip(chainId: ChainId, tip: TipEvent): void {
   const topHeight = top?.height ?? null;
   const nextBlocks = shouldApplyOptimisticTip(tip.height, topHeight)
     ? mergeBlocksForDisplay(
-        [
-          createOptimisticTipBlock(tip),
-          ...current.summary.latestBlocks,
-        ],
+        [createOptimisticTipBlock(tip), ...current.summary.latestBlocks],
         chainId,
-        LATEST_BLOCKS_COUNT,
+        LATEST_BLOCKS_COUNT
       )
     : current.summary.latestBlocks;
 
@@ -276,7 +263,7 @@ function applyOptimisticTip(chainId: ChainId, tip: TipEvent): void {
         if (latest?.heightPulse) {
           setSnapshot(chainId, { ...latest, heightPulse: false });
         }
-      }, 700),
+      }, 700)
     );
   }
   tipHeights.set(chainId, tip.height);
@@ -298,17 +285,17 @@ function applyOptimisticTip(chainId: ChainId, tip: TipEvent): void {
           bestRpcHeight: tip.height,
           lastIndexedHeight: Math.max(
             current.summary.health.heights.lastIndexedHeight ?? 0,
-            tip.height,
+            tip.height
           ),
           maxIndexedHeight: Math.max(
             current.summary.health.heights.maxIndexedHeight ?? 0,
-            tip.height,
+            tip.height
           ),
           blocksBehind: 0,
         },
         explorerStatus: {
-          label: "Live",
-          message: "Up to date.",
+          label: 'Live',
+          message: 'Up to date.',
           syncing: false,
           blocksBehind: 0,
         },
@@ -347,7 +334,7 @@ async function refreshSummary(chainId: ChainId): Promise<void> {
         setSnapshot(chainId, {
           ...latest,
           isRefreshing: false,
-          error: err instanceof Error ? err.message : "Failed to refresh",
+          error: err instanceof Error ? err.message : 'Failed to refresh',
         });
       }
     }
@@ -370,7 +357,7 @@ function scheduleSummaryRefresh(chainId: ChainId): void {
     setTimeout(() => {
       debounceTimers.delete(chainId);
       void refreshSummary(chainId);
-    }, REFRESH_DEBOUNCE_MS),
+    }, REFRESH_DEBOUNCE_MS)
   );
 }
 
@@ -401,26 +388,16 @@ function isPlaceholderSummary(summary: ChainSummary): boolean {
   return !summary.health.checks.hasBlocks;
 }
 
-function applySummary(
-  chainId: ChainId,
-  summary: ChainSummary,
-  notify = false,
-): void {
+function applySummary(chainId: ChainId, summary: ChainSummary, notify = false): void {
   seedKnownHashes(chainId, summary.latestBlocks);
   tipHeights.set(
     chainId,
-    summary.health.heights.bestRpcHeight ??
-      summary.health.heights.maxIndexedHeight ??
-      null,
+    summary.health.heights.bestRpcHeight ?? summary.health.heights.maxIndexedHeight ?? null
   );
   setSnapshot(chainId, createSnapshot(summary), notify);
 }
 
-function ensureChain(
-  chainId: ChainId,
-  initialSummary?: ChainSummary | null,
-  notify = false,
-): void {
+function ensureChain(chainId: ChainId, initialSummary?: ChainSummary | null, notify = false): void {
   const incoming = initialSummary ?? emptySummary(chainId);
   const existing = snapshots.get(chainId);
 
@@ -429,11 +406,7 @@ function ensureChain(
     return;
   }
 
-  if (
-    initialSummary &&
-    isPlaceholderSummary(existing.summary) &&
-    !isPlaceholderSummary(incoming)
-  ) {
+  if (initialSummary && isPlaceholderSummary(existing.summary) && !isPlaceholderSummary(incoming)) {
     applySummary(chainId, incoming, notify);
   }
 }
@@ -459,8 +432,8 @@ export const chainLiveStore = {
     };
   },
   seed(initialVrm?: ChainSummary | null, initialVrc?: ChainSummary | null): void {
-    ensureChain("vrm", initialVrm);
-    ensureChain("vrc", initialVrc);
+    ensureChain('vrm', initialVrm);
+    ensureChain('vrc', initialVrc);
   },
   setPageVisible(nextVisible: boolean): void {
     if (pageVisible === nextVisible) {
@@ -505,8 +478,7 @@ export const chainLiveStore = {
 
     bootstrapped = true;
 
-    const needsInitialRefresh =
-      options.initialVrm == null || options.initialVrc == null;
+    const needsInitialRefresh = options.initialVrm == null || options.initialVrc == null;
     if (options.visible && needsInitialRefresh) {
       for (const chainId of CHAINS) {
         void refreshSummary(chainId);

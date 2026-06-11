@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "next dev --turbo",
     "clean": "node -e \"require('node:fs').rmSync('.next',{recursive:true,force:true})\"",
-    "build": "next build",
+    "build": "npm run format:check && next build",
     "start": "next start",
     "lint": "eslint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "update:all": "ncu -u --reject vericonomy-dual-explorer && npm install"
   },
@@ -39,6 +41,7 @@
     "eslint-config-next": "16.2.6",
     "jest": "^30.4.2",
     "npm-check-updates": "^18.0.1",
+    "prettier": "^3.6.2",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.11",
     "typescript": "^6"

@@ -1,4 +1,4 @@
-import type { FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyReply, FastifyRequest } from 'fastify';
 
 const CACHE_RULES: Array<{ pattern: RegExp; maxAge: number; swr: number }> = [
   { pattern: /^\/v1\/[^/]+\/block\//, maxAge: 60, swr: 120 },
@@ -22,18 +22,18 @@ const CACHE_RULES: Array<{ pattern: RegExp; maxAge: number; swr: number }> = [
 ];
 
 export function applyCacheHeaders(request: FastifyRequest, reply: FastifyReply): void {
-  if (request.method !== "GET") {
+  if (request.method !== 'GET') {
     return;
   }
 
-  const path = request.url.split("?")[0] ?? request.url;
+  const path = request.url.split('?')[0] ?? request.url;
   const rule = CACHE_RULES.find((entry) => entry.pattern.test(path));
   if (!rule) {
     return;
   }
 
   reply.header(
-    "Cache-Control",
-    `public, max-age=${rule.maxAge}, stale-while-revalidate=${rule.swr}`,
+    'Cache-Control',
+    `public, max-age=${rule.maxAge}, stale-while-revalidate=${rule.swr}`
   );
 }

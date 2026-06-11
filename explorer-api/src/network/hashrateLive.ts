@@ -3,8 +3,8 @@ import {
   VRM_BLOCKS_7_DAYS,
   VRM_BLOCKS_PER_DAY,
   type HashrateSource,
-} from "@vericonomy/network-metrics";
-import { parseRpcNumber, type RpcCall } from "./stats.js";
+} from '@vericonomy/network-metrics';
+import { parseRpcNumber, type RpcCall } from './stats.js';
 
 export type CanonicalVrmHashrate = {
   hashPerSec: number | null;
@@ -12,13 +12,10 @@ export type CanonicalVrmHashrate = {
   source: HashrateSource;
 };
 
-async function safeNetworkHashrate(
-  rpcCall: RpcCall,
-  blockCount: number,
-): Promise<number | null> {
+async function safeNetworkHashrate(rpcCall: RpcCall, blockCount: number): Promise<number | null> {
   try {
-    const hashrate = await rpcCall("getnetworkhashps", [blockCount], 15_000);
-    if (typeof hashrate === "number" && hashrate > 0) {
+    const hashrate = await rpcCall('getnetworkhashps', [blockCount], 15_000);
+    if (typeof hashrate === 'number' && hashrate > 0) {
       return hashrate;
     }
   } catch {
@@ -38,19 +35,19 @@ export type CanonicalVrmHashrateOptions = {
 /** Canonical live VRM network hashrate (shared resolver). */
 export async function fetchCanonicalVrmHashrate(
   call: RpcCall,
-  options: CanonicalVrmHashrateOptions = {},
+  options: CanonicalVrmHashrateOptions = {}
 ): Promise<CanonicalVrmHashrate> {
   const include7d = options.include7d ?? false;
 
   const miningInfoPromise =
     options.miningInfo !== undefined
       ? Promise.resolve(options.miningInfo)
-      : call("getmininginfo").catch(() => null);
+      : call('getmininginfo').catch(() => null);
 
   const blockchainInfoPromise =
     options.blockchainInfo !== undefined
       ? Promise.resolve(options.blockchainInfo)
-      : call("getblockchaininfo").catch(() => null);
+      : call('getblockchaininfo').catch(() => null);
 
   const [miningInfoResult, hashrate1dResult, blockchainInfoResult, hashrate7dResult] =
     await Promise.allSettled([
@@ -61,24 +58,20 @@ export async function fetchCanonicalVrmHashrate(
     ]);
 
   const miningInfo =
-    miningInfoResult.status === "fulfilled"
+    miningInfoResult.status === 'fulfilled'
       ? (miningInfoResult.value as {
           networkhashps?: number;
           nethashrate?: number;
         })
       : null;
 
-  const hashrate1d =
-    hashrate1dResult.status === "fulfilled" ? hashrate1dResult.value : null;
+  const hashrate1d = hashrate1dResult.status === 'fulfilled' ? hashrate1dResult.value : null;
 
-  const hashrate7d =
-    hashrate7dResult.status === "fulfilled" ? hashrate7dResult.value : null;
+  const hashrate7d = hashrate7dResult.status === 'fulfilled' ? hashrate7dResult.value : null;
 
   const difficulty =
-    blockchainInfoResult.status === "fulfilled"
-      ? parseRpcNumber(
-          (blockchainInfoResult.value as { difficulty?: unknown } | null)?.difficulty,
-        )
+    blockchainInfoResult.status === 'fulfilled'
+      ? parseRpcNumber((blockchainInfoResult.value as { difficulty?: unknown } | null)?.difficulty)
       : null;
 
   return resolveNetworkHashPerSec({

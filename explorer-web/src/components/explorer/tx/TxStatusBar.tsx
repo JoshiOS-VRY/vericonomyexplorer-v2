@@ -1,11 +1,8 @@
-import Link from "next/link";
-import {
-  TimeCell,
-  formatHeight,
-} from "@/components/explorer/ExplorerUi";
-import type { TransactionResult } from "@/lib/api/types";
-import { chainBlockPath, type ChainId } from "@/lib/chainDisplay";
-import { formatConfirmationLabel } from "@/lib/txLabels";
+import Link from 'next/link';
+import { TimeCell, formatHeight } from '@/components/explorer/ExplorerUi';
+import type { TransactionResult } from '@/lib/api/types';
+import { chainBlockPath, type ChainId } from '@/lib/chainDisplay';
+import { formatConfirmationLabel } from '@/lib/txLabels';
 
 export function TxStatusBar({
   result,
@@ -33,7 +30,7 @@ export function TxStatusBar({
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border/70 px-4 py-3 text-xs text-fg-muted sm:px-5">
         <span>
-          Included in{" "}
+          Included in{' '}
           <Link
             href={chainBlockPath(chainId, tx.blockHeight)}
             className="font-semibold text-accent hover:underline"
@@ -42,10 +39,7 @@ export function TxStatusBar({
           </Link>
         </span>
         <span>
-          Position{" "}
-          <span className="tabular-nums text-fg">
-            {formatHeight(tx.txIndex)}
-          </span>
+          Position <span className="tabular-nums text-fg">{formatHeight(tx.txIndex)}</span>
         </span>
         <span>
           <TimeCell time={tx.time} absolute />

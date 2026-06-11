@@ -8,7 +8,7 @@ export interface DigitRollParts {
 export function getDigitRollParts(
   from: number,
   to: number,
-  format: (value: number) => string,
+  format: (value: number) => string
 ): DigitRollParts | null {
   if (!Number.isFinite(from) || !Number.isFinite(to)) {
     return null;
@@ -36,8 +36,8 @@ export function getDigitRollParts(
     return null;
   }
 
-  const fromDigit = fromSuffix[0] ?? "";
-  const toDigit = toSuffix[0] ?? "";
+  const fromDigit = fromSuffix[0] ?? '';
+  const toDigit = toSuffix[0] ?? '';
   if (!/\d/.test(fromDigit) || !/\d/.test(toDigit)) {
     return null;
   }

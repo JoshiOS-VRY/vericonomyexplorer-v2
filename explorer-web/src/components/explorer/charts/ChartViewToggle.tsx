@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import type { InsightsChartView } from "@/lib/insightsChartConfig";
-import { cn } from "@/lib/utils";
+import type { InsightsChartView } from '@/lib/insightsChartConfig';
+import { cn } from '@/lib/utils';
 
 export function ChartViewToggle<T extends string>({
   views,
@@ -25,11 +25,11 @@ export function ChartViewToggle<T extends string>({
             disabled={loading}
             onClick={() => onViewChange(item.id)}
             className={cn(
-              "rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all duration-200",
+              'rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all duration-200',
               active
-                ? "bg-bg-panel text-fg shadow-sm ring-1 ring-border/60"
-                : "text-fg-muted hover:text-fg",
-              loading && !active && "opacity-60",
+                ? 'bg-bg-panel text-fg shadow-sm ring-1 ring-border/60'
+                : 'text-fg-muted hover:text-fg',
+              loading && !active && 'opacity-60'
             )}
           >
             {item.label}
@@ -52,17 +52,12 @@ export function ChartViewToggleInsights({
   allowedViews?: InsightsChartView[];
 }) {
   const views = [
-    { id: "line" as const, label: "Line" },
-    { id: "area" as const, label: "Area" },
-    { id: "bar" as const, label: "Bar" },
+    { id: 'line' as const, label: 'Line' },
+    { id: 'area' as const, label: 'Area' },
+    { id: 'bar' as const, label: 'Bar' },
   ].filter((item) => !allowedViews || allowedViews.includes(item.id));
 
   return (
-    <ChartViewToggle
-      views={views}
-      view={view}
-      onViewChange={onViewChange}
-      loading={loading}
-    />
+    <ChartViewToggle views={views} view={view} onViewChange={onViewChange} loading={loading} />
   );
 }

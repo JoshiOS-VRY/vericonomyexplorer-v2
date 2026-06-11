@@ -1,9 +1,9 @@
-"use strict";
+'use strict';
 
-const dbModule = require("./db.js");
-const health = require("./health.js");
-const liveChain = require("./liveChain.js");
-const indexerQuery = require("./query.js");
+const dbModule = require('./db.js');
+const health = require('./health.js');
+const liveChain = require('./liveChain.js');
+const indexerQuery = require('./query.js');
 
 async function getChainSummary(chainId, options = {}) {
   const summary = await indexerQuery.getChainSummary(chainId, options);
@@ -19,11 +19,7 @@ async function getChainSummary(chainId, options = {}) {
 
   if (tip) {
     try {
-      summary.health = health.enrichWithLiveRpc(
-        summary.health,
-        tip.height,
-        options,
-      );
+      summary.health = health.enrichWithLiveRpc(summary.health, tip.height, options);
     } catch (err) {
       /* keep indexed health when live enrichment fails */
     }
@@ -31,9 +27,7 @@ async function getChainSummary(chainId, options = {}) {
     try {
       const indexedHeight = summary.health.heights.maxIndexedHeight;
       const latestBlockHeight =
-        summary.latestBlocks.length > 0
-          ? Number(summary.latestBlocks[0].height)
-          : null;
+        summary.latestBlocks.length > 0 ? Number(summary.latestBlocks[0].height) : null;
 
       if (
         !options.skipLiveBlocks &&
@@ -41,11 +35,7 @@ async function getChainSummary(chainId, options = {}) {
           tip.height > indexedHeight ||
           (latestBlockHeight !== null && tip.height > latestBlockHeight))
       ) {
-        summary.latestBlocks = await liveChain.getRecentBlocks(
-          chainId,
-          5,
-          options,
-        );
+        summary.latestBlocks = await liveChain.getRecentBlocks(chainId, 5, options);
       }
     } catch (err) {
       /* block list enrichment is best-effort */
@@ -59,33 +49,22 @@ async function getLandingData(options = {}) {
   const db = options.db || dbModule.openDatabase();
   const shared = Object.assign({}, options, { db, skipLiveBlocks: true });
 
-  const [vrmRichlist, vrcRichlist, vrmLeaderboard, vrmSummary, vrcSummary] =
-    await Promise.all([
-      Promise.resolve(
-        indexerQuery.getRichlist(
-          "vrm",
-          Object.assign({}, shared, { limit: 5 }),
-        ),
-      ),
-      Promise.resolve(
-        indexerQuery.getRichlist(
-          "vrc",
-          Object.assign({}, shared, { limit: 5 }),
-        ),
-      ),
-      Promise.resolve(
-        indexerQuery.getLeaderboard(
-          "vrm",
-          Object.assign({}, shared, {
-            period: "month",
-            sort: "activity",
-            limit: 5,
-          }),
-        ),
-      ),
-      getChainSummary("vrm", shared),
-      getChainSummary("vrc", shared),
-    ]);
+  const [vrmRichlist, vrcRichlist, vrmLeaderboard, vrmSummary, vrcSummary] = await Promise.all([
+    Promise.resolve(indexerQuery.getRichlist('vrm', Object.assign({}, shared, { limit: 5 }))),
+    Promise.resolve(indexerQuery.getRichlist('vrc', Object.assign({}, shared, { limit: 5 }))),
+    Promise.resolve(
+      indexerQuery.getLeaderboard(
+        'vrm',
+        Object.assign({}, shared, {
+          period: 'month',
+          sort: 'activity',
+          limit: 5,
+        })
+      )
+    ),
+    getChainSummary('vrm', shared),
+    getChainSummary('vrc', shared),
+  ]);
 
   return {
     vrmSummary,
@@ -101,23 +80,23 @@ async function getVrmDashboard(options = {}) {
   const shared = Object.assign({}, options, { db });
   const since30d = Math.floor(Date.now() / 1000) - 30 * 86_400;
   const [richlist, leaderboard, activityHistory, summary] = await Promise.all([
-    indexerQuery.getRichlist("vrm", Object.assign({}, shared, { limit: 5 })),
+    indexerQuery.getRichlist('vrm', Object.assign({}, shared, { limit: 5 })),
     indexerQuery.getLeaderboard(
-      "vrm",
+      'vrm',
       Object.assign({}, shared, {
-        period: "month",
-        sort: "activity",
+        period: 'month',
+        sort: 'activity',
         limit: 5,
-      }),
+      })
     ),
     indexerQuery.getChainActivityHistory(
-      "vrm",
+      'vrm',
       Object.assign({}, shared, {
         since: since30d,
         maxPoints: 100,
-      }),
+      })
     ),
-    getChainSummary("vrm", shared),
+    getChainSummary('vrm', shared),
   ]);
 
   return { summary, richlist, leaderboard, activityHistory };
@@ -125,9 +104,7 @@ async function getVrmDashboard(options = {}) {
 
 async function getIndexerHealth(options = {}) {
   const db = options.db || dbModule.openDatabase();
-  const baseHealth = await health.getIndexerHealth(
-    Object.assign({}, options, { db }),
-  );
+  const baseHealth = await health.getIndexerHealth(Object.assign({}, options, { db }));
   const chains = await Promise.all(
     baseHealth.chains.map(async (chainHealth) => {
       try {
@@ -136,13 +113,13 @@ async function getIndexerHealth(options = {}) {
       } catch (err) {
         return Object.assign({}, chainHealth, {
           explorerStatus: {
-            label: "Offline",
-            message: "Unable to reach the chain node.",
+            label: 'Offline',
+            message: 'Unable to reach the chain node.',
             syncing: false,
           },
         });
       }
-    }),
+    })
   );
 
   return Object.assign({}, baseHealth, { chains });

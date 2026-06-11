@@ -349,4 +349,3 @@ Do not include in Git:
 8. Add a setup script that prompts for chain, RPC host, RPC port, credentials, public hostname, Caddy mode, and database volume path.
 9. Add production Caddy examples.
 10. Add a VRC indexing plan after VRM proof of concept is stable.
-

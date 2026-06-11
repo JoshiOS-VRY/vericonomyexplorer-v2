@@ -1,18 +1,15 @@
-"use client";
+'use client';
 
-import { useLayoutEffect, useMemo, useSyncExternalStore } from "react";
+import { useLayoutEffect, useMemo, useSyncExternalStore } from 'react';
 import {
   chainLiveStore,
   snapshotFromSummary,
   type ChainId,
   type ChainLiveSnapshot,
-} from "@/lib/chainLive/store";
-import type { ChainSummary } from "@/lib/api/types";
+} from '@/lib/chainLive/store';
+import type { ChainSummary } from '@/lib/api/types';
 
-function canReuseServerSnapshot(
-  live: ChainLiveSnapshot,
-  server: ChainLiveSnapshot,
-): boolean {
+function canReuseServerSnapshot(live: ChainLiveSnapshot, server: ChainLiveSnapshot): boolean {
   return (
     live.summary === server.summary &&
     live.latestBlocks === server.latestBlocks &&
@@ -23,11 +20,11 @@ function canReuseServerSnapshot(
 
 export function useChainLiveSnapshot(
   chainId: ChainId,
-  initialSummary?: ChainSummary | null,
+  initialSummary?: ChainSummary | null
 ): ChainLiveSnapshot {
   const serverSnapshot = useMemo(
     () => snapshotFromSummary(chainId, initialSummary),
-    [chainId, initialSummary],
+    [chainId, initialSummary]
   );
 
   useLayoutEffect(() => {
@@ -38,10 +35,8 @@ export function useChainLiveSnapshot(
     (listener) => chainLiveStore.subscribe(chainId, listener),
     () => {
       const live = chainLiveStore.getSnapshot(chainId);
-      return canReuseServerSnapshot(live, serverSnapshot)
-        ? serverSnapshot
-        : live;
+      return canReuseServerSnapshot(live, serverSnapshot) ? serverSnapshot : live;
     },
-    () => serverSnapshot,
+    () => serverSnapshot
   );
 }

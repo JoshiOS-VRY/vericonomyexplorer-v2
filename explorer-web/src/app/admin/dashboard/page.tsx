@@ -1,7 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getIndexerHealth } from "@/lib/api/indexer";
-import { getApiVersion } from "@/lib/api/legacy";
-import { loadLegacy } from "@/components/legacy/LegacyViews";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { getIndexerHealth } from '@/lib/api/indexer';
+import { getApiVersion } from '@/lib/api/legacy';
+import { loadLegacy } from '@/components/legacy/LegacyViews';
 
 export default async function AdminDashboardPage() {
   const [health, version] = await Promise.all([
@@ -28,9 +28,7 @@ export default async function AdminDashboardPage() {
             <CardTitle>API Version</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm">
-              {version.data ?? version.error ?? "unknown"}
-            </p>
+            <p className="text-sm">{version.data ?? version.error ?? 'unknown'}</p>
           </CardContent>
         </Card>
       </div>

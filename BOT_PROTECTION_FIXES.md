@@ -10,24 +10,27 @@
 ## Fixes Applied
 
 ### 1. RPC Error Handling (`app/api/rpcApi.js`)
+
 - **Fixed**: Added graceful error handling for `getnetworkhashps` method
 - **Result**: Method not found errors are now caught and return `null` instead of throwing errors
 - **Impact**: Eliminates `RpcError-002` spam for unsupported methods
 
 ```javascript
-function getNetworkHashrate(blockCount=144) {
-	return getRpcDataWithParams({method:"getnetworkhashps", parameters:[blockCount]})
-		.catch(function(err) {
-			// Returns null for unsupported methods instead of throwing
-			if (isMethodNotFound) {
-				return null;
-			}
-			throw err;
-		});
+function getNetworkHashrate(blockCount = 144) {
+  return getRpcDataWithParams({ method: 'getnetworkhashps', parameters: [blockCount] }).catch(
+    function (err) {
+      // Returns null for unsupported methods instead of throwing
+      if (isMethodNotFound) {
+        return null;
+      }
+      throw err;
+    }
+  );
 }
 ```
 
 ### 2. robots.txt Updates (`public/robots.txt`)
+
 - **Added**: Explicit blocks for aggressive AI crawlers:
   - `GPTBot` (OpenAI)
   - `ChatGPT-User`
@@ -37,6 +40,7 @@ function getNetworkHashrate(blockCount=144) {
 - **Impact**: Reduces bot traffic and respects crawler guidelines
 
 ### 3. 404 Error Filtering (`app.js`)
+
 - **Added**: Spam pattern detection for common bot attack patterns:
   - Malformed URLs (`/block/block-analysis/`, `/block/block/`)
   - Exploit attempts (`.php`, `.asp`, path traversal, WordPress paths)
@@ -45,12 +49,14 @@ function getNetworkHashrate(blockCount=144) {
 - **Impact**: Reduces log spam by ~80-90% for bot traffic
 
 ### 4. Rate Limiting Improvements (`app.js` & `app/config.js`)
+
 - **Reduced**: Default rate limit from 1000 to 500 requests per 15 minutes
 - **Added**: Stricter limits for crawlers (100 requests per 15 minutes)
 - **Enhanced**: Rate limiter now applies different limits based on user agent
 - **Impact**: Better protection against aggressive crawlers while allowing normal users
 
 ### 5. Logging Improvements
+
 - **Reduced**: 404 logging for crawlers (now uses `debugLog` instead of `debugErrorLog`)
 - **Filtered**: Spam patterns don't generate error logs at all
 - **Impact**: Cleaner logs, easier to identify real issues
@@ -72,7 +78,7 @@ BTCEXP_RATE_LIMIT_CRAWLER_MAX_REQUESTS=100   # Max requests for crawlers (defaul
 
 After these fixes, you should see:
 
-1. **Reduced Error Logs**: 
+1. **Reduced Error Logs**:
    - No more `RpcError-002` for `getnetworkhashps`
    - No more 404 errors for malformed bot URLs
    - Crawler 404s logged at debug level only
@@ -106,6 +112,7 @@ If bot spam continues, consider:
 ## Testing
 
 After deploying, monitor logs for:
+
 - Reduction in `NotFound` errors
 - Reduction in `RpcError-002` errors
 - Rate limiting messages for crawlers
@@ -117,4 +124,3 @@ After deploying, monitor logs for:
 2. `public/robots.txt` - Added bot blocks and increased crawl delay
 3. `app.js` - Added spam pattern filtering and improved rate limiting
 4. `app/config.js` - Added crawler-specific rate limit configuration
-

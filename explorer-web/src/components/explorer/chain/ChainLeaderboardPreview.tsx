@@ -1,11 +1,11 @@
-import { BcPanel } from "@/components/explorer/BlockchairUi";
-import { RankList, formatHeight } from "@/components/explorer/ExplorerUi";
-import { ChainPanelLink } from "@/components/explorer/chain/ChainPanelLink";
-import { VrmAddressLabel } from "@/components/explorer/address/VrmAddressLink";
-import type { LeaderboardResult } from "@/lib/api/types";
-import { chainAddressPath, type ChainId } from "@/lib/chainDisplay";
-import { formatExplorerUserMessage } from "@/lib/explorerCopy";
-import { ellipsizeMiddle } from "@/lib/utils";
+import { BcPanel } from '@/components/explorer/BlockchairUi';
+import { RankList, formatHeight } from '@/components/explorer/ExplorerUi';
+import { ChainPanelLink } from '@/components/explorer/chain/ChainPanelLink';
+import { VrmAddressLabel } from '@/components/explorer/address/VrmAddressLink';
+import type { LeaderboardResult } from '@/lib/api/types';
+import { chainAddressPath, type ChainId } from '@/lib/chainDisplay';
+import { formatExplorerUserMessage } from '@/lib/explorerCopy';
+import { ellipsizeMiddle } from '@/lib/utils';
 
 export function ChainLeaderboardPreview({
   chainId,
@@ -19,19 +19,15 @@ export function ChainLeaderboardPreview({
   return (
     <BcPanel
       title="Activity"
-      action={
-        <ChainPanelLink href={leaderboardHref} label="Leaderboard" />
-      }
+      action={<ChainPanelLink href={leaderboardHref} label="Leaderboard" />}
     >
       {!leaderboard.enabled && leaderboard.message ? (
-        <p className="text-sm text-fg-muted">
-          {formatExplorerUserMessage(leaderboard.message)}
-        </p>
+        <p className="text-sm text-fg-muted">{formatExplorerUserMessage(leaderboard.message)}</p>
       ) : leaderboard.items.length === 0 ? (
         <p className="text-sm text-fg-muted">
           {leaderboard.backfillRequired
-            ? "Transfer activity is still being collected."
-            : "No activity rankings yet."}
+            ? 'Transfer activity is still being collected.'
+            : 'No activity rankings yet.'}
         </p>
       ) : (
         <RankList
@@ -39,7 +35,7 @@ export function ChainLeaderboardPreview({
             href: chainAddressPath(chainId, item.address),
             rank: item.rank,
             label:
-              chainId === "vrm" ? (
+              chainId === 'vrm' ? (
                 <VrmAddressLabel address={item.address} maxLength={18} />
               ) : (
                 <span className="font-mono" title={item.address}>

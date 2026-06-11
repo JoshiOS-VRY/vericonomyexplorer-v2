@@ -1,17 +1,17 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { config as loadDotenv } from "dotenv";
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { config as loadDotenv } from 'dotenv';
 
 const moduleDir = path.dirname(fileURLToPath(import.meta.url));
-export const repoRoot = path.resolve(moduleDir, "..", "..");
+export const repoRoot = path.resolve(moduleDir, '..', '..');
 
 let loaded = false;
 
 export function loadEnv(): void {
   if (loaded) return;
   loaded = true;
-  loadDotenv({ path: path.join(repoRoot, ".env") });
-  loadDotenv({ path: path.join(repoRoot, ".env.local"), override: true });
+  loadDotenv({ path: path.join(repoRoot, '.env') });
+  loadDotenv({ path: path.join(repoRoot, '.env.local'), override: true });
   process.chdir(repoRoot);
 }
 
@@ -40,12 +40,12 @@ export function getSummaryLiveBlockLimit(): number {
 }
 
 export function getZmqUrl(chainId: string): string | undefined {
-  const key = chainId === "vrm" ? "VCEXP_VRM_ZMQ" : "VCEXP_VRC_ZMQ";
+  const key = chainId === 'vrm' ? 'VCEXP_VRM_ZMQ' : 'VCEXP_VRC_ZMQ';
   return process.env[key] || undefined;
 }
 
 export function getHost(): string {
-  return process.env.VCEXP_FAST_API_HOST ?? "127.0.0.1";
+  return process.env.VCEXP_FAST_API_HOST ?? '127.0.0.1';
 }
 
 function readPositiveInt(value: string | undefined, fallback: number): number {
@@ -60,7 +60,7 @@ export function isRateLimitEnabled(): boolean {
   const windowMinutes = Number(
     process.env.VCEXP_RATE_LIMIT_WINDOW_MINUTES ??
       process.env.BTCEXP_RATE_LIMIT_WINDOW_MINUTES ??
-      15,
+      15
   );
   return windowMinutes !== -1;
 }
@@ -69,7 +69,7 @@ export function getRateLimitWindowMs(): number {
   const windowMinutes = Number(
     process.env.VCEXP_RATE_LIMIT_WINDOW_MINUTES ??
       process.env.BTCEXP_RATE_LIMIT_WINDOW_MINUTES ??
-      15,
+      15
   );
   if (!Number.isFinite(windowMinutes) || windowMinutes <= 0) {
     return 15 * 60 * 1000;
@@ -80,15 +80,14 @@ export function getRateLimitWindowMs(): number {
 export function getRateLimitMax(): number {
   return readPositiveInt(
     process.env.VCEXP_RATE_LIMIT_MAX ?? process.env.BTCEXP_RATE_LIMIT_WINDOW_MAX_REQUESTS,
-    900,
+    900
   );
 }
 
 export function getRateLimitCrawlerMax(): number {
   return readPositiveInt(
-    process.env.VCEXP_RATE_LIMIT_CRAWLER_MAX ??
-      process.env.BTCEXP_RATE_LIMIT_CRAWLER_MAX_REQUESTS,
-    120,
+    process.env.VCEXP_RATE_LIMIT_CRAWLER_MAX ?? process.env.BTCEXP_RATE_LIMIT_CRAWLER_MAX_REQUESTS,
+    120
   );
 }
 
@@ -101,9 +100,9 @@ export function getRateLimitSseMax(): number {
 }
 
 export function getRateLimitAllowIps(): string[] {
-  const raw = process.env.VCEXP_RATE_LIMIT_ALLOW_IPS ?? "";
+  const raw = process.env.VCEXP_RATE_LIMIT_ALLOW_IPS ?? '';
   return raw
-    .split(",")
+    .split(',')
     .map((ip) => ip.trim())
     .filter(Boolean);
 }

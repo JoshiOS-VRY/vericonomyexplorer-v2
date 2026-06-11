@@ -113,26 +113,31 @@ The codebase uses multiple patterns to access coin configuration:
 ## 🐛 Potential Issues
 
 ### 1. Missing Logo File
+
 - **Location**: `public/img/network-verium/logo.svg`
 - **Impact**: Logo may not display correctly
 - **Status**: Only `coin-icon.svg` exists
 
 ### 2. Inconsistent coinConfig Access
+
 - **Location**: `routes/baseRouter.js`
 - **Issue**: Mix of `coinConfig` and `global.coinConfig`
 - **Risk**: Low (both work, but inconsistent)
 
 ### 3. Block Reward Function
+
 - **Location**: `app/coins/verium.js:447-457`
 - **Issue**: Simplified implementation doesn't match Verium's complex reward system
 - **Impact**: Block reward calculations may be inaccurate
 
 ### 4. Exchange Rate API
+
 - **Location**: `app/coins/verium.js:411-432`
 - **Issue**: Uses Bitcoin rates
 - **Impact**: VRM/USD rates will be incorrect
 
 ### 5. Default RPC Port
+
 - **Location**: `app/credentials.js:41`
 - **Issue**: Defaults to 8332 (Bitcoin)
 - **Impact**: Must set `BTCEXP_BITCOIND_PORT=36988` for Verium
@@ -140,12 +145,14 @@ The codebase uses multiple patterns to access coin configuration:
 ## 📊 Verium-Specific Parameters
 
 ### Network Configuration
+
 - **Port**: 36988 (vs Bitcoin's 8333)
 - **RPC Port**: 36988 (vs Bitcoin's 8332)
 - **Message Start**: `0x70, 0x35, 0x22, 0x05`
 - **Address Prefixes**: P2PKH=70 ('V'), P2SH=132 ('3'), Bech32="vrm"
 
 ### Blockchain Parameters
+
 - **Genesis Date**: September 1, 2016 (timestamp: 1472669240)
 - **Block Time**: 5 minutes (variable, not fixed)
 - **Difficulty Adjustment**: Every 2880 blocks (2 days)
@@ -153,6 +160,7 @@ The codebase uses multiple patterns to access coin configuration:
 - **Algorithm**: Scrypt² (scrypt squared)
 
 ### Special Blocks
+
 - **Block 0**: Genesis (2,500 VRM reward)
 - **Block 1**: Special presale reward (564,705 VRM)
 - **Block 1500**: Early milestone
@@ -161,12 +169,14 @@ The codebase uses multiple patterns to access coin configuration:
 ## 🔄 How to Refresh Server
 
 ### Quick Restart (if running via npm)
+
 ```bash
 cd /home/jhadmin/btc-rpc-explorer
 npm start
 ```
 
 ### If running in screen session
+
 ```bash
 # Find the screen session
 screen -ls
@@ -180,6 +190,7 @@ npm start
 ```
 
 ### If running via PM2
+
 ```bash
 pm2 restart btc-rpc-explorer
 # or
@@ -187,11 +198,13 @@ pm2 reload btc-rpc-explorer
 ```
 
 ### If running via systemd
+
 ```bash
 sudo systemctl restart btc-rpc-explorer
 ```
 
 ### Docker
+
 ```bash
 docker-compose restart
 # or
@@ -267,4 +280,3 @@ BTCEXP_SLOW_DEVICE_MODE=false
 
 **Last Updated**: Analysis completed after codebase review
 **Status**: Partially ported, functional but needs refinement
-

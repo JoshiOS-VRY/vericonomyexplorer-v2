@@ -1,29 +1,22 @@
-import type {
-  AddressEvent,
-  AmountDisplay,
-  IndexedTransaction,
-  TxOutput,
-} from "@/lib/api/types";
-import { formatCoinAmount, formatNumber } from "@/lib/utils";
+import type { AddressEvent, AmountDisplay, IndexedTransaction, TxOutput } from '@/lib/api/types';
+import { formatCoinAmount, formatNumber } from '@/lib/utils';
 
-export type OutputRole = "payment" | "change" | "mining" | "unknown";
+export type OutputRole = 'payment' | 'change' | 'mining' | 'unknown';
 
-export function isCoinbaseTx(tx: Pick<IndexedTransaction, "isCoinbase" | "isCoinstake">): boolean {
+export function isCoinbaseTx(tx: Pick<IndexedTransaction, 'isCoinbase' | 'isCoinstake'>): boolean {
   return !!tx.isCoinbase || !!tx.isCoinstake;
 }
 
 export function formatConfirmationLabel(confirmations: number | null | undefined): string {
   const count =
-    confirmations == null || !Number.isFinite(confirmations)
-      ? 1
-      : Math.max(0, confirmations);
+    confirmations == null || !Number.isFinite(confirmations) ? 1 : Math.max(0, confirmations);
 
   if (count <= 0) {
-    return "Unconfirmed";
+    return 'Unconfirmed';
   }
 
   if (count === 1) {
-    return "Confirmed · 1 confirmation";
+    return 'Confirmed · 1 confirmation';
   }
 
   return `Confirmed · ${formatNumber(count)} confirmations`;
@@ -32,42 +25,42 @@ export function formatConfirmationLabel(confirmations: number | null | undefined
 export function classifyOutputRole(
   output: TxOutput,
   changeOutputs: number[] = [],
-  isMining = false,
+  isMining = false
 ): OutputRole {
   if (isMining) {
-    return "mining";
+    return 'mining';
   }
 
   if (changeOutputs.includes(output.n)) {
-    return "change";
+    return 'change';
   }
 
-  return "payment";
+  return 'payment';
 }
 
 export function outputRoleLabel(role: OutputRole): string {
   switch (role) {
-    case "change":
-      return "Change";
-    case "mining":
-      return "Mining reward";
-    case "payment":
-      return "Payment";
+    case 'change':
+      return 'Change';
+    case 'mining':
+      return 'Mining reward';
+    case 'payment':
+      return 'Payment';
     default:
-      return "Output";
+      return 'Output';
   }
 }
 
-export function addressEventRole(event: AddressEvent): "sender" | "recipient" | "neutral" {
-  if (event.eventType === "spend" || event.deltaAtomic.startsWith("-")) {
-    return "sender";
+export function addressEventRole(event: AddressEvent): 'sender' | 'recipient' | 'neutral' {
+  if (event.eventType === 'spend' || event.deltaAtomic.startsWith('-')) {
+    return 'sender';
   }
 
-  if (event.eventType === "receive" || !event.deltaAtomic.startsWith("-")) {
-    return "recipient";
+  if (event.eventType === 'receive' || !event.deltaAtomic.startsWith('-')) {
+    return 'recipient';
   }
 
-  return "neutral";
+  return 'neutral';
 }
 
 export interface AggregatedAddressEvent {
@@ -82,7 +75,7 @@ export interface AggregatedAddressEvent {
 const COIN_ATOMIC_DECIMALS = 8;
 
 function formatAtomicDelta(deltaAtomic: string, ticker: string): AmountDisplay {
-  const negative = deltaAtomic.startsWith("-");
+  const negative = deltaAtomic.startsWith('-');
   const raw = BigInt(negative ? deltaAtomic.slice(1) : deltaAtomic);
   const divisor = BigInt(10) ** BigInt(COIN_ATOMIC_DECIMALS);
   const whole = raw / divisor;
@@ -92,10 +85,7 @@ function formatAtomicDelta(deltaAtomic: string, ticker: string): AmountDisplay {
   if (frac === BigInt(0)) {
     amount = whole.toString();
   } else {
-    const fracStr = frac
-      .toString()
-      .padStart(COIN_ATOMIC_DECIMALS, "0")
-      .replace(/0+$/, "");
+    const fracStr = frac.toString().padStart(COIN_ATOMIC_DECIMALS, '0').replace(/0+$/, '');
     amount = `${whole}.${fracStr}`;
   }
 
@@ -107,7 +97,7 @@ function formatAtomicDelta(deltaAtomic: string, ticker: string): AmountDisplay {
 }
 
 function absAtomic(deltaAtomic: string): bigint {
-  return BigInt(deltaAtomic.startsWith("-") ? deltaAtomic.slice(1) : deltaAtomic);
+  return BigInt(deltaAtomic.startsWith('-') ? deltaAtomic.slice(1) : deltaAtomic);
 }
 
 /** One row per (address, role); sums deltas when the indexer emits per-input/per-output events. */
@@ -136,7 +126,7 @@ export function aggregateAddressEvents(events: AddressEvent[]): AggregatedAddres
       existing.count += 1;
       existing.singleEvent = null;
       if (existing.eventType !== event.eventType) {
-        existing.eventType = "mixed";
+        existing.eventType = 'mixed';
       }
     } else {
       groups.set(key, {
@@ -183,13 +173,13 @@ export function formatAmountPair(amount: { amount: string; ticker: string }): st
 export function uniqueRelatedAddresses(
   events: AddressEvent[],
   changeOutputIndices: number[],
-  outputs: TxOutput[],
+  outputs: TxOutput[]
 ): string[] {
   const changeAddresses = new Set(
     outputs
       .filter((output) => changeOutputIndices.includes(output.n))
       .map((output) => output.address)
-      .filter(Boolean) as string[],
+      .filter(Boolean) as string[]
   );
 
   const seen = new Set<string>();

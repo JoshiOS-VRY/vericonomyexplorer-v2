@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { AddressUtxoPanel } from "@/components/explorer/address/AddressUtxoPanel";
-import { AddressUtxoPanelSkeleton } from "@/components/explorer/address/AddressSectionSkeleton";
-import { fetchAddressUtxosClient } from "@/lib/api/client";
-import type { AddressUtxosResult } from "@/lib/api/types";
-import type { ChainId } from "@/lib/chainDisplay";
+import { useEffect, useState } from 'react';
+import { AddressUtxoPanel } from '@/components/explorer/address/AddressUtxoPanel';
+import { AddressUtxoPanelSkeleton } from '@/components/explorer/address/AddressSectionSkeleton';
+import { fetchAddressUtxosClient } from '@/lib/api/client';
+import type { AddressUtxosResult } from '@/lib/api/types';
+import type { ChainId } from '@/lib/chainDisplay';
 
 export function AddressUtxoPanelLoader({
   chainId,
@@ -40,7 +40,7 @@ export function AddressUtxoPanelLoader({
         }
       } catch {
         if (!cancelled) {
-          setError("Unable to load UTXO data.");
+          setError('Unable to load UTXO data.');
         }
       }
     })();
@@ -62,7 +62,5 @@ export function AddressUtxoPanelLoader({
     return <AddressUtxoPanelSkeleton />;
   }
 
-  return (
-    <AddressUtxoPanel chainId={chainId as ChainId} utxos={utxos} basePath={basePath} />
-  );
+  return <AddressUtxoPanel chainId={chainId as ChainId} utxos={utxos} basePath={basePath} />;
 }

@@ -1,13 +1,6 @@
-"use client";
+'use client';
 
-import {
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 export function DifficultyHistoryChart({
   data,
@@ -20,7 +13,13 @@ export function DifficultyHistoryChart({
         <XAxis dataKey="height" stroke="rgb(var(--fg-subtle))" fontSize={11} />
         <YAxis stroke="rgb(var(--fg-subtle))" fontSize={11} />
         <Tooltip />
-        <Line type="monotone" dataKey="difficulty" stroke="var(--color-accent)" strokeWidth={2} dot={false} />
+        <Line
+          type="monotone"
+          dataKey="difficulty"
+          stroke="var(--color-accent)"
+          strokeWidth={2}
+          dot={false}
+        />
       </LineChart>
     </ResponsiveContainer>
   );

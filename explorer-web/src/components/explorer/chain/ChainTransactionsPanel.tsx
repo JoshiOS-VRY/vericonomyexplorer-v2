@@ -1,9 +1,9 @@
-import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
-import { BcHashLink, BcPanel, BcTableLink } from "@/components/explorer/BlockchairUi";
-import { TxTypeBadge, formatHeight } from "@/components/explorer/ExplorerUi";
-import type { IndexedTransaction } from "@/lib/api/types";
-import type { ChainId } from "@/lib/chainDisplay";
-import { ellipsizeMiddle } from "@/lib/utils";
+import { LiveRelativeTime } from '@/components/explorer/LiveRelativeTime';
+import { BcHashLink, BcPanel, BcTableLink } from '@/components/explorer/BlockchairUi';
+import { TxTypeBadge, formatHeight } from '@/components/explorer/ExplorerUi';
+import type { IndexedTransaction } from '@/lib/api/types';
+import type { ChainId } from '@/lib/chainDisplay';
+import { ellipsizeMiddle } from '@/lib/utils';
 
 export function ChainTransactionsPanel({
   chainId,

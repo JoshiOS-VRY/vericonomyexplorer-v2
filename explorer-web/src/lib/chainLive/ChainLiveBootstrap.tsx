@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useTipStream } from "@/components/explorer/TipStreamProvider";
-import { chainLiveStore } from "@/lib/chainLive/store";
-import type { ChainSummary } from "@/lib/api/types";
-import { usePageVisible } from "@/hooks/usePageVisible";
+import { useEffect } from 'react';
+import { useTipStream } from '@/components/explorer/TipStreamProvider';
+import { chainLiveStore } from '@/lib/chainLive/store';
+import type { ChainSummary } from '@/lib/api/types';
+import { usePageVisible } from '@/hooks/usePageVisible';
 
 export function ChainLiveBootstrap({
   initialVrmSummary,
@@ -14,7 +14,7 @@ export function ChainLiveBootstrap({
   initialVrcSummary?: ChainSummary | null;
 }) {
   const visible = usePageVisible();
-  const { subscribe } = useTipStream("vrm");
+  const { subscribe } = useTipStream('vrm');
 
   useEffect(() => {
     chainLiveStore.bootstrap({
@@ -35,10 +35,10 @@ export function ChainLiveBootstrap({
       return;
     }
 
-    const unsubs = (["vrm", "vrc"] as const).map((chainId) =>
+    const unsubs = (['vrm', 'vrc'] as const).map((chainId) =>
       subscribe(chainId, (tip) => {
         chainLiveStore.handleTip(chainId, tip);
-      }),
+      })
     );
 
     return () => {

@@ -1,5 +1,5 @@
-import { buildFetchInit, type CacheFetchOptions } from "@/lib/api/fetchInit";
-import { getApiBasePath, getApiBaseUrl } from "@/lib/env";
+import { buildFetchInit, type CacheFetchOptions } from '@/lib/api/fetchInit';
+import { getApiBasePath, getApiBaseUrl } from '@/lib/env';
 
 export { getApiBaseUrl, getApiBasePath };
 
@@ -14,20 +14,17 @@ export class ApiFetchError extends Error {
 
   constructor(message: string, status: number) {
     super(message);
-    this.name = "ApiFetchError";
+    this.name = 'ApiFetchError';
     this.status = status;
   }
 }
 
-export async function apiFetch<T>(
-  path: string,
-  options: FetchOptions = {},
-): Promise<T> {
+export async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T> {
   const basePath = getApiBasePath();
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const url = `${getApiBaseUrl()}${basePath === "" ? "" : basePath}${normalizedPath}`;
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const url = `${getApiBaseUrl()}${basePath === '' ? '' : basePath}${normalizedPath}`;
   const init = buildFetchInit(options, {
-    headers: { Accept: "application/json" },
+    headers: { Accept: 'application/json' },
   });
 
   const response = await fetch(url, init);
@@ -47,9 +44,9 @@ export async function apiFetch<T>(
 
 export async function apiFetchHtml(path: string): Promise<string> {
   const basePath = getApiBasePath();
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const url = `${getApiBaseUrl()}${basePath === "" ? "" : basePath}${normalizedPath}`;
-  const response = await fetch(url, { cache: "no-store" });
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const url = `${getApiBaseUrl()}${basePath === '' ? '' : basePath}${normalizedPath}`;
+  const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) {
     throw new ApiFetchError(`Request failed: ${response.status}`, response.status);
   }

@@ -9,11 +9,13 @@ import { registerSearchRoutes } from "./search.js";
 import { registerTipRoutes } from "./tip.js";
 import { registerTxRoutes } from "./tx.js";
 import { registerWalletRoutes } from "./wallet.js";
+import { registerVrcNetworkRoutes } from "./vrcNetwork.js";
 import { registerVrmNetworkRoutes } from "./vrmNetwork.js";
 export async function registerRoutes(app) {
     await registerTipRoutes(app);
     await registerHomeRoutes(app);
     await registerVrmNetworkRoutes(app);
+    await registerVrcNetworkRoutes(app);
     await registerChainRoutes(app);
     await registerInsightsRoutes(app);
     await registerBlockRoutes(app);

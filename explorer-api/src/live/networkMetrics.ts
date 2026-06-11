@@ -1,32 +1,28 @@
-import path from "node:path";
-import { createRequire } from "node:module";
-import { repoRoot } from "../env.js";
-import { getAddressCount, getWritableDb } from "../data/writableDb.js";
-import { fetchVrcNetworkStats, fetchVrmNetworkStats } from "../network/index.js";
-import type { ChainId } from "../types.js";
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import { repoRoot } from '../env.js';
+import { getAddressCount, getWritableDb } from '../data/writableDb.js';
+import { fetchVrcNetworkStats, fetchVrmNetworkStats } from '../network/index.js';
+import type { ChainId } from '../types.js';
 
-const requireRoot = createRequire(path.join(repoRoot, "package.json"));
+const requireRoot = createRequire(path.join(repoRoot, 'package.json'));
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const networkMetrics = requireRoot("./app/indexerV2/networkMetrics.js") as {
+const networkMetrics = requireRoot('./app/indexerV2/networkMetrics.js') as {
   upsertNetworkMetricBucket: (
     db: unknown,
     chainId: string,
-    metrics: Record<string, unknown>,
+    metrics: Record<string, unknown>
   ) => Promise<void>;
 };
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const supplyHistory = requireRoot("./app/indexerV2/supplyHistory.js") as {
-  indexedSupplyAtHeight: (
-    db: unknown,
-    chainId: string,
-    height: number,
-  ) => Promise<number | null>;
+const supplyHistory = requireRoot('./app/indexerV2/supplyHistory.js') as {
+  indexedSupplyAtHeight: (db: unknown, chainId: string, height: number) => Promise<number | null>;
 };
 
 async function safeIndexedSupply(
   db: unknown,
   chainId: ChainId,
-  height: number | null,
+  height: number | null
 ): Promise<number | null> {
   if (height == null) {
     return null;
@@ -40,7 +36,7 @@ async function safeIndexedSupply(
   }
 }
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const periodStats = requireRoot("./app/indexerV2/periodStats.js") as {
+const periodStats = requireRoot('./app/indexerV2/periodStats.js') as {
   hourBucketStart: (time: number) => number;
 };
 
@@ -58,7 +54,7 @@ export async function recordNetworkMetricSnapshot(chainId: ChainId): Promise<voi
   const addressCount = await getAddressCount(chainId);
   const db = getWritableDb();
 
-  if (chainId === "vrm") {
+  if (chainId === 'vrm') {
     const stats = await fetchVrmNetworkStats();
     const indexedSupply = await safeIndexedSupply(db, chainId, stats.blocks);
     await networkMetrics.upsertNetworkMetricBucket(db, chainId, {
@@ -90,7 +86,7 @@ export async function recordNetworkMetricSnapshot(chainId: ChainId): Promise<voi
 
 export function registerNetworkMetricSnapshots(): void {
   // Import lazily to avoid circular deps at module load.
-  void import("../cache/tipRefresh.js").then(({ registerChainTipRefresh }) => {
+  void import('../cache/tipRefresh.js').then(({ registerChainTipRefresh }) => {
     registerChainTipRefresh(async (chainId) => {
       await recordNetworkMetricSnapshot(chainId).catch(() => undefined);
     });

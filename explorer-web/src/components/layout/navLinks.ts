@@ -1,21 +1,14 @@
 export type SidebarItem = {
   href: string;
   label: string;
-  icon:
-    | "overview"
-    | "explorer"
-    | "richlist"
-    | "leaderboard"
-    | "blocks"
-    | "api"
-    | "insights";
+  icon: 'overview' | 'explorer' | 'richlist' | 'leaderboard' | 'blocks' | 'api' | 'insights';
   exact?: boolean;
   prefix?: boolean;
-  section?: "explorer" | "data";
+  section?: 'explorer' | 'data';
 };
 
 export type HeaderNavLinkItem = {
-  type: "link";
+  type: 'link';
   href: string;
   label: string;
   exact?: boolean;
@@ -23,7 +16,7 @@ export type HeaderNavLinkItem = {
 };
 
 export type HeaderNavDropdownItem = {
-  type: "dropdown";
+  type: 'dropdown';
   label: string;
   prefix?: boolean;
   items: { href: string; label: string }[];
@@ -32,85 +25,85 @@ export type HeaderNavDropdownItem = {
 export type HeaderNavItem = HeaderNavLinkItem | HeaderNavDropdownItem;
 
 export const headerNav: HeaderNavItem[] = [
-  { type: "link", href: "/", label: "Home", exact: true },
+  { type: 'link', href: '/', label: 'Home', exact: true },
   {
-    type: "dropdown",
-    label: "Verium",
+    type: 'dropdown',
+    label: 'Verium',
     prefix: true,
     items: [
-      { href: "/vrm", label: "Explore" },
-      { href: "/vrm/richlist", label: "Richlist" },
-      { href: "/vrm/miners", label: "Miners" },
-      { href: "/vrm/leaderboard", label: "Leaderboard" },
-      { href: "/vrm/peers", label: "Peers" },
+      { href: '/vrm', label: 'Explore' },
+      { href: '/vrm/richlist', label: 'Richlist' },
+      { href: '/vrm/miners', label: 'Miners' },
+      { href: '/vrm/leaderboard', label: 'Leaderboard' },
+      { href: '/vrm/peers', label: 'Peers' },
     ],
   },
   {
-    type: "dropdown",
-    label: "Vericoin",
+    type: 'dropdown',
+    label: 'Vericoin',
     prefix: true,
     items: [
-      { href: "/vrc", label: "Explore" },
-      { href: "/vrc/richlist", label: "Richlist" },
-      { href: "/vrc/peers", label: "Peers" },
+      { href: '/vrc', label: 'Explore' },
+      { href: '/vrc/richlist', label: 'Richlist' },
+      { href: '/vrc/peers', label: 'Peers' },
     ],
   },
-  { type: "link", href: "/insights", label: "Insights", prefix: true },
+  { type: 'link', href: '/insights', label: 'Insights', prefix: true },
 ];
 
 export const sidebarNav: SidebarItem[] = [
   {
-    href: "/",
-    label: "Home",
-    icon: "overview",
+    href: '/',
+    label: 'Home',
+    icon: 'overview',
     exact: true,
-    section: "explorer",
+    section: 'explorer',
   },
   {
-    href: "/vrm",
-    label: "Verium",
-    icon: "explorer",
+    href: '/vrm',
+    label: 'Verium',
+    icon: 'explorer',
     prefix: true,
-    section: "explorer",
+    section: 'explorer',
   },
   {
-    href: "/vrc",
-    label: "Vericoin",
-    icon: "explorer",
+    href: '/vrc',
+    label: 'Vericoin',
+    icon: 'explorer',
     prefix: true,
-    section: "explorer",
+    section: 'explorer',
   },
   {
-    href: "/insights",
-    label: "Insights",
-    icon: "insights",
+    href: '/insights',
+    label: 'Insights',
+    icon: 'insights',
     prefix: true,
-    section: "explorer",
+    section: 'explorer',
   },
   {
-    href: "/vrm/richlist",
-    label: "Richlist",
-    icon: "richlist",
-    section: "explorer",
+    href: '/vrm/richlist',
+    label: 'Richlist',
+    icon: 'richlist',
+    section: 'explorer',
   },
   {
-    href: "/vrm/miners",
-    label: "Miners",
-    icon: "leaderboard",
-    section: "explorer",
+    href: '/vrm/miners',
+    label: 'Miners',
+    icon: 'leaderboard',
+    section: 'explorer',
   },
   {
-    href: "/vrm/leaderboard",
-    label: "Leaderboard",
-    icon: "leaderboard",
-    section: "explorer",
+    href: '/vrm/leaderboard',
+    label: 'Leaderboard',
+    icon: 'leaderboard',
+    section: 'explorer',
   },
   {
-    href: "/blocks",
-    label: "Block list",
-    icon: "blocks",
+    href: '/blocks',
+    label: 'Block list',
+    icon: 'blocks',
     prefix: true,
-    section: "data",
+    section: 'data',
   },
-  { href: "/api/docs", label: "API", icon: "api", section: "data" },
+  { href: '/api/docs', label: 'API', icon: 'api', section: 'data' },
 ];

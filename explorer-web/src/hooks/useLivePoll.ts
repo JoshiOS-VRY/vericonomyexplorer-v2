@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useTipStream } from "@/components/explorer/TipStreamProvider";
-import { usePageVisible } from "@/hooks/usePageVisible";
-import type { ChainId } from "@/lib/chainDisplay";
+import { useEffect } from 'react';
+import { useTipStream } from '@/components/explorer/TipStreamProvider';
+import { usePageVisible } from '@/hooks/usePageVisible';
+import type { ChainId } from '@/lib/chainDisplay';
 
 /**
  * Interval + tip-stream refresh for entity-scoped live data.

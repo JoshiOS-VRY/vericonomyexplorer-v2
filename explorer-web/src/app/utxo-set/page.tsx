@@ -1,5 +1,5 @@
-import { LegacyJsonView, loadLegacy } from "@/components/legacy/LegacyViews";
-import { getUtxoSet } from "@/lib/api/legacy";
+import { LegacyJsonView, loadLegacy } from '@/components/legacy/LegacyViews';
+import { getUtxoSet } from '@/lib/api/legacy';
 
 export default async function UtxoSetPage() {
   const { data, error } = await loadLegacy(getUtxoSet);

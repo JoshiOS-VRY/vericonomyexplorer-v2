@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
-import { SearchForm } from "@/components/explorer/SearchForm";
-import { pageMetadata, staticPageSeo } from "@/lib/seo/metadata";
+import type { Metadata } from 'next';
+import { SearchForm } from '@/components/explorer/SearchForm';
+import { pageMetadata, staticPageSeo } from '@/lib/seo/metadata';
 
 export const metadata: Metadata = pageMetadata(staticPageSeo.search);
-import { Card, CardContent } from "@/components/ui/Card";
+import { Card, CardContent } from '@/components/ui/Card';
 
 export default function SearchPage() {
   return (
@@ -19,7 +19,9 @@ export default function SearchPage() {
         <CardContent className="py-6">
           <SearchForm variant="blockchair" />
           <ul className="mt-4 space-y-1 text-xs text-fg-subtle">
-            <li>Block height — numeric value, e.g. <span className="font-mono">250000</span></li>
+            <li>
+              Block height — numeric value, e.g. <span className="font-mono">250000</span>
+            </li>
             <li>Block hash or txid — 64-character hex string</li>
             <li>Address — wallet address on either chain</li>
           </ul>

@@ -1,23 +1,19 @@
-import { describe, expect, it } from "@jest/globals";
+import { describe, expect, it } from '@jest/globals';
 import {
   enrichHomeNetworkPayload,
   enrichVrmNetworkStats,
   mergeHomeNetworkPayload,
-} from "@/lib/enrichNetwork";
-import type { ChainSummary, HomeNetworkPayload } from "@/lib/api/types";
+} from '@/lib/enrichNetwork';
+import type { ChainSummary, HomeNetworkPayload } from '@/lib/api/types';
 
-function summaryWithTip(
-  chainId: "vrm" | "vrc",
-  height: number,
-  difficulty: string,
-): ChainSummary {
+function summaryWithTip(chainId: 'vrm' | 'vrc', height: number, difficulty: string): ChainSummary {
   return {
     chainId,
     health: {
       id: chainId,
-      status: "trusted",
+      status: 'trusted',
       trusted: true,
-      message: "",
+      message: '',
       checks: {},
       heights: {
         bestRpcHeight: height,
@@ -35,14 +31,14 @@ function summaryWithTip(
       },
       sourceLabels: {},
     },
-    latestBlocks: [{ height, hash: "abc", time: 1, txCount: 1, difficulty }],
+    latestBlocks: [{ height, hash: 'abc', time: 1, txCount: 1, difficulty }],
     recentTransactions: [],
-    source: { label: "index" },
+    source: { label: 'index' },
   };
 }
 
-describe("enrichNetwork", () => {
-  it("prefers live tip difficulty but keeps API hashrate", () => {
+describe('enrichNetwork', () => {
+  it('prefers live tip difficulty but keeps API hashrate', () => {
     const enriched = enrichVrmNetworkStats(
       {
         hashrateKhPerMin: 115.5,
@@ -53,7 +49,7 @@ describe("enrichNetwork", () => {
         supply: null,
         maxSupply: null,
       },
-      summaryWithTip("vrm", 1098551, "0.00009284"),
+      summaryWithTip('vrm', 1098551, '0.00009284')
     );
 
     expect(enriched.difficulty).toBeCloseTo(0.00009284);
@@ -61,9 +57,9 @@ describe("enrichNetwork", () => {
     expect(enriched.blocks).toBe(1098551);
   });
 
-  it("merges refresh payloads without clobbering prior values", () => {
+  it('merges refresh payloads without clobbering prior values', () => {
     const prev: HomeNetworkPayload = {
-      fetchedAt: "2026-01-01T00:00:00.000Z",
+      fetchedAt: '2026-01-01T00:00:00.000Z',
       vrm: {
         hashrateKhPerMin: 80,
         avgBlockTimeMin: 5.0,
@@ -86,7 +82,7 @@ describe("enrichNetwork", () => {
     };
 
     const next: HomeNetworkPayload = {
-      fetchedAt: "2026-01-01T00:01:00.000Z",
+      fetchedAt: '2026-01-01T00:01:00.000Z',
       vrm: {
         hashrateKhPerMin: 92,
         avgBlockTimeMin: null,
@@ -115,10 +111,10 @@ describe("enrichNetwork", () => {
     expect(merged.vrm.supply).toBe(3_712_086);
   });
 
-  it("enriches both chains in home payload", () => {
+  it('enriches both chains in home payload', () => {
     const enriched = enrichHomeNetworkPayload(
       {
-        fetchedAt: "2026-01-01T00:00:00.000Z",
+        fetchedAt: '2026-01-01T00:00:00.000Z',
         vrm: {
           hashrateKhPerMin: 80,
           avgBlockTimeMin: null,
@@ -139,8 +135,8 @@ describe("enrichNetwork", () => {
           expectedStakeTimeSeconds: null,
         },
       },
-      summaryWithTip("vrm", 1098551, "0.00009284"),
-      summaryWithTip("vrc", 500000, "1234.5"),
+      summaryWithTip('vrm', 1098551, '0.00009284'),
+      summaryWithTip('vrc', 500000, '1234.5')
     );
 
     expect(enriched.vrm.difficulty).toBeCloseTo(0.00009284);

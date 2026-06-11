@@ -1,26 +1,15 @@
-import {
-  AlertBanner,
-  DataTable,
-  MonoLink,
-  SummaryGrid,
-} from "@/components/explorer/ExplorerUi";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { getLegacyAddress } from "@/lib/api/legacy";
-import { formatNumber } from "@/lib/utils";
+import { AlertBanner, DataTable, MonoLink, SummaryGrid } from '@/components/explorer/ExplorerUi';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { getLegacyAddress } from '@/lib/api/legacy';
+import { formatNumber } from '@/lib/utils';
 
-export default async function AddressPage({
-  params,
-}: {
-  params: Promise<{ address: string }>;
-}) {
+export default async function AddressPage({ params }: { params: Promise<{ address: string }> }) {
   const { address } = await params;
   try {
     const data = (await getLegacyAddress(address)) as Record<string, unknown>;
     if (data.success === false) {
       return (
-        <AlertBanner title="Address Not Found">
-          No data available for this address.
-        </AlertBanner>
+        <AlertBanner title="Address Not Found">No data available for this address.</AlertBanner>
       );
     }
 
@@ -39,19 +28,15 @@ export default async function AddressPage({
           <CardContent>
             <SummaryGrid
               items={[
-                { label: "Balance", value: balance.toLocaleString() },
-                { label: "Transactions", value: formatNumber(txCount) },
+                { label: 'Balance', value: balance.toLocaleString() },
+                { label: 'Transactions', value: formatNumber(txCount) },
                 {
-                  label: "Total Received",
-                  value:
-                    data.totalReceived != null
-                      ? String(data.totalReceived)
-                      : "N/A",
+                  label: 'Total Received',
+                  value: data.totalReceived != null ? String(data.totalReceived) : 'N/A',
                 },
                 {
-                  label: "Total Sent",
-                  value:
-                    data.totalSent != null ? String(data.totalSent) : "N/A",
+                  label: 'Total Sent',
+                  value: data.totalSent != null ? String(data.totalSent) : 'N/A',
                 },
               ]}
             />
@@ -66,17 +51,12 @@ export default async function AddressPage({
               <p className="text-sm text-fg-muted">No transactions found.</p>
             ) : (
               <DataTable
-                headers={["#", "Txid"]}
+                headers={['#', 'Txid']}
                 rows={txids
                   .slice(0, 50)
                   .map((txid, index) => [
                     String(index + 1),
-                    <MonoLink
-                      key={txid}
-                      href={`/tx/${txid}`}
-                      value={txid}
-                      maxLength={48}
-                    />,
+                    <MonoLink key={txid} href={`/tx/${txid}`} value={txid} maxLength={48} />,
                   ])}
               />
             )}
@@ -92,7 +72,7 @@ export default async function AddressPage({
   } catch (error) {
     return (
       <AlertBanner title="Address Lookup Failed">
-        {error instanceof Error ? error.message : "Unable to load address."}
+        {error instanceof Error ? error.message : 'Unable to load address.'}
       </AlertBanner>
     );
   }

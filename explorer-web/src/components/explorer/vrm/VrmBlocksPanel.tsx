@@ -1,10 +1,10 @@
-import Link from "next/link";
-import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
-import { BcPanel, BcTableLink } from "@/components/explorer/BlockchairUi";
-import { ExtractedByCell } from "@/components/explorer/block/ExtractedByCell";
-import { formatHeight } from "@/components/explorer/ExplorerUi";
-import type { IndexedBlock } from "@/lib/api/types";
-import { formatDifficulty } from "@/lib/utils";
+import Link from 'next/link';
+import { LiveRelativeTime } from '@/components/explorer/LiveRelativeTime';
+import { BcPanel, BcTableLink } from '@/components/explorer/BlockchairUi';
+import { ExtractedByCell } from '@/components/explorer/block/ExtractedByCell';
+import { formatHeight } from '@/components/explorer/ExplorerUi';
+import type { IndexedBlock } from '@/lib/api/types';
+import { formatDifficulty } from '@/lib/utils';
 
 export function VrmBlocksPanel({ blocks }: { blocks: IndexedBlock[] }) {
   return (
@@ -37,13 +37,13 @@ export function VrmBlocksPanel({ blocks }: { blocks: IndexedBlock[] }) {
                   {formatHeight(block.txCount)}
                 </td>
                 <td className="text-right tabular-nums text-fg-muted">
-                  {block.outputCount != null ? formatHeight(block.outputCount) : "—"}
+                  {block.outputCount != null ? formatHeight(block.outputCount) : '—'}
                 </td>
                 <td className="text-right tabular-nums text-fg-muted">
-                  {block.size != null ? formatHeight(block.size) : "—"}
+                  {block.size != null ? formatHeight(block.size) : '—'}
                 </td>
                 <td className="text-right tabular-nums text-fg-muted">
-                  {block.difficulty ? formatDifficulty(block.difficulty) : "—"}
+                  {block.difficulty ? formatDifficulty(block.difficulty) : '—'}
                 </td>
                 <td className="min-w-[8rem] max-w-[14rem] truncate">
                   <ExtractedByCell

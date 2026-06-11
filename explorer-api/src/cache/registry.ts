@@ -1,6 +1,6 @@
-import type { LRUCache } from "lru-cache";
-import type { ChainId } from "../types.js";
-import { invalidateChain, safeCacheDelete, type CacheValue } from "./swrCache.js";
+import type { LRUCache } from 'lru-cache';
+import type { ChainId } from '../types.js';
+import { invalidateChain, safeCacheDelete, type CacheValue } from './swrCache.js';
 
 type AnyCache = LRUCache<string, CacheValue, unknown>;
 
@@ -31,5 +31,5 @@ export function invalidateAllChainCaches(chainId: ChainId): void {
 
 export function invalidateAllTipCaches(chainId: ChainId): void {
   invalidateAllChainCaches(chainId);
-  invalidateGlobalCaches(["landing", "home", "dashboard", "health", "shell"]);
+  invalidateGlobalCaches(['landing', 'home', 'dashboard', 'health', 'shell']);
 }

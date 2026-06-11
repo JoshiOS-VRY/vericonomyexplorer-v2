@@ -1,61 +1,53 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { ImageResponse } from "next/og";
-import { SITE_NAME, SITE_TAGLINE } from "@/lib/seo/site";
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { ImageResponse } from 'next/og';
+import { SITE_NAME, SITE_TAGLINE } from '@/lib/seo/site';
 
 export const alt = SITE_NAME;
 export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+export const contentType = 'image/png';
 
 export default async function OpenGraphImage() {
-  const logo = await readFile(
-    join(process.cwd(), "public/img/vericonomy/vericonomylogo.png"),
-  );
-  const logoSrc = `data:image/png;base64,${logo.toString("base64")}`;
+  const logo = await readFile(join(process.cwd(), 'public/img/vericonomy/vericonomylogo.png'));
+  const logoSrc = `data:image/png;base64,${logo.toString('base64')}`;
 
   return new ImageResponse(
     (
       <div
         style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
           padding: 72,
-          background: "linear-gradient(135deg, #0f1419 0%, #1a2838 45%, #032c57 100%)",
-          color: "#f4f7fb",
-          fontFamily: "system-ui, sans-serif",
+          background: 'linear-gradient(135deg, #0f1419 0%, #1a2838 45%, #032c57 100%)',
+          color: '#f4f7fb',
+          fontFamily: 'system-ui, sans-serif',
         }}
       >
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
+            display: 'flex',
+            alignItems: 'center',
             gap: 20,
             marginBottom: 28,
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={logoSrc}
-            alt=""
-            width={72}
-            height={72}
-            style={{ objectFit: "contain" }}
-          />
+          <img src={logoSrc} alt="" width={72} height={72} style={{ objectFit: 'contain' }} />
           <div style={{ fontSize: 52, fontWeight: 700, letterSpacing: -1 }}>{SITE_NAME}</div>
         </div>
-        <div style={{ fontSize: 30, lineHeight: 1.45, maxWidth: 900, color: "#c8d6e8" }}>
+        <div style={{ fontSize: 30, lineHeight: 1.45, maxWidth: 900, color: '#c8d6e8' }}>
           {SITE_TAGLINE}
         </div>
         <div
           style={{
             marginTop: 48,
-            display: "flex",
+            display: 'flex',
             gap: 16,
             fontSize: 22,
-            color: "#84b4dd",
+            color: '#84b4dd',
           }}
         >
           <span>VeriCoin (VRC)</span>
@@ -64,6 +56,6 @@ export default async function OpenGraphImage() {
         </div>
       </div>
     ),
-    { ...size },
+    { ...size }
   );
 }

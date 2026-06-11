@@ -1,12 +1,9 @@
-import Link from "next/link";
-import { VrmAddressLabel } from "@/components/explorer/address/VrmAddressLink";
-import type { RichlistItem } from "@/lib/api/types";
-import { CHAIN_THEME, type ChainId } from "@/lib/chainDisplay";
-import {
-  formatSupplySharePct,
-  supplySharePercent,
-} from "@/lib/formatMarket";
-import { cn, ellipsizeMiddle, formatCompactBalance } from "@/lib/utils";
+import Link from 'next/link';
+import { VrmAddressLabel } from '@/components/explorer/address/VrmAddressLink';
+import type { RichlistItem } from '@/lib/api/types';
+import { CHAIN_THEME, type ChainId } from '@/lib/chainDisplay';
+import { formatSupplySharePct, supplySharePercent } from '@/lib/formatMarket';
+import { cn, ellipsizeMiddle, formatCompactBalance } from '@/lib/utils';
 
 interface RichlistBalanceListProps {
   chainId: ChainId;
@@ -16,14 +13,14 @@ interface RichlistBalanceListProps {
 }
 
 const RANK_STYLES: Record<number, string> = {
-  1: "richlist-rank richlist-rank--gold",
-  2: "richlist-rank richlist-rank--silver",
-  3: "richlist-rank richlist-rank--bronze",
+  1: 'richlist-rank richlist-rank--gold',
+  2: 'richlist-rank richlist-rank--silver',
+  3: 'richlist-rank richlist-rank--bronze',
 };
 
 function computeListedSupplyShare(
   items: RichlistItem[],
-  totalSupply: number | null,
+  totalSupply: number | null
 ): number | null {
   if (totalSupply == null || totalSupply <= 0) return null;
 
@@ -44,7 +41,7 @@ export function RichlistBalanceList({
 }: RichlistBalanceListProps) {
   const theme = CHAIN_THEME[chainId];
   const listedSharePct = computeListedSupplyShare(items, totalSupply);
-  const ticker = items[0]?.balance.ticker ?? "";
+  const ticker = items[0]?.balance.ticker ?? '';
 
   return (
     <div
@@ -52,8 +49,8 @@ export function RichlistBalanceList({
       data-chain={chainId}
       style={
         {
-          "--richlist-accent": theme.accent,
-          "--richlist-accent-soft": theme.accentSoft,
+          '--richlist-accent': theme.accent,
+          '--richlist-accent-soft': theme.accentSoft,
         } as React.CSSProperties
       }
     >
@@ -77,15 +74,15 @@ export function RichlistBalanceList({
                 href={href}
                 prefetch
                 className={cn(
-                  "richlist-balance-list__row",
-                  isPodium && "richlist-balance-list__row--podium",
-                  item.rank === 1 && "richlist-balance-list__row--first",
+                  'richlist-balance-list__row',
+                  isPodium && 'richlist-balance-list__row--podium',
+                  item.rank === 1 && 'richlist-balance-list__row--first'
                 )}
               >
                 <span
                   className={cn(
-                    "richlist-rank",
-                    RANK_STYLES[item.rank] ?? "richlist-rank--default",
+                    'richlist-rank',
+                    RANK_STYLES[item.rank] ?? 'richlist-rank--default'
                   )}
                 >
                   {item.rank}
@@ -95,7 +92,7 @@ export function RichlistBalanceList({
                     className="richlist-balance-list__addr block truncate font-mono text-sm font-semibold text-fg sm:text-[15px]"
                     title={item.address}
                   >
-                    {chainId === "vrm" ? (
+                    {chainId === 'vrm' ? (
                       <VrmAddressLabel address={item.address} maxLength={22} />
                     ) : (
                       ellipsizeMiddle(item.address, 22)
@@ -105,13 +102,11 @@ export function RichlistBalanceList({
                 <div
                   className="richlist-balance-list__share-col text-right"
                   title={
-                    shareLabel
-                      ? `${shareLabel} of total ${item.balance.ticker} supply`
-                      : undefined
+                    shareLabel ? `${shareLabel} of total ${item.balance.ticker} supply` : undefined
                   }
                 >
                   <span className="richlist-balance-list__pct tabular-nums">
-                    {shareLabel ?? "—"}
+                    {shareLabel ?? '—'}
                   </span>
                 </div>
                 <div
@@ -134,15 +129,12 @@ export function RichlistBalanceList({
       {listedSharePct != null && items.length > 0 ? (
         <footer className="richlist-balance-list__footer">
           <p className="text-sm text-fg-muted">
-            <span className="font-semibold text-fg">
-              Top {items.length}
-            </span>{" "}
-            hold{" "}
+            <span className="font-semibold text-fg">Top {items.length}</span> hold{' '}
             <span className="font-bold tabular-nums text-[var(--richlist-accent)]">
               {listedSharePct >= 10
                 ? `${listedSharePct.toFixed(1)}%`
                 : `${listedSharePct.toFixed(2)}%`}
-            </span>{" "}
+            </span>{' '}
             of {ticker} supply
           </p>
         </footer>

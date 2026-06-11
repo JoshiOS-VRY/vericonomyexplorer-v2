@@ -1,8 +1,8 @@
 export const CHART_MARGINS = { top: 16, right: 16, left: 8, bottom: 24 };
 
 export function formatCompactAxisValue(value: number): string {
-  if (!Number.isFinite(value)) return "—";
-  if (value === 0) return "0";
+  if (!Number.isFinite(value)) return '—';
+  if (value === 0) return '0';
 
   const abs = Math.abs(value);
   if (abs >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
@@ -16,16 +16,16 @@ export function formatCompactAxisValue(value: number): string {
 }
 
 export function gradientId(baseId: string, suffix: string): string {
-  return `${baseId}-${suffix}`.replace(/[^a-zA-Z0-9-_]/g, "");
+  return `${baseId}-${suffix}`.replace(/[^a-zA-Z0-9-_]/g, '');
 }
 
 export const CHART_ANIMATION = {
   duration: 500,
-  easing: "ease-out" as const,
+  easing: 'ease-out' as const,
 };
 
 export const ACTIVITY_SERIES = [
-  { key: "mined", label: "Mined", token: "success" as const },
-  { key: "staked", label: "Staked", token: "warning" as const },
-  { key: "received", label: "Transfers", token: "accent" as const },
+  { key: 'mined', label: 'Mined', token: 'success' as const },
+  { key: 'staked', label: 'Staked', token: 'warning' as const },
+  { key: 'received', label: 'Transfers', token: 'accent' as const },
 ];

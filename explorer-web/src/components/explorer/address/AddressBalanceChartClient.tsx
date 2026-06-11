@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { LazyAddressBalanceChart } from "@/components/explorer/address/LazyAddressBalanceChart";
+import { LazyAddressBalanceChart } from '@/components/explorer/address/LazyAddressBalanceChart';
 
 export function AddressBalanceChartClient({
   chainId,

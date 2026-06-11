@@ -1,9 +1,9 @@
-import type { ChainMarket } from "@/lib/api/types";
+import type { ChainMarket } from '@/lib/api/types';
 
 /** Total supply for rich-list share bars and the "Top N hold X%" footer. */
 export function resolveRichlistTotalSupply(
   networkSupply: number | null | undefined,
-  market?: ChainMarket | null,
+  market?: ChainMarket | null
 ): number | null {
   if (networkSupply != null && networkSupply > 0) {
     return networkSupply;

@@ -1,30 +1,45 @@
-import { loadRootEnv } from "@/lib/env";
+import { loadRootEnv } from '@/lib/env';
 
 /** Production default when no public URL env is configured. */
-export const DEFAULT_SITE_URL = "https://explorer.vericonomy.com";
+export const DEFAULT_SITE_URL = 'https://explorer.vericonomy.com';
 
 /** Submit this URL in Google Search Console → Sitemaps. */
 export const SITEMAP_URL = `${DEFAULT_SITE_URL}/sitemap.xml`;
 
-export const SITE_NAME = "Vericonomy Explorer";
+export const SITE_NAME = 'Vericonomy Explorer';
 
 export const SITE_TAGLINE =
   "The official blockchain explorer for VeriCoin and Verium — the world's first binary blockchain protocol.";
 
 export const SITE_DESCRIPTION =
-  "Explore VeriCoin (VRC) and Verium (VRM) blocks, transactions, addresses, rich lists, mining stats, and network insights in real time.";
+  'Official Vericonomy block explorer for VeriCoin (VRC) and Verium (VRM). Search blocks, transactions, and wallet addresses; view rich lists, mining stats, network peers, and live Binary Chain data.';
 
 export const SITE_KEYWORDS = [
-  "Vericonomy",
-  "VeriCoin",
-  "Verium",
-  "VRC",
-  "VRM",
-  "binary blockchain",
-  "blockchain explorer",
-  "Proof-of-Stake-Time",
-  "Proof-of-Work-Time",
-  "cryptocurrency explorer",
+  'Vericonomy',
+  'Vericonomy explorer',
+  'VeriCoin',
+  'Vericoin',
+  'Verium',
+  'VeriumReserve',
+  'VRC',
+  'VRM',
+  'binary blockchain',
+  'Binary Chain explorer',
+  'blockchain explorer',
+  'block explorer',
+  'Verium block explorer',
+  'VeriCoin block explorer',
+  'VRM explorer',
+  'VRC explorer',
+  'transaction lookup',
+  'address lookup',
+  'rich list',
+  'Proof-of-Stake-Time',
+  'Proof-of-Work-Time',
+  'cryptocurrency explorer',
+  'blockchain search',
+  'how to look up Verium transaction',
+  'VRM wallet balance',
 ];
 
 /** Resolves the public origin used for canonical URLs, Open Graph, and sitemap. */
@@ -35,17 +50,17 @@ export function getSiteUrl(): string {
     process.env.EXPLORER_SITE_URL ??
     process.env.BTCEXP_PUBLIC_URL;
   if (raw?.trim()) {
-    return raw.trim().replace(/\/$/, "");
+    return raw.trim().replace(/\/$/, '');
   }
   if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
+    return `https://${process.env.VERCEL_URL.replace(/\/$/, '')}`;
   }
   return DEFAULT_SITE_URL;
 }
 
 export function absoluteUrl(path: string): string {
   const base = getSiteUrl();
-  const normalized = path.startsWith("/") ? path : `/${path}`;
+  const normalized = path.startsWith('/') ? path : `/${path}`;
   return `${base}${normalized}`;
 }
 

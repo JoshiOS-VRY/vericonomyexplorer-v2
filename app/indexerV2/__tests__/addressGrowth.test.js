@@ -1,10 +1,7 @@
-"use strict";
+'use strict';
 
-const assert = require("assert");
-const {
-	countAddressesFirstSeenBefore,
-	addressCountAtBucketEnd
-} = require("../addressGrowth.js");
+const assert = require('assert');
+const { countAddressesFirstSeenBefore, addressCountAtBucketEnd } = require('../addressGrowth.js');
 
 const times = [1000, 5000, 9000, 20000];
 
@@ -16,4 +13,4 @@ assert.strictEqual(countAddressesFirstSeenBefore(times, 50000), 4);
 
 assert.strictEqual(addressCountAtBucketEnd(times, 0), countAddressesFirstSeenBefore(times, 3600));
 
-console.log("addressGrowth.test.js ok");
+console.log('addressGrowth.test.js ok');

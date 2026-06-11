@@ -5,6 +5,7 @@ This guide shows how to run the Verium RPC Explorer without Docker on various op
 ## Prerequisites
 
 ### System Requirements
+
 - **Node.js**: Version 18 or higher (recommended: Node.js 20)
 - **npm**: Version 8 or higher
 - **Git**: For cloning the repository
@@ -12,6 +13,7 @@ This guide shows how to run the Verium RPC Explorer without Docker on various op
 - **Disk**: At least 1GB free space
 
 ### Verium Node Requirements
+
 - **Verium Core**: Running and synced
 - **RPC Access**: Enabled and accessible
 - **Port**: Default Verium RPC port 36988
@@ -307,7 +309,7 @@ pm2 startup
 server {
     listen 80;
     server_name your-domain.com;
-    
+
     location / {
         proxy_pass http://127.0.0.1:3003;
         proxy_set_header Host $host;
@@ -366,15 +368,17 @@ sudo systemctl status verium-explorer
 ### Common Issues
 
 1. **Port Already in Use**
+
    ```bash
    # Check what's using port 3003
    lsof -i :3003
-   
+
    # Kill the process
    kill -9 <PID>
    ```
 
 2. **Permission Issues**
+
    ```bash
    # Fix file permissions
    chmod +x bin/www
@@ -382,6 +386,7 @@ sudo systemctl status verium-explorer
    ```
 
 3. **Memory Issues**
+
    ```bash
    # Increase Node.js memory limit
    export NODE_OPTIONS="--max-old-space-size=2048"
@@ -419,6 +424,7 @@ curl http://localhost:3003/
 ## Backup and Updates
 
 ### Backup
+
 ```bash
 # Backup application
 tar -czf verium-explorer-backup.tar.gz btc-rpc-explorer/
@@ -428,6 +434,7 @@ tar -czf cache-backup.tar.gz cache/
 ```
 
 ### Updates
+
 ```bash
 # Update from Git
 git pull origin verium-explorer

@@ -1,18 +1,12 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import type { BlockResult } from "@/lib/api/types";
-import { chainBlockPath, chainTxPath, type ChainId } from "@/lib/chainDisplay";
-import { formatAmountPair } from "@/lib/blockLabels";
-import { ellipsizeMiddle } from "@/lib/utils";
+import Link from 'next/link';
+import type { BlockResult } from '@/lib/api/types';
+import { chainBlockPath, chainTxPath, type ChainId } from '@/lib/chainDisplay';
+import { formatAmountPair } from '@/lib/blockLabels';
+import { ellipsizeMiddle } from '@/lib/utils';
 
-export function BlockAdvancedPanel({
-  result,
-  chainId,
-}: {
-  result: BlockResult;
-  chainId: ChainId;
-}) {
+export function BlockAdvancedPanel({ result, chainId }: { result: BlockResult; chainId: ChainId }) {
   const block = result.block!;
 
   return (
@@ -26,9 +20,7 @@ export function BlockAdvancedPanel({
             <dt className="text-[10px] font-medium uppercase tracking-wide text-fg-subtle">
               Block hash
             </dt>
-            <dd className="mt-1 break-all text-xs text-fg-muted">
-              {block.hash}
-            </dd>
+            <dd className="mt-1 break-all text-xs text-fg-muted">{block.hash}</dd>
           </div>
           <div>
             <dt className="text-[10px] font-medium uppercase tracking-wide text-fg-subtle">
@@ -48,27 +40,23 @@ export function BlockAdvancedPanel({
             </dd>
           </div>
           <div>
-            <dt className="text-[10px] font-medium uppercase tracking-wide text-fg-subtle">
-              Size
-            </dt>
+            <dt className="text-[10px] font-medium uppercase tracking-wide text-fg-subtle">Size</dt>
             <dd className="mt-1 tabular-nums text-fg">
-              {block.size != null ? `${block.size.toLocaleString()} B` : "—"}
+              {block.size != null ? `${block.size.toLocaleString()} B` : '—'}
             </dd>
           </div>
           <div>
             <dt className="text-[10px] font-medium uppercase tracking-wide text-fg-subtle">
               Difficulty
             </dt>
-            <dd className="mt-1 text-xs text-fg">{block.difficulty ?? "—"}</dd>
+            <dd className="mt-1 text-xs text-fg">{block.difficulty ?? '—'}</dd>
           </div>
           <div>
             <dt className="text-[10px] font-medium uppercase tracking-wide text-fg-subtle">
               Output count
             </dt>
             <dd className="mt-1 tabular-nums text-fg">
-              {block.outputCount != null
-                ? block.outputCount.toLocaleString()
-                : "—"}
+              {block.outputCount != null ? block.outputCount.toLocaleString() : '—'}
             </dd>
           </div>
           <div>

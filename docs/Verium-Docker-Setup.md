@@ -86,26 +86,31 @@ rpcport=36988
 ## Docker Commands
 
 ### Build Image
+
 ```bash
 docker-compose build
 ```
 
 ### Run Container
+
 ```bash
 docker-compose up -d
 ```
 
 ### View Logs
+
 ```bash
 docker-compose logs -f
 ```
 
 ### Stop Container
+
 ```bash
 docker-compose down
 ```
 
 ### Update and Rebuild
+
 ```bash
 git pull
 docker-compose down
@@ -142,7 +147,7 @@ To run on a different port, modify `docker-compose.yml`:
 
 ```yaml
 ports:
-  - "8080:3002"  # Maps host port 8080 to container port 3002
+  - '8080:3002' # Maps host port 8080 to container port 3002
 ```
 
 ### Volume Mounts
@@ -185,6 +190,7 @@ For production deployment:
 ## Support
 
 For issues:
+
 1. Check Verium node logs
 2. Check container logs: `docker-compose logs`
 3. Verify network connectivity

@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-"use strict";
+'use strict';
 
-require("../app/indexerV2/loadEnv.js");
+require('../app/indexerV2/loadEnv.js');
 
-const dbModule = require("../app/indexerV2/db.js");
+const dbModule = require('../app/indexerV2/db.js');
 
 const chainArg = process.argv[2] ? String(process.argv[2]).toLowerCase() : null;
-const chains = chainArg ? [chainArg] : ["vrm", "vrc"];
+const chains = chainArg ? [chainArg] : ['vrm', 'vrc'];
 
 const db = dbModule.openDatabase(undefined, {
-	skipSeed: true,
-	busyTimeoutMs: 120_000,
+  skipSeed: true,
+  busyTimeoutMs: 120_000,
 });
 
 const update = db.prepare(`
@@ -32,8 +32,8 @@ const update = db.prepare(`
 `);
 
 const results = chains.map((chainId) => {
-	const info = update.run(chainId);
-	return { chainId, repaired: info.changes };
+  const info = update.run(chainId);
+  return { chainId, repaired: info.changes };
 });
 
 console.log(JSON.stringify(results, null, 2));

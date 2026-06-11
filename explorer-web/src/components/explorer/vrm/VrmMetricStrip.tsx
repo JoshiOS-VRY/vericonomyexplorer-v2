@@ -1,8 +1,8 @@
-import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
-import { BcStat, BcStatGrid } from "@/components/explorer/BlockchairUi";
-import { formatHeight } from "@/components/explorer/ExplorerUi";
-import type { IndexedBlock } from "@/lib/api/types";
-import { formatDifficulty } from "@/lib/utils";
+import { LiveRelativeTime } from '@/components/explorer/LiveRelativeTime';
+import { BcStat, BcStatGrid } from '@/components/explorer/BlockchairUi';
+import { formatHeight } from '@/components/explorer/ExplorerUi';
+import type { IndexedBlock } from '@/lib/api/types';
+import { formatDifficulty } from '@/lib/utils';
 
 export function VrmMetricStrip({
   chainHeight,
@@ -19,11 +19,7 @@ export function VrmMetricStrip({
 
   return (
     <BcStatGrid>
-      <BcStat
-        label="Block height"
-        value={formatHeight(chainHeight)}
-        pulse={heightPulse}
-      />
+      <BcStat label="Block height" value={formatHeight(chainHeight)} pulse={heightPulse} />
       <BcStat label="Addresses" value={formatHeight(addressCount)} />
       <BcStat
         label="Latest block"
@@ -35,14 +31,11 @@ export function VrmMetricStrip({
               className="text-lg font-bold sm:text-xl truncate"
             />
           ) : (
-            "—"
+            '—'
           )
         }
       />
-      <BcStat
-        label="Difficulty"
-        value={tipDifficulty ? formatDifficulty(tipDifficulty) : "—"}
-      />
+      <BcStat label="Difficulty" value={tipDifficulty ? formatDifficulty(tipDifficulty) : '—'} />
     </BcStatGrid>
   );
 }

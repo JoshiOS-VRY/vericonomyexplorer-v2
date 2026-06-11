@@ -43,19 +43,19 @@ SQLite reads run in a worker pool (default **4** workers, capped by CPU count) s
 
 ### Tuning environment variables
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `VCEXP_API_DB_WORKERS` | `min(cpus*2, 8)` | Worker-thread pool size for SQLite reads |
-| `VCEXP_API_DB_FAST_WORKERS` | `2` | Dedicated workers for tx/block/related-address lookups |
-| `VCEXP_API_DB_WORKER_TIMEOUT_MS` | `120000` | Worker query timeout (504 on expiry) |
-| `VCEXP_API_SEARCH_TIMEOUT_MS` | `15000` | Search query worker timeout |
-| `VCEXP_API_CACHE_TTL_MS` | per-route | Override all in-memory SWR cache TTLs |
-| `VCEXP_MARKET_CACHE_TTL_MS` | `120000` | Market data cache TTL |
-| `VCEXP_SQLITE_CACHE_MB` | `256` | SQLite page cache per read worker (indexer + API) |
-| `VCEXP_SQLITE_MMAP_MB` | `256` | SQLite memory-mapped I/O size |
-| `VCEXP_CHAIN_HEALTH_CACHE_MS` | `60000` | In-process chain health cache TTL |
-| `VCEXP_FUNDED_ADDRESS_CACHE_MS` | `60000` | Richlist funded-address count cache |
-| `VCEXP_WAL_CHECKPOINT_MB` | `512` | WAL checkpoint threshold (indexer) |
+| Variable                         | Default          | Purpose                                                |
+| -------------------------------- | ---------------- | ------------------------------------------------------ |
+| `VCEXP_API_DB_WORKERS`           | `min(cpus*2, 8)` | Worker-thread pool size for SQLite reads               |
+| `VCEXP_API_DB_FAST_WORKERS`      | `2`              | Dedicated workers for tx/block/related-address lookups |
+| `VCEXP_API_DB_WORKER_TIMEOUT_MS` | `120000`         | Worker query timeout (504 on expiry)                   |
+| `VCEXP_API_SEARCH_TIMEOUT_MS`    | `15000`          | Search query worker timeout                            |
+| `VCEXP_API_CACHE_TTL_MS`         | per-route        | Override all in-memory SWR cache TTLs                  |
+| `VCEXP_MARKET_CACHE_TTL_MS`      | `120000`         | Market data cache TTL                                  |
+| `VCEXP_SQLITE_CACHE_MB`          | `256`            | SQLite page cache per read worker (indexer + API)      |
+| `VCEXP_SQLITE_MMAP_MB`           | `256`            | SQLite memory-mapped I/O size                          |
+| `VCEXP_CHAIN_HEALTH_CACHE_MS`    | `60000`          | In-process chain health cache TTL                      |
+| `VCEXP_FUNDED_ADDRESS_CACHE_MS`  | `60000`          | Richlist funded-address count cache                    |
+| `VCEXP_WAL_CHECKPOINT_MB`        | `512`            | WAL checkpoint threshold (indexer)                     |
 
 For local development, `VCEXP_API_CACHE_TTL_MS=300000` (5 minutes) reduces repeated cold-query latency.
 
@@ -63,15 +63,15 @@ For local development, `VCEXP_API_CACHE_TTL_MS=300000` (5 minutes) reduces repea
 
 Per-client limits apply to public `/v1/*` traffic. SSR and Docker-internal calls from private IPs (RFC1918, loopback) are allowlisted so Next.js server fetches are not capped as a single client.
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `VCEXP_RATE_LIMIT_WINDOW_MINUTES` | `15` | Window length; set `-1` to disable |
-| `VCEXP_RATE_LIMIT_MAX` | `900` | Max requests per IP per window |
-| `VCEXP_RATE_LIMIT_CRAWLER_MAX` | `120` | Max for known crawler user-agents |
-| `VCEXP_RATE_LIMIT_HEAVY_MAX` | `60` | Per-minute cap on search, richlist, utxos, etc. |
-| `VCEXP_RATE_LIMIT_SSE_MAX` | `8` | Concurrent `/tip/stream` connections per IP per chain |
-| `VCEXP_RATE_LIMIT_ALLOW_IPS` | — | Extra comma-separated allowlisted IPs |
-| `VCEXP_REDIS_URL` / `BTCEXP_REDIS_URL` | — | Optional Redis store for multi-instance deployments |
+| Variable                               | Default | Purpose                                               |
+| -------------------------------------- | ------- | ----------------------------------------------------- |
+| `VCEXP_RATE_LIMIT_WINDOW_MINUTES`      | `15`    | Window length; set `-1` to disable                    |
+| `VCEXP_RATE_LIMIT_MAX`                 | `900`   | Max requests per IP per window                        |
+| `VCEXP_RATE_LIMIT_CRAWLER_MAX`         | `120`   | Max for known crawler user-agents                     |
+| `VCEXP_RATE_LIMIT_HEAVY_MAX`           | `60`    | Per-minute cap on search, richlist, utxos, etc.       |
+| `VCEXP_RATE_LIMIT_SSE_MAX`             | `8`     | Concurrent `/tip/stream` connections per IP per chain |
+| `VCEXP_RATE_LIMIT_ALLOW_IPS`           | —       | Extra comma-separated allowlisted IPs                 |
+| `VCEXP_REDIS_URL` / `BTCEXP_REDIS_URL` | —       | Optional Redis store for multi-instance deployments   |
 
 Legacy Express and Next.js BFF routes honor the same `VCEXP_*` / `BTCEXP_RATE_LIMIT_*` env vars where noted in `env.example`.
 

@@ -1,5 +1,5 @@
-import { Pool } from "undici";
-import type { RpcCredentials } from "../types.js";
+import { Pool } from 'undici';
+import type { RpcCredentials } from '../types.js';
 
 export interface RpcClient {
   call<T = unknown>(method: string, params?: unknown[], timeoutMs?: number): Promise<T>;
@@ -17,7 +17,7 @@ export function createRpcPool(credentials: RpcCredentials): RpcClient {
 
   const auth =
     credentials.username || credentials.password
-      ? `Basic ${Buffer.from(`${credentials.username ?? ""}:${credentials.password ?? ""}`).toString("base64")}`
+      ? `Basic ${Buffer.from(`${credentials.username ?? ''}:${credentials.password ?? ''}`).toString('base64')}`
       : null;
 
   let requestId = 0;
@@ -25,27 +25,27 @@ export function createRpcPool(credentials: RpcCredentials): RpcClient {
   async function call<T>(
     method: string,
     params: unknown[] = [],
-    timeoutMs = credentials.timeout ?? 8_000,
+    timeoutMs = credentials.timeout ?? 8_000
   ): Promise<T> {
     requestId += 1;
     const body = JSON.stringify({
-      jsonrpc: "1.0",
+      jsonrpc: '1.0',
       id: `explorer-api-${requestId}`,
       method,
       params,
     });
 
     const headers: Record<string, string> = {
-      "content-type": "application/json",
-      accept: "application/json",
+      'content-type': 'application/json',
+      accept: 'application/json',
     };
     if (auth) {
       headers.authorization = auth;
     }
 
     const response = await pool.request({
-      path: "/",
-      method: "POST",
+      path: '/',
+      method: 'POST',
       headers,
       body,
       bodyTimeout: timeoutMs,
@@ -66,7 +66,9 @@ export function createRpcPool(credentials: RpcCredentials): RpcClient {
     }
 
     if (parsed.error) {
-      throw new Error(`RPC ${method} failed: ${parsed.error.message ?? JSON.stringify(parsed.error)}`);
+      throw new Error(
+        `RPC ${method} failed: ${parsed.error.message ?? JSON.stringify(parsed.error)}`
+      );
     }
 
     return parsed.result as T;

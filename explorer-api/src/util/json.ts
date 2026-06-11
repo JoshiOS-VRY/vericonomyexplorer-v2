@@ -1,5 +1,5 @@
 export function jsonReplacer(_key: string, value: unknown): unknown {
-  return typeof value === "bigint" ? Number(value) : value;
+  return typeof value === 'bigint' ? Number(value) : value;
 }
 
 export function sanitizeForJson<T>(value: T): T {

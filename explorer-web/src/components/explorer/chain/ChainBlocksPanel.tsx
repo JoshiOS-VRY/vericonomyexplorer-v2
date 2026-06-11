@@ -1,58 +1,44 @@
-"use client";
+'use client';
 
-import { ChevronLeft, ChevronRight, Loader2, Radio } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { LiveRelativeTime } from "@/components/explorer/LiveRelativeTime";
-import { BcPanel, BcTableLink } from "@/components/explorer/BlockchairUi";
-import { ExtractedByCell } from "@/components/explorer/block/ExtractedByCell";
-import { formatHeight } from "@/components/explorer/ExplorerUi";
-import { Button } from "@/components/ui/Button";
-import { useBlocksPanelPageSize } from "@/hooks/useBlocksPanelPageSize";
-import { useLatestBlocksPoll } from "@/hooks/useLatestBlocksPoll";
-import type { IndexedBlock, Paging } from "@/lib/api/types";
-import { fetchBlocksPageClient } from "@/lib/api/client";
-import {
-  CHAIN_BLOCKS_PANEL_MAX_ROWS,
-  CHAIN_BLOCKS_PANEL_MIN_ROWS,
-} from "@/lib/chainBlocksDisplay";
-import type { ChainId } from "@/lib/chainDisplay";
-import { formatPercent } from "@/lib/formatMarket";
-import { cn, formatDifficulty } from "@/lib/utils";
+import { ChevronLeft, ChevronRight, Loader2, Radio } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { LiveRelativeTime } from '@/components/explorer/LiveRelativeTime';
+import { BcPanel, BcTableLink } from '@/components/explorer/BlockchairUi';
+import { ExtractedByCell } from '@/components/explorer/block/ExtractedByCell';
+import { formatHeight } from '@/components/explorer/ExplorerUi';
+import { Button } from '@/components/ui/Button';
+import { useBlocksPanelPageSize } from '@/hooks/useBlocksPanelPageSize';
+import { useLatestBlocksPoll } from '@/hooks/useLatestBlocksPoll';
+import type { IndexedBlock, Paging } from '@/lib/api/types';
+import { fetchBlocksPageClient } from '@/lib/api/client';
+import { CHAIN_BLOCKS_PANEL_MAX_ROWS, CHAIN_BLOCKS_PANEL_MIN_ROWS } from '@/lib/chainBlocksDisplay';
+import type { ChainId } from '@/lib/chainDisplay';
+import { formatPercent } from '@/lib/formatMarket';
+import { cn, formatDifficulty } from '@/lib/utils';
 
-function BlockTableRow({
-  block,
-  chainId,
-}: {
-  block: IndexedBlock;
-  chainId: ChainId;
-}) {
+function BlockTableRow({ block, chainId }: { block: IndexedBlock; chainId: ChainId }) {
   return (
     <tr>
       <td>
-        <BcTableLink
-          href={`/${chainId}/block/${block.height}`}
-          className="tabular-nums"
-        >
+        <BcTableLink href={`/${chainId}/block/${block.height}`} className="tabular-nums">
           {formatHeight(block.height)}
         </BcTableLink>
       </td>
       <td className="bc-col-age text-fg-muted">
         <LiveRelativeTime time={block.time} interval="second" fixedWidth />
       </td>
+      <td className="text-right tabular-nums text-fg-muted">{formatHeight(block.txCount)}</td>
       <td className="text-right tabular-nums text-fg-muted">
-        {formatHeight(block.txCount)}
+        {block.outputCount != null ? formatHeight(block.outputCount) : '—'}
       </td>
       <td className="text-right tabular-nums text-fg-muted">
-        {block.outputCount != null ? formatHeight(block.outputCount) : "—"}
+        {block.size != null ? formatHeight(block.size) : '—'}
       </td>
       <td className="text-right tabular-nums text-fg-muted">
-        {block.size != null ? formatHeight(block.size) : "—"}
-      </td>
-      <td className="text-right tabular-nums text-fg-muted">
-        {block.difficulty ? formatDifficulty(block.difficulty) : "—"}
+        {block.difficulty ? formatDifficulty(block.difficulty) : '—'}
       </td>
       <td className="min-w-[8rem] max-w-[14rem] truncate">
-        {chainId === "vrm" ? (
+        {chainId === 'vrm' ? (
           <ExtractedByCell
             block={block}
             chainId={chainId}
@@ -81,22 +67,15 @@ export function ChainBlocksPanel({
 }) {
   const panelBodyRef = useRef<HTMLDivElement>(null);
   const pageSize = useBlocksPanelPageSize(panelBodyRef);
-  const producerLabel = chainId === "vrm" ? "Extracted by" : "Interest";
+  const producerLabel = chainId === 'vrm' ? 'Extracted by' : 'Interest';
   const behindTip =
-    chainHeight != null &&
-    maxIndexedHeight != null &&
-    chainHeight - maxIndexedHeight > pageSize;
+    chainHeight != null && maxIndexedHeight != null && chainHeight - maxIndexedHeight > pageSize;
 
   const {
     blocks: polledBlocks,
     isRefreshing: isPolling,
     error: pollError,
-  } = useLatestBlocksPoll(
-    chainId,
-    liveBlocks,
-    chainHeight,
-    CHAIN_BLOCKS_PANEL_MAX_ROWS,
-  );
+  } = useLatestBlocksPoll(chainId, liveBlocks, chainHeight, CHAIN_BLOCKS_PANEL_MAX_ROWS);
 
   const [offset, setOffset] = useState(0);
   const [pagedBlocks, setPagedBlocks] = useState<IndexedBlock[]>([]);
@@ -130,7 +109,7 @@ export function ChainBlocksPanel({
       total: totalBlocks,
       hasMore: pageSize < totalBlocks,
     }),
-    [pageSize, totalBlocks],
+    [pageSize, totalBlocks]
   );
 
   const blocks = offset === 0 ? livePageBlocks : pagedBlocks;
@@ -158,7 +137,7 @@ export function ChainBlocksPanel({
         setPaging(result.paging);
       } catch {
         if (!cancelled) {
-          setError("Unable to load blocks for this page.");
+          setError('Unable to load blocks for this page.');
         }
       } finally {
         if (!cancelled) {
@@ -188,19 +167,12 @@ export function ChainBlocksPanel({
   const canGoNext = activePaging.hasMore && !loading;
   const displayError = error ?? (offset === 0 ? pollError : null);
   const isLivePage = offset === 0 && !behindTip;
-  const showLoading =
-    loading || (isLivePage && isPolling && blocks.length === 0);
+  const showLoading = loading || (isLivePage && isPolling && blocks.length === 0);
 
   if (liveBlocks.length === 0 && offset === 0 && !showLoading) {
     return (
-      <BcPanel
-        title="Blocks"
-        flush
-        className="flex h-full min-h-[28rem] flex-col"
-      >
-        <p className="px-4 py-6 text-sm text-fg-muted">
-          No blocks indexed yet.
-        </p>
+      <BcPanel title="Blocks" flush className="flex h-full min-h-[28rem] flex-col">
+        <p className="px-4 py-6 text-sm text-fg-muted">No blocks indexed yet.</p>
       </BcPanel>
     );
   }
@@ -214,10 +186,7 @@ export function ChainBlocksPanel({
       action={
         isLivePage ? (
           <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-success">
-            <Radio
-              className={cn("h-3 w-3", isPolling && "animate-pulse")}
-              aria-hidden
-            />
+            <Radio className={cn('h-3 w-3', isPolling && 'animate-pulse')} aria-hidden />
             Live
           </span>
         ) : null
@@ -226,22 +195,19 @@ export function ChainBlocksPanel({
       <div ref={panelBodyRef} className="flex min-h-0 flex-1 flex-col">
         {behindTip ? (
           <p className="border-b border-border bg-bg-subtle px-4 py-2 text-xs text-fg-muted">
-            Indexer is{" "}
-            {formatHeight((chainHeight ?? 0) - (maxIndexedHeight ?? 0))} blocks
-            behind. Showing the latest blocks from the live node; older blocks
-            appear once syncing completes.
+            Indexer is {formatHeight((chainHeight ?? 0) - (maxIndexedHeight ?? 0))} blocks behind.
+            Showing the latest blocks from the live node; older blocks appear once syncing
+            completes.
           </p>
         ) : null}
         {displayError ? (
-          <p className="border-b border-border px-4 py-2 text-sm text-danger">
-            {displayError}
-          </p>
+          <p className="border-b border-border px-4 py-2 text-sm text-danger">{displayError}</p>
         ) : null}
         <div
           data-blocks-panel-scroll
           className={cn(
-            "min-h-0 flex-1 overflow-auto",
-            showLoading && "pointer-events-none opacity-60",
+            'min-h-0 flex-1 overflow-auto',
+            showLoading && 'pointer-events-none opacity-60'
           )}
         >
           <table className="bc-table">
@@ -258,11 +224,7 @@ export function ChainBlocksPanel({
             </thead>
             <tbody>
               {blocks.map((block) => (
-                <BlockTableRow
-                  key={block.hash}
-                  block={block}
-                  chainId={chainId}
-                />
+                <BlockTableRow key={block.hash} block={block} chainId={chainId} />
               ))}
             </tbody>
           </table>
@@ -286,11 +248,11 @@ export function ChainBlocksPanel({
               </span>
             ) : activePaging.total > 0 ? (
               <>
-                {formatHeight(rangeStart)}–{formatHeight(rangeEnd)} of{" "}
+                {formatHeight(rangeStart)}–{formatHeight(rangeEnd)} of{' '}
                 {formatHeight(activePaging.total)}
               </>
             ) : (
-              "No blocks"
+              'No blocks'
             )}
           </p>
           <div className="flex items-center gap-1.5">
