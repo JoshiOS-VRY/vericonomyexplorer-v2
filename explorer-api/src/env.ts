@@ -127,3 +127,10 @@ export const healthRateLimitRouteConfig = {
     rateLimit: false,
   },
 } as const;
+
+/** Cached live-read routes (blocks/latest, summary/lite, home/network). */
+export const liveReadRateLimitRouteConfig = {
+  config: {
+    rateLimit: false,
+  },
+} as const;

@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTipStream } from '@/components/explorer/TipStreamProvider';
 import { usePageVisible } from '@/hooks/usePageVisible';
 import type { ChainId } from '@/lib/chainDisplay';
+
+/** Minimum spacing between tip-triggered refreshes (interval polls are unaffected). */
+export const TIP_LIVE_REFRESH_MIN_MS = 15_000;
 
 /**
  * Interval + tip-stream refresh for entity-scoped live data.
@@ -14,14 +17,17 @@ export function useLivePoll({
   enabled = true,
   intervalMs,
   onRefresh,
+  tipRefreshMinMs = TIP_LIVE_REFRESH_MIN_MS,
 }: {
   chainId: ChainId;
   enabled?: boolean;
   intervalMs: number;
   onRefresh: () => void | Promise<void>;
+  tipRefreshMinMs?: number;
 }): void {
   const visible = usePageVisible();
   const { subscribe } = useTipStream(chainId);
+  const lastTipRefreshRef = useRef(0);
 
   useEffect(() => {
     if (!visible || !enabled) {
@@ -31,6 +37,11 @@ export function useLivePoll({
     void onRefresh();
 
     const unsub = subscribe(chainId, () => {
+      const now = Date.now();
+      if (now - lastTipRefreshRef.current < tipRefreshMinMs) {
+        return;
+      }
+      lastTipRefreshRef.current = now;
       void onRefresh();
     });
 
@@ -42,5 +53,5 @@ export function useLivePoll({
       unsub();
       window.clearInterval(interval);
     };
-  }, [chainId, enabled, intervalMs, onRefresh, subscribe, visible]);
+  }, [chainId, enabled, intervalMs, onRefresh, subscribe, tipRefreshMinMs, visible]);
 }

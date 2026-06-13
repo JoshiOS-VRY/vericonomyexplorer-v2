@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTipStream } from '@/components/explorer/TipStreamProvider';
 import { fetchHomeNetwork } from '@/lib/api/client';
 import { usePageVisible } from '@/hooks/usePageVisible';
 import type { HomeNetworkPayload, VrcNetworkStats, VrmNetworkStats } from '@/lib/api/types';
@@ -44,7 +43,6 @@ function applyNetworkRefresh(
 }
 
 export function useHomeNetworkLive(initialNetwork: HomeNetworkPayload) {
-  const { subscribe } = useTipStream('vrm');
   const visible = usePageVisible();
   const [network, setNetwork] = useState(initialNetwork);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -73,23 +71,14 @@ export function useHomeNetworkLive(initialNetwork: HomeNetworkPayload) {
 
     void refresh();
 
-    const unsubVrm = subscribe('vrm', () => {
-      void refresh();
-    });
-    const unsubVrc = subscribe('vrc', () => {
-      void refresh();
-    });
-
     const interval = window.setInterval(() => {
       void refresh();
     }, NETWORK_POLL_MS);
 
     return () => {
-      unsubVrm();
-      unsubVrc();
       window.clearInterval(interval);
     };
-  }, [refresh, subscribe, visible]);
+  }, [refresh, visible]);
 
   return { network, isRefreshing, error };
 }

@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { liveReadRateLimitRouteConfig } from '../env.js';
 import { createSwrCache, refreshCacheInBackground, swrFetch } from '../cache/swrCache.js';
 import { registerGlobalCache } from '../cache/registry.js';
 import { registerGlobalTipRefresh } from '../cache/tipRefresh.js';
@@ -108,7 +109,7 @@ export async function registerHomeRoutes(app: FastifyInstance): Promise<void> {
     }
   });
 
-  app.get('/v1/home/network', async () => {
+  app.get('/v1/home/network', { ...liveReadRateLimitRouteConfig }, async () => {
     const stale = homeNetworkCache.get('network', { allowStale: true }) as
       | Record<string, unknown>
       | undefined;

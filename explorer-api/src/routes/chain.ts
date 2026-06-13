@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 
-import { healthRateLimitRouteConfig, heavyRateLimitRouteConfig } from '../env.js';
+import { healthRateLimitRouteConfig, heavyRateLimitRouteConfig, liveReadRateLimitRouteConfig } from '../env.js';
 
 import {
   cacheKey,
@@ -247,7 +247,10 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
     return swrFetch(summaryCache, cacheKey(chainId, 'summary'), () => fetchChainSummary(chainId));
   });
 
-  app.get<{ Params: { chain: string } }>('/v1/:chain/summary/lite', async (request, reply) => {
+  app.get<{ Params: { chain: string } }>(
+    '/v1/:chain/summary/lite',
+    { ...liveReadRateLimitRouteConfig },
+    async (request, reply) => {
     const chainId = parseChainId(request.params.chain);
 
     if (!chainId) {
@@ -307,7 +310,7 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
   app.get<{
     Params: { chain: string };
     Querystring: { limit?: string };
-  }>('/v1/:chain/blocks/latest', async (request, reply) => {
+  }>('/v1/:chain/blocks/latest', { ...liveReadRateLimitRouteConfig }, async (request, reply) => {
     const chainId = parseChainId(request.params.chain);
 
     if (!chainId) {

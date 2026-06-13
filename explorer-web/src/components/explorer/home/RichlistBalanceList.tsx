@@ -72,7 +72,7 @@ export function RichlistBalanceList({
             <li key={item.address}>
               <Link
                 href={href}
-                prefetch
+                prefetch={false}
                 className={cn(
                   'richlist-balance-list__row',
                   isPodium && 'richlist-balance-list__row--podium',
