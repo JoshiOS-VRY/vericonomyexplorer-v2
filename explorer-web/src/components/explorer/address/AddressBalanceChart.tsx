@@ -35,6 +35,7 @@ import {
 } from '@/lib/chartDates';
 import { cn } from '@/lib/utils';
 import type { RechartsTooltipContentProps } from '@/components/explorer/charts/ThemedChartTooltip';
+import { chartYAxisProps, paddedChartDomain } from '@/components/explorer/charts/chartAxis';
 
 const CHART_VIEWS: { id: AddressBalanceChartView; label: string }[] = [
   { id: 'activity', label: 'Activity' },
@@ -363,6 +364,13 @@ function CumulativeBalanceChart({
   fillTopOpacity: number;
   fillBottomOpacity: number;
 }) {
+  const yAxis = chartYAxisProps(colors, {
+    width: 76,
+    tickFormatter: (value: number) =>
+      value.toLocaleString(undefined, { maximumFractionDigits: 4 }),
+    domain: paddedChartDomain(chartData.map((point) => point.balance)),
+  });
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={chartData} margin={{ top: 12, right: 12, left: 4, bottom: 4 }}>
@@ -389,15 +397,7 @@ function CumulativeBalanceChart({
           dy={6}
           tickFormatter={(value: number) => formatChartAxisDate(value)}
         />
-        <YAxis
-          tick={{ fill: colors.fgSubtle, fontSize: 11 }}
-          tickLine={false}
-          axisLine={false}
-          width={76}
-          tickFormatter={(value: number) =>
-            value.toLocaleString(undefined, { maximumFractionDigits: 4 })
-          }
-        />
+        <YAxis {...yAxis} />
         <Tooltip
           cursor={{ stroke: colors.border, strokeWidth: 1, strokeDasharray: '4 4' }}
           content={<BalanceChartTooltip colors={colors} />}
