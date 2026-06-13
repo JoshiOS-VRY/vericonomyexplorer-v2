@@ -15,8 +15,7 @@ import { useChartTheme } from '@/hooks/useChartTheme';
 import {
   chartGridProps,
   chartXAxisProps,
-  chartYAxisProps,
-  paddedChartDomain,
+  niceYAxisProps,
 } from '@/components/explorer/charts/chartAxis';
 import { CHART_ANIMATION, CHART_MARGINS } from '@/lib/chartVisuals';
 
@@ -58,11 +57,7 @@ export function ActivityBarChart({
         );
   const grid = chartGridProps(colors);
   const xAxis = chartXAxisProps(colors);
-  const yAxis = chartYAxisProps(colors, {
-    allowDecimals: false,
-    width: 76,
-    domain: paddedChartDomain(yDomainValues),
-  });
+  const yAxis = niceYAxisProps(colors, yDomainValues, { floor: 0, width: 76 });
   const tickFill = colors.fgSubtle || '#64748b';
 
   return (

@@ -35,7 +35,7 @@ import {
 } from '@/lib/chartDates';
 import { cn } from '@/lib/utils';
 import type { RechartsTooltipContentProps } from '@/components/explorer/charts/ThemedChartTooltip';
-import { chartYAxisProps, formatIntegerAxisValue, niceChartDomain, niceChartTicks } from '@/components/explorer/charts/chartAxis';
+import { niceYAxisProps } from '@/components/explorer/charts/chartAxis';
 
 const CHART_VIEWS: { id: AddressBalanceChartView; label: string }[] = [
   { id: 'activity', label: 'Activity' },
@@ -364,15 +364,7 @@ function CumulativeBalanceChart({
   fillTopOpacity: number;
   fillBottomOpacity: number;
 }) {
-  const balances = chartData.map((point) => point.balance);
-  const yDomain = niceChartDomain(balances, { floor: 0 });
-  const yAxis = chartYAxisProps(colors, {
-    width: 76,
-    allowDecimals: false,
-    tickFormatter: formatIntegerAxisValue,
-    domain: yDomain,
-    ticks: niceChartTicks(yDomain),
-  });
+  const yAxis = niceYAxisProps(colors, chartData.map((point) => point.balance), { floor: 0, width: 76 });
 
   return (
     <ResponsiveContainer width="100%" height="100%">

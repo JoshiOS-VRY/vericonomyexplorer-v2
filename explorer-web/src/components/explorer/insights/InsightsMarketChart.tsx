@@ -15,13 +15,12 @@ import { ChartViewToggle } from '@/components/explorer/charts/ChartViewToggle';
 import {
   chartGridProps,
   chartXAxisProps,
-  chartYAxisProps,
-  paddedChartDomain,
+  niceYAxisProps,
 } from '@/components/explorer/charts/chartAxis';
 import { ThemedChartTooltip } from '@/components/explorer/charts/ThemedChartTooltip';
 import { InsightsChartPanel } from '@/components/explorer/charts/InsightsChartPanel';
 import { useChartTheme } from '@/hooks/useChartTheme';
-import { CHART_ANIMATION, CHART_MARGINS, formatCompactAxisValue } from '@/lib/chartVisuals';
+import { CHART_ANIMATION, CHART_MARGINS } from '@/lib/chartVisuals';
 import { fetchMarketHistoryClient } from '@/lib/insights/marketHistory';
 import { formatChartAxisDate } from '@/lib/chartDates';
 import {
@@ -48,11 +47,11 @@ export function InsightsMarketChart({ chainId }: { chainId: 'vrm' | 'vrc' }) {
   >([]);
   const [source, setSource] = useState<string>('unavailable');
 
-  const yAxis = chartYAxisProps(colors, {
-    width: 76,
-    tickFormatter: (value) => formatCompactAxisValue(Number(value)),
-    domain: paddedChartDomain(points.map((point) => point.value)),
-  });
+  const yAxis = niceYAxisProps(
+    colors,
+    points.map((point) => point.value),
+    { floor: 0, width: 76 }
+  );
 
   const load = useCallback(async () => {
     setLoading(true);

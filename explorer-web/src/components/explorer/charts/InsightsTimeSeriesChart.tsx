@@ -17,12 +17,11 @@ import {
 import {
   chartGridProps,
   chartXAxisProps,
-  chartYAxisProps,
-  paddedChartDomain,
+  niceYAxisProps,
 } from '@/components/explorer/charts/chartAxis';
 import { ThemedChartTooltip } from '@/components/explorer/charts/ThemedChartTooltip';
 import { useChartTheme } from '@/hooks/useChartTheme';
-import { CHART_ANIMATION, CHART_MARGINS, formatCompactAxisValue } from '@/lib/chartVisuals';
+import { CHART_ANIMATION, CHART_MARGINS } from '@/lib/chartVisuals';
 import type { InsightsChartView } from '@/lib/insightsChartConfig';
 
 export interface TimeSeriesPoint {
@@ -71,11 +70,7 @@ export function InsightsTimeSeriesChart({
 
   const grid = chartGridProps(colors);
   const xAxis = chartXAxisProps(colors);
-  const yAxis = chartYAxisProps(colors, {
-    width: 76,
-    tickFormatter: (value) => formatCompactAxisValue(Number(value)),
-    domain: paddedChartDomain(yDomainValues),
-  });
+  const yAxis = niceYAxisProps(colors, yDomainValues, { floor: 0, width: 76 });
   const tickFill = colors.fgSubtle || '#64748b';
   const axisStroke = colors.border || '#94a3b8';
 

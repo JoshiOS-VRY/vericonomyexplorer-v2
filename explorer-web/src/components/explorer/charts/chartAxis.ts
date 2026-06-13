@@ -134,6 +134,38 @@ export function formatIntegerAxisValue(value: number): string {
   return Math.round(value).toLocaleString(undefined, { maximumFractionDigits: 0 });
 }
 
+function seriesNeedsSubUnitAxis(values: number[]): boolean {
+  const finite = values.filter((value) => Number.isFinite(value));
+  if (!finite.length) return false;
+  const maxAbs = Math.max(...finite.map((value) => Math.abs(value)));
+  return maxAbs > 0 && maxAbs < 1;
+}
+
+export function niceYAxisProps(
+  colors: ChartThemeColors,
+  values: number[],
+  options?: {
+    floor?: number;
+    tickCount?: number;
+    width?: number;
+    allowDecimals?: boolean;
+    tickFormatter?: (value: number) => string;
+  }
+) {
+  const tickCount = options?.tickCount ?? 5;
+  const domain = niceChartDomain(values, { floor: options?.floor, tickCount });
+  const subUnit = seriesNeedsSubUnitAxis(values);
+
+  return chartYAxisProps(colors, {
+    width: options?.width ?? 76,
+    allowDecimals: options?.allowDecimals ?? subUnit,
+    tickFormatter:
+      options?.tickFormatter ?? (subUnit ? formatCompactAxisValue : formatIntegerAxisValue),
+    domain,
+    ticks: niceChartTicks(domain, tickCount),
+  });
+}
+
 export function paddedChartDomain(
   values: number[],
   paddingRatio = CHART_DOMAIN_PADDING_RATIO,
