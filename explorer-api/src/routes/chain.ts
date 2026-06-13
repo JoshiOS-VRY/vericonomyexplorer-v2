@@ -1,6 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 
-import { healthRateLimitRouteConfig, heavyRateLimitRouteConfig, liveReadRateLimitRouteConfig } from '../env.js';
+import {
+  healthRateLimitRouteConfig,
+  heavyRateLimitRouteConfig,
+  liveReadRateLimitRouteConfig,
+} from '../env.js';
 
 import {
   cacheKey,
@@ -251,16 +255,17 @@ export async function registerChainRoutes(app: FastifyInstance): Promise<void> {
     '/v1/:chain/summary/lite',
     { ...liveReadRateLimitRouteConfig },
     async (request, reply) => {
-    const chainId = parseChainId(request.params.chain);
+      const chainId = parseChainId(request.params.chain);
 
-    if (!chainId) {
-      return reply.code(400).send({ error: 'Invalid chain id' });
+      if (!chainId) {
+        return reply.code(400).send({ error: 'Invalid chain id' });
+      }
+
+      return swrFetch(summaryLiteCache, cacheKey(chainId, 'summary-lite'), () =>
+        fetchChainSummaryLite(chainId)
+      );
     }
-
-    return swrFetch(summaryLiteCache, cacheKey(chainId, 'summary-lite'), () =>
-      fetchChainSummaryLite(chainId)
-    );
-  });
+  );
 
   app.get<{ Params: { chain: string } }>(
     '/v1/:chain/health',
