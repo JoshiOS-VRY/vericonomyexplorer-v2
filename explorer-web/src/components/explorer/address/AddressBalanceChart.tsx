@@ -368,7 +368,11 @@ function CumulativeBalanceChart({
     width: 76,
     tickFormatter: (value: number) =>
       value.toLocaleString(undefined, { maximumFractionDigits: 4 }),
-    domain: paddedChartDomain(chartData.map((point) => point.balance)),
+    domain: paddedChartDomain(
+      chartData.map((point) => point.balance),
+      undefined,
+      { floor: 0 }
+    ),
   });
 
   return (

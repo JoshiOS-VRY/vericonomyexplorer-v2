@@ -48,7 +48,8 @@ export const CHART_DOMAIN_PADDING_RATIO = 0.08;
 
 export function paddedChartDomain(
   values: number[],
-  paddingRatio = CHART_DOMAIN_PADDING_RATIO
+  paddingRatio = CHART_DOMAIN_PADDING_RATIO,
+  options?: { floor?: number; ceiling?: number }
 ): [number, number] {
   const finite = values.filter((value) => Number.isFinite(value));
   if (finite.length === 0) return [0, 1];
@@ -58,12 +59,23 @@ export function paddedChartDomain(
 
   if (min === max) {
     const pad = Math.abs(min) * paddingRatio || paddingRatio;
-    return [min - pad, max + pad];
+    min -= pad;
+    max += pad;
+  } else {
+    const span = max - min;
+    const pad = span * paddingRatio;
+    min -= pad;
+    max += pad;
   }
 
-  const span = max - min;
-  const pad = span * paddingRatio;
-  return [min - pad, max + pad];
+  if (options?.floor != null) {
+    min = Math.max(options.floor, min);
+  }
+  if (options?.ceiling != null) {
+    max = Math.min(options.ceiling, max);
+  }
+
+  return [min, max];
 }
 
 export function chartYAxisProps(
