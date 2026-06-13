@@ -20,7 +20,6 @@ import type {
 } from '@/lib/api/types';
 import {
   LATEST_BLOCKS_COUNT,
-  LATEST_BLOCKS_POLL_MS,
   LATEST_BLOCKS_STRIP_COUNT,
 } from '@/lib/chainBlocksDisplay';
 import {

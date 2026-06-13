@@ -72,7 +72,7 @@ export function checkRateLimit(
 export function getBffRateLimitMax(): number {
   return readPositiveInt(
     process.env.EXPLORER_BFF_RATE_LIMIT_MAX ?? process.env.VCEXP_RATE_LIMIT_MAX,
-    120
+    20_000
   );
 }
 

@@ -80,23 +80,23 @@ export function getRateLimitWindowMs(): number {
 export function getRateLimitMax(): number {
   return readPositiveInt(
     process.env.VCEXP_RATE_LIMIT_MAX ?? process.env.BTCEXP_RATE_LIMIT_WINDOW_MAX_REQUESTS,
-    900
+    20_000
   );
 }
 
 export function getRateLimitCrawlerMax(): number {
   return readPositiveInt(
     process.env.VCEXP_RATE_LIMIT_CRAWLER_MAX ?? process.env.BTCEXP_RATE_LIMIT_CRAWLER_MAX_REQUESTS,
-    120
+    800
   );
 }
 
 export function getRateLimitHeavyMax(): number {
-  return readPositiveInt(process.env.VCEXP_RATE_LIMIT_HEAVY_MAX, 60);
+  return readPositiveInt(process.env.VCEXP_RATE_LIMIT_HEAVY_MAX, 600);
 }
 
 export function getRateLimitSseMax(): number {
-  return readPositiveInt(process.env.VCEXP_RATE_LIMIT_SSE_MAX, 8);
+  return readPositiveInt(process.env.VCEXP_RATE_LIMIT_SSE_MAX, 32);
 }
 
 export function getRateLimitAllowIps(): string[] {

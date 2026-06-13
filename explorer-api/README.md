@@ -66,10 +66,10 @@ Per-client limits apply to public `/v1/*` traffic. SSR and Docker-internal calls
 | Variable                               | Default | Purpose                                               |
 | -------------------------------------- | ------- | ----------------------------------------------------- |
 | `VCEXP_RATE_LIMIT_WINDOW_MINUTES`      | `15`    | Window length; set `-1` to disable                    |
-| `VCEXP_RATE_LIMIT_MAX`                 | `900`   | Max requests per IP per window                        |
-| `VCEXP_RATE_LIMIT_CRAWLER_MAX`         | `120`   | Max for known crawler user-agents                     |
-| `VCEXP_RATE_LIMIT_HEAVY_MAX`           | `60`    | Per-minute cap on search, richlist, utxos, etc.       |
-| `VCEXP_RATE_LIMIT_SSE_MAX`             | `8`     | Concurrent `/tip/stream` connections per IP per chain |
+| `VCEXP_RATE_LIMIT_MAX`                 | `20000` | Max requests per IP per window                        |
+| `VCEXP_RATE_LIMIT_CRAWLER_MAX`         | `800`   | Max for known crawler user-agents                     |
+| `VCEXP_RATE_LIMIT_HEAVY_MAX`           | `600`   | Per-minute cap on search, richlist, utxos, etc.       |
+| `VCEXP_RATE_LIMIT_SSE_MAX`             | `32`    | Concurrent `/tip/stream` connections per IP per chain |
 | `VCEXP_RATE_LIMIT_ALLOW_IPS`           | —       | Extra comma-separated allowlisted IPs                 |
 | `VCEXP_REDIS_URL` / `BTCEXP_REDIS_URL` | —       | Optional Redis store for multi-instance deployments   |
 

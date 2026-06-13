@@ -120,7 +120,7 @@ export function useLatestBlocksPoll(
     void refresh();
     const fastPoll = window.setInterval(() => {
       void refresh();
-    }, 1_000);
+    }, LATEST_BLOCKS_POLL_MS);
 
     return () => window.clearInterval(fastPoll);
   }, [chainId, indexingTip, refresh, visible]);

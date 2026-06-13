@@ -7,7 +7,7 @@ export const ENTITY_LIVE_POLL_MS = 10_000;
 export const CHAIN_SUMMARY_POLL_MS = 10_000;
 
 /** Latest blocks strip / chain blocks panel. */
-export const LATEST_BLOCKS_POLL_MS = 2_000;
+export const LATEST_BLOCKS_POLL_MS = 15_000;
 
 /** Home / insights network stats. */
 export const NETWORK_LIVE_POLL_MS = 10_000;
