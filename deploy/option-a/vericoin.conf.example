@@ -16,5 +16,8 @@ port=58684
 listen=1
 dbcache=512
 maxconnections=32
+# ElectrumX + explorer indexers can burst RPC; default work queue (128) is too small.
+rpcworkqueue=512
+rpcthreads=16
 zmqpubrawblock=tcp://127.0.0.1:28333
 zmqpubrawtx=tcp://127.0.0.1:28333

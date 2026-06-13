@@ -25,6 +25,13 @@ electrumx-vrm3.vericonomy.com  →  178.128.151.104
 
 ## Install
 
+Ensure `verium.conf` includes high-throughput RPC settings for ElectrumX (default queue depth 128 is too small):
+
+```ini
+rpcworkqueue=512
+rpcthreads=16
+```
+
 On the explorer droplet as root, from the repo root:
 
 ```bash

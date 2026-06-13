@@ -4,7 +4,7 @@ WORKDIR /app
 
 # explorer-web depends on the root package via file:..
 COPY package.json npm-shrinkwrap.json ./
-COPY packages/network-metrics /packages/network-metrics
+COPY packages/network-metrics ./packages/network-metrics
 COPY explorer-web/package.json explorer-web/package-lock.json ./explorer-web/
 
 WORKDIR /app/explorer-web
@@ -16,7 +16,7 @@ WORKDIR /app
 
 COPY package.json npm-shrinkwrap.json ./
 COPY explorer-web ./explorer-web
-COPY packages/network-metrics /packages/network-metrics
+COPY packages/network-metrics ./packages/network-metrics
 COPY --from=deps /app/explorer-web/node_modules ./explorer-web/node_modules
 
 WORKDIR /app/explorer-web
@@ -29,7 +29,7 @@ ENV VCEXP_FAST_API_HOST=explorer-fast-api
 ENV VCEXP_FAST_API_PORT=3003
 ENV BTCEXP_HOST=explorer-express
 ENV BTCEXP_PORT=3002
-RUN npm run build
+RUN npm run build:network-metrics && npx next build
 
 FROM node:20-alpine AS runner
 

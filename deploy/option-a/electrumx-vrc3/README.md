@@ -32,6 +32,8 @@ Initial index sync for ~7M blocks may take **1–3 days**. External TLS ports st
 
 ## Operations
 
+After restart, vrc3 builds a **header merkle cache** (~7M blocks) at high CPU for 30–90+ minutes. A `CPUQuota=350%` systemd cap keeps vrm3/veriumd responsive. Ensure `vericonomy.conf` includes `rpcworkqueue=512` and `rpcthreads=16` (see `vericoin.conf.example`).
+
 ```bash
 systemctl status electrumx-vrc3
 journalctl -u electrumx-vrc3 -f
