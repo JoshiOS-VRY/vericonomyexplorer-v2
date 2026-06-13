@@ -16,6 +16,7 @@ import {
   chartGridProps,
   chartXAxisProps,
   chartYAxisProps,
+  paddedChartDomain,
 } from '@/components/explorer/charts/chartAxis';
 import { ThemedChartTooltip } from '@/components/explorer/charts/ThemedChartTooltip';
 import { InsightsChartPanel } from '@/components/explorer/charts/InsightsChartPanel';
@@ -37,10 +38,6 @@ export function InsightsMarketChart({ chainId }: { chainId: 'vrm' | 'vrc' }) {
   const accentVar = getChainAccentVar(chainId);
   const grid = chartGridProps(colors);
   const xAxis = chartXAxisProps(colors);
-  const yAxis = chartYAxisProps(colors, {
-    width: 76,
-    tickFormatter: (value) => formatCompactAxisValue(Number(value)),
-  });
 
   const [period, setPeriod] = useState<AddressBalanceHistoryPeriodId>('30d');
   const [currency, setCurrency] = useState<'usd' | 'btc'>('usd');
@@ -50,6 +47,12 @@ export function InsightsMarketChart({ chainId }: { chainId: 'vrm' | 'vrc' }) {
     { label: string; startTime: number; endTime: number; value: number }[]
   >([]);
   const [source, setSource] = useState<string>('unavailable');
+
+  const yAxis = chartYAxisProps(colors, {
+    width: 76,
+    tickFormatter: (value) => formatCompactAxisValue(Number(value)),
+    domain: paddedChartDomain(points.map((point) => point.value)),
+  });
 
   const load = useCallback(async () => {
     setLoading(true);

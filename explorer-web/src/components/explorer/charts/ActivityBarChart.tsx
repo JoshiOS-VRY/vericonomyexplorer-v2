@@ -16,6 +16,7 @@ import {
   chartGridProps,
   chartXAxisProps,
   chartYAxisProps,
+  paddedChartDomain,
 } from '@/components/explorer/charts/chartAxis';
 import { CHART_ANIMATION, CHART_MARGINS } from '@/lib/chartVisuals';
 
@@ -49,9 +50,19 @@ export function ActivityBarChart({
   accentColor?: string;
 }) {
   const colors = useChartTheme();
+  const yDomainValues =
+    view === 'blocks'
+      ? blocksData.map((row) => row.blocks)
+      : activityData.map((row) =>
+          chainId === 'vrc' ? row.staked + row.received : row.mined + row.received
+        );
   const grid = chartGridProps(colors);
   const xAxis = chartXAxisProps(colors);
-  const yAxis = chartYAxisProps(colors, { allowDecimals: false, width: 76 });
+  const yAxis = chartYAxisProps(colors, {
+    allowDecimals: false,
+    width: 76,
+    domain: paddedChartDomain(yDomainValues),
+  });
   const tickFill = colors.fgSubtle || '#64748b';
 
   return (

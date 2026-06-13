@@ -43,12 +43,36 @@ export function chartXAxisProps(colors: ChartThemeColors) {
   };
 }
 
+/** Fraction of the data span added above max and below min on insights charts. */
+export const CHART_DOMAIN_PADDING_RATIO = 0.08;
+
+export function paddedChartDomain(
+  values: number[],
+  paddingRatio = CHART_DOMAIN_PADDING_RATIO
+): [number, number] {
+  const finite = values.filter((value) => Number.isFinite(value));
+  if (finite.length === 0) return [0, 1];
+
+  let min = Math.min(...finite);
+  let max = Math.max(...finite);
+
+  if (min === max) {
+    const pad = Math.abs(min) * paddingRatio || paddingRatio;
+    return [min - pad, max + pad];
+  }
+
+  const span = max - min;
+  const pad = span * paddingRatio;
+  return [min - pad, max + pad];
+}
+
 export function chartYAxisProps(
   colors: ChartThemeColors,
   options?: {
     allowDecimals?: boolean;
     tickFormatter?: (value: number) => string;
     width?: number;
+    domain?: [number, number];
   }
 ) {
   const tickColor = pickColor(colors, 'fgSubtle');
@@ -61,6 +85,7 @@ export function chartYAxisProps(
     tickFormatter:
       options?.tickFormatter ?? ((value: number) => formatCompactAxisValue(Number(value))),
     tickMargin: 6,
+    ...(options?.domain ? { domain: options.domain } : {}),
   };
 }
 

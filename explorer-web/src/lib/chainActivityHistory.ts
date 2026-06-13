@@ -1,5 +1,8 @@
 import { clientApiFetch } from '@/lib/api/client';
 import type { AddressBalanceHistoryPeriodId, ChainActivityHistoryResult } from '@/lib/api/types';
+import { CHAIN_ACTIVITY_HISTORY_POLL_MS } from '@/lib/liveDataConfig';
+
+export { CHAIN_ACTIVITY_HISTORY_POLL_MS };
 
 export const CHAIN_ACTIVITY_HISTORY_PERIODS: {
   id: AddressBalanceHistoryPeriodId;
@@ -29,7 +32,30 @@ export function getChainActivityHistoryMaxPoints(periodId: AddressBalanceHistory
   return CHAIN_ACTIVITY_HISTORY_PERIODS.find((item) => item.id === periodId)?.maxPoints ?? 120;
 }
 
-const activityHistoryClientCache = new Map<string, Promise<ChainActivityHistoryResult>>();
+export function isSameChainActivityHistory(
+  previous: ChainActivityHistoryResult | null,
+  next: ChainActivityHistoryResult
+): boolean {
+  if (!previous) {
+    return false;
+  }
+
+  const tailBuckets = (rows: ChainActivityHistoryResult['buckets']) =>
+    rows
+      .slice(-2)
+      .map((row) =>
+        [
+          row.startTime,
+          row.endTime,
+          row.minedCount,
+          row.stakedCount,
+          row.receivedCount,
+          row.blockCount,
+        ].join(':')
+      );
+
+  return tailBuckets(previous.buckets).join('|') === tailBuckets(next.buckets).join('|');
+}
 
 export async function fetchChainActivityHistoryClient(
   chainId: string,
@@ -42,17 +68,7 @@ export async function fetchChainActivityHistoryClient(
     search.set('since', String(since));
   }
 
-  const path = `/${chainId}/activity-history?${search.toString()}`;
-  const cached = activityHistoryClientCache.get(path);
-  if (cached) {
-    return cached;
-  }
-
-  const promise = clientApiFetch<ChainActivityHistoryResult>(path).finally(() => {
-    window.setTimeout(() => {
-      activityHistoryClientCache.delete(path);
-    }, 300_000);
-  });
-  activityHistoryClientCache.set(path, promise);
-  return promise;
+  return clientApiFetch<ChainActivityHistoryResult>(
+    `/${chainId}/activity-history?${search.toString()}`
+  );
 }

@@ -18,6 +18,7 @@ import {
   chartGridProps,
   chartXAxisProps,
   chartYAxisProps,
+  paddedChartDomain,
 } from '@/components/explorer/charts/chartAxis';
 import { ThemedChartTooltip } from '@/components/explorer/charts/ThemedChartTooltip';
 import { useChartTheme } from '@/hooks/useChartTheme';
@@ -63,11 +64,17 @@ export function InsightsTimeSeriesChart({
   const formatValue = (value: number) =>
     valueFormatter ? valueFormatter(value) : value.toLocaleString();
 
+  const yDomainValues = chartData.map((point) => point.value as number);
+  if (referenceValue != null && Number.isFinite(referenceValue)) {
+    yDomainValues.push(referenceValue);
+  }
+
   const grid = chartGridProps(colors);
   const xAxis = chartXAxisProps(colors);
   const yAxis = chartYAxisProps(colors, {
     width: 76,
     tickFormatter: (value) => formatCompactAxisValue(Number(value)),
+    domain: paddedChartDomain(yDomainValues),
   });
   const tickFill = colors.fgSubtle || '#64748b';
   const axisStroke = colors.border || '#94a3b8';

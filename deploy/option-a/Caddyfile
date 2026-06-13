@@ -5,6 +5,11 @@
 
 # Production + staging share the same Next.js + FastAPI stack.
 {$PUBLIC_DOMAIN}, {$STAGING_DOMAIN} {
+  # Wallet push API (light wallet APNs registration). Strip /push prefix.
+  handle_path /push/* {
+    reverse_proxy vericonomy-push-api:8080
+  }
+
   # API + SSE: bypass Next.js (rewrites are build-time) and avoid compressing event streams.
   # Application rate limits live in explorer-api (VCEXP_RATE_LIMIT_*). Optional coarse edge
   # limiting: https://caddyserver.com/docs/modules/http.handlers.rate_limit
@@ -33,4 +38,28 @@
 {$LEGACY_PUBLIC_DOMAIN} {
   encode zstd gzip
   reverse_proxy explorer-express:3002
+}
+
+# HTTP-only site for certbot webroot (no auto-HTTPS redirect on :80).
+# ElectrumX terminates TLS itself on 53002/53004.
+http://electrumx-vrm3.vericonomy.com {
+  root * /var/www/acme
+  handle /.well-known/acme-challenge/* {
+    file_server
+  }
+  respond 404
+}
+
+http://electrumx-vrc3.vericonomy.com {
+  root * /var/www/acme
+  handle /.well-known/acme-challenge/* {
+    file_server
+  }
+  respond 404
+}
+
+# iOS wallet push notification registration API (dedicated hostname).
+# Point push.vericonomy.com DNS to this host (same as explorer) when ready.
+push.vericonomy.com {
+  reverse_proxy vericonomy-push-api:8080
 }

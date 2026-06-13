@@ -164,7 +164,7 @@ export const chainHealthCache = createSwrCache({
 export const activityHistoryCache = createSwrCache({
   max: 32,
 
-  ttlMs: 300_000,
+  ttlMs: 60_000,
 
   fetch: async (key, signal) => {
     if (signal.aborted) throw new Error('aborted');

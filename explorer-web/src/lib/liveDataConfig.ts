@@ -18,5 +18,8 @@ export const MARKET_LIVE_POLL_MS = 60_000;
 /** Address balance chart (aligned with entity poll). */
 export const ADDRESS_BALANCE_HISTORY_POLL_MS = ENTITY_LIVE_POLL_MS;
 
+/** Chain activity chart (hourly buckets; cron refreshes every minute). */
+export const CHAIN_ACTIVITY_HISTORY_POLL_MS = 60_000;
+
 /** Poll block/tx detail when within this many blocks of chain tip. */
 export const NEAR_TIP_BLOCK_THRESHOLD = 20;

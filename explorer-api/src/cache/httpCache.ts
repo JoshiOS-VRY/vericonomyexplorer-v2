@@ -18,7 +18,7 @@ const CACHE_RULES: Array<{ pattern: RegExp; maxAge: number; swr: number }> = [
   { pattern: /^\/v1\/[^/]+\/blocks\/latest/, maxAge: 5, swr: 30 },
   { pattern: /^\/v1\/[^/]+\/blocks$/, maxAge: 5, swr: 30 },
   { pattern: /^\/v1\/[^/]+\/insights\//, maxAge: 60, swr: 300 },
-  { pattern: /^\/v1\/[^/]+\/activity-history/, maxAge: 300, swr: 600 },
+  { pattern: /^\/v1\/[^/]+\/activity-history/, maxAge: 60, swr: 120 },
 ];
 
 export function applyCacheHeaders(request: FastifyRequest, reply: FastifyReply): void {

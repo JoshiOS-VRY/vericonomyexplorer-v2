@@ -6,6 +6,7 @@ import { ChartViewToggle } from '@/components/explorer/charts/ChartViewToggle';
 import { ActivityBarChart } from '@/components/explorer/charts/ActivityBarChart';
 import { InsightsChartPanel } from '@/components/explorer/charts/InsightsChartPanel';
 import { fetchChainActivityHistoryClient } from '@/lib/chainActivityHistory';
+import { useChainActivityHistoryPoll } from '@/hooks/useChainActivityHistoryPoll';
 import {
   formatInsightsFooter,
   getChainAccentVar,
@@ -50,6 +51,14 @@ export function ChainActivityInsightsChart({ chainId }: { chainId: 'vrm' | 'vrc'
   useEffect(() => {
     void loadPeriod('30d');
   }, [loadPeriod]);
+
+  useChainActivityHistoryPoll({
+    chainId,
+    period,
+    history,
+    onHistory: setHistory,
+    enabled: Boolean(history),
+  });
 
   const periodMeta = INSIGHTS_HISTORY_PERIODS.find((item) => item.id === period);
   const panelTitle = view === 'blocks' ? 'Block production' : 'Chain activity';

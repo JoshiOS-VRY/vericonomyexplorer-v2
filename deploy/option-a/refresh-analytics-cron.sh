@@ -6,8 +6,9 @@
 # each rollup's persisted watermark. flock guarantees single-flight so a long
 # tick never overlaps the next.
 #
-# Install (host crontab), every minute:
-#   * * * * * /root/vericonomyexplorer-v2/deploy/option-a/refresh-analytics-cron.sh >> /root/refresh-analytics.log 2>&1
+# Install (host crontab), every minute. Use `bash` so a git pull that drops the
+# executable bit does not silently stop analytics refresh:
+#   * * * * * bash /root/vericonomyexplorer-v2/deploy/option-a/refresh-analytics-cron.sh >> /root/refresh-analytics.log 2>&1
 set -euo pipefail
 
 PROJECT_DIR="/root/vericonomyexplorer-v2"

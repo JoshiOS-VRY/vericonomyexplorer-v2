@@ -10,6 +10,7 @@ import {
   CHAIN_ACTIVITY_HISTORY_PERIODS,
   fetchChainActivityHistoryClient,
 } from '@/lib/chainActivityHistory';
+import { useChainActivityHistoryPoll } from '@/hooks/useChainActivityHistoryPoll';
 import { formatInsightsFooter, getChainAccentVar } from '@/lib/insightsChartConfig';
 import type {
   AddressBalanceHistoryPeriodId,
@@ -56,6 +57,17 @@ export function ChainActivityChart({ chainId }: { chainId: ChainId }) {
   useEffect(() => {
     void loadPeriod('30d');
   }, [loadPeriod]);
+
+  useChainActivityHistoryPoll({
+    chainId,
+    period,
+    history,
+    onHistory: setHistory,
+    onDefaultHistory: (next) => {
+      defaultHistoryRef.current = next;
+    },
+    enabled: Boolean(history),
+  });
 
   const handlePeriodChange = (next: AddressBalanceHistoryPeriodId) => {
     if (next === period || loading) {

@@ -80,6 +80,7 @@ services:
       - ./deploy/option-a/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+      - /var/www/acme:/var/www/acme:ro
     depends_on:
       - explorer-web
       - explorer-express
