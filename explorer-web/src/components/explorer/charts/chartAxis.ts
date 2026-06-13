@@ -46,6 +46,94 @@ export function chartXAxisProps(colors: ChartThemeColors) {
 /** Fraction of the data span added above max and below min on insights charts. */
 export const CHART_DOMAIN_PADDING_RATIO = 0.08;
 
+const NICE_STEP_THRESHOLDS = [1, 2, 5, 10] as const;
+
+function niceStep(range: number, tickCount = 5): number {
+  if (!Number.isFinite(range) || range <= 0) {
+    return 1;
+  }
+
+  const rough = range / Math.max(tickCount - 1, 1);
+  const magnitude = 10 ** Math.floor(Math.log10(rough));
+  const normalized = rough / magnitude;
+  let niceUnit = NICE_STEP_THRESHOLDS[NICE_STEP_THRESHOLDS.length - 1];
+
+  for (const threshold of NICE_STEP_THRESHOLDS) {
+    if (normalized <= threshold) {
+      niceUnit = threshold;
+      break;
+    }
+  }
+
+  return niceUnit * magnitude;
+}
+
+function snapDown(value: number, step: number): number {
+  return Math.floor(value / step) * step;
+}
+
+function snapUp(value: number, step: number): number {
+  return Math.ceil(value / step) * step;
+}
+
+/** Padded domain with min/max snapped to visually round tick steps. */
+export function niceChartDomain(
+  values: number[],
+  options?: {
+    floor?: number;
+    tickCount?: number;
+    paddingRatio?: number;
+  }
+): [number, number] {
+  const tickCount = options?.tickCount ?? 5;
+  const [paddedMin, paddedMax] = paddedChartDomain(
+    values,
+    options?.paddingRatio ?? CHART_DOMAIN_PADDING_RATIO,
+    { floor: options?.floor }
+  );
+
+  let min = paddedMin;
+  let max = paddedMax;
+
+  if (min === max) {
+    const step = niceStep(Math.abs(min) || 1, tickCount);
+    min -= step;
+    max += step;
+  }
+
+  const step = niceStep(max - min, tickCount);
+  min = snapDown(min, step);
+  max = snapUp(max, step);
+
+  if (options?.floor != null) {
+    min = Math.max(options.floor, min);
+  }
+
+  if (min >= max) {
+    max = min + step;
+  }
+
+  return [min, max];
+}
+
+export function niceChartTicks(domain: [number, number], tickCount = 5): number[] {
+  const [min, max] = domain;
+  const step = niceStep(max - min, tickCount);
+  const start = snapDown(min, step);
+  const ticks: number[] = [];
+
+  for (let tick = start; tick <= max + step * 1e-9; tick += step) {
+    ticks.push(step >= 1 ? Math.round(tick) : Number(tick.toPrecision(12)));
+  }
+
+  return ticks;
+}
+
+export function formatIntegerAxisValue(value: number): string {
+  if (!Number.isFinite(value)) return '—';
+  return Math.round(value).toLocaleString(undefined, { maximumFractionDigits: 0 });
+}
+
 export function paddedChartDomain(
   values: number[],
   paddingRatio = CHART_DOMAIN_PADDING_RATIO,
@@ -85,6 +173,7 @@ export function chartYAxisProps(
     tickFormatter?: (value: number) => string;
     width?: number;
     domain?: [number, number];
+    ticks?: number[];
   }
 ) {
   const tickColor = pickColor(colors, 'fgSubtle');
@@ -98,6 +187,7 @@ export function chartYAxisProps(
       options?.tickFormatter ?? ((value: number) => formatCompactAxisValue(Number(value))),
     tickMargin: 6,
     ...(options?.domain ? { domain: options.domain } : {}),
+    ...(options?.ticks ? { ticks: options.ticks } : {}),
   };
 }
 
