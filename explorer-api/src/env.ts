@@ -96,7 +96,7 @@ export function getRateLimitHeavyMax(): number {
 }
 
 export function getRateLimitSseMax(): number {
-  return readPositiveInt(process.env.VCEXP_RATE_LIMIT_SSE_MAX, 32);
+  return readPositiveInt(process.env.VCEXP_RATE_LIMIT_SSE_MAX, 64);
 }
 
 export function getRateLimitAllowIps(): string[] {
@@ -128,7 +128,7 @@ export const healthRateLimitRouteConfig = {
   },
 } as const;
 
-/** Cached live-read routes (blocks/latest, summary/lite, home/network). */
+/** Cached live-read routes (blocks/latest, summary/lite, home/network/market, tip). */
 export const liveReadRateLimitRouteConfig = {
   config: {
     rateLimit: false,

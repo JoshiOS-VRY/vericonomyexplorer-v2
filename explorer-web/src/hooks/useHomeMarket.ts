@@ -1,7 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { useTipStream } from '@/components/explorer/TipStreamProvider';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchHomeMarket } from '@/lib/api/client';
 import { usePageVisible } from '@/hooks/usePageVisible';
 import type { HomeMarketPayload } from '@/lib/api/types';
@@ -9,16 +8,17 @@ import { MARKET_LIVE_POLL_MS } from '@/lib/liveDataConfig';
 
 export function useHomeMarket(initial: HomeMarketPayload) {
   const visible = usePageVisible();
-  const { subscribe } = useTipStream('vrm');
   const [market, setMarket] = useState(initial);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inFlightRef = useRef(false);
 
   const refresh = useCallback(async () => {
-    if (!visible) {
+    if (!visible || inFlightRef.current) {
       return;
     }
 
+    inFlightRef.current = true;
     setIsRefreshing(true);
     try {
       const next = await fetchHomeMarket();
@@ -27,6 +27,7 @@ export function useHomeMarket(initial: HomeMarketPayload) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to refresh market data');
     } finally {
+      inFlightRef.current = false;
       setIsRefreshing(false);
     }
   }, [visible]);
@@ -38,23 +39,14 @@ export function useHomeMarket(initial: HomeMarketPayload) {
 
     void refresh();
 
-    const unsubVrm = subscribe('vrm', () => {
-      void refresh();
-    });
-    const unsubVrc = subscribe('vrc', () => {
-      void refresh();
-    });
-
     const timer = window.setInterval(() => {
       void refresh();
     }, MARKET_LIVE_POLL_MS);
 
     return () => {
-      unsubVrm();
-      unsubVrc();
       window.clearInterval(timer);
     };
-  }, [refresh, subscribe, visible]);
+  }, [refresh, visible]);
 
   return {
     vrmMarket: market.vrm,

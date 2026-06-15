@@ -129,7 +129,7 @@ export async function registerHomeRoutes(app: FastifyInstance): Promise<void> {
     }
   });
 
-  app.get('/v1/home/market', async () => {
+  app.get('/v1/home/market', { ...liveReadRateLimitRouteConfig }, async () => {
     const stale = homeMarketCache.get('market', { allowStale: true }) as
       | Record<string, unknown>
       | undefined;
