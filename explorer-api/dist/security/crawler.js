@@ -14,7 +14,7 @@ const crawlerBotUserAgentStrings = {
     moz: /dotbot/i,
     semrush: /SemrushBot/i,
     majestic: /MJ12bot/i,
-    "python-requests": /python-requests/i,
+    'python-requests': /python-requests/i,
     openai: /OAI-SearchBot|GPTBot|ChatGPT-User/i,
     unidentifiedCrawler: /Test Certificate Info/i,
     amazon: /amazonbot/i,

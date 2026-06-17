@@ -1,4 +1,4 @@
-import { VRM_TARGET_BLOCK_TIME_SEC } from "./constants.js";
+import { VRM_POW_WORK_FACTOR, VRM_TARGET_BLOCK_TIME_SEC } from "./constants.js";
 
 /** H/s → kH/min (Verium ecosystem display unit). */
 export function hashPerSecToKhPerMin(hashPerSec: number): number {
@@ -10,13 +10,13 @@ export function khPerMinToHashPerSec(khPerMin: number): number {
   return khPerMin * (1000 / 60);
 }
 
-/** Difficulty → H/s using Verium target block time. */
+/** Difficulty → H/s at a fixed target block time (static fallback). */
 export function difficultyToHashPerSec(
   difficulty: number,
   targetBlockTimeSec = VRM_TARGET_BLOCK_TIME_SEC,
 ): number | null {
   if (!Number.isFinite(difficulty) || difficulty <= 0) return null;
-  const hashPerSec = (difficulty * 2 ** 32) / targetBlockTimeSec;
+  const hashPerSec = (difficulty * VRM_POW_WORK_FACTOR) / targetBlockTimeSec;
   return hashPerSec > 0 ? hashPerSec : null;
 }
 

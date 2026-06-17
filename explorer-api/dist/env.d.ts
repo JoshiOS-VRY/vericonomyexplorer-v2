@@ -29,3 +29,9 @@ export declare const healthRateLimitRouteConfig: {
         readonly rateLimit: false;
     };
 };
+/** Cached live-read routes (blocks/latest, summary/lite, home/network/market, tip). */
+export declare const liveReadRateLimitRouteConfig: {
+    readonly config: {
+        readonly rateLimit: false;
+    };
+};

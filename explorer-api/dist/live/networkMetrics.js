@@ -1,13 +1,13 @@
-import path from "node:path";
-import { createRequire } from "node:module";
-import { repoRoot } from "../env.js";
-import { getAddressCount, getWritableDb } from "../data/writableDb.js";
-import { fetchVrcNetworkStats, fetchVrmNetworkStats } from "../network/index.js";
-const requireRoot = createRequire(path.join(repoRoot, "package.json"));
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import { repoRoot } from '../env.js';
+import { getAddressCount, getWritableDb } from '../data/writableDb.js';
+import { fetchVrcNetworkStats, fetchVrmNetworkStats } from '../network/index.js';
+const requireRoot = createRequire(path.join(repoRoot, 'package.json'));
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const networkMetrics = requireRoot("./app/indexerV2/networkMetrics.js");
+const networkMetrics = requireRoot('./app/indexerV2/networkMetrics.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const supplyHistory = requireRoot("./app/indexerV2/supplyHistory.js");
+const supplyHistory = requireRoot('./app/indexerV2/supplyHistory.js');
 async function safeIndexedSupply(db, chainId, height) {
     if (height == null) {
         return null;
@@ -22,7 +22,7 @@ async function safeIndexedSupply(db, chainId, height) {
     }
 }
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const periodStats = requireRoot("./app/indexerV2/periodStats.js");
+const periodStats = requireRoot('./app/indexerV2/periodStats.js');
 const lastRecordedBucket = new Map();
 export async function recordNetworkMetricSnapshot(chainId) {
     const now = Math.floor(Date.now() / 1000);
@@ -33,7 +33,7 @@ export async function recordNetworkMetricSnapshot(chainId) {
     }
     const addressCount = await getAddressCount(chainId);
     const db = getWritableDb();
-    if (chainId === "vrm") {
+    if (chainId === 'vrm') {
         const stats = await fetchVrmNetworkStats();
         const indexedSupply = await safeIndexedSupply(db, chainId, stats.blocks);
         await networkMetrics.upsertNetworkMetricBucket(db, chainId, {
@@ -64,7 +64,7 @@ export async function recordNetworkMetricSnapshot(chainId) {
 }
 export function registerNetworkMetricSnapshots() {
     // Import lazily to avoid circular deps at module load.
-    void import("../cache/tipRefresh.js").then(({ registerChainTipRefresh }) => {
+    void import('../cache/tipRefresh.js').then(({ registerChainTipRefresh }) => {
         registerChainTipRefresh(async (chainId) => {
             await recordNetworkMetricSnapshot(chainId).catch(() => undefined);
         });

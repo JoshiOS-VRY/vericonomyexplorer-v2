@@ -1,5 +1,5 @@
-import type { ChainId, TipState } from "../types.js";
-import { TipBroker } from "./tipBroker.js";
+import type { ChainId, TipState } from '../types.js';
+import { TipBroker } from './tipBroker.js';
 export declare function initBrokers(): Promise<void>;
 export declare function stopBrokers(): Promise<void>;
 export declare function getBroker(chainId: ChainId): TipBroker;

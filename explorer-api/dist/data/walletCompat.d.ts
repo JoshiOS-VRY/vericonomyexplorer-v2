@@ -1,4 +1,4 @@
-import type { ChainId } from "../types.js";
+import type { ChainId } from '../types.js';
 /** Legacy `ExplorerStats` shape (snake_case) the wallet deserializes directly. */
 export interface WalletStats {
     network_hash: number | null;

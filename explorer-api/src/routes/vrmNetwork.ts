@@ -40,7 +40,7 @@ function rpcCall(): RpcCall {
 
 async function fetchVrmNetworkHashratePayload(): Promise<VrmNetworkHashratePayload> {
   const call = rpcCall();
-  const resolved = await fetchCanonicalVrmHashrate(call, { include7d: true });
+  const resolved = await fetchCanonicalVrmHashrate(call);
 
   let difficulty: number | null = null;
   try {

@@ -1,12 +1,11 @@
-import { type HashrateSource } from "@vericonomy/network-metrics";
-import { type RpcCall } from "./stats.js";
+import { type HashrateSource } from '@vericonomy/network-metrics';
+import { type RpcCall } from './stats.js';
 export type CanonicalVrmHashrate = {
     hashPerSec: number | null;
     hashrateKhPerMin: number | null;
     source: HashrateSource;
 };
 export type CanonicalVrmHashrateOptions = {
-    include7d?: boolean;
     /** Skip duplicate RPC when caller already fetched getmininginfo. */
     miningInfo?: unknown | null;
     /** Skip duplicate RPC when caller already fetched getblockchaininfo. */

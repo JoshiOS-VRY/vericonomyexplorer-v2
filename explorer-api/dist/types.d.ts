@@ -1,4 +1,4 @@
-export type ChainId = "vrm" | "vrc";
+export type ChainId = 'vrm' | 'vrc';
 export interface TipState {
     height: number;
     hash: string;

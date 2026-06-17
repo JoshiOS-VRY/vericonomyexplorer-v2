@@ -1,4 +1,4 @@
-import { invalidateChain, safeCacheDelete } from "./swrCache.js";
+import { invalidateChain, safeCacheDelete } from './swrCache.js';
 const globalCaches = new Set();
 const chainScopedCaches = new Set();
 export function registerGlobalCache(cache) {
@@ -21,5 +21,5 @@ export function invalidateAllChainCaches(chainId) {
 }
 export function invalidateAllTipCaches(chainId) {
     invalidateAllChainCaches(chainId);
-    invalidateGlobalCaches(["landing", "home", "dashboard", "health", "shell"]);
+    invalidateGlobalCaches(['landing', 'home', 'dashboard', 'health', 'shell']);
 }

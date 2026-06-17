@@ -1,6 +1,6 @@
-import { createRequire } from "node:module";
-import { repoRoot } from "../env.js";
-import { createRpcPool } from "./pool.js";
+import { createRequire } from 'node:module';
+import { repoRoot } from '../env.js';
+import { createRpcPool } from './pool.js';
 const require = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const chainConfig = require(`${repoRoot}/app/indexerV2/chainConfig.js`);

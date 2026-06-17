@@ -47,9 +47,11 @@ async function fetchIndexedSupply(chainId: ChainId, height: number): Promise<num
 
 function mapHashrateSource(source: string): VrmNetworkStats['hashrateSource'] {
   if (
+    source === 'recent_blocks' ||
+    source === 'blocks_per_hour' ||
+    source === 'recent_blocks_extended' ||
     source === 'networkhashps' ||
     source === 'nethashrate' ||
-    source === 'getnetworkhashps' ||
     source === 'difficulty'
   ) {
     return source;
@@ -68,7 +70,6 @@ export async function fetchVrmNetworkStatsLite(): Promise<VrmNetworkStats> {
     ]);
 
     const hashrateResolved = await fetchCanonicalVrmHashrate(call, {
-      include7d: false,
       miningInfo,
       blockchainInfo,
     });

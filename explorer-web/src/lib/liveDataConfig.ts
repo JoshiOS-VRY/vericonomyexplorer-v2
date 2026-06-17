@@ -9,8 +9,8 @@ export const CHAIN_SUMMARY_POLL_MS = 15_000;
 /** Latest blocks strip / chain blocks panel. */
 export const LATEST_BLOCKS_POLL_MS = 15_000;
 
-/** Home / insights network stats. */
-export const NETWORK_LIVE_POLL_MS = 15_000;
+/** Home / insights network stats (hashrate, difficulty, block time). */
+export const NETWORK_LIVE_POLL_MS = 10_000;
 
 /** Home market quotes (external API — slower cadence). */
 export const MARKET_LIVE_POLL_MS = 60_000;

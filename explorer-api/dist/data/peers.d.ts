@@ -1,4 +1,4 @@
-import type { ChainId } from "../types.js";
+import type { ChainId } from '../types.js';
 export interface PeerEntry {
     id: number;
     address: string;

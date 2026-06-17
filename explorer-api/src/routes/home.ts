@@ -12,6 +12,7 @@ import {
 } from '../data/home.js';
 import { fetchLandingData } from '../data/legacy.js';
 import { withTimeout } from '../util/timeout.js';
+import { NETWORK_HASHRATE_POLL_MS } from '@vericonomy/network-metrics';
 
 const homeNetworkRouteTimeoutMs = Number(process.env.VCEXP_HOME_NETWORK_ROUTE_TIMEOUT_MS ?? 4_000);
 const homeMarketRouteTimeoutMs = Number(process.env.VCEXP_HOME_MARKET_ROUTE_TIMEOUT_MS ?? 4_000);
@@ -39,7 +40,7 @@ const homeShellCache = createSwrCache({
 
 const homeNetworkCache = createSwrCache({
   max: 4,
-  ttlMs: 30_000,
+  ttlMs: NETWORK_HASHRATE_POLL_MS,
   fetch: async (_key, signal) => {
     if (signal.aborted) throw new Error('aborted');
     const data = await fetchHomeNetwork();

@@ -1,5 +1,5 @@
-import { LRUCache } from "lru-cache";
-import { isSqliteBusyError } from "../errors.js";
+import { LRUCache } from 'lru-cache';
+import { isSqliteBusyError } from '../errors.js';
 export function getApiCacheTtlMs(defaultTtlMs) {
     const configured = Number(process.env.VCEXP_API_CACHE_TTL_MS);
     if (Number.isFinite(configured) && configured > 0) {
@@ -19,8 +19,8 @@ export function createSwrCache(options) {
         fetchMethod: async (key, _staleValue, { signal }) => options.fetch(key, signal),
     });
 }
-export function cacheKey(chainId, resource, suffix = "") {
-    return `${chainId}:${resource}${suffix ? `:${suffix}` : ""}`;
+export function cacheKey(chainId, resource, suffix = '') {
+    return `${chainId}:${resource}${suffix ? `:${suffix}` : ''}`;
 }
 export function safeCacheDelete(cache, key) {
     try {
@@ -44,7 +44,7 @@ export async function swrFetch(cache, key, fallback) {
         return (data ?? (await fallback()));
     }
     catch (err) {
-        if (err instanceof Error && err.message === "deleted") {
+        if (err instanceof Error && err.message === 'deleted') {
             return fallback();
         }
         if (isSqliteBusyError(err)) {

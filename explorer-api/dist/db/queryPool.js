@@ -1,14 +1,14 @@
-import os from "node:os";
-import { Worker } from "node:worker_threads";
-import path from "node:path";
-import { loadEnv, repoRoot } from "../env.js";
-import { isSqliteBusyError, WorkerTimeoutError } from "../errors.js";
+import os from 'node:os';
+import { Worker } from 'node:worker_threads';
+import path from 'node:path';
+import { loadEnv, repoRoot } from '../env.js';
+import { isSqliteBusyError, WorkerTimeoutError } from '../errors.js';
 loadEnv();
 /** Entity lookups that must stay fast even when summary/dashboard queries saturate workers. */
 const FAST_QUERY_METHODS = new Set([
-    "getTransaction",
-    "getBlockIndexed",
-    "getTransactionRelatedAddresses",
+    'getTransaction',
+    'getBlockIndexed',
+    'getTransactionRelatedAddresses',
 ]);
 const METHOD_PRIORITY = {
     getTransaction: 0,
@@ -58,14 +58,14 @@ const mainWorkerCount = Math.max(1, totalWorkerCount - fastWorkerCount);
 const defaultWorkerTimeoutMs = Number(process.env.VCEXP_API_DB_WORKER_TIMEOUT_MS ?? 45_000);
 const sqliteBusyRetryAttempts = Number(process.env.VCEXP_SQLITE_BUSY_RETRY_ATTEMPTS ?? 4);
 const sqliteBusyRetryDelayMs = Number(process.env.VCEXP_SQLITE_BUSY_RETRY_DELAY_MS ?? 75);
-const workerFile = path.join(repoRoot, "explorer-api", "src", "db", "queryWorker.cjs");
+const workerFile = path.join(repoRoot, 'explorer-api', 'src', 'db', 'queryWorker.cjs');
 function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
 }
 export function resolveQueryPriority(method, queryOptions = {}) {
-    if (typeof queryOptions.priority === "number") {
+    if (typeof queryOptions.priority === 'number') {
         return queryOptions.priority;
     }
     return METHOD_PRIORITY[method] ?? 1;
@@ -88,7 +88,7 @@ class QueryWorkerSlot {
         const worker = new Worker(workerFile, {
             env: process.env,
         });
-        worker.on("message", (message) => {
+        worker.on('message', (message) => {
             if (message.ready) {
                 this.ready = true;
                 this.respawning = false;
@@ -110,14 +110,14 @@ class QueryWorkerSlot {
             this.busy = false;
             this.pump();
         });
-        worker.on("error", (error) => {
+        worker.on('error', (error) => {
             this.failPending(error instanceof Error ? error : new Error(String(error)));
             if (!this.terminated) {
                 this.onFatalError();
                 this.respawn();
             }
         });
-        worker.on("exit", (code) => {
+        worker.on('exit', (code) => {
             if (code !== 0 && !this.terminated && !this.respawning) {
                 this.failPending(new Error(`Query worker exited with code ${code}`));
                 this.onFatalError();
@@ -232,7 +232,7 @@ class QueryPool {
     }
     run(method, args, options = {}, timeoutMs = defaultWorkerTimeoutMs, priority = 1) {
         if (this.slots.length === 0) {
-            return Promise.reject(new Error("Query worker pool is not initialized"));
+            return Promise.reject(new Error('Query worker pool is not initialized'));
         }
         let slot = this.slots[0];
         let lowestDepth = slot.getQueueDepth();
@@ -279,10 +279,7 @@ export const queryPool = {
         return getQueryPoolForMethod(method).run(method, args, options, timeoutMs, priority);
     },
     async terminate() {
-        await Promise.all([
-            fastQueryPoolInstance?.terminate(),
-            mainQueryPoolInstance?.terminate(),
-        ]);
+        await Promise.all([fastQueryPoolInstance?.terminate(), mainQueryPoolInstance?.terminate()]);
         fastQueryPoolInstance = null;
         mainQueryPoolInstance = null;
     },
@@ -310,8 +307,8 @@ export async function runIndexerQuery(method, args, options = {}, queryOptions =
                     continue;
                 }
                 if (queryOptions.retryOnWorkerError !== false && error instanceof Error) {
-                    const retriable = error.message.includes("Query worker exited") ||
-                        error.message.includes("Unknown query worker method");
+                    const retriable = error.message.includes('Query worker exited') ||
+                        error.message.includes('Unknown query worker method');
                     if (retriable) {
                         return (await queryPool.run(method, args, options, timeoutMs, priority));
                     }

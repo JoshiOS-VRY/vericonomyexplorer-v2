@@ -1,19 +1,19 @@
-import { runIndexerQuery } from "../db/queryPool.js";
-import { rpc } from "../rpc/index.js";
-import { fetchCanonicalVrmHashrate } from "./hashrateLive.js";
-import { fetchOnChainSupply, getMaxSupply, parseRpcNumber, parseVrcMiningInfo, resolveVrmBlockTimeMinutes, supplyFromBlockchainInfo, } from "./stats.js";
+import { runIndexerQuery } from '../db/queryPool.js';
+import { rpc } from '../rpc/index.js';
+import { fetchCanonicalVrmHashrate } from './hashrateLive.js';
+import { fetchOnChainSupply, getMaxSupply, parseRpcNumber, parseVrcMiningInfo, resolveVrmBlockTimeMinutes, supplyFromBlockchainInfo, } from './stats.js';
 function rpcCall(chainId) {
     const client = rpc(chainId);
     return (method, params = [], timeoutMs) => client.call(method, params, timeoutMs);
 }
 function parseLegacyInterestRate(interestRate) {
-    if (typeof interestRate === "number" && Number.isFinite(interestRate)) {
+    if (typeof interestRate === 'number' && Number.isFinite(interestRate)) {
         return interestRate;
     }
-    if (interestRate && typeof interestRate === "object") {
+    if (interestRate && typeof interestRate === 'object') {
         const rate = interestRate.interest ??
             interestRate.rate;
-        if (typeof rate === "number" && Number.isFinite(rate)) {
+        if (typeof rate === 'number' && Number.isFinite(rate)) {
             return rate;
         }
     }
@@ -22,13 +22,13 @@ function parseLegacyInterestRate(interestRate) {
 function parseLegacyStakingInfo(stakingInfo) {
     const staking = stakingInfo;
     return {
-        netStakeWeight: typeof staking?.netstakeweight === "number" ? staking.netstakeweight : null,
-        expectedStakeTimeSeconds: typeof staking?.expectedtime === "number" ? staking.expectedtime : null,
+        netStakeWeight: typeof staking?.netstakeweight === 'number' ? staking.netstakeweight : null,
+        expectedStakeTimeSeconds: typeof staking?.expectedtime === 'number' ? staking.expectedtime : null,
     };
 }
 async function fetchIndexedTipHeight(chainId) {
     try {
-        const summary = (await runIndexerQuery("getChainSummaryLiteIndexed", [chainId], {
+        const summary = (await runIndexerQuery('getChainSummaryLiteIndexed', [chainId], {
             skipLiveBlocks: true,
             skipLiveRpc: true,
             limit: 1,
@@ -41,13 +41,11 @@ async function fetchIndexedTipHeight(chainId) {
 }
 async function fetchIndexedSupply(chainId, height) {
     try {
-        const result = (await runIndexerQuery("getIndexedSupplyAtHeight", [chainId], {
+        const result = (await runIndexerQuery('getIndexedSupplyAtHeight', [chainId], {
             height,
         }));
         const supply = result?.supply;
-        return typeof supply === "number" && Number.isFinite(supply) && supply > 0
-            ? supply
-            : null;
+        return typeof supply === 'number' && Number.isFinite(supply) && supply > 0 ? supply : null;
     }
     catch {
         return null;
@@ -57,14 +55,14 @@ async function resolveVrmSupply(call, blocks, blockchainInfo) {
     if (blocks == null) {
         return null;
     }
-    const rpcSupply = await fetchOnChainSupply("vrm", call, blocks, blockchainInfo);
+    const rpcSupply = await fetchOnChainSupply('vrm', call, blocks, blockchainInfo);
     if (rpcSupply != null && rpcSupply > 0) {
         return rpcSupply;
     }
     // Coinbase mint sum from the indexer — accurate when RPC UTXO set is unavailable.
     // Do not use estimatedSupplyAtHeight for VRM: Verium PoWT rewards are not approximated
     // by the placeholder blockRewardFunction and would skew supply (~275K vs ~3.7M).
-    return fetchIndexedSupply("vrm", blocks);
+    return fetchIndexedSupply('vrm', blocks);
 }
 async function resolveVrcSupply(call, blocks, blockchainInfo) {
     if (blocks == null) {
@@ -74,25 +72,27 @@ async function resolveVrcSupply(call, blocks, blockchainInfo) {
     if (fromChain != null && fromChain > 0) {
         return fromChain;
     }
-    const rpcSupply = await fetchOnChainSupply("vrc", call, blocks, blockchainInfo);
+    const rpcSupply = await fetchOnChainSupply('vrc', call, blocks, blockchainInfo);
     if (rpcSupply != null && rpcSupply > 0) {
         return rpcSupply;
     }
-    return fetchIndexedSupply("vrc", blocks);
+    return fetchIndexedSupply('vrc', blocks);
 }
 function mapHashrateSource(source) {
-    if (source === "networkhashps" ||
-        source === "nethashrate" ||
-        source === "getnetworkhashps" ||
-        source === "difficulty") {
+    if (source === 'recent_blocks' ||
+        source === 'blocks_per_hour' ||
+        source === 'recent_blocks_extended' ||
+        source === 'networkhashps' ||
+        source === 'nethashrate' ||
+        source === 'difficulty') {
         return source;
     }
     return null;
 }
 async function resolveVrmNetworkMetrics(call, difficulty) {
     const [hashrateResolved, miningInfo] = await Promise.all([
-        fetchCanonicalVrmHashrate(call, { include7d: true }),
-        call("getmininginfo").catch(() => null),
+        fetchCanonicalVrmHashrate(call),
+        call('getmininginfo').catch(() => null),
     ]);
     const mining = miningInfo;
     const blocksPerHour = parseRpcNumber(mining?.blocksperhour);
@@ -106,13 +106,13 @@ async function resolveVrmNetworkMetrics(call, difficulty) {
     };
 }
 export async function fetchVrmNetworkStats() {
-    const call = rpcCall("vrm");
+    const call = rpcCall('vrm');
     try {
-        const blockchainInfo = (await call("getblockchaininfo").catch(() => null));
+        const blockchainInfo = (await call('getblockchaininfo').catch(() => null));
         let blocks = parseRpcNumber(blockchainInfo?.blocks);
         const difficulty = parseRpcNumber(blockchainInfo?.difficulty);
         if (blocks == null) {
-            blocks = await fetchIndexedTipHeight("vrm");
+            blocks = await fetchIndexedTipHeight('vrm');
         }
         const [metrics, supply] = await Promise.all([
             resolveVrmNetworkMetrics(call, difficulty),
@@ -126,12 +126,12 @@ export async function fetchVrmNetworkStats() {
             difficulty,
             blocks,
             supply,
-            maxSupply: getMaxSupply("vrm"),
+            maxSupply: getMaxSupply('vrm'),
         };
     }
     catch {
-        const blocks = await fetchIndexedTipHeight("vrm");
-        const supply = blocks != null ? await fetchIndexedSupply("vrm", blocks) : null;
+        const blocks = await fetchIndexedTipHeight('vrm');
+        const supply = blocks != null ? await fetchIndexedSupply('vrm', blocks) : null;
         return {
             hashrateKhPerMin: null,
             hashrateSource: null,
@@ -140,19 +140,19 @@ export async function fetchVrmNetworkStats() {
             difficulty: null,
             blocks,
             supply,
-            maxSupply: getMaxSupply("vrm"),
+            maxSupply: getMaxSupply('vrm'),
         };
     }
 }
 export async function fetchVrcNetworkStats() {
-    const call = rpcCall("vrc");
+    const call = rpcCall('vrc');
     try {
-        const blockchainInfo = (await call("getblockchaininfo").catch(() => null));
+        const blockchainInfo = (await call('getblockchaininfo').catch(() => null));
         const blocks = parseRpcNumber(blockchainInfo?.blocks);
         let difficulty = parseRpcNumber(blockchainInfo?.difficulty);
         const [supply, miningInfo] = await Promise.all([
             resolveVrcSupply(call, blocks, blockchainInfo),
-            call("getmininginfo").catch(() => null),
+            call('getmininginfo').catch(() => null),
         ]);
         const miningMetrics = parseVrcMiningInfo(miningInfo);
         if (difficulty == null) {
@@ -161,16 +161,13 @@ export async function fetchVrcNetworkStats() {
         let interestRatePercent = miningMetrics.interestRatePercent;
         let netStakeWeight = miningMetrics.netStakeWeight;
         let expectedStakeTimeSeconds = miningMetrics.expectedStakeTimeSeconds;
-        if (interestRatePercent == null ||
-            netStakeWeight == null ||
-            expectedStakeTimeSeconds == null) {
+        if (interestRatePercent == null || netStakeWeight == null || expectedStakeTimeSeconds == null) {
             const [stakingInfo, interestRate] = await Promise.all([
                 netStakeWeight == null || expectedStakeTimeSeconds == null
-                    ? call("getstakinginfo").catch(() => null)
+                    ? call('getstakinginfo').catch(() => null)
                     : Promise.resolve(null),
                 interestRatePercent == null
-                    ? call("getinterestrate")
-                        .catch(() => call("getinterest").catch(() => null))
+                    ? call('getinterestrate').catch(() => call('getinterest').catch(() => null))
                     : Promise.resolve(null),
             ]);
             if (interestRatePercent == null) {
@@ -194,7 +191,7 @@ export async function fetchVrcNetworkStats() {
             difficulty,
             blocks,
             supply,
-            maxSupply: getMaxSupply("vrc"),
+            maxSupply: getMaxSupply('vrc'),
             interestRatePercent,
             netStakeWeight,
             percentStaked,
@@ -206,7 +203,7 @@ export async function fetchVrcNetworkStats() {
             difficulty: null,
             blocks: null,
             supply: null,
-            maxSupply: getMaxSupply("vrc"),
+            maxSupply: getMaxSupply('vrc'),
             interestRatePercent: null,
             netStakeWeight: null,
             percentStaked: null,

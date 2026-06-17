@@ -1,20 +1,20 @@
-import { createSwrCache, swrFetch } from "../cache/swrCache.js";
-import { registerGlobalCache } from "../cache/registry.js";
-import { registerGlobalTipRefresh } from "../cache/tipRefresh.js";
-import { refreshCacheInBackground } from "../cache/swrCache.js";
-import { fetchVrcNetworkStatsLite } from "../network/lite.js";
+import { createSwrCache, swrFetch } from '../cache/swrCache.js';
+import { registerGlobalCache } from '../cache/registry.js';
+import { registerGlobalTipRefresh } from '../cache/tipRefresh.js';
+import { refreshCacheInBackground } from '../cache/swrCache.js';
+import { fetchVrcNetworkStatsLite } from '../network/lite.js';
 /** Format on-chain VRC supply for external aggregators (VRC uses 8 decimal places). */
 export function formatVrcSupplyResult(supply) {
     if (!Number.isFinite(supply) || supply < 0) {
-        throw new Error("invalid supply");
+        throw new Error('invalid supply');
     }
-    return supply.toFixed(8).replace(/\.?0+$/, "") || "0";
+    return supply.toFixed(8).replace(/\.?0+$/, '') || '0';
 }
 async function fetchVrcSupplyPayload() {
     const stats = await fetchVrcNetworkStatsLite();
     const supply = stats.supply;
     if (supply == null || !Number.isFinite(supply) || supply <= 0) {
-        throw new Error("VRC supply unavailable");
+        throw new Error('VRC supply unavailable');
     }
     return { result: formatVrcSupplyResult(supply) };
 }
@@ -24,21 +24,21 @@ const vrcSupplyCache = createSwrCache({
     ttlMs: VRC_SUPPLY_CACHE_TTL_MS,
     fetch: async (_key, signal) => {
         if (signal.aborted)
-            throw new Error("aborted");
+            throw new Error('aborted');
         const data = await fetchVrcSupplyPayload();
         return data;
     },
 });
 registerGlobalCache(vrcSupplyCache);
-registerGlobalTipRefresh("vrc-supply", () => refreshCacheInBackground(vrcSupplyCache, "vrc-supply"));
+registerGlobalTipRefresh('vrc-supply', () => refreshCacheInBackground(vrcSupplyCache, 'vrc-supply'));
 export async function registerVrcNetworkRoutes(app) {
     /** Public circulating/total supply for aggregators (CoinGecko-compatible `{ result }` shape). */
-    app.get("/v1/vrc/supply", async (_request, reply) => {
+    app.get('/v1/vrc/supply', async (_request, reply) => {
         try {
-            return await swrFetch(vrcSupplyCache, "vrc-supply", fetchVrcSupplyPayload);
+            return await swrFetch(vrcSupplyCache, 'vrc-supply', fetchVrcSupplyPayload);
         }
         catch {
-            return reply.code(503).send({ error: "VRC supply unavailable" });
+            return reply.code(503).send({ error: 'VRC supply unavailable' });
         }
     });
 }

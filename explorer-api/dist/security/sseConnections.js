@@ -1,5 +1,5 @@
-import { getRateLimitSseMax } from "../env.js";
-import { getClientIp, isRateLimitAllowlisted } from "./clientIp.js";
+import { getRateLimitSseMax } from '../env.js';
+import { getClientIp, isRateLimitAllowlisted } from './clientIp.js';
 const connectionsByKey = new Map();
 function sseConnectionKey(request, chainId) {
     return `${getClientIp(request)}:${chainId}`;

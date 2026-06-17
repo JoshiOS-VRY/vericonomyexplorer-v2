@@ -1,10 +1,10 @@
 export class TimeoutError extends Error {
     constructor(label, timeoutMs) {
         super(`${label} timed out after ${timeoutMs}ms`);
-        this.name = "TimeoutError";
+        this.name = 'TimeoutError';
     }
 }
-export function withTimeout(promise, timeoutMs, label = "operation") {
+export function withTimeout(promise, timeoutMs, label = 'operation') {
     if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
         return promise;
     }

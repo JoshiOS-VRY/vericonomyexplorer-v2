@@ -1,18 +1,18 @@
-import fs from "node:fs";
-import path from "node:path";
-import { createRequire } from "node:module";
-import { repoRoot } from "../env.js";
-const requireRoot = createRequire(path.join(repoRoot, "package.json"));
+import fs from 'node:fs';
+import path from 'node:path';
+import { createRequire } from 'node:module';
+import { repoRoot } from '../env.js';
+const requireRoot = createRequire(path.join(repoRoot, 'package.json'));
 // Use the repo-root native module so explorer-api matches indexer/Express Node ABI.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const DatabaseConstructor = requireRoot("better-sqlite3");
+const DatabaseConstructor = requireRoot('better-sqlite3');
 const statementCache = new Map();
 let dbInstance = null;
 let dbError = null;
 function getDatabasePath() {
     return (process.env.VCEXP_INDEXER_SQLITE_PATH ??
         process.env.BTCEXP_INDEXER_SQLITE_PATH ??
-        path.join(repoRoot, "database", "vericonomy-index.sqlite"));
+        path.join(repoRoot, 'database', 'vericonomy-index.sqlite'));
 }
 export function getDb() {
     if (dbInstance)
@@ -27,8 +27,8 @@ export function getDb() {
         }
         dbInstance = new DatabaseConstructor(dbPath, { readonly: true });
         dbInstance.defaultSafeIntegers(true);
-        dbInstance.pragma("foreign_keys = ON");
-        dbInstance.pragma("busy_timeout = 10000");
+        dbInstance.pragma('foreign_keys = ON');
+        dbInstance.pragma('busy_timeout = 10000');
         return dbInstance;
     }
     catch (err) {
@@ -54,7 +54,7 @@ export function getSyncTipHeight(chainId) {
     `).get(chainId);
         if (row?.height == null)
             return null;
-        return typeof row.height === "bigint" ? Number(row.height) : Number(row.height);
+        return typeof row.height === 'bigint' ? Number(row.height) : Number(row.height);
     }
     catch {
         return null;

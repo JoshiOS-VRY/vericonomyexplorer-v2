@@ -1,5 +1,5 @@
-import type { FastifyInstance } from "fastify";
-import type { VrmNetworkHashratePayload } from "../types/home.js";
+import type { FastifyInstance } from 'fastify';
+import type { VrmNetworkHashratePayload } from '../types/home.js';
 /** CoinGecko-style supply payload: `{ "result": "<amount>" }` with up to 8 decimal places. */
 export type VrmSupplyPayload = {
     result: string;
@@ -11,4 +11,4 @@ declare function fetchVrmNetworkHashratePayload(): Promise<VrmNetworkHashratePay
 declare const vrmHashrateCache: import("lru-cache/raw").LRUCache<string, Record<string, unknown>, unknown>;
 declare const vrmSupplyCache: import("lru-cache/raw").LRUCache<string, Record<string, unknown>, unknown>;
 export declare function registerVrmNetworkRoutes(app: FastifyInstance): Promise<void>;
-export { vrmHashrateCache, fetchVrmNetworkHashratePayload, vrmSupplyCache, fetchVrmSupplyPayload, };
+export { vrmHashrateCache, fetchVrmNetworkHashratePayload, vrmSupplyCache, fetchVrmSupplyPayload };

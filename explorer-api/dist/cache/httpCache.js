@@ -16,16 +16,16 @@ const CACHE_RULES = [
     { pattern: /^\/v1\/[^/]+\/blocks\/latest/, maxAge: 5, swr: 30 },
     { pattern: /^\/v1\/[^/]+\/blocks$/, maxAge: 5, swr: 30 },
     { pattern: /^\/v1\/[^/]+\/insights\//, maxAge: 60, swr: 300 },
-    { pattern: /^\/v1\/[^/]+\/activity-history/, maxAge: 300, swr: 600 },
+    { pattern: /^\/v1\/[^/]+\/activity-history/, maxAge: 60, swr: 120 },
 ];
 export function applyCacheHeaders(request, reply) {
-    if (request.method !== "GET") {
+    if (request.method !== 'GET') {
         return;
     }
-    const path = request.url.split("?")[0] ?? request.url;
+    const path = request.url.split('?')[0] ?? request.url;
     const rule = CACHE_RULES.find((entry) => entry.pattern.test(path));
     if (!rule) {
         return;
     }
-    reply.header("Cache-Control", `public, max-age=${rule.maxAge}, stale-while-revalidate=${rule.swr}`);
+    reply.header('Cache-Control', `public, max-age=${rule.maxAge}, stale-while-revalidate=${rule.swr}`);
 }

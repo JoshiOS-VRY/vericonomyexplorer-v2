@@ -1,4 +1,4 @@
-import type { ChainId } from "../types.js";
+import type { ChainId } from '../types.js';
 export declare function fetchChainSummary(chainId: string, options?: Record<string, unknown>): Promise<Record<string, unknown> & {
     health?: Record<string, unknown> & {
         heights?: {

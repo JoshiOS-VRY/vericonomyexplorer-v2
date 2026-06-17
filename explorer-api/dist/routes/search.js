@@ -1,14 +1,14 @@
-import { heavyRateLimitRouteConfig } from "../env.js";
-import { createSwrCache } from "../cache/swrCache.js";
-import { registerChainScopedCache } from "../cache/registry.js";
-import { fetchAddress, fetchBlock, fetchTransaction } from "../data/legacy.js";
-import { searchQueryTimeoutMs } from "../db/queryPool.js";
-import { parseChainId } from "../types.js";
+import { heavyRateLimitRouteConfig } from '../env.js';
+import { createSwrCache } from '../cache/swrCache.js';
+import { registerChainScopedCache } from '../cache/registry.js';
+import { fetchAddress, fetchBlock, fetchTransaction } from '../data/legacy.js';
+import { searchQueryTimeoutMs } from '../db/queryPool.js';
+import { parseChainId } from '../types.js';
 function sanitizeSearchQuery(raw) {
     let value = raw.trim();
-    value = value.replace(/,/g, "").replace(/\s+/g, "");
-    value = value.replace(/^(balance|received|sent|transactions)/i, "");
-    value = value.replace(/^(\d+(?:\.\d+)?)(?:VRC|VRM)$/i, "$1");
+    value = value.replace(/,/g, '').replace(/\s+/g, '');
+    value = value.replace(/^(balance|received|sent|transactions)/i, '');
+    value = value.replace(/^(\d+(?:\.\d+)?)(?:VRC|VRM)$/i, '$1');
     return value;
 }
 const searchLookupOptions = { timeoutMs: searchQueryTimeoutMs };
@@ -17,8 +17,8 @@ const searchCache = createSwrCache({
     ttlMs: 15_000,
     fetch: async (key, signal) => {
         if (signal.aborted)
-            throw new Error("aborted");
-        const [chainId, query] = key.split(":", 2);
+            throw new Error('aborted');
+        const [chainId, query] = key.split(':', 2);
         return (await resolveSearchPath(chainId, query));
     },
 });
@@ -54,14 +54,14 @@ async function resolveSearchPath(chainId, query) {
     return { path: null };
 }
 export async function registerSearchRoutes(app) {
-    app.get("/v1/:chain/search", { ...heavyRateLimitRouteConfig }, async (request, reply) => {
+    app.get('/v1/:chain/search', { ...heavyRateLimitRouteConfig }, async (request, reply) => {
         const chainId = parseChainId(request.params.chain);
         if (!chainId) {
-            return reply.code(400).send({ error: "Invalid chain id" });
+            return reply.code(400).send({ error: 'Invalid chain id' });
         }
-        const query = sanitizeSearchQuery(request.query.q ?? "");
+        const query = sanitizeSearchQuery(request.query.q ?? '');
         if (!query) {
-            return reply.code(400).send({ error: "Missing query" });
+            return reply.code(400).send({ error: 'Missing query' });
         }
         const key = `${chainId}:${query}`;
         return searchCache.fetch(key);

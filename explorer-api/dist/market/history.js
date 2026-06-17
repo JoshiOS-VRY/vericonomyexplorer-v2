@@ -1,10 +1,10 @@
-import { fetchCoinGeckoMarketChart } from "./coingecko.js";
-import { fetchLcwHistoryRange } from "./livecoinwatch.js";
+import { fetchCoinGeckoMarketChart } from './coingecko.js';
+import { fetchLcwHistoryRange } from './livecoinwatch.js';
 const PERIOD_DAYS = {
-    "7d": 7,
-    "30d": 30,
-    "90d": 90,
-    "1y": 365,
+    '7d': 7,
+    '30d': 30,
+    '90d': 90,
+    '1y': 365,
     all: null,
 };
 function downsamplePoints(points, maxPoints) {
@@ -22,20 +22,20 @@ function downsamplePoints(points, maxPoints) {
     }
     return sampled;
 }
-export async function fetchMarketHistory(chainId, period, currency = "usd") {
+export async function fetchMarketHistory(chainId, period, currency = 'usd') {
     const days = PERIOD_DAYS[period];
     const end = Date.now();
     const start = days != null ? end - days * 24 * 60 * 60 * 1000 : end - 365 * 24 * 60 * 60 * 1000;
-    const maxPoints = period === "7d" ? 80 : period === "30d" ? 100 : 120;
+    const maxPoints = period === '7d' ? 80 : period === '30d' ? 100 : 120;
     const [lcwPoints, cgPoints] = await Promise.all([
         fetchLcwHistoryRange(chainId, currency.toUpperCase(), start, end),
-        currency === "usd" ? fetchCoinGeckoMarketChart(chainId, days ?? 365) : Promise.resolve([]),
+        currency === 'usd' ? fetchCoinGeckoMarketChart(chainId, days ?? 365) : Promise.resolve([]),
     ]);
     let points = lcwPoints;
-    let source = lcwPoints.length > 0 ? "livecoinwatch" : "unavailable";
+    let source = lcwPoints.length > 0 ? 'livecoinwatch' : 'unavailable';
     if (points.length === 0 && cgPoints.length > 0) {
         points = cgPoints;
-        source = "coingecko";
+        source = 'coingecko';
     }
     return {
         chainId,

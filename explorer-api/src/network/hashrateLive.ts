@@ -1,10 +1,10 @@
 import {
   resolveNetworkHashPerSec,
-  VRM_BLOCKS_7_DAYS,
-  VRM_BLOCKS_PER_DAY,
   type HashrateSource,
+  type MiningInfoLike,
 } from '@vericonomy/network-metrics';
 import { parseRpcNumber, type RpcCall } from './stats.js';
+import { fetchExtendedBlockSpacingSec, fetchRecentBlockSpacingSec } from './recentSpacing.js';
 
 export type CanonicalVrmHashrate = {
   hashPerSec: number | null;
@@ -12,20 +12,7 @@ export type CanonicalVrmHashrate = {
   source: HashrateSource;
 };
 
-async function safeNetworkHashrate(rpcCall: RpcCall, blockCount: number): Promise<number | null> {
-  try {
-    const hashrate = await rpcCall('getnetworkhashps', [blockCount], 15_000);
-    if (typeof hashrate === 'number' && hashrate > 0) {
-      return hashrate;
-    }
-  } catch {
-    /* unsupported or timeout */
-  }
-  return null;
-}
-
 export type CanonicalVrmHashrateOptions = {
-  include7d?: boolean;
   /** Skip duplicate RPC when caller already fetched getmininginfo. */
   miningInfo?: unknown | null;
   /** Skip duplicate RPC when caller already fetched getblockchaininfo. */
@@ -37,8 +24,6 @@ export async function fetchCanonicalVrmHashrate(
   call: RpcCall,
   options: CanonicalVrmHashrateOptions = {}
 ): Promise<CanonicalVrmHashrate> {
-  const include7d = options.include7d ?? false;
-
   const miningInfoPromise =
     options.miningInfo !== undefined
       ? Promise.resolve(options.miningInfo)
@@ -49,35 +34,52 @@ export async function fetchCanonicalVrmHashrate(
       ? Promise.resolve(options.blockchainInfo)
       : call('getblockchaininfo').catch(() => null);
 
-  const [miningInfoResult, hashrate1dResult, blockchainInfoResult, hashrate7dResult] =
-    await Promise.allSettled([
-      miningInfoPromise,
-      safeNetworkHashrate(call, VRM_BLOCKS_PER_DAY),
-      blockchainInfoPromise,
-      include7d ? safeNetworkHashrate(call, VRM_BLOCKS_7_DAYS) : Promise.resolve(null),
-    ]);
+  const [miningInfoResult, blockchainInfoResult] = await Promise.allSettled([
+    miningInfoPromise,
+    blockchainInfoPromise,
+  ]);
 
-  const miningInfo =
+  const miningRaw =
     miningInfoResult.status === 'fulfilled'
-      ? (miningInfoResult.value as {
-          networkhashps?: number;
-          nethashrate?: number;
-        })
+      ? (miningInfoResult.value as Record<string, unknown> | null)
       : null;
 
-  const hashrate1d = hashrate1dResult.status === 'fulfilled' ? hashrate1dResult.value : null;
-
-  const hashrate7d = hashrate7dResult.status === 'fulfilled' ? hashrate7dResult.value : null;
-
-  const difficulty =
+  const blockchainInfo =
     blockchainInfoResult.status === 'fulfilled'
-      ? parseRpcNumber((blockchainInfoResult.value as { difficulty?: unknown } | null)?.difficulty)
+      ? (blockchainInfoResult.value as { blocks?: unknown; difficulty?: unknown })
       : null;
+
+  const difficulty = parseRpcNumber(blockchainInfo?.difficulty);
+  const tipHeight = parseRpcNumber(blockchainInfo?.blocks);
+  const blocksPerHour = parseRpcNumber(miningRaw?.blocksperhour);
+
+  const miningInfo: MiningInfoLike | null = miningRaw
+    ? {
+        networkhashps: parseRpcNumber(miningRaw.networkhashps) ?? undefined,
+        nethashrate:
+          parseRpcNumber(miningRaw.nethashrate) ??
+          parseRpcNumber(miningRaw['nethashrate (kH/m)']) ??
+          undefined,
+        blocksperhour: blocksPerHour ?? undefined,
+        ...miningRaw,
+      }
+    : null;
+
+  let recentSpacingSec: number | null = null;
+  let extendedSpacingSec: number | null = null;
+
+  if (tipHeight != null) {
+    [recentSpacingSec, extendedSpacingSec] = await Promise.all([
+      fetchRecentBlockSpacingSec(call, tipHeight),
+      fetchExtendedBlockSpacingSec(call, tipHeight),
+    ]);
+  }
 
   return resolveNetworkHashPerSec({
     miningInfo,
-    hashrate1d,
-    hashrate7d: include7d ? hashrate7d : null,
     difficulty,
+    recentSpacingSec,
+    extendedSpacingSec,
+    blocksPerHour,
   });
 }

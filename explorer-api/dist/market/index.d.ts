@@ -1,5 +1,5 @@
-import type { ChainId } from "../types.js";
-import type { ChainMarket, HomeMarketPayload } from "../types/home.js";
+import type { ChainId } from '../types.js';
+import type { ChainMarket, HomeMarketPayload } from '../types/home.js';
 declare const emptyMarket: () => ChainMarket;
 /** VRC cap is always on-chain supply × USD; VRM fills cap only when external data lacks it. */
 export declare function applyOnChainMarketCap(market: ChainMarket, chainId: ChainId, onChainSupply: number | null): ChainMarket;

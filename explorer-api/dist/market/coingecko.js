@@ -1,11 +1,11 @@
 export async function fetchCoinGeckoBtcUsd() {
     const apiKey = process.env.VCEXP_COINGECKO_API_KEY?.trim();
-    const headers = { accept: "application/json" };
+    const headers = { accept: 'application/json' };
     if (apiKey) {
-        headers["x-cg-pro-api-key"] = apiKey;
+        headers['x-cg-pro-api-key'] = apiKey;
     }
     try {
-        const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd", {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', {
             headers,
             signal: AbortSignal.timeout(10_000),
         });
@@ -13,7 +13,7 @@ export async function fetchCoinGeckoBtcUsd() {
             return null;
         const data = (await response.json());
         const usd = data.bitcoin?.usd;
-        return typeof usd === "number" && Number.isFinite(usd) ? usd : null;
+        return typeof usd === 'number' && Number.isFinite(usd) ? usd : null;
     }
     catch {
         return null;
@@ -21,12 +21,12 @@ export async function fetchCoinGeckoBtcUsd() {
 }
 export async function fetchCoinGeckoVericoin() {
     const apiKey = process.env.VCEXP_COINGECKO_API_KEY?.trim();
-    const headers = { accept: "application/json" };
+    const headers = { accept: 'application/json' };
     if (apiKey) {
-        headers["x-cg-pro-api-key"] = apiKey;
+        headers['x-cg-pro-api-key'] = apiKey;
     }
     try {
-        const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=vericoin&vs_currencies=usd,btc", {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=vericoin&vs_currencies=usd,btc', {
             headers,
             signal: AbortSignal.timeout(10_000),
         });
@@ -36,8 +36,8 @@ export async function fetchCoinGeckoVericoin() {
         const usd = data.vericoin?.usd;
         const btc = data.vericoin?.btc;
         return {
-            usd: typeof usd === "number" && Number.isFinite(usd) ? usd : null,
-            btc: typeof btc === "number" && Number.isFinite(btc) ? btc : null,
+            usd: typeof usd === 'number' && Number.isFinite(usd) ? usd : null,
+            btc: typeof btc === 'number' && Number.isFinite(btc) ? btc : null,
         };
     }
     catch {
@@ -45,14 +45,14 @@ export async function fetchCoinGeckoVericoin() {
     }
 }
 const COINGECKO_IDS = {
-    vrm: "verium-reserve",
-    vrc: "vericoin",
+    vrm: 'verium-reserve',
+    vrc: 'vericoin',
 };
 export async function fetchCoinGeckoMarketChart(chainId, days) {
     const apiKey = process.env.VCEXP_COINGECKO_API_KEY?.trim();
-    const headers = { accept: "application/json" };
+    const headers = { accept: 'application/json' };
     if (apiKey) {
-        headers["x-cg-pro-api-key"] = apiKey;
+        headers['x-cg-pro-api-key'] = apiKey;
     }
     const coinId = COINGECKO_IDS[chainId];
     if (!coinId) {

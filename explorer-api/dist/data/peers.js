@@ -4,12 +4,12 @@
 // a list of nodes the explorer wallet is connected to, plus a grouped summary
 // by client subversion / protocol version. Sourced live from the node's
 // `getpeerinfo` RPC.
-import { rpc } from "../rpc/index.js";
+import { rpc } from '../rpc/index.js';
 const RPC_TIMEOUT_MS = 8_000;
 function toNumberOrNull(value) {
-    if (typeof value === "number" && Number.isFinite(value))
+    if (typeof value === 'number' && Number.isFinite(value))
         return value;
-    if (typeof value === "string" && value.trim() !== "") {
+    if (typeof value === 'string' && value.trim() !== '') {
         const parsed = Number(value);
         return Number.isFinite(parsed) ? parsed : null;
     }
@@ -20,23 +20,23 @@ function splitHostPort(addr) {
     const bracket = addr.match(/^\[(.+)\]:(\d+)$/);
     if (bracket)
         return { ip: bracket[1], port: Number(bracket[2]) };
-    const lastColon = addr.lastIndexOf(":");
-    if (lastColon > -1 && addr.indexOf(":") === lastColon) {
+    const lastColon = addr.lastIndexOf(':');
+    if (lastColon > -1 && addr.indexOf(':') === lastColon) {
         return { ip: addr.slice(0, lastColon), port: Number(addr.slice(lastColon + 1)) };
     }
     return { ip: addr, port: null };
 }
 export async function buildChainPeers(chainId, limit) {
     const rawPeers = await rpc(chainId)
-        .call("getpeerinfo", [], RPC_TIMEOUT_MS)
+        .call('getpeerinfo', [], RPC_TIMEOUT_MS)
         .catch(() => null);
     const peers = [];
     if (Array.isArray(rawPeers)) {
         for (const raw of rawPeers) {
-            if (raw == null || typeof raw !== "object")
+            if (raw == null || typeof raw !== 'object')
                 continue;
             const peer = raw;
-            const addr = typeof peer.addr === "string" ? peer.addr : null;
+            const addr = typeof peer.addr === 'string' ? peer.addr : null;
             if (addr == null)
                 continue;
             const { ip, port } = splitHostPort(addr);
@@ -47,7 +47,7 @@ export async function buildChainPeers(chainId, limit) {
                 address: addr,
                 ip,
                 port,
-                subversion: typeof peer.subver === "string" ? peer.subver : "",
+                subversion: typeof peer.subver === 'string' ? peer.subver : '',
                 protocolVersion: toNumberOrNull(peer.version),
                 inbound: peer.inbound === true,
                 connectedSeconds: conntime != null ? Math.max(0, Math.floor(Date.now() / 1000) - conntime) : null,
@@ -60,7 +60,7 @@ export async function buildChainPeers(chainId, limit) {
     }
     const groups = new Map();
     for (const peer of peers) {
-        const key = `${peer.subversion}|${peer.protocolVersion ?? ""}`;
+        const key = `${peer.subversion}|${peer.protocolVersion ?? ''}`;
         const existing = groups.get(key);
         if (existing) {
             existing.count += 1;

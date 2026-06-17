@@ -1,4 +1,4 @@
-import type { ChainId } from "../types.js";
+import type { ChainId } from '../types.js';
 export type RpcCall = (method: string, params?: unknown[], timeoutMs?: number) => Promise<unknown>;
 export declare function parseRpcNumber(value: unknown): number | null;
 export declare function supplyFromBlockchainInfo(blockchainInfo: unknown): number | null;

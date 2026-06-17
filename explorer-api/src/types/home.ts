@@ -20,7 +20,14 @@ export interface ChainMarket {
 export interface VrmNetworkStats {
   hashrateKhPerMin: number | null;
   /** How hashrateKhPerMin was derived (debug / cross-site parity). */
-  hashrateSource?: 'networkhashps' | 'nethashrate' | 'getnetworkhashps' | 'difficulty' | null;
+  hashrateSource?:
+    | 'recent_blocks'
+    | 'blocks_per_hour'
+    | 'recent_blocks_extended'
+    | 'networkhashps'
+    | 'nethashrate'
+    | 'difficulty'
+    | null;
   avgBlockTimeMin: number | null;
   blocksPerHour: number | null;
   difficulty: number | null;
@@ -32,7 +39,14 @@ export interface VrmNetworkStats {
 export interface VrmNetworkHashratePayload {
   hashPerSec: number | null;
   hashrateKhPerMin: number | null;
-  source: 'networkhashps' | 'nethashrate' | 'getnetworkhashps' | 'difficulty' | null;
+  source:
+    | 'recent_blocks'
+    | 'blocks_per_hour'
+    | 'recent_blocks_extended'
+    | 'networkhashps'
+    | 'nethashrate'
+    | 'difficulty'
+    | null;
   difficulty: number | null;
   fetchedAt: string;
 }

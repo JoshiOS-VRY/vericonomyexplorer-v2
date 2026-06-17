@@ -1,0 +1,36 @@
+import { meanBlockSpacingSec, VRM_HASHRATE_WINDOW_BLOCKS, VRM_POW_INTERVAL, } from '@vericonomy/network-metrics';
+import { parseRpcNumber } from './stats.js';
+async function blockHeaderAtHeight(call, height) {
+    try {
+        const hash = await call('getblockhash', [height], 10_000);
+        if (typeof hash !== 'string' || hash.length === 0)
+            return null;
+        const header = (await call('getblockheader', [hash, true], 10_000));
+        return header ?? null;
+    }
+    catch {
+        return null;
+    }
+}
+async function meanSpacingOverWindow(call, tipHeight, windowBlocks) {
+    if (tipHeight < windowBlocks)
+        return null;
+    const startHeight = tipHeight - windowBlocks;
+    const [startHeader, tipHeader] = await Promise.all([
+        blockHeaderAtHeight(call, startHeight),
+        blockHeaderAtHeight(call, tipHeight),
+    ]);
+    const startTime = parseRpcNumber(startHeader?.time);
+    const tipTime = parseRpcNumber(tipHeader?.time);
+    if (startTime == null || tipTime == null)
+        return null;
+    return meanBlockSpacingSec(startTime, tipTime, windowBlocks);
+}
+/** Measured spacing over the primary ~1 hour window. */
+export async function fetchRecentBlockSpacingSec(call, tipHeight) {
+    return meanSpacingOverWindow(call, tipHeight, VRM_HASHRATE_WINDOW_BLOCKS);
+}
+/** Measured spacing over the 72-block PoW interval window. */
+export async function fetchExtendedBlockSpacingSec(call, tipHeight) {
+    return meanSpacingOverWindow(call, tipHeight, VRM_POW_INTERVAL);
+}

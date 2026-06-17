@@ -1,7 +1,7 @@
-import { getTipPollMs, getZmqUrl } from "../env.js";
-import { getRpcClient } from "../rpc/index.js";
-import { CHAIN_IDS } from "../types.js";
-import { TipBroker } from "./tipBroker.js";
+import { getTipPollMs, getZmqUrl } from '../env.js';
+import { getRpcClient } from '../rpc/index.js';
+import { CHAIN_IDS } from '../types.js';
+import { TipBroker } from './tipBroker.js';
 const brokers = new Map();
 export async function initBrokers() {
     for (const chainId of CHAIN_IDS) {
@@ -26,8 +26,8 @@ export function getTip(chainId) {
 }
 export function onTip(chainId, listener) {
     const broker = getBroker(chainId);
-    broker.on("tip", listener);
-    return () => broker.off("tip", listener);
+    broker.on('tip', listener);
+    return () => broker.off('tip', listener);
 }
 export function onAnyTip(listener) {
     const unsubs = CHAIN_IDS.map((chainId) => onTip(chainId, (tip) => listener(chainId, tip)));

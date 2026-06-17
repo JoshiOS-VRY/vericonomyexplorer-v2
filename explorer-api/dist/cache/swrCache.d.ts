@@ -1,5 +1,5 @@
-import { LRUCache } from "lru-cache";
-import type { ChainId } from "../types.js";
+import { LRUCache } from 'lru-cache';
+import type { ChainId } from '../types.js';
 export type CacheValue = Record<string, unknown>;
 export interface SwrOptions<T extends CacheValue = CacheValue> {
     max?: number;

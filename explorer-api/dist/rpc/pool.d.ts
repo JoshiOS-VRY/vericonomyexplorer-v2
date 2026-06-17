@@ -1,4 +1,4 @@
-import type { RpcCredentials } from "../types.js";
+import type { RpcCredentials } from '../types.js';
 export interface RpcClient {
     call<T = unknown>(method: string, params?: unknown[], timeoutMs?: number): Promise<T>;
     close(): Promise<void>;

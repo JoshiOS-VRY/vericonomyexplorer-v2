@@ -1,18 +1,45 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  VRM_POW_WORK_FACTOR,
+  VRM_TARGET_BLOCK_TIME_SEC,
+  blocksPerHourToSpacingSec,
+  difficultySpacingToHashPerSec,
   difficultyToHashPerSec,
   formatNetworkHashrateKhPerMin,
   formatNetworkHashrateFromHps,
   hashPerSecToKhPerMin,
+  meanBlockSpacingSec,
   normalizeMiningInfoHashrate,
   resolveNetworkHashPerSec,
 } from "../src/index.js";
 
 describe("hashPerSecToKhPerMin", () => {
   it("converts H/s to kH/min", () => {
-    // 1219.5 H/s ≈ 73.17 kH/m (typical live network)
     assert.equal(hashPerSecToKhPerMin(1219.5), 73.17);
+  });
+});
+
+describe("meanBlockSpacingSec", () => {
+  it("computes mean spacing with floor", () => {
+    assert.equal(meanBlockSpacingSec(1_000, 4_600, 12), 300);
+    assert.equal(meanBlockSpacingSec(1_000, 1_010, 12), 30);
+  });
+});
+
+describe("blocksPerHourToSpacingSec", () => {
+  it("derives spacing from hourly block rate", () => {
+    assert.equal(blocksPerHourToSpacingSec(12), 300);
+    assert.equal(blocksPerHourToSpacingSec(5), null);
+  });
+});
+
+describe("difficultySpacingToHashPerSec", () => {
+  it("uses Verium scrypt² work factor", () => {
+    const difficulty = 0.0000852;
+    const spacing = 300;
+    const hashPerSec = difficultySpacingToHashPerSec(difficulty, spacing)!;
+    assert.equal(hashPerSec, (difficulty * VRM_POW_WORK_FACTOR) / spacing);
   });
 });
 
@@ -28,16 +55,42 @@ describe("normalizeMiningInfoHashrate", () => {
     assert.ok(r.hashPerSec != null && Math.abs(r.hashPerSec - 1219.5) < 0.01);
     assert.equal(r.source, "nethashrate");
   });
+
+  it("reads legacy nethashrate RPC key", () => {
+    const r = normalizeMiningInfoHashrate({ "nethashrate (kH/m)": 73.17 });
+    assert.ok(r.hashPerSec != null && Math.abs(r.hashPerSec - 1219.5) < 0.01);
+  });
 });
 
 describe("resolveNetworkHashPerSec", () => {
   const difficulty = 0.0000852;
-  const difficultyHps = difficultyToHashPerSec(difficulty)!;
+  const spacingSec = 300;
+  const measuredHps = difficultySpacingToHashPerSec(difficulty, spacingSec)!;
+  const difficultyHps = difficultyToHashPerSec(difficulty, VRM_TARGET_BLOCK_TIME_SEC)!;
 
-  it("uses networkhashps first", () => {
+  it("prefers recent block spacing over networkhashps", () => {
+    const r = resolveNetworkHashPerSec({
+      miningInfo: { networkhashps: 9999 },
+      difficulty,
+      recentSpacingSec: spacingSec,
+    });
+    assert.equal(r.source, "recent_blocks");
+    assert.equal(r.hashPerSec, measuredHps);
+  });
+
+  it("uses blocks per hour when spacing is unavailable", () => {
+    const r = resolveNetworkHashPerSec({
+      miningInfo: { networkhashps: 9999 },
+      difficulty,
+      blocksPerHour: 12,
+    });
+    assert.equal(r.source, "blocks_per_hour");
+    assert.equal(r.hashPerSec, measuredHps);
+  });
+
+  it("falls back to networkhashps", () => {
     const r = resolveNetworkHashPerSec({
       miningInfo: { networkhashps: 1219.5 },
-      hashrate1d: 9999,
       difficulty,
     });
     assert.equal(r.source, "networkhashps");
@@ -45,33 +98,23 @@ describe("resolveNetworkHashPerSec", () => {
     assert.equal(r.hashrateKhPerMin, 73.17);
   });
 
-  it("falls back to getnetworkhashps 1d", () => {
-    const r = resolveNetworkHashPerSec({
-      miningInfo: {},
-      hashrate1d: 1219.5,
-      difficulty,
-    });
-    assert.equal(r.source, "getnetworkhashps");
-    assert.equal(r.hashPerSec, 1219.5);
-  });
-
-  it("falls back to difficulty", () => {
+  it("falls back to difficulty at target spacing", () => {
     const r = resolveNetworkHashPerSec({
       miningInfo: {},
       difficulty,
     });
     assert.equal(r.source, "difficulty");
-    assert.ok(r.hashPerSec != null && r.hashPerSec > 0);
     assert.equal(r.hashPerSec, difficultyHps);
   });
 
-  it("falls back to 7d scan last", () => {
+  it("uses extended spacing before node fallback", () => {
     const r = resolveNetworkHashPerSec({
-      miningInfo: {},
-      hashrate7d: 1100,
+      miningInfo: { networkhashps: 9999 },
+      difficulty,
+      extendedSpacingSec: spacingSec,
     });
-    assert.equal(r.source, "getnetworkhashps");
-    assert.equal(r.hashPerSec, 1100);
+    assert.equal(r.source, "recent_blocks_extended");
+    assert.equal(r.hashPerSec, measuredHps);
   });
 });
 

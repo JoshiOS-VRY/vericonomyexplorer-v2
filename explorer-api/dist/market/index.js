@@ -1,7 +1,7 @@
-import { createSwrCache } from "../cache/swrCache.js";
-import { withTimeout } from "../util/timeout.js";
-import { fetchCoinGeckoBtcUsd, fetchCoinGeckoVericoin } from "./coingecko.js";
-import { fetchLcwHistory24h, fetchLcwSingle, mapLcwToMarket, } from "./livecoinwatch.js";
+import { createSwrCache } from '../cache/swrCache.js';
+import { withTimeout } from '../util/timeout.js';
+import { fetchCoinGeckoBtcUsd, fetchCoinGeckoVericoin } from './coingecko.js';
+import { fetchLcwHistory24h, fetchLcwSingle, mapLcwToMarket } from './livecoinwatch.js';
 function getMarketCacheTtlMs() {
     const configured = Number(process.env.VCEXP_MARKET_CACHE_TTL_MS);
     if (Number.isFinite(configured) && configured > 0) {
@@ -17,13 +17,13 @@ const emptyMarket = () => ({
     volume24h: null,
     change24h: null,
     circulatingSupply: null,
-    source: "unavailable",
+    source: 'unavailable',
     updatedAt: null,
     priceHistory24h: [],
 });
 function resolveEffectiveUsd(chainId, usd, btc, btcUsd) {
     // VRC: derive USD from BTC × BTC/USD so cap matches the displayed BTC price.
-    if (chainId === "vrc" && btc != null && btcUsd != null && btcUsd > 0) {
+    if (chainId === 'vrc' && btc != null && btcUsd != null && btcUsd > 0) {
         return btc * btcUsd;
     }
     return usd;
@@ -32,14 +32,14 @@ function finalizeMarket(partial, onChainSupply, btcUsd, chainId) {
     let { usd, btc, marketCap, source } = partial;
     if (btc == null && usd != null && btcUsd != null && btcUsd > 0) {
         btc = usd / btcUsd;
-        if (source === "unavailable")
-            source = "computed";
+        if (source === 'unavailable')
+            source = 'computed';
     }
     const effectiveUsd = resolveEffectiveUsd(chainId, usd, btc, btcUsd);
     if (marketCap == null && effectiveUsd != null && onChainSupply != null) {
         marketCap = effectiveUsd * onChainSupply;
-        if (source === "unavailable")
-            source = "computed";
+        if (source === 'unavailable')
+            source = 'computed';
     }
     return applyOnChainMarketCap({
         ...partial,
@@ -51,12 +51,10 @@ function finalizeMarket(partial, onChainSupply, btcUsd, chainId) {
 }
 /** VRC cap is always on-chain supply × USD; VRM fills cap only when external data lacks it. */
 export function applyOnChainMarketCap(market, chainId, onChainSupply) {
-    if (onChainSupply == null ||
-        !Number.isFinite(onChainSupply) ||
-        market.usd == null) {
+    if (onChainSupply == null || !Number.isFinite(onChainSupply) || market.usd == null) {
         return market;
     }
-    if (chainId === "vrc") {
+    if (chainId === 'vrc') {
         return {
             ...market,
             marketCap: market.usd * onChainSupply,
@@ -70,7 +68,7 @@ export function applyOnChainMarketCap(market, chainId, onChainSupply) {
         ...market,
         marketCap: market.usd * onChainSupply,
         circulatingSupply: onChainSupply,
-        source: market.source === "unavailable" ? "computed" : market.source,
+        source: market.source === 'unavailable' ? 'computed' : market.source,
     };
 }
 let btcUsdInflight = null;
@@ -84,18 +82,18 @@ async function getSharedBtcUsd() {
 }
 async function fetchChainMarketInternal(chainId, onChainSupply, btcUsd) {
     const [usdData, btcData, history, cgVrc] = await Promise.all([
-        fetchLcwSingle(chainId, "USD"),
-        fetchLcwSingle(chainId, "BTC"),
+        fetchLcwSingle(chainId, 'USD'),
+        fetchLcwSingle(chainId, 'BTC'),
         fetchLcwHistory24h(chainId),
-        chainId === "vrc" ? fetchCoinGeckoVericoin() : Promise.resolve(null),
+        chainId === 'vrc' ? fetchCoinGeckoVericoin() : Promise.resolve(null),
     ]);
     let partial = mapLcwToMarket(usdData, btcData, history);
-    if (chainId === "vrc" && cgVrc && (cgVrc.usd != null || cgVrc.btc != null)) {
+    if (chainId === 'vrc' && cgVrc && (cgVrc.usd != null || cgVrc.btc != null)) {
         partial = {
             ...partial,
             usd: cgVrc.usd ?? partial.usd,
             btc: cgVrc.btc ?? partial.btc,
-            source: "coingecko",
+            source: 'coingecko',
             updatedAt: new Date().toISOString(),
         };
     }
@@ -106,16 +104,16 @@ const marketCache = createSwrCache({
     ttlMs: getMarketCacheTtlMs(),
     fetch: async (key, signal) => {
         if (signal.aborted)
-            throw new Error("aborted");
-        const [chainId, supplyStr] = key.split(":");
-        const supply = supplyStr === "null" ? null : Number(supplyStr);
+            throw new Error('aborted');
+        const [chainId, supplyStr] = key.split(':');
+        const supply = supplyStr === 'null' ? null : Number(supplyStr);
         const btcUsd = await getSharedBtcUsd();
         const result = await fetchChainMarketInternal(chainId, Number.isFinite(supply) ? supply : null, btcUsd);
         return result;
     },
 });
 export async function fetchChainMarket(chainId, onChainSupply = null) {
-    const key = `${chainId}:${onChainSupply ?? "null"}`;
+    const key = `${chainId}:${onChainSupply ?? 'null'}`;
     try {
         const cached = await marketCache.fetch(key);
         return (cached ?? emptyMarket());
@@ -132,15 +130,15 @@ export async function fetchHomeMarket(vrmSupply, vrcSupply) {
     return withTimeout((async () => {
         const btcUsd = await getSharedBtcUsd();
         const [vrm, vrc] = await Promise.all([
-            fetchChainMarketInternal("vrm", vrmSupply, btcUsd),
-            fetchChainMarketInternal("vrc", vrcSupply, btcUsd),
+            fetchChainMarketInternal('vrm', vrmSupply, btcUsd),
+            fetchChainMarketInternal('vrc', vrcSupply, btcUsd),
         ]);
         return {
             vrm,
             vrc,
             fetchedAt: new Date().toISOString(),
         };
-    })(), marketFetchTimeoutMs, "fetchHomeMarket").catch(() => ({
+    })(), marketFetchTimeoutMs, 'fetchHomeMarket').catch(() => ({
         vrm: emptyMarket(),
         vrc: emptyMarket(),
         fetchedAt: new Date().toISOString(),

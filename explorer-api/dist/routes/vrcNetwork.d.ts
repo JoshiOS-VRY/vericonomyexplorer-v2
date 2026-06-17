@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance } from 'fastify';
 /** CoinGecko-style supply payload: `{ "result": "<amount>" }` with up to 8 decimal places. */
 export type VrcSupplyPayload = {
     result: string;

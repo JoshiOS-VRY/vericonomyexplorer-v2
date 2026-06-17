@@ -1,6 +1,6 @@
-import { EventEmitter } from "node:events";
-import type { RpcClient } from "../rpc/pool.js";
-import type { ChainId, TipState } from "../types.js";
+import { EventEmitter } from 'node:events';
+import type { RpcClient } from '../rpc/pool.js';
+import type { ChainId, TipState } from '../types.js';
 export declare class TipBroker extends EventEmitter {
     readonly chainId: ChainId;
     private readonly rpc;

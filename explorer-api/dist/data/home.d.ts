@@ -1,4 +1,4 @@
-import type { HomeMarketPayload, HomeNetworkPayload, HomePayload, HomeShellPayload } from "../types/home.js";
+import type { HomeMarketPayload, HomeNetworkPayload, HomePayload, HomeShellPayload } from '../types/home.js';
 export declare function fetchHomeShell(): Promise<HomeShellPayload>;
 export declare function fetchHomeNetworkLite(): Promise<HomeNetworkPayload>;
 export declare function fetchHomeNetwork(): Promise<HomeNetworkPayload>;

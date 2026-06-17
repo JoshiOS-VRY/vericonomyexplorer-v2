@@ -1,4 +1,4 @@
-import type { ServerResponse } from "node:http";
+import type { ServerResponse } from 'node:http';
 export interface SsePayload {
     event?: string;
     data: string;

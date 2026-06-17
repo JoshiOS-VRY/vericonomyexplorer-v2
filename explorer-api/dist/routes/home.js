@@ -1,9 +1,11 @@
-import { createSwrCache, refreshCacheInBackground, swrFetch } from "../cache/swrCache.js";
-import { registerGlobalCache } from "../cache/registry.js";
-import { registerGlobalTipRefresh } from "../cache/tipRefresh.js";
-import { fetchHomeData, fetchHomeMarketOnly, fetchHomeNetwork, fetchHomeNetworkLite, fetchHomeShell, } from "../data/home.js";
-import { fetchLandingData } from "../data/legacy.js";
-import { withTimeout } from "../util/timeout.js";
+import { liveReadRateLimitRouteConfig } from '../env.js';
+import { createSwrCache, refreshCacheInBackground, swrFetch } from '../cache/swrCache.js';
+import { registerGlobalCache } from '../cache/registry.js';
+import { registerGlobalTipRefresh } from '../cache/tipRefresh.js';
+import { fetchHomeData, fetchHomeMarketOnly, fetchHomeNetwork, fetchHomeNetworkLite, fetchHomeShell, } from '../data/home.js';
+import { fetchLandingData } from '../data/legacy.js';
+import { withTimeout } from '../util/timeout.js';
+import { NETWORK_HASHRATE_POLL_MS } from '@vericonomy/network-metrics';
 const homeNetworkRouteTimeoutMs = Number(process.env.VCEXP_HOME_NETWORK_ROUTE_TIMEOUT_MS ?? 4_000);
 const homeMarketRouteTimeoutMs = Number(process.env.VCEXP_HOME_MARKET_ROUTE_TIMEOUT_MS ?? 4_000);
 const homeShellRouteTimeoutMs = Number(process.env.VCEXP_HOME_SHELL_ROUTE_TIMEOUT_MS ?? 5_000);
@@ -12,7 +14,7 @@ const homeCache = createSwrCache({
     ttlMs: 30_000,
     fetch: async (_key, signal) => {
         if (signal.aborted)
-            throw new Error("aborted");
+            throw new Error('aborted');
         const data = await fetchHomeData();
         return data;
     },
@@ -22,17 +24,17 @@ const homeShellCache = createSwrCache({
     ttlMs: 30_000,
     fetch: async (_key, signal) => {
         if (signal.aborted)
-            throw new Error("aborted");
+            throw new Error('aborted');
         const data = await fetchHomeShell();
         return data;
     },
 });
 const homeNetworkCache = createSwrCache({
     max: 4,
-    ttlMs: 30_000,
+    ttlMs: NETWORK_HASHRATE_POLL_MS,
     fetch: async (_key, signal) => {
         if (signal.aborted)
-            throw new Error("aborted");
+            throw new Error('aborted');
         const data = await fetchHomeNetwork();
         return data;
     },
@@ -42,7 +44,7 @@ const homeMarketCache = createSwrCache({
     ttlMs: Number(process.env.VCEXP_MARKET_CACHE_TTL_MS) || 120_000,
     fetch: async (_key, signal) => {
         if (signal.aborted)
-            throw new Error("aborted");
+            throw new Error('aborted');
         const data = await fetchHomeMarketOnly();
         return data;
     },
@@ -51,18 +53,18 @@ registerGlobalCache(homeCache);
 registerGlobalCache(homeShellCache);
 registerGlobalCache(homeNetworkCache);
 registerGlobalCache(homeMarketCache);
-registerGlobalTipRefresh("home", () => refreshCacheInBackground(homeCache, "home"));
-registerGlobalTipRefresh("shell", () => refreshCacheInBackground(homeShellCache, "shell"));
-registerGlobalTipRefresh("network", () => refreshCacheInBackground(homeNetworkCache, "network"));
+registerGlobalTipRefresh('home', () => refreshCacheInBackground(homeCache, 'home'));
+registerGlobalTipRefresh('shell', () => refreshCacheInBackground(homeShellCache, 'shell'));
+registerGlobalTipRefresh('network', () => refreshCacheInBackground(homeNetworkCache, 'network'));
 export function registerHomeCacheInvalidation() {
     /* home/shell/network refresh is registered via registerGlobalTipRefresh above */
 }
 export async function registerHomeRoutes(app) {
-    app.get("/v1/home", async () => swrFetch(homeCache, "home", fetchHomeData));
-    app.get("/v1/home/shell", async () => {
-        const stale = homeShellCache.get("shell", { allowStale: true });
+    app.get('/v1/home', async () => swrFetch(homeCache, 'home', fetchHomeData));
+    app.get('/v1/home/shell', async () => {
+        const stale = homeShellCache.get('shell', { allowStale: true });
         try {
-            return await withTimeout(swrFetch(homeShellCache, "shell", fetchHomeShell), homeShellRouteTimeoutMs, "home/shell");
+            return await withTimeout(swrFetch(homeShellCache, 'shell', fetchHomeShell), homeShellRouteTimeoutMs, 'home/shell');
         }
         catch {
             if (stale) {
@@ -83,13 +85,13 @@ export async function registerHomeRoutes(app) {
                     fetchedAt: new Date().toISOString(),
                 };
             }
-            throw new Error("home/shell unavailable");
+            throw new Error('home/shell unavailable');
         }
     });
-    app.get("/v1/home/network", async () => {
-        const stale = homeNetworkCache.get("network", { allowStale: true });
+    app.get('/v1/home/network', { ...liveReadRateLimitRouteConfig }, async () => {
+        const stale = homeNetworkCache.get('network', { allowStale: true });
         try {
-            return await withTimeout(swrFetch(homeNetworkCache, "network", fetchHomeNetwork), homeNetworkRouteTimeoutMs, "home/network");
+            return await withTimeout(swrFetch(homeNetworkCache, 'network', fetchHomeNetwork), homeNetworkRouteTimeoutMs, 'home/network');
         }
         catch {
             if (stale) {
@@ -98,16 +100,16 @@ export async function registerHomeRoutes(app) {
             return fetchHomeNetworkLite();
         }
     });
-    app.get("/v1/home/market", async () => {
-        const stale = homeMarketCache.get("market", { allowStale: true });
+    app.get('/v1/home/market', { ...liveReadRateLimitRouteConfig }, async () => {
+        const stale = homeMarketCache.get('market', { allowStale: true });
         try {
-            return await withTimeout(swrFetch(homeMarketCache, "market", fetchHomeMarketOnly), homeMarketRouteTimeoutMs, "home/market");
+            return await withTimeout(swrFetch(homeMarketCache, 'market', fetchHomeMarketOnly), homeMarketRouteTimeoutMs, 'home/market');
         }
         catch {
             if (stale) {
                 return stale;
             }
-            const { emptyMarket } = await import("../market/index.js");
+            const { emptyMarket } = await import('../market/index.js');
             return {
                 vrm: emptyMarket(),
                 vrc: emptyMarket(),

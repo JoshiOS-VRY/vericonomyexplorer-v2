@@ -122,9 +122,11 @@ async function resolveVrcSupply(
 
 function mapHashrateSource(source: string): VrmNetworkStats['hashrateSource'] {
   if (
+    source === 'recent_blocks' ||
+    source === 'blocks_per_hour' ||
+    source === 'recent_blocks_extended' ||
     source === 'networkhashps' ||
     source === 'nethashrate' ||
-    source === 'getnetworkhashps' ||
     source === 'difficulty'
   ) {
     return source;
@@ -142,7 +144,7 @@ async function resolveVrmNetworkMetrics(
   blocksPerHour: number | null;
 }> {
   const [hashrateResolved, miningInfo] = await Promise.all([
-    fetchCanonicalVrmHashrate(call, { include7d: true }),
+    fetchCanonicalVrmHashrate(call),
     call('getmininginfo').catch(() => null),
   ]);
 

@@ -1,5 +1,5 @@
-import { EventEmitter } from "node:events";
-import { getSyncTipHeight } from "../data/db.js";
+import { EventEmitter } from 'node:events';
+import { getSyncTipHeight } from '../data/db.js';
 function noop() {
     /* ignore */
 }
@@ -50,12 +50,12 @@ export class TipBroker extends EventEmitter {
         if (height == null || height < 0)
             return;
         try {
-            const hash = await this.rpc.call("getblockhash", [height]);
+            const hash = await this.rpc.call('getblockhash', [height]);
             const time = await this.resolveBlockTime(hash);
             this.current = { height: Number(height), hash, time };
         }
         catch {
-            this.current = { height: Number(height), hash: "", time: Date.now() };
+            this.current = { height: Number(height), hash: '', time: Date.now() };
         }
     }
     async poll() {
@@ -63,10 +63,10 @@ export class TipBroker extends EventEmitter {
             return;
         this.polling = true;
         try {
-            const height = Number(await this.rpc.call("getblockcount"));
+            const height = Number(await this.rpc.call('getblockcount'));
             if (this.current?.height === height)
                 return;
-            const hash = await this.rpc.call("getblockhash", [height]);
+            const hash = await this.rpc.call('getblockhash', [height]);
             const time = await this.resolveBlockTime(hash);
             this.setTip({ height, hash, time });
         }
@@ -79,7 +79,7 @@ export class TipBroker extends EventEmitter {
     }
     async resolveBlockTime(hash) {
         try {
-            const block = await this.rpc.call("getblock", [hash, 1]);
+            const block = await this.rpc.call('getblock', [hash, 1]);
             return blockTimeFromRpc(block);
         }
         catch {
@@ -88,21 +88,24 @@ export class TipBroker extends EventEmitter {
     }
     setTip(tip) {
         this.current = tip;
-        this.emit("tip", tip);
+        this.emit('tip', tip);
     }
     async startZmq(url) {
         this.zmqAbort = new AbortController();
-        const { Subscriber } = await import("zeromq");
+        const { Subscriber } = await import('zeromq');
         const sock = new Subscriber();
         try {
             sock.connect(url);
-            sock.subscribe("hashblock");
+            sock.subscribe('hashblock');
             for await (const [, message] of sock) {
                 if (this.zmqAbort.signal.aborted)
                     break;
-                const hash = message.toString("hex");
+                const hash = message.toString('hex');
                 try {
-                    const block = await this.rpc.call("getblock", [hash, 1]);
+                    const block = await this.rpc.call('getblock', [
+                        hash,
+                        1,
+                    ]);
                     const height = Number(block.height);
                     if (this.current?.height === height)
                         continue;

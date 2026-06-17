@@ -1,5 +1,5 @@
-import type { FastifyInstance } from "fastify";
-import { type CacheValue } from "../cache/swrCache.js";
+import type { FastifyInstance } from 'fastify';
+import { type CacheValue } from '../cache/swrCache.js';
 export declare const summaryCache: import("lru-cache/raw").LRUCache<string, CacheValue, unknown>;
 export declare const summaryLiteCache: import("lru-cache/raw").LRUCache<string, CacheValue, unknown>;
 export declare const latestBlocksCache: import("lru-cache/raw").LRUCache<string, CacheValue, unknown>;

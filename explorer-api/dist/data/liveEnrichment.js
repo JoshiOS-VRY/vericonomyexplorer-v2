@@ -1,15 +1,15 @@
-import { createRequire } from "node:module";
-import { runIndexerQuery } from "../db/queryPool.js";
-import { repoRoot, getSummaryLiveBlockLimit } from "../env.js";
-import { getTip } from "../live/brokers.js";
+import { createRequire } from 'node:module';
+import { runIndexerQuery } from '../db/queryPool.js';
+import { repoRoot, getSummaryLiveBlockLimit } from '../env.js';
+import { getTip } from '../live/brokers.js';
 const require = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const health = require(`${repoRoot}/app/indexerV2/health.js`);
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const liveChain = require(`${repoRoot}/app/indexerV2/liveChain.js`);
 const offlineStatus = {
-    label: "Offline",
-    message: "Unable to reach the chain node.",
+    label: 'Offline',
+    message: 'Unable to reach the chain node.',
     syncing: false,
 };
 function getLatestBlockHeight(latestBlocks) {
@@ -27,7 +27,7 @@ function topBlockNeedsRpcEnrichment(blocks) {
     const difficulty = top.difficulty;
     return (top.size == null ||
         difficulty == null ||
-        difficulty === "" ||
+        difficulty === '' ||
         top.time == null ||
         !Number.isFinite(Number(top.time)));
 }
@@ -41,8 +41,7 @@ function shouldFetchLiveBlocks(tip, _indexedHeight, latestBlockHeight, options, 
     if (tip.height > latestBlockHeight) {
         return true;
     }
-    return (tip.height === latestBlockHeight &&
-        topBlockNeedsRpcEnrichment(indexedBlocks));
+    return tip.height === latestBlockHeight && topBlockNeedsRpcEnrichment(indexedBlocks);
 }
 function computeLiveBlockCount(tipHeight, indexedHeight, latestBlockHeight, maxCount, indexedBlocks = []) {
     if (latestBlockHeight != null &&
@@ -98,14 +97,14 @@ async function resolveTip(chainId, options) {
     return (await liveChain.getTip(chainId, options));
 }
 async function enrichVrcBlockInterestRates(blocks, chainId, options) {
-    if (chainId !== "vrc" || blocks.length === 0) {
+    if (chainId !== 'vrc' || blocks.length === 0) {
         return blocks;
     }
     if (blocks.every((block) => block.interestRatePercent != null)) {
         return blocks;
     }
     try {
-        return (await runIndexerQuery("enrichBlockInterestRatesIndexed", [chainId, blocks], options));
+        return (await runIndexerQuery('enrichBlockInterestRatesIndexed', [chainId, blocks], options));
     }
     catch {
         return blocks;
@@ -113,7 +112,7 @@ async function enrichVrcBlockInterestRates(blocks, chainId, options) {
 }
 export async function enrichLatestBlocksLive(latestBlocks, chainId, summaryHealth, options = {}) {
     const indexedBlocks = Array.isArray(latestBlocks)
-        ? latestBlocks.filter((block) => block != null && typeof block === "object")
+        ? latestBlocks.filter((block) => block != null && typeof block === 'object')
         : [];
     try {
         const tip = await resolveTip(chainId, options);
