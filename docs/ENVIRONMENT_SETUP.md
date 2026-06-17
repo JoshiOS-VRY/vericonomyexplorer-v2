@@ -1,6 +1,6 @@
-# VeriConomy Explorer Environment Setup
+# Vericonomy Explorer Environment Setup
 
-This document explains the runtime environment variables needed to run the VeriConomy Explorer V2 locally or on a staging server.
+This document explains the runtime environment variables needed to run the Vericonomy Explorer V2 locally or on a staging server.
 
 The explorer should not commit real node credentials. Use `.env.example` or this document as a template, then create a private `.env` file with real values on each machine.
 
@@ -32,7 +32,7 @@ Do not expose Verium or VeriCoin RPC ports to the public internet. If a shared n
 Create a file named `.env` in the project root:
 
 ```bash
-# VeriConomy Explorer V2
+# Vericonomy Explorer V2
 # Copy this file to .env and replace placeholder values.
 # Do not commit real RPC usernames/passwords.
 

@@ -39,7 +39,7 @@ export function ExplorerHomeDashboard({
   return (
     <div className="space-y-8">
       <PageHero
-        eyebrow="VeriConomy Explorer"
+        eyebrow="Vericonomy Explorer"
         title="Binary-chain block explorer"
         subtitle="Live chain stats, recent blocks, and balances for Verium (VRM) and VeriCoin (VRC). Search by block height, hash, transaction ID, or address from the header on any page."
         actions={

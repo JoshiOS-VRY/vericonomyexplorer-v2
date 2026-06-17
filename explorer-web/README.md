@@ -1,4 +1,4 @@
-# VeriConomy Explorer Web (Next.js + Tailwind)
+# Vericonomy Explorer Web (Next.js + Tailwind)
 
 Next.js frontend for the VeriConomy dual-chain explorer. Uses Verium design tokens and consumes the Express `/api/*` backend.
 

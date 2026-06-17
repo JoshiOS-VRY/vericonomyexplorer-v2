@@ -1,7 +1,7 @@
 export function getPageTitle(pathname: string): string {
   const path = pathname.replace(/\/$/, '') || '/';
 
-  if (path === '/') return 'VeriConomy Explorer';
+  if (path === '/') return 'Vericonomy Explorer';
   if (path === '/vrm') return 'Verium Explorer';
   if (path.startsWith('/vrm/richlist')) return 'Richlist';
   if (path.startsWith('/vrm/miners')) return 'Top Miners';
@@ -16,5 +16,5 @@ export function getPageTitle(pathname: string): string {
   if (path.startsWith('/api/docs')) return 'API';
   if (path.startsWith('/search')) return 'Search';
   if (path.startsWith('/admin')) return 'Admin';
-  return 'VeriConomy Explorer';
+  return 'Vericonomy Explorer';
 }

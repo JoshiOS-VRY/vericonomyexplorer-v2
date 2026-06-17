@@ -101,7 +101,7 @@ router.post('/vrm/search', function (req, res, next) {
 
 function renderLandingPage(req, res) {
   try {
-    res.locals.metaTitle = 'VeriConomy Explorer';
+    res.locals.metaTitle = 'Vericonomy Explorer';
     res.locals.indexerPage = true;
     res.locals.landing = {
       health: indexerHealth.getIndexerHealth(),
@@ -116,7 +116,7 @@ function renderLandingPage(req, res) {
     };
     return res.render('indexer/landing');
   } catch (err) {
-    return renderIndexerError(res, err, 'VeriConomy Explorer');
+    return renderIndexerError(res, err, 'Vericonomy Explorer');
   }
 }
 

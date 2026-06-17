@@ -188,7 +188,7 @@ export function Sidebar({ pathname }: { pathname: string }) {
       </nav>
 
       <div className="border-t border-border px-5 py-3 text-xs text-fg-subtle">
-        VeriConomy Explorer
+        Vericonomy Explorer
       </div>
     </aside>
   );

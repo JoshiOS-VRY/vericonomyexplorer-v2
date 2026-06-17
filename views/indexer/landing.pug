@@ -1,7 +1,7 @@
 extends ../layout
 
 block headContent
-	title VeriConomy Explorer
+	title Vericonomy Explorer
 
 block content
 	- const vrmHealth = landing.vrmSummary.health;
@@ -10,7 +10,7 @@ block content
 	.vce-shell
 		section.vce-hero
 			.vce-hero-copy
-				h1 VeriConomy Explorer
+				h1 Vericonomy Explorer
 				p.vce-hero-subtitle Dual-chain explorer surface for VeriCoin and Verium, built around source-labeled data and a trusted genesis index.
 				form.vce-search(method="post", action="./vrm/search")
 					input(type="hidden", name="_csrf", value=csrfToken)

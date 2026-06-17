@@ -1,4 +1,4 @@
-# VeriConomy Explorer V2
+# Vericonomy Explorer V2
 
 Open-source, self-hosted explorer foundation for the VeriConomy dual-chain ecosystem: VeriCoin (VRC) and Verium (VRM).
 

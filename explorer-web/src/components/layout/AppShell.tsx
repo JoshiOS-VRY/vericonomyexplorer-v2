@@ -36,7 +36,7 @@ export function AppShell({
           <div className="mx-auto max-w-[1720px]">{children}</div>
         </main>
         <footer className="border-t border-border bg-bg-panel py-4 text-center text-xs text-fg-subtle">
-          VeriConomy Explorer · Verium (VRM) · VeriCoin (VRC)
+          Vericonomy Explorer · Verium (VRM) · VeriCoin (VRC)
         </footer>
       </div>
     </ClientProviders>
