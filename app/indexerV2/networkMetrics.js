@@ -14,6 +14,93 @@ const Decimal = require('decimal.js');
 const NETWORK = 'main';
 const HOUR_SECONDS = 3600;
 
+/** Verium scrypt² factor — keep in sync with @vericonomy/network-metrics. */
+const VRM_POW_WORK_FACTOR = (1024 * 4294967296) / 1000;
+
+let networkMetricsModulePromise = null;
+
+function loadNetworkMetricsModule() {
+  if (!networkMetricsModulePromise) {
+    networkMetricsModulePromise = import('../../packages/network-metrics/dist/index.js');
+  }
+  return networkMetricsModulePromise;
+}
+
+function buildBlockIndex(rows) {
+  const blockIndex = new Map();
+  for (const row of rows) {
+    blockIndex.set(toSafeNumber(row.height), {
+      time: toSafeNumber(row.time),
+      difficulty: row.difficulty == null ? null : Number(row.difficulty),
+    });
+  }
+  return blockIndex;
+}
+
+function countBlocksInLastHour(blockIndex, tipHeight) {
+  const tip = blockIndex.get(tipHeight);
+  if (!tip) {
+    return 0;
+  }
+  const hourStart = tip.time - HOUR_SECONDS;
+  let count = 0;
+  for (let height = tipHeight; height >= 0; height -= 1) {
+    const block = blockIndex.get(height);
+    if (!block) {
+      break;
+    }
+    if (block.time <= hourStart) {
+      break;
+    }
+    count += 1;
+  }
+  return count;
+}
+
+async function resolveHistoricalVrmHashrateKhPerMin(blockIndex, tipHeight, difficulty) {
+  const parsedDifficulty = Number(difficulty);
+  if (!Number.isFinite(parsedDifficulty) || parsedDifficulty <= 0) {
+    return null;
+  }
+
+  const metrics = await loadNetworkMetricsModule();
+  const {
+    resolveNetworkHashPerSec,
+    meanBlockSpacingSec,
+    VRM_HASHRATE_WINDOW_BLOCKS,
+    VRM_POW_INTERVAL,
+    VRM_BLOCKS_PER_HOUR_MIN,
+  } = metrics;
+
+  let recentSpacingSec = null;
+  if (tipHeight >= VRM_HASHRATE_WINDOW_BLOCKS) {
+    const start = blockIndex.get(tipHeight - VRM_HASHRATE_WINDOW_BLOCKS);
+    const tip = blockIndex.get(tipHeight);
+    if (start && tip) {
+      recentSpacingSec = meanBlockSpacingSec(start.time, tip.time, VRM_HASHRATE_WINDOW_BLOCKS);
+    }
+  }
+
+  let extendedSpacingSec = null;
+  if (tipHeight >= VRM_POW_INTERVAL) {
+    const start = blockIndex.get(tipHeight - VRM_POW_INTERVAL);
+    const tip = blockIndex.get(tipHeight);
+    if (start && tip) {
+      extendedSpacingSec = meanBlockSpacingSec(start.time, tip.time, VRM_POW_INTERVAL);
+    }
+  }
+
+  const blocksPerHour = countBlocksInLastHour(blockIndex, tipHeight);
+  const resolved = resolveNetworkHashPerSec({
+    difficulty: parsedDifficulty,
+    recentSpacingSec,
+    extendedSpacingSec,
+    blocksPerHour: blocksPerHour >= VRM_BLOCKS_PER_HOUR_MIN ? blocksPerHour : null,
+  });
+
+  return resolved.hashrateKhPerMin;
+}
+
 function createNetworkMetricStatements(db) {
   return {
     upsertBucket: db.prepare(`
@@ -74,10 +161,14 @@ async function writeBucketBatch(db, chainId, bucketEntries, options = {}) {
         metrics.addressCount = addressCountAtBucketEnd(addressFirstSeenTimes, bucketStart);
       }
 
-      if (chainId === 'vrm' && bucket.difficulty != null) {
-        const hashPerSec = difficultyToHashPerSec(bucket.difficulty, chainId);
-        if (hashPerSec != null) {
-          metrics.hashrateKhPerMin = hashPerSecToKhPerMin(hashPerSec);
+      if (chainId === 'vrm') {
+        if (bucket.hashrateKhPerMin != null) {
+          metrics.hashrateKhPerMin = bucket.hashrateKhPerMin;
+        } else if (bucket.difficulty != null) {
+          const hashPerSec = difficultyToHashPerSec(bucket.difficulty, chainId);
+          if (hashPerSec != null) {
+            metrics.hashrateKhPerMin = hashPerSecToKhPerMin(hashPerSec);
+          }
         }
       }
 
@@ -136,6 +227,9 @@ function difficultyToHashPerSec(difficulty, chainId) {
     return null;
   }
   const targetBlockTimeSeconds = getTargetBlockTimeSeconds(chainId);
+  if (chainId === 'vrm') {
+    return (parsed * VRM_POW_WORK_FACTOR) / targetBlockTimeSeconds;
+  }
   return (parsed * 2 ** 32) / targetBlockTimeSeconds;
 }
 
@@ -195,7 +289,8 @@ async function backfillFromBlocks(db, chainId, options = {}) {
 		WHERE chain_id = ? AND status = 'main'
 	`;
   if (since != null) {
-    blockSql += ' AND time >= ?';
+    // Explicit cast so Postgres can infer the parameter type (42P18 without it).
+    blockSql += ' AND time >= CAST(? AS BIGINT)';
     blockParams.push(since);
   }
   blockSql += ' ORDER BY height ASC';
@@ -209,6 +304,7 @@ async function backfillFromBlocks(db, chainId, options = {}) {
   const supplySeries =
     options.skipSupplySeries === true ? null : await buildSupplySeries(db, chainId);
   const addressFirstSeenTimes = await loadAddressFirstSeenTimes(db, chainId);
+  const blockIndex = buildBlockIndex(rows);
   const buckets = new Map();
   for (const row of rows) {
     const bucketStart = hourBucketStart(toSafeNumber(row.time));
@@ -221,6 +317,16 @@ async function backfillFromBlocks(db, chainId, options = {}) {
         difficulty: Number.isFinite(difficulty) ? difficulty : (existing?.difficulty ?? null),
         time: toSafeNumber(row.time),
       });
+    }
+  }
+
+  if (chainId === 'vrm') {
+    for (const bucket of buckets.values()) {
+      bucket.hashrateKhPerMin = await resolveHistoricalVrmHashrateKhPerMin(
+        blockIndex,
+        bucket.blockHeight,
+        bucket.difficulty
+      );
     }
   }
 
@@ -311,4 +417,7 @@ module.exports = {
   hashPerSecToKhPerMin,
   getTargetBlockTimeSeconds,
   estimatedSupplyAtHeight,
+  resolveHistoricalVrmHashrateKhPerMin,
+  buildBlockIndex,
+  countBlocksInLastHour,
 };

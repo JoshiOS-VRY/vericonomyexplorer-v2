@@ -13,6 +13,13 @@ export const VRM_BLOCKS_7_DAYS = VRM_BLOCKS_PER_DAY * 7;
 /** Primary reactive window (~30 min at 300s target spacing). */
 export const VRM_HASHRATE_WINDOW_BLOCKS = 6;
 
+/**
+ * Ignore the short recent-blocks window when mean spacing exceeds this (seconds).
+ * Slow block luck lowers spacing-based estimates far below actual mining power;
+ * difficulty retargets on 72 blocks, not every slow gap.
+ */
+export const VRM_HASHRATE_MAX_RECENT_SPACING_SEC = VRM_TARGET_BLOCK_TIME_SEC * 2;
+
 /** Extended window matching veriumd PoW retarget interval (GetPoWKHashPM). */
 export const VRM_POW_INTERVAL = 72;
 

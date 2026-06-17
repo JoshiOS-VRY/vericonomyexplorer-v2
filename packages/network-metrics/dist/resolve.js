@@ -1,5 +1,5 @@
 import { difficultyToHashPerSec } from "./convert.js";
-import { VRM_TARGET_BLOCK_TIME_SEC } from "./constants.js";
+import { VRM_HASHRATE_MAX_RECENT_SPACING_SEC, VRM_TARGET_BLOCK_TIME_SEC, } from "./constants.js";
 import { blocksPerHourToSpacingSec, difficultySpacingToHashPerSec, } from "./spacing.js";
 function readNethashrateKhPerMin(miningInfo) {
     const direct = miningInfo?.nethashrate;
@@ -30,7 +30,9 @@ export function normalizeMiningInfoHashrate(miningInfo) {
 export function resolveNetworkHashPerSec(input) {
     const targetBlockTimeSec = input.targetBlockTimeSec ?? VRM_TARGET_BLOCK_TIME_SEC;
     const difficulty = input.difficulty;
-    if (difficulty != null && input.recentSpacingSec != null) {
+    if (difficulty != null &&
+        input.recentSpacingSec != null &&
+        input.recentSpacingSec <= VRM_HASHRATE_MAX_RECENT_SPACING_SEC) {
         const hashPerSec = difficultySpacingToHashPerSec(difficulty, input.recentSpacingSec);
         if (hashPerSec != null) {
             return toResolved(hashPerSec, "recent_blocks");

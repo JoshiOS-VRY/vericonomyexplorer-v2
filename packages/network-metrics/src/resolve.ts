@@ -1,5 +1,8 @@
 import { difficultyToHashPerSec } from "./convert.js";
-import { VRM_TARGET_BLOCK_TIME_SEC } from "./constants.js";
+import {
+  VRM_HASHRATE_MAX_RECENT_SPACING_SEC,
+  VRM_TARGET_BLOCK_TIME_SEC,
+} from "./constants.js";
 import {
   blocksPerHourToSpacingSec,
   difficultySpacingToHashPerSec,
@@ -77,7 +80,11 @@ export function resolveNetworkHashPerSec(
   const targetBlockTimeSec = input.targetBlockTimeSec ?? VRM_TARGET_BLOCK_TIME_SEC;
   const difficulty = input.difficulty;
 
-  if (difficulty != null && input.recentSpacingSec != null) {
+  if (
+    difficulty != null &&
+    input.recentSpacingSec != null &&
+    input.recentSpacingSec <= VRM_HASHRATE_MAX_RECENT_SPACING_SEC
+  ) {
     const hashPerSec = difficultySpacingToHashPerSec(difficulty, input.recentSpacingSec);
     if (hashPerSec != null) {
       return toResolved(hashPerSec, "recent_blocks");

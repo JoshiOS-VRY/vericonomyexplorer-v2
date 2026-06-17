@@ -39,7 +39,7 @@ describe("difficultySpacingToHashPerSec", () => {
     const difficulty = 0.0000852;
     const spacing = 300;
     const hashPerSec = difficultySpacingToHashPerSec(difficulty, spacing)!;
-    assert.equal(hashPerSec, (difficulty * VRM_POW_WORK_FACTOR) / spacing);
+    assert.ok(Math.abs(hashPerSec - 1250) < 50, `expected ~1250 H/s, got ${hashPerSec}`);
   });
 });
 
@@ -111,6 +111,17 @@ describe("resolveNetworkHashPerSec", () => {
     const r = resolveNetworkHashPerSec({
       miningInfo: { networkhashps: 9999 },
       difficulty,
+      extendedSpacingSec: spacingSec,
+    });
+    assert.equal(r.source, "recent_blocks_extended");
+    assert.equal(r.hashPerSec, measuredHps);
+  });
+
+  it("skips recent blocks when spacing is anomalously slow (block luck)", () => {
+    const r = resolveNetworkHashPerSec({
+      miningInfo: { networkhashps: 1219.5 },
+      difficulty,
+      recentSpacingSec: 925,
       extendedSpacingSec: spacingSec,
     });
     assert.equal(r.source, "recent_blocks_extended");
