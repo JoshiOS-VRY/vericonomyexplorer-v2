@@ -1,0 +1,84 @@
+# Staging UI + FastAPI only. Shares prod index DB, Postgres, and Caddy ingress.
+#
+# Run from the staging git checkout (staging branch):
+#   docker compose -p vericonomy-staging \
+#     -f deploy/option-a/docker-compose.staging.yml \
+#     --env-file .env.staging up -d --build
+#
+# Or: bash deploy/option-a/deploy-staging.sh
+
+name: vericonomy-staging
+
+networks:
+  prod_private:
+    external: true
+    name: ${PROD_COMPOSE_PROJECT:-vericonomyexplorer-v2}_private
+
+volumes:
+  vericonomy-database:
+    external: true
+    name: ${PROD_COMPOSE_PROJECT:-vericonomyexplorer-v2}_vericonomy-database
+
+services:
+  explorer-web-staging:
+    container_name: vericonomy-explorer-web-staging
+    build:
+      context: .
+      dockerfile: explorer-web/Dockerfile
+      args:
+        EXPLORER_FAST_API_URL: http://explorer-fast-api-staging:3013
+        EXPLORER_API_URL: http://vericonomy-explorer-express:3002
+    image: vericonomy-explorer-web:staging
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-.env.staging}
+    environment:
+      PORT: ${STAGING_WEB_PORT:-3010}
+      HOSTNAME: 0.0.0.0
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://staging-explorer.vericonomy.com}
+      EXPLORER_SITE_URL: ${EXPLORER_SITE_URL:-https://staging-explorer.vericonomy.com}
+      EXPLORER_API_URL: http://vericonomy-explorer-express:3002
+      EXPLORER_FAST_API_URL: http://explorer-fast-api-staging:3013
+      VCEXP_FAST_API_HOST: explorer-fast-api-staging
+      VCEXP_FAST_API_PORT: ${STAGING_FAST_API_PORT:-3013}
+    expose:
+      - '${STAGING_WEB_PORT:-3010}'
+    networks:
+      prod_private:
+        aliases:
+          - explorer-web-staging
+
+  explorer-fast-api-staging:
+    container_name: vericonomy-explorer-fast-api-staging
+    build:
+      context: .
+      dockerfile: explorer-api/Dockerfile
+    image: vericonomy-explorer-fast-api:staging
+    restart: unless-stopped
+    env_file:
+      - ${ENV_FILE:-.env.staging}
+    environment:
+      VCEXP_FAST_API_HOST: 0.0.0.0
+      VCEXP_FAST_API_PORT: ${STAGING_FAST_API_PORT:-3013}
+      VCEXP_DB_BACKEND: ${VCEXP_DB_BACKEND:-sqlite}
+      VCEXP_PG_URL: ${VCEXP_PG_URL:-postgres://vericonomy:@vericonomy-postgres:5432/vericonomy}
+      VCEXP_INDEXER_SQLITE_PATH: ${VCEXP_INDEXER_SQLITE_PATH:-/app/database/vericonomy-index.sqlite}
+      VCEXP_CHAINS_CONFIG: ${VCEXP_CHAINS_CONFIG:-/app/configs/chains.json}
+      VCEXP_VRM_RPC_HOST: ${VCEXP_VRM_RPC_HOST:-172.18.0.1}
+      VCEXP_VRC_RPC_HOST: ${VCEXP_VRC_RPC_HOST:-172.18.0.1}
+      VCEXP_API_DB_WORKER_TIMEOUT_MS: ${VCEXP_API_DB_WORKER_TIMEOUT_MS:-30000}
+      VCEXP_API_DB_WORKERS: ${VCEXP_API_DB_WORKERS:-2}
+      VCEXP_API_DB_FAST_WORKERS: ${VCEXP_API_DB_FAST_WORKERS:-1}
+      VCEXP_SQLITE_BUSY_RETRY_ATTEMPTS: ${VCEXP_SQLITE_BUSY_RETRY_ATTEMPTS:-6}
+      VCEXP_SQLITE_BUSY_RETRY_DELAY_MS: ${VCEXP_SQLITE_BUSY_RETRY_DELAY_MS:-100}
+      VCEXP_SQLITE_CACHE_MB: ${VCEXP_SQLITE_CACHE_MB:-128}
+      VCEXP_SQLITE_MMAP_MB: ${VCEXP_SQLITE_MMAP_MB:-128}
+    expose:
+      - '${STAGING_FAST_API_PORT:-3013}'
+    volumes:
+      - vericonomy-database:/app/database:ro
+      - ./configs/chains.json:/app/configs/chains.json:ro
+    networks:
+      prod_private:
+        aliases:
+          - explorer-fast-api-staging

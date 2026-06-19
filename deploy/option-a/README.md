@@ -261,13 +261,19 @@ docker compose -f docker-compose.option-a.yml --env-file .env.production run --r
 
 ## 7) Update / rollback
 
-Update:
+Production only (`main` branch):
 
 ```bash
-git pull
-docker compose -f docker-compose.option-a.yml --env-file .env.production build
-docker compose -f docker-compose.option-a.yml --env-file .env.production up -d
+bash deploy/option-a/deploy-prod.sh
 ```
+
+Staging only (`staging` branch) — does **not** touch production UI/API containers:
+
+```bash
+bash deploy/option-a/deploy-staging.sh
+```
+
+See **`deploy/option-a/STAGING.md`** for the two-checkout layout, GitHub Actions, and first-time setup.
 
 Rollback to previous containers (quick):
 

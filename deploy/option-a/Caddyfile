@@ -3,19 +3,14 @@
   admin off
 }
 
-# Production + staging share the same Next.js + FastAPI stack.
-{$PUBLIC_DOMAIN}, {$STAGING_DOMAIN} {
-  # Wallet push API (light wallet APNs registration). Strip /push prefix.
+# Production — explorer.vericonomy.com (main branch checkout + deploy-prod.sh)
+{$PUBLIC_DOMAIN} {
   handle_path /push/* {
     reverse_proxy vericonomy-push-api:8080
   }
 
-  # API + SSE: bypass Next.js (rewrites are build-time) and avoid compressing event streams.
-  # Application rate limits live in explorer-api (VCEXP_RATE_LIMIT_*). Optional coarse edge
-  # limiting: https://caddyserver.com/docs/modules/http.handlers.rate_limit
-  # Example: rate_limit { zone public_api { key {remote_ip} events 50 window 1s} }
   handle /v1/* {
-    reverse_proxy explorer-fast-api:3003 {
+    reverse_proxy vericonomy-explorer-fast-api:3003 {
       header_up X-Real-IP {http.request.header.CF-Connecting-IP}
     }
   }
@@ -30,18 +25,39 @@
       Referrer-Policy "strict-origin-when-cross-origin"
     }
 
-    reverse_proxy explorer-web:3000
+    reverse_proxy vericonomy-explorer-web:3000
   }
 }
 
-# Legacy Express. Use one block when LEGACY_PUBLIC_DOMAIN and LEGACY_STAGING_DOMAIN match.
-{$LEGACY_PUBLIC_DOMAIN} {
-  encode zstd gzip
-  reverse_proxy explorer-express:3002
+# Staging — staging-explorer.vericonomy.com (staging branch checkout + deploy-staging.sh)
+{$STAGING_DOMAIN} {
+  handle /v1/* {
+    reverse_proxy vericonomy-explorer-fast-api-staging:3013 {
+      header_up X-Real-IP {http.request.header.CF-Connecting-IP}
+    }
+  }
+
+  handle {
+    encode zstd gzip
+
+    header {
+      X-Robots-Tag "noindex, nofollow"
+      Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+      X-Content-Type-Options "nosniff"
+      X-Frame-Options "SAMEORIGIN"
+      Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    reverse_proxy vericonomy-explorer-web-staging:3010
+  }
 }
 
-# HTTP-only site for certbot webroot (no auto-HTTPS redirect on :80).
-# ElectrumX terminates TLS itself on 53002/53004.
+# Legacy Express (production hostname only)
+{$LEGACY_PUBLIC_DOMAIN} {
+  encode zstd gzip
+  reverse_proxy vericonomy-explorer-express:3002
+}
+
 http://electrumx-vrm3.vericonomy.com {
   root * /var/www/acme
   handle /.well-known/acme-challenge/* {
@@ -58,8 +74,6 @@ http://electrumx-vrc3.vericonomy.com {
   respond 404
 }
 
-# iOS wallet push notification registration API (dedicated hostname).
-# Point push.vericonomy.com DNS to this host (same as explorer) when ready.
 push.vericonomy.com {
   reverse_proxy vericonomy-push-api:8080
 }

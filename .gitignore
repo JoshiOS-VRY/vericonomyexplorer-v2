@@ -58,6 +58,7 @@ typings/
 .env
 .env.local
 .env.production
+.env.staging
 configs/chains.json
 
 # cache dir (repo root only — do not ignore explorer-api/src/cache/)

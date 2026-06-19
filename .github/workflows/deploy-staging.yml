@@ -1,0 +1,32 @@
+name: Deploy staging explorer
+
+on:
+  push:
+    branches:
+      - staging
+  workflow_dispatch:
+
+concurrency:
+  group: explorer-staging-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy staging stack on explorer droplet
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EXPLORER_SSH_HOST }}
+          username: ${{ secrets.EXPLORER_SSH_USER }}
+          key: ${{ secrets.EXPLORER_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            STAGING_ROOT="${EXPLORER_STAGING_ROOT:-/root/vericonomyexplorer-v2-staging}"
+            if [[ ! -d "$STAGING_ROOT/.git" ]]; then
+              echo "Staging checkout missing. Run deploy/option-a/setup-staging-checkout.sh on the droplet first."
+              exit 1
+            fi
+            cd "$STAGING_ROOT"
+            bash deploy/option-a/deploy-staging.sh
