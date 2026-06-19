@@ -3,18 +3,12 @@
 import { useMemo } from 'react';
 import { HomeChainLane } from '@/components/explorer/home/HomeChainLane';
 import { HomeHolderBoard } from '@/components/explorer/home/HomeHolderBoard';
-import { HomeIntro } from '@/components/explorer/home/HomeIntro';
-import { HomeNetworkHealth } from '@/components/explorer/home/HomeNetworkHealth';
-import { HomePulseStrip } from '@/components/explorer/home/HomePulseStrip';
-import { HomeSupplySection } from '@/components/explorer/home/HomeSupplySection';
 import { HomeQuickLinks } from '@/components/explorer/home/HomeQuickLinks';
-import { HomeSearchStrip } from '@/components/explorer/home/HomeSearchStrip';
 import { useDualChainLive } from '@/hooks/useDualChainLive';
 import { useHomeMarket } from '@/hooks/useHomeMarket';
 import { useHydrated } from '@/hooks/useHydrated';
 import { useHomeNetworkLive } from '@/hooks/useHomeNetworkLive';
 import type { HomeNetworkPayload, HomeShellPayload } from '@/lib/api/types';
-import { isChainLive } from '@/lib/chainDisplay';
 import { enrichHomeNetworkPayload } from '@/lib/enrichNetwork';
 import { applyOnChainMarketCap } from '@/lib/enrichMarket';
 import { emptyMarketPayload, emptyNetworkPayload } from '@/lib/homeDefaults';
@@ -59,17 +53,6 @@ export function HomeDashboard({ initialShell, initialNetwork }: HomeDashboardPro
     : (initialShell.vrc.summary.health.heights.bestRpcHeight ??
       initialShell.vrc.summary.health.heights.maxIndexedHeight);
 
-  const vrmLive = isChainLive(
-    vrmSummary.health,
-    vrmSummary.latestBlocks[0]?.height,
-    live.vrm.chainHeight
-  );
-  const vrcLive = isChainLive(
-    vrcSummary.health,
-    vrcSummary.latestBlocks[0]?.height,
-    live.vrc.chainHeight
-  );
-
   const vrmSupply = useMemo(
     () => resolveRichlistTotalSupply(resolveSupply('vrm', network, initialNetwork), market.vrm),
     [network, initialNetwork, market.vrm]
@@ -81,36 +64,6 @@ export function HomeDashboard({ initialShell, initialNetwork }: HomeDashboardPro
 
   return (
     <div className="home-dashboard">
-      <HomeIntro vrmLive={vrmLive} vrcLive={vrcLive} />
-      <HomeSearchStrip />
-
-      <HomePulseStrip
-        vrmSummary={vrmSummary}
-        vrcSummary={vrcSummary}
-        vrmHeight={vrmHeight}
-        vrcHeight={vrcHeight}
-        vrmHeightPulse={hydrated && live.vrm.heightPulse}
-        vrcHeightPulse={hydrated && live.vrc.heightPulse}
-        vrmMarket={market.vrm}
-        vrcMarket={market.vrc}
-        vrmNetwork={network.vrm}
-        vrcNetwork={network.vrc}
-      />
-
-      <HomeNetworkHealth
-        vrmSummary={vrmSummary}
-        vrcSummary={vrcSummary}
-        vrmHeight={vrmHeight}
-        vrcHeight={vrcHeight}
-      />
-
-      <HomeSupplySection
-        vrmNetwork={network.vrm}
-        vrcNetwork={network.vrc}
-        vrmMarket={market.vrm}
-        vrcMarket={market.vrc}
-      />
-
       <div className="home-dashboard__lanes">
         <HomeChainLane
           chainId="vrm"

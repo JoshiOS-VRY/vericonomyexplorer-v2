@@ -22,13 +22,6 @@ export function HomeLoadingSkeleton() {
   return (
     <div className="home-page">
       <div className="home-dashboard">
-        <Skeleton className="h-48 w-full rounded-2xl" />
-        <Skeleton className="h-20 w-full rounded-xl" />
-        <Skeleton className="h-16 w-full" />
-        <div className="grid gap-4 md:grid-cols-2">
-          <Skeleton className="h-56 rounded-xl" />
-          <Skeleton className="h-56 rounded-xl" />
-        </div>
         <LaneSkeleton />
         <LaneSkeleton />
         <div className="grid gap-6 lg:grid-cols-2">
