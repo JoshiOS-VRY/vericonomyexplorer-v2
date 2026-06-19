@@ -63,6 +63,7 @@ export function HomeChainLane({
     chainHeight,
     LANE_BLOCK_COUNT
   );
+  const displayBlocks = [...blocks].reverse();
 
   return (
     <section
@@ -118,16 +119,19 @@ export function HomeChainLane({
       {error ? <p className="home-lane__error">{error}</p> : null}
 
       <div className="home-lane__feed-wrap">
-        {blocks.length === 0 ? (
+        {displayBlocks.length === 0 ? (
           <p className="home-lane__empty">Waiting for blocks…</p>
         ) : (
-          <div className="home-lane__feed" aria-label={`Latest ${config.ticker} blocks`}>
-            {blocks.map((block, index) => (
+          <div
+            className="home-lane__feed"
+            aria-label={`Latest ${displayBlocks.length} ${config.ticker} blocks, oldest to newest`}
+          >
+            {displayBlocks.map((block, index) => (
               <HomeBlockCard
                 key={block.hash}
                 block={block}
                 chainId={chainId}
-                isNewest={index === 0}
+                isNewest={index === displayBlocks.length - 1}
                 blockHref={config.blockHref?.(block.height)}
               />
             ))}

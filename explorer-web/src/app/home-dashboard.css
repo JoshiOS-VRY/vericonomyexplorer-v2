@@ -391,6 +391,7 @@
 }
 
 .home-block-card--new {
+  scroll-snap-align: end;
   border-color: color-mix(in srgb, var(--lane-accent) 45%, var(--border));
   background: color-mix(in srgb, var(--lane-accent-soft) 35%, var(--bg-panel));
 }
