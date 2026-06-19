@@ -8,6 +8,7 @@ import { BlockMiningCard } from '@/components/explorer/block/BlockMiningCard';
 import { BlockShareActions } from '@/components/explorer/block/BlockShareActions';
 import { BlockStatusBar } from '@/components/explorer/block/BlockStatusBar';
 import { BlockTxTable } from '@/components/explorer/block/BlockTxTable';
+import { AlertBanner } from '@/components/explorer/ExplorerUi';
 import { useLivePoll } from '@/hooks/useLivePoll';
 import { useStableChainLive } from '@/hooks/useStableChainLive';
 import { fetchBlockClient } from '@/lib/api/client';
@@ -48,6 +49,7 @@ export function BlockDetailLive({
   offset: number;
 }) {
   const [result, setResult] = useState(initialResult);
+  const [refreshFailed, setRefreshFailed] = useState(false);
   const signatureRef = useRef(blockLiveSignature(initialResult));
   const inFlightRef = useRef(false);
   const resolvedSummary = initialSummary ?? snapshotFromSummary(chainId, null).summary;
@@ -59,6 +61,7 @@ export function BlockDetailLive({
   useEffect(() => {
     signatureRef.current = blockLiveSignature(initialResult);
     setResult(initialResult);
+    setRefreshFailed(false);
   }, [initialResult]);
 
   const refresh = useCallback(async () => {
@@ -74,8 +77,9 @@ export function BlockDetailLive({
         signatureRef.current = nextSignature;
         setResult(next);
       }
+      setRefreshFailed(false);
     } catch {
-      /* keep last snapshot */
+      setRefreshFailed(true);
     } finally {
       inFlightRef.current = false;
     }
@@ -103,6 +107,12 @@ export function BlockDetailLive({
         nextHash={block.nextHash}
         actions={<BlockShareActions chainId={chainId} hash={block.hash} height={block.height} />}
       />
+
+      {refreshFailed ? (
+        <AlertBanner title="Live refresh delayed" tone="warning">
+          Showing the last confirmed snapshot while we retry network refresh.
+        </AlertBanner>
+      ) : null}
 
       <BlockStatusBar result={result} />
       <BlockMiningCard result={result} chainId={chainId} />

@@ -179,6 +179,47 @@ export function EmptyPanel({ children }: { children: React.ReactNode }) {
   );
 }
 
+export function RecoveryPanel({
+  title,
+  message,
+  chainHref,
+  chainLabel = 'Back to chain',
+}: {
+  title: string;
+  message: React.ReactNode;
+  chainHref?: string;
+  chainLabel?: string;
+}) {
+  return (
+    <section className="rounded-xl border border-border bg-bg-panel px-5 py-6 shadow-sm sm:px-6">
+      <h2 className="text-lg font-semibold tracking-tight text-fg">{title}</h2>
+      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-fg-muted">{message}</p>
+      <div className="mt-4 flex flex-wrap gap-2.5">
+        {chainHref ? (
+          <Link
+            href={chainHref}
+            className="inline-flex min-h-10 items-center rounded-md border border-border bg-bg-subtle px-3.5 text-sm font-medium transition hover:bg-bg-panel"
+          >
+            {chainLabel}
+          </Link>
+        ) : null}
+        <Link
+          href="/"
+          className="inline-flex min-h-10 items-center rounded-md border border-border bg-bg-subtle px-3.5 text-sm font-medium transition hover:bg-bg-panel"
+        >
+          Explorer home
+        </Link>
+        <a
+          href="#explorer-search"
+          className="inline-flex min-h-10 items-center rounded-md bg-accent px-3.5 text-sm font-semibold text-accent-fg transition hover:bg-accent/90"
+        >
+          Search again
+        </a>
+      </div>
+    </section>
+  );
+}
+
 export function SummaryGrid({ items }: { items: { label: string; value: React.ReactNode }[] }) {
   return (
     <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -230,7 +271,7 @@ export function PaginationLinks({
   limitParam = 'limit',
 }: {
   basePath: string;
-  paging: { limit: number; offset: number; hasMore: boolean };
+  paging: { limit: number; offset: number; hasMore: boolean; total?: number };
   extraParams?: Record<string, string | number>;
   offsetParam?: string;
   limitParam?: string;
@@ -245,24 +286,32 @@ export function PaginationLinks({
     params.set(offsetParam, String(offset));
     return `${basePath}?${params.toString()}`;
   };
+  const start = paging.offset + 1;
+  const hasTotal = typeof paging.total === 'number' && Number.isFinite(paging.total);
+  const end = hasTotal
+    ? Math.min(paging.offset + paging.limit, paging.total as number)
+    : paging.offset + paging.limit;
 
   return (
-    <div className="mt-4 flex justify-between">
-      <div>
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+      <p className="text-xs tabular-nums text-fg-subtle">
+        Showing {formatNumber(start)}-{formatNumber(end)}
+        {hasTotal ? ` of ${formatNumber(paging.total as number)}` : ''} · page size{' '}
+        {formatNumber(paging.limit)}
+      </p>
+      <div className="ml-auto flex items-center gap-2">
         {paging.offset > 0 ? (
           <Link
             href={buildHref(prevOffset)}
-            className="rounded-md border border-border bg-bg-panel px-3 py-1.5 text-sm transition hover:bg-bg-subtle"
+            className="inline-flex min-h-11 items-center rounded-md border border-border bg-bg-panel px-3 text-sm transition hover:bg-bg-subtle"
           >
             Previous
           </Link>
         ) : null}
-      </div>
-      <div>
         {paging.hasMore ? (
           <Link
             href={buildHref(nextOffset)}
-            className="rounded-md border border-border bg-bg-panel px-3 py-1.5 text-sm transition hover:bg-bg-subtle"
+            className="inline-flex min-h-11 items-center rounded-md border border-border bg-bg-panel px-3 text-sm transition hover:bg-bg-subtle"
           >
             Next
           </Link>

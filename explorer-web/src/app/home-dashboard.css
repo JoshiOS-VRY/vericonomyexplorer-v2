@@ -151,6 +151,35 @@
   background: color-mix(in srgb, var(--chain-vrc) 24%, var(--bg-subtle));
 }
 
+/* ── Home search ── */
+.home-search {
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+  background:
+    radial-gradient(110% 120% at 0% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 50%),
+    color-mix(in srgb, var(--bg-panel) 90%, var(--bg-subtle));
+  border-radius: 1rem;
+  padding: 1.1rem;
+  box-shadow: 0 12px 36px rgb(0 0 0 / 0.18);
+}
+
+.home-search__head {
+  margin-bottom: 0.8rem;
+}
+
+.home-search__title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+}
+
+.home-search__subtitle {
+  margin-top: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--fg-muted);
+}
+
 /* ── Pulse strip ── */
 .home-pulse {
   margin-inline: -1.25rem;
@@ -725,5 +754,9 @@
 
   .home-block-card {
     flex-basis: 10rem;
+  }
+
+  .home-search {
+    padding: 0.9rem;
   }
 }

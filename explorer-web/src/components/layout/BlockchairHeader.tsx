@@ -271,7 +271,13 @@ function HeaderNavItemView({
 
 function HeaderSearch() {
   const recentBlocks = useSearchRecentBlocks();
-  return <SearchForm variant="blockchair" recentBlocks={recentBlocks ?? undefined} />;
+  return (
+    <SearchForm
+      variant="blockchair"
+      recentBlocks={recentBlocks ?? undefined}
+      inputId="explorer-search"
+    />
+  );
 }
 
 export function BlockchairHeader({

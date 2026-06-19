@@ -72,10 +72,12 @@ function FlowNode({
 function CompactFlowSummary({
   inputCount,
   outputCount,
+  totalsLine,
   children,
 }: {
   inputCount: number;
   outputCount: number;
+  totalsLine?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -85,6 +87,7 @@ function CompactFlowSummary({
           {inputCount} input{inputCount === 1 ? '' : 's'} → {outputCount} output
           {outputCount === 1 ? '' : 's'}
         </span>
+        {totalsLine ? <span className="ml-2 text-xs text-fg-subtle">{totalsLine}</span> : null}
         <span className="ml-2 text-xs text-fg-subtle">(expand flow)</span>
       </summary>
       <div className="border-t border-border px-5 py-4">{children}</div>
@@ -171,8 +174,15 @@ export function TxFlowDiagram({
   );
 
   if (showCompact) {
+    const totalsLine = totals
+      ? `${formatAmountPair(totals.input)} in · ${formatAmountPair(totals.output)} out · ${formatAmountPair(totals.fee)} fee`
+      : undefined;
     return (
-      <CompactFlowSummary inputCount={result.inputs.length} outputCount={result.outputs.length}>
+      <CompactFlowSummary
+        inputCount={result.inputs.length}
+        outputCount={result.outputs.length}
+        totalsLine={totalsLine}
+      >
         {flowBody}
       </CompactFlowSummary>
     );

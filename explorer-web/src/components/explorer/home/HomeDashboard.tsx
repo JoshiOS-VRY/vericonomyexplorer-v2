@@ -6,6 +6,7 @@ import { HomeHolderBoard } from '@/components/explorer/home/HomeHolderBoard';
 import { HomeIntro } from '@/components/explorer/home/HomeIntro';
 import { HomePulseStrip } from '@/components/explorer/home/HomePulseStrip';
 import { HomeQuickLinks } from '@/components/explorer/home/HomeQuickLinks';
+import { HomeSearchStrip } from '@/components/explorer/home/HomeSearchStrip';
 import { useDualChainLive } from '@/hooks/useDualChainLive';
 import { useHomeMarket } from '@/hooks/useHomeMarket';
 import { useHydrated } from '@/hooks/useHydrated';
@@ -79,6 +80,7 @@ export function HomeDashboard({ initialShell, initialNetwork }: HomeDashboardPro
   return (
     <div className="home-dashboard">
       <HomeIntro vrmLive={vrmLive} vrcLive={vrcLive} />
+      <HomeSearchStrip />
 
       <HomePulseStrip
         vrmSummary={vrmSummary}

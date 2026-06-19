@@ -1,4 +1,4 @@
-import { AlertBanner } from '@/components/explorer/ExplorerUi';
+import { RecoveryPanel } from '@/components/explorer/ExplorerUi';
 import { Breadcrumb } from '@/components/explorer/Breadcrumb';
 import { TransactionDetailLive } from '@/components/explorer/tx/TransactionDetailLive';
 import { getChainSummary, getTransaction } from '@/lib/api/indexer';
@@ -13,7 +13,11 @@ export async function TransactionDetailPage({ chainId, txid }: { chainId: ChainI
     result = await getTransaction(chainId, txid);
   } catch {
     return (
-      <AlertBanner title="Transaction Lookup Failed">Unable to load transaction data.</AlertBanner>
+      <RecoveryPanel
+        title="Transaction lookup failed"
+        message="Unable to load transaction data right now. Retry search or open the latest blocks."
+        chainHref={chain.exploreHref ?? undefined}
+      />
     );
   }
 
@@ -23,9 +27,11 @@ export async function TransactionDetailPage({ chainId, txid }: { chainId: ChainI
         <Breadcrumb
           items={[{ label: chain.name, href: chain.exploreHref! }, { label: 'Transaction' }]}
         />
-        <AlertBanner title="Transaction Not Found">
-          This transaction was not found in the explorer.
-        </AlertBanner>
+        <RecoveryPanel
+          title="Transaction not found"
+          message="This transaction is not available in the current index."
+          chainHref={chain.exploreHref ?? undefined}
+        />
       </div>
     );
   }

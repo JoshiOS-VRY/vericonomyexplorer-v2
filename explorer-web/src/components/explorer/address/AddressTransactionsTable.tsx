@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { BcPanel } from '@/components/explorer/BlockchairUi';
 import {
+  DataTable,
   MonoLink,
   PaginationLinks,
   TimeCell,
@@ -38,55 +39,40 @@ export function AddressTransactionsTable({
         <p className="px-5 py-4 text-sm text-fg-muted">No transactions found.</p>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="bc-table">
-              <thead>
-                <tr>
-                  <th>Txid</th>
-                  <th>Block</th>
-                  <th className="text-right">Net change</th>
-                  <th>Type</th>
-                  <th>Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.transactions.map((tx) => (
-                  <tr key={tx.txid}>
-                    <td>
-                      <MonoLink
-                        href={chainTxPath(chainId, tx.txid)}
-                        value={tx.txid}
-                        maxLength={36}
-                        prefetch
-                      />
-                    </td>
-                    <td>
-                      <Link
-                        href={chainBlockPath(chainId, tx.blockHeight)}
-                        prefetch
-                        className="text-accent hover:underline tabular-nums"
-                      >
-                        {formatHeight(tx.blockHeight)}
-                      </Link>
-                    </td>
-                    <td
-                      className={`text-right font-medium tabular-nums ${
-                        tx.netDeltaAtomic.startsWith('-') ? 'text-danger' : 'text-success'
-                      }`}
-                    >
-                      {tx.netDelta.amount} {tx.netDelta.ticker}
-                    </td>
-                    <td>
-                      <TxTypeBadge isCoinbase={tx.isCoinbase} isCoinstake={tx.isCoinstake} />
-                    </td>
-                    <td>
-                      <TimeCell time={tx.time} absolute />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            headers={['Txid', 'Block', 'Net change', 'Type', 'Time']}
+            rows={result.transactions.map((tx) => [
+              <MonoLink
+                key={`tx-${tx.txid}`}
+                href={chainTxPath(chainId, tx.txid)}
+                value={tx.txid}
+                maxLength={36}
+                prefetch
+              />,
+              <Link
+                key={`block-${tx.txid}`}
+                href={chainBlockPath(chainId, tx.blockHeight)}
+                prefetch
+                className="text-accent hover:underline tabular-nums"
+              >
+                {formatHeight(tx.blockHeight)}
+              </Link>,
+              <span
+                key={`delta-${tx.txid}`}
+                className={`font-medium tabular-nums ${
+                  tx.netDeltaAtomic.startsWith('-') ? 'text-danger' : 'text-success'
+                }`}
+              >
+                {tx.netDelta.amount} {tx.netDelta.ticker}
+              </span>,
+              <TxTypeBadge
+                key={`type-${tx.txid}`}
+                isCoinbase={tx.isCoinbase}
+                isCoinstake={tx.isCoinstake}
+              />,
+              <TimeCell key={`time-${tx.txid}`} time={tx.time} absolute />,
+            ])}
+          />
           <div className="border-t border-border px-5 py-4">
             <PaginationLinks
               basePath={basePath}

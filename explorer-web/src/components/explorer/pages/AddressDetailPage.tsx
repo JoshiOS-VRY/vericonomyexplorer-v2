@@ -1,7 +1,6 @@
 import { AddressDetailLive } from '@/components/explorer/address/AddressDetailLive';
-import { BcPageHeader } from '@/components/explorer/BlockchairUi';
 import { Breadcrumb } from '@/components/explorer/Breadcrumb';
-import { AlertBanner } from '@/components/explorer/ExplorerUi';
+import { RecoveryPanel } from '@/components/explorer/ExplorerUi';
 import { getAddress } from '@/lib/api/indexer';
 import { CHAIN_EXPLORERS, type ChainId } from '@/lib/chainDisplay';
 import { VrmAddressLabel } from '@/components/explorer/address/VrmAddressLink';
@@ -30,7 +29,13 @@ export async function AddressDetailPage({
   try {
     result = await getAddress(chainId, address, { limit, offset, includeRank: false });
   } catch {
-    return <AlertBanner title="Address Lookup Failed">Unable to load address data.</AlertBanner>;
+    return (
+      <RecoveryPanel
+        title="Address lookup failed"
+        message="Unable to load address activity right now. Try again in a few seconds."
+        chainHref={chain.exploreHref ?? undefined}
+      />
+    );
   }
 
   return (
@@ -49,20 +54,13 @@ export async function AddressDetailPage({
           },
         ]}
       />
-
-      <BcPageHeader
-        title="Address"
-        subtitle={
-          result.found ? `${chain.name} address activity and holdings.` : 'Address not found.'
-        }
-      />
-
       {!result.found ? (
-        <>
-          <AlertBanner title="Address Not Found">
-            This address has no {chain.ticker} balance or transaction history.
-          </AlertBanner>
-        </>
+        <RecoveryPanel
+          title="Address not found"
+          message={`This address has no ${chain.ticker} balance or transaction history in the current index.`}
+          chainHref={chain.richlistHref ?? undefined}
+          chainLabel="Open rich list"
+        />
       ) : (
         <AddressDetailLive
           chainId={chainId}

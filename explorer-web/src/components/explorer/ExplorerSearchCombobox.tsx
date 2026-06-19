@@ -43,6 +43,7 @@ interface ExplorerSearchComboboxProps {
   variant?: 'default' | 'blockchair';
   recentBlocks?: RecentBlocksByChain;
   className?: string;
+  inputId?: string;
 }
 
 const entityIcons: Record<SearchEntityType, typeof Box> = {
@@ -85,6 +86,7 @@ export function ExplorerSearchCombobox({
   variant = 'default',
   recentBlocks,
   className,
+  inputId,
 }: ExplorerSearchComboboxProps) {
   const router = useRouter();
   const listboxId = useId();
@@ -358,6 +360,7 @@ export function ExplorerSearchCombobox({
             <path d="M20 20l-3-3" />
           </svg>
           <input
+            id={inputId}
             ref={inputRef}
             type="text"
             value={query}

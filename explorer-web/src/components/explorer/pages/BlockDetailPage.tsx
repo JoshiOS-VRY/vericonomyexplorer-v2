@@ -1,4 +1,4 @@
-import { AlertBanner, formatHeight } from '@/components/explorer/ExplorerUi';
+import { RecoveryPanel, formatHeight } from '@/components/explorer/ExplorerUi';
 import { BlockDetailLive } from '@/components/explorer/block/BlockDetailLive';
 import { Breadcrumb } from '@/components/explorer/Breadcrumb';
 import { getBlock, getChainSummary } from '@/lib/api/indexer';
@@ -35,9 +35,11 @@ export async function BlockDetailPage({
 
   if (loadError || !result) {
     return (
-      <AlertBanner title="Block Lookup Failed">
-        {loadError ?? 'Unable to load block data.'}
-      </AlertBanner>
+      <RecoveryPanel
+        title="Block lookup failed"
+        message={loadError ?? 'Unable to load this block right now. Please retry your search.'}
+        chainHref={chain.exploreHref ?? undefined}
+      />
     );
   }
 
@@ -51,7 +53,11 @@ export async function BlockDetailPage({
             { label: hashOrHeight },
           ]}
         />
-        <AlertBanner title="Block Not Found">No block matched this height or hash.</AlertBanner>
+        <RecoveryPanel
+          title="Block not found"
+          message="No block matched this height or hash on the indexed chain."
+          chainHref={chain.exploreHref ?? undefined}
+        />
       </div>
     );
   }

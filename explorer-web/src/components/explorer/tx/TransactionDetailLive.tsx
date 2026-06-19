@@ -10,6 +10,7 @@ import { TxMetricStrip } from '@/components/explorer/tx/TxMetricStrip';
 import { TxRelatedActivityClient } from '@/components/explorer/tx/TxRelatedActivityClient';
 import { TxShareActions } from '@/components/explorer/tx/TxShareActions';
 import { TxStatusBar } from '@/components/explorer/tx/TxStatusBar';
+import { AlertBanner } from '@/components/explorer/ExplorerUi';
 import { useLivePoll } from '@/hooks/useLivePoll';
 import { useStableChainLive } from '@/hooks/useStableChainLive';
 import { fetchTransactionClient } from '@/lib/api/client';
@@ -46,6 +47,7 @@ export function TransactionDetailLive({
   initialSummary: ChainSummary | null;
 }) {
   const [result, setResult] = useState(initialResult);
+  const [refreshFailed, setRefreshFailed] = useState(false);
   const signatureRef = useRef(txLiveSignature(initialResult));
   const inFlightRef = useRef(false);
   const resolvedSummary = initialSummary ?? snapshotFromSummary(chainId, null).summary;
@@ -58,6 +60,7 @@ export function TransactionDetailLive({
   useEffect(() => {
     signatureRef.current = txLiveSignature(initialResult);
     setResult(initialResult);
+    setRefreshFailed(false);
   }, [initialResult]);
 
   const refresh = useCallback(async () => {
@@ -73,8 +76,9 @@ export function TransactionDetailLive({
         signatureRef.current = nextSignature;
         setResult(next);
       }
+      setRefreshFailed(false);
     } catch {
-      /* keep last snapshot */
+      setRefreshFailed(true);
     } finally {
       inFlightRef.current = false;
     }
@@ -100,6 +104,12 @@ export function TransactionDetailLive({
           </span>
         }
       />
+
+      {refreshFailed ? (
+        <AlertBanner title="Live refresh delayed" tone="warning">
+          Showing the last confirmed transaction snapshot while we retry.
+        </AlertBanner>
+      ) : null}
 
       <TxStatusBar result={result} chainId={chainId} />
       <TxFlowDiagram result={result} chainId={chainId} />
