@@ -81,7 +81,7 @@ function CompactFlowSummary({
   children: React.ReactNode;
 }) {
   return (
-    <details className="rounded-xl border border-border bg-bg-panel shadow-sm">
+    <details className="premium-panel overflow-hidden">
       <summary className="cursor-pointer list-none px-5 py-4 text-sm font-medium text-fg">
         <span className="text-fg-muted">
           {inputCount} input{inputCount === 1 ? '' : 's'} → {outputCount} output
@@ -189,7 +189,7 @@ export function TxFlowDiagram({
   }
 
   return (
-    <section className="rounded-xl border border-border bg-bg-panel shadow-sm">
+    <section className="premium-panel overflow-hidden">
       <div className="border-b border-border px-5 py-4">
         <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted">Value flow</h2>
       </div>

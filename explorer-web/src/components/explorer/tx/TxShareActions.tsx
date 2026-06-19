@@ -1,41 +1,21 @@
 'use client';
 
-import { useState } from 'react';
-import { CopyButton } from '@/components/explorer/BlockDetail';
+import { CopyShareQrActions } from '@/components/explorer/CopyShareQrActions';
 import { CHAIN_EXPLORERS, chainTxPath, type ChainId } from '@/lib/chainDisplay';
 
 export function TxShareActions({ chainId, txid }: { chainId: ChainId; txid: string }) {
-  const [shareLabel, setShareLabel] = useState('Share');
   const chain = CHAIN_EXPLORERS[chainId];
-
-  async function handleShare() {
-    const shareUrl = `${window.location.origin}${chainTxPath(chainId, txid)}`;
-
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: `${chain.name} transaction`, url: shareUrl });
-        return;
-      }
-
-      await navigator.clipboard.writeText(shareUrl);
-      setShareLabel('Copied');
-      window.setTimeout(() => setShareLabel('Share'), 1500);
-    } catch {
-      setShareLabel('Share failed');
-      window.setTimeout(() => setShareLabel('Share'), 1500);
-    }
-  }
+  const shareUrl =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}${chainTxPath(chainId, txid)}`
+      : chainTxPath(chainId, txid);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <CopyButton value={txid} label="Copy txid" />
-      <button
-        type="button"
-        onClick={() => void handleShare()}
-        className="copy-btn shrink-0 rounded-md border border-border bg-bg-subtle px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-fg-muted transition hover:border-border-strong hover:text-fg"
-      >
-        {shareLabel}
-      </button>
-    </div>
+    <CopyShareQrActions
+      copyValue={txid}
+      shareUrl={shareUrl}
+      shareTitle={`${chain.name} transaction`}
+      copyLabel="Copy txid"
+    />
   );
 }

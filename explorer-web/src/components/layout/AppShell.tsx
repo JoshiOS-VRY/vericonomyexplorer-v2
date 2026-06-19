@@ -21,7 +21,7 @@ export function AppShell({
         initialVrmSummary={initialVrmSummary}
         initialVrcSummary={initialVrcSummary}
       />
-      <div className="flex min-h-screen flex-col bg-bg text-fg">
+      <div className="explorer-ambient flex min-h-screen flex-col bg-bg text-fg">
         <SearchRecentBlocksProvider
           initialVrmSummary={initialVrmSummary}
           initialVrcSummary={initialVrcSummary}

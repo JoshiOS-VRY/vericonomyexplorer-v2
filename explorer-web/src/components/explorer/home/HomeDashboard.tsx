@@ -4,7 +4,9 @@ import { useMemo } from 'react';
 import { HomeChainLane } from '@/components/explorer/home/HomeChainLane';
 import { HomeHolderBoard } from '@/components/explorer/home/HomeHolderBoard';
 import { HomeIntro } from '@/components/explorer/home/HomeIntro';
+import { HomeNetworkHealth } from '@/components/explorer/home/HomeNetworkHealth';
 import { HomePulseStrip } from '@/components/explorer/home/HomePulseStrip';
+import { HomeSupplySection } from '@/components/explorer/home/HomeSupplySection';
 import { HomeQuickLinks } from '@/components/explorer/home/HomeQuickLinks';
 import { HomeSearchStrip } from '@/components/explorer/home/HomeSearchStrip';
 import { useDualChainLive } from '@/hooks/useDualChainLive';
@@ -57,23 +59,23 @@ export function HomeDashboard({ initialShell, initialNetwork }: HomeDashboardPro
     : (initialShell.vrc.summary.health.heights.bestRpcHeight ??
       initialShell.vrc.summary.health.heights.maxIndexedHeight);
 
-  const vrmLive = isChainLive(vrmSummary.health, vrmSummary.latestBlocks[0]?.height, live.vrm.chainHeight);
-  const vrcLive = isChainLive(vrcSummary.health, vrcSummary.latestBlocks[0]?.height, live.vrc.chainHeight);
+  const vrmLive = isChainLive(
+    vrmSummary.health,
+    vrmSummary.latestBlocks[0]?.height,
+    live.vrm.chainHeight
+  );
+  const vrcLive = isChainLive(
+    vrcSummary.health,
+    vrcSummary.latestBlocks[0]?.height,
+    live.vrc.chainHeight
+  );
 
   const vrmSupply = useMemo(
-    () =>
-      resolveRichlistTotalSupply(
-        resolveSupply('vrm', network, initialNetwork),
-        market.vrm
-      ),
+    () => resolveRichlistTotalSupply(resolveSupply('vrm', network, initialNetwork), market.vrm),
     [network, initialNetwork, market.vrm]
   );
   const vrcSupply = useMemo(
-    () =>
-      resolveRichlistTotalSupply(
-        resolveSupply('vrc', network, initialNetwork),
-        market.vrc
-      ),
+    () => resolveRichlistTotalSupply(resolveSupply('vrc', network, initialNetwork), market.vrc),
     [network, initialNetwork, market.vrc]
   );
 
@@ -93,6 +95,20 @@ export function HomeDashboard({ initialShell, initialNetwork }: HomeDashboardPro
         vrcMarket={market.vrc}
         vrmNetwork={network.vrm}
         vrcNetwork={network.vrc}
+      />
+
+      <HomeNetworkHealth
+        vrmSummary={vrmSummary}
+        vrcSummary={vrcSummary}
+        vrmHeight={vrmHeight}
+        vrcHeight={vrcHeight}
+      />
+
+      <HomeSupplySection
+        vrmNetwork={network.vrm}
+        vrcNetwork={network.vrc}
+        vrmMarket={market.vrm}
+        vrcMarket={market.vrc}
       />
 
       <div className="home-dashboard__lanes">

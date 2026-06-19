@@ -15,12 +15,7 @@ import type {
   VrcNetworkStats,
   VrmNetworkStats,
 } from '@/lib/api/types';
-import {
-  CHAIN_EXPLORERS,
-  CHAIN_THEME,
-  getChainTipHeight,
-  type ChainId,
-} from '@/lib/chainDisplay';
+import { CHAIN_EXPLORERS, CHAIN_THEME, getChainTipHeight, type ChainId } from '@/lib/chainDisplay';
 import {
   formatAvgBlockTimeMin,
   formatHashrateKhPerMin,
@@ -133,6 +128,7 @@ export function HomeChainLane({
                 chainId={chainId}
                 isNewest={index === displayBlocks.length - 1}
                 blockHref={config.blockHref?.(block.height)}
+                enterDelay={index * 0.04}
               />
             ))}
           </div>
@@ -141,9 +137,17 @@ export function HomeChainLane({
 
       <footer className="home-lane__metrics">
         {chainId === 'vrm' ? (
-          <VrmMetricChips network={network as VrmNetworkStats} market={market} ticker={config.ticker} />
+          <VrmMetricChips
+            network={network as VrmNetworkStats}
+            market={market}
+            ticker={config.ticker}
+          />
         ) : (
-          <VrcMetricChips network={network as VrcNetworkStats} market={market} ticker={config.ticker} />
+          <VrcMetricChips
+            network={network as VrcNetworkStats}
+            market={market}
+            ticker={config.ticker}
+          />
         )}
       </footer>
     </section>
@@ -155,11 +159,13 @@ function HomeBlockCard({
   chainId,
   isNewest,
   blockHref,
+  enterDelay = 0,
 }: {
   block: IndexedBlock;
   chainId: ChainId;
   isNewest: boolean;
   blockHref?: string;
+  enterDelay?: number;
 }) {
   const indexing = isOptimisticTipBlock(block, chainId);
   const hash = block.hash.replace(/^0x/i, '');
@@ -176,9 +182,7 @@ function HomeBlockCard({
       </p>
       <div className="home-block-card__meta">
         <span>{formatHeight(block.txCount)} tx</span>
-        <span>
-          {indexing ? '…' : <LiveRelativeTime time={block.time} interval="second" />}
-        </span>
+        <span>{indexing ? '…' : <LiveRelativeTime time={block.time} interval="second" />}</span>
       </div>
       <div className="home-block-card__producer">
         {chainId === 'vrm' ? (
@@ -204,15 +208,28 @@ function HomeBlockCard({
     </>
   );
 
+  const cardClass = cn(
+    'home-block-card',
+    isNewest && 'home-block-card--new',
+    isNewest && 'home-block-card--enter'
+  );
+  const cardStyle = isNewest
+    ? ({ animationDelay: `${enterDelay}s` } as React.CSSProperties)
+    : undefined;
+
   if (blockHref) {
     return (
-      <Link href={blockHref} prefetch className={cn('home-block-card', isNewest && 'home-block-card--new')}>
+      <Link href={blockHref} prefetch className={cardClass} style={cardStyle}>
         {inner}
       </Link>
     );
   }
 
-  return <article className={cn('home-block-card', isNewest && 'home-block-card--new')}>{inner}</article>;
+  return (
+    <article className={cardClass} style={cardStyle}>
+      {inner}
+    </article>
+  );
 }
 
 function VrmMetricChips({

@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import './home-dashboard.css';
+@import './premium.css';
 
 /* Explicit scan paths for Tailwind v4 (Next.js app router + src/) */
 @source "../**/*.{js,ts,jsx,tsx,mdx}";

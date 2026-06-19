@@ -3,12 +3,7 @@ import { cn, formatBlockAge, formatDifficulty, formatUnixTime } from '@/lib/util
 
 export function CopyButton({ value, label = 'Copy' }: { value: string; label?: string }) {
   return (
-    <button
-      type="button"
-      data-copy-value={value}
-      data-copy-label={label}
-      className="copy-btn shrink-0 rounded-md border border-border bg-bg-subtle px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-fg-muted transition hover:border-border-strong hover:text-fg"
-    >
+    <button type="button" data-copy-value={value} data-copy-label={label} className="action-btn">
       {label}
     </button>
   );
@@ -92,7 +87,7 @@ export function BlockDetailHero({
   actions?: React.ReactNode;
 }) {
   return (
-    <section className="wallet-panel">
+    <section className="premium-panel entity-hero-premium">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/70 px-4 py-2.5 sm:px-5">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {blockTime ? (
@@ -109,9 +104,7 @@ export function BlockDetailHero({
           <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">
             Block height
           </p>
-          <p className="mt-2 text-4xl font-semibold tabular-nums tracking-tight text-fg sm:text-[2.75rem] sm:leading-none">
-            {height.toLocaleString()}
-          </p>
+          <p className="entity-hero-premium__height mt-2">{height.toLocaleString()}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <code className="max-w-full truncate rounded-md border border-border/70 bg-bg-panel/50 px-2.5 py-1 text-xs text-fg-muted">
               {hash}
@@ -129,10 +122,7 @@ export function BlockDetailHero({
             },
             { label: 'Difficulty', value: formatDifficulty(difficulty) },
           ].map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-lg border border-border/80 bg-bg-panel/60 px-3 py-2.5"
-            >
+            <div key={stat.label} className="entity-hero-stat">
               <p className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
                 {stat.label}
               </p>
@@ -161,7 +151,7 @@ export function DetailSection({
   flush?: boolean;
 }) {
   return (
-    <section className={cn('rounded-xl border border-border bg-bg-panel shadow-sm', className)}>
+    <section className={cn('premium-panel overflow-hidden', className)}>
       <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
         <h2 className="text-sm font-medium uppercase tracking-wide text-fg-muted">{title}</h2>
         {action}
@@ -187,14 +177,14 @@ export function EntityHero({
   footer?: React.ReactNode;
 }) {
   return (
-    <section className="wallet-panel">
+    <section className="premium-panel entity-hero-premium">
       <div className="flex flex-wrap items-center gap-2 border-b border-border/70 px-4 py-2.5 sm:px-5">
         {badges}
         {meta}
       </div>
       <div className="p-4 sm:p-5">
         <p className="text-xs font-medium uppercase tracking-wider text-fg-subtle">{eyebrow}</p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-fg sm:text-3xl">{title}</h1>
+        <h1 className="entity-hero-premium__title mt-2">{title}</h1>
         {hash ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <code className="max-w-full break-all rounded-md border border-border/70 bg-bg-panel/50 px-2.5 py-1 text-xs text-fg-muted">

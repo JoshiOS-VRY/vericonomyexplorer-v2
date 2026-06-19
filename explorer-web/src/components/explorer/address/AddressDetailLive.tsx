@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { AddressBalanceChartClient } from '@/components/explorer/address/AddressBalanceChartClient';
 import { AddressHero } from '@/components/explorer/address/AddressHero';
+import { AddressIntelligence } from '@/components/explorer/address/AddressIntelligence';
 import { AddressMetricStrip } from '@/components/explorer/address/AddressMetricStrip';
 import { AddressRichlistRankClient } from '@/components/explorer/address/AddressRichlistRankClient';
 import { AddressTransactionsTable } from '@/components/explorer/address/AddressTransactionsTable';
@@ -45,6 +46,9 @@ export function AddressDetailLive({
         </div>
         <div>
           <AddressRichlistRankClient chainId={chainId} address={result.address} />
+          <div className="mt-4">
+            <AddressIntelligence chainId={chainId} result={result} />
+          </div>
         </div>
       </div>
 
