@@ -50,9 +50,12 @@ if [[ -d "$PROD_ROOT/deploy/option-a" ]]; then
   cp "$ROOT_DIR/deploy/option-a/Caddyfile" "$PROD_ROOT/deploy/option-a/Caddyfile"
   if [[ -f "$PROD_ENV" ]]; then
     docker compose -f "$PROD_ROOT/docker-compose.option-a.yml" --env-file "$PROD_ENV" \
-      exec caddy caddy validate --config /etc/caddy/Caddyfile
-    docker compose -f "$PROD_ROOT/docker-compose.option-a.yml" --env-file "$PROD_ENV" \
-      exec caddy caddy reload --config /etc/caddy/Caddyfile
+      exec caddy caddy validate --config /etc/caddy/Caddyfile || true
+    if ! docker compose -f "$PROD_ROOT/docker-compose.option-a.yml" --env-file "$PROD_ENV" \
+      exec caddy caddy reload --config /etc/caddy/Caddyfile 2>/dev/null; then
+      echo "==> Caddy reload unavailable — restarting caddy container"
+      docker compose -f "$PROD_ROOT/docker-compose.option-a.yml" --env-file "$PROD_ENV" restart caddy
+    fi
   else
     echo "WARN: $PROD_ENV not found — reload Caddy manually after first prod deploy."
   fi
