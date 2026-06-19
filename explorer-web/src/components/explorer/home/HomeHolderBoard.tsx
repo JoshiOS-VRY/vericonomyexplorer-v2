@@ -34,83 +34,90 @@ export function HomeHolderBoard({ richlist, totalSupply }: HomeHolderBoardProps)
   if (!config) return null;
 
   return (
-    <article
-      className={cn('home-holders', `home-holders--${chainId}`)}
+    <section
+      className={cn('chain-hub-section chain-hub-section--accent home-holders-panel')}
       data-chain={chainId}
       style={
         {
+          '--block-chain-accent': theme.accent,
+          '--block-chain-accent-soft': theme.accentSoft,
           '--holders-accent': theme.accent,
           '--holders-accent-soft': theme.accentSoft,
         } as React.CSSProperties
       }
     >
-      <header className="home-holders__head">
+      <header className="home-holders-panel__head">
         <div>
-          <h3 className="home-holders__title">{config.name}</h3>
-          <p className="home-holders__subtitle">Top balances by supply share</p>
+          <h2 className="home-holders-panel__title">{config.name}</h2>
+          <p className="home-holders-panel__subtitle">Top holders by supply share</p>
         </div>
         {config.richlistHref && richlist.enabled !== false ? (
-          <Link href={config.richlistHref} prefetch className="home-holders__all">
+          <Link href={config.richlistHref} prefetch className="home-holders-panel__link">
             Full rich list
           </Link>
         ) : null}
       </header>
 
-      {!richlist.enabled && richlist.message ? (
-        <p className="home-holders__empty">{formatExplorerUserMessage(richlist.message)}</p>
-      ) : richlist.items.length === 0 ? (
-        <p className="home-holders__empty">No ranked balances yet.</p>
-      ) : (
-        <ol className="home-holders__list">
-          {richlist.items.map((item) => {
-            const amount = Number.parseFloat(item.balance.amount);
-            const sharePct = supplySharePercent(amount, totalSupply);
-            const shareLabel = formatSupplySharePct(amount, totalSupply);
-            const href = config.exploreHref ? chainAddressPath(chainId, item.address) : '#';
-            const barWidth = sharePct != null ? Math.min(100, Math.max(sharePct * 4, 6)) : 0;
+      <div className="home-holders-panel__body">
+        {!richlist.enabled && richlist.message ? (
+          <p className="home-holders-panel__empty">{formatExplorerUserMessage(richlist.message)}</p>
+        ) : richlist.items.length === 0 ? (
+          <p className="home-holders-panel__empty">No ranked balances yet.</p>
+        ) : (
+          <ol className="home-holders-panel__list">
+            {richlist.items.map((item) => {
+              const amount = Number.parseFloat(item.balance.amount);
+              const sharePct = supplySharePercent(amount, totalSupply);
+              const shareLabel = formatSupplySharePct(amount, totalSupply);
+              const href = config.exploreHref ? chainAddressPath(chainId, item.address) : '#';
+              const barWidth = sharePct != null ? Math.min(100, Math.max(sharePct * 4, 4)) : 0;
 
-            return (
-              <li key={item.address}>
-                <Link href={href} prefetch={false} className="home-holders__row">
-                  <span className="home-holders__rank">{item.rank}</span>
-                  <div className="home-holders__main">
-                    <div className="home-holders__row-head">
-                      <span className="home-holders__addr" title={item.address}>
-                        {chainId === 'vrm' ? (
-                          <VrmAddressLabel address={item.address} maxLength={20} />
-                        ) : (
-                          ellipsizeMiddle(item.address, 20)
-                        )}
-                      </span>
-                      <span className="home-holders__balance" title={`${item.balance.amount} ${ticker}`}>
-                        {formatCompactBalance(item.balance.amount)}
-                        <span className="home-holders__ticker">{ticker}</span>
-                      </span>
+              return (
+                <li key={item.address}>
+                  <Link href={href} prefetch={false} className="home-holders-panel__row">
+                    <span className="home-holders-panel__rank">{item.rank}</span>
+                    <div className="home-holders-panel__main">
+                      <div className="home-holders-panel__row-head">
+                        <span className="home-holders-panel__addr" title={item.address}>
+                          {chainId === 'vrm' ? (
+                            <VrmAddressLabel address={item.address} maxLength={22} />
+                          ) : (
+                            ellipsizeMiddle(item.address, 22)
+                          )}
+                        </span>
+                        <span
+                          className="home-holders-panel__balance"
+                          title={`${item.balance.amount} ${ticker}`}
+                        >
+                          {formatCompactBalance(item.balance.amount)}
+                          <span className="home-holders-panel__ticker">{ticker}</span>
+                        </span>
+                      </div>
+                      <div className="home-holders-panel__bar-track" aria-hidden>
+                        <span
+                          className="home-holders-panel__bar-fill"
+                          style={{ width: `${barWidth}%` }}
+                        />
+                      </div>
+                      {shareLabel ? (
+                        <span className="home-holders-panel__share">{shareLabel} of supply</span>
+                      ) : null}
                     </div>
-                    <div className="home-holders__bar-track" aria-hidden>
-                      <span
-                        className="home-holders__bar-fill"
-                        style={{ width: `${barWidth}%` }}
-                      />
-                    </div>
-                    {shareLabel ? (
-                      <span className="home-holders__share">{shareLabel} of supply</span>
-                    ) : null}
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ol>
-      )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </div>
 
       {shareTotal != null && richlist.items.length > 0 ? (
-        <footer className="home-holders__foot">
+        <footer className="home-holders-panel__foot">
           Top {richlist.items.length} hold{' '}
           <strong>{shareTotal >= 10 ? shareTotal.toFixed(1) : shareTotal.toFixed(2)}%</strong> of{' '}
           {ticker}
         </footer>
       ) : null}
-    </article>
+    </section>
   );
 }

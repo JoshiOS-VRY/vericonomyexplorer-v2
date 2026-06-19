@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { HomeChainLane } from '@/components/explorer/home/HomeChainLane';
+import { ChainHubSection } from '@/components/explorer/home/LatestBlocksChainStrip';
 import { HomeHolderBoard } from '@/components/explorer/home/HomeHolderBoard';
 import { HomeQuickLinks } from '@/components/explorer/home/HomeQuickLinks';
 import { useDualChainLive } from '@/hooks/useDualChainLive';
@@ -64,8 +64,8 @@ export function HomeDashboard({ initialShell, initialNetwork }: HomeDashboardPro
 
   return (
     <div className="home-dashboard">
-      <div className="home-dashboard__lanes">
-        <HomeChainLane
+      <div className="home-chain-grid">
+        <ChainHubSection
           chainId="vrm"
           summary={vrmSummary}
           chainHeight={vrmHeight}
@@ -74,7 +74,7 @@ export function HomeDashboard({ initialShell, initialNetwork }: HomeDashboardPro
           network={network.vrm}
           seedBlocks={hydrated ? live.vrm.latestBlocks : initialShell.vrm.summary.latestBlocks}
         />
-        <HomeChainLane
+        <ChainHubSection
           chainId="vrc"
           summary={vrcSummary}
           chainHeight={vrcHeight}
@@ -85,15 +85,10 @@ export function HomeDashboard({ initialShell, initialNetwork }: HomeDashboardPro
         />
       </div>
 
-      <section className="home-dashboard__holders" aria-labelledby="home-holders-heading">
-        <h2 id="home-holders-heading" className="home-dashboard__section-title">
-          Largest holders
-        </h2>
-        <div className="home-dashboard__holders-grid">
-          <HomeHolderBoard richlist={initialShell.vrm.richlist} totalSupply={vrmSupply} />
-          <HomeHolderBoard richlist={initialShell.vrc.richlist} totalSupply={vrcSupply} />
-        </div>
-      </section>
+      <div className="home-holders-grid">
+        <HomeHolderBoard richlist={initialShell.vrm.richlist} totalSupply={vrmSupply} />
+        <HomeHolderBoard richlist={initialShell.vrc.richlist} totalSupply={vrcSupply} />
+      </div>
 
       <HomeQuickLinks />
     </div>

@@ -1,19 +1,19 @@
 import { Skeleton, SkeletonPanel, SkeletonStatGrid } from '@/components/ui/Skeleton';
 
-function LaneSkeleton() {
+function HubPanelSkeleton() {
   return (
-    <div className="space-y-4 pl-4">
-      <Skeleton className="h-12 w-64" />
-      <div className="flex gap-3 overflow-hidden">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-32 w-44 shrink-0 rounded-xl" />
+    <div className="chain-hub-section overflow-hidden rounded-lg border border-border bg-bg-panel">
+      <Skeleton className="h-16 w-full rounded-none" />
+      <Skeleton className="mx-3 mt-3 h-12 w-full rounded-md" />
+      <div className="border-y border-border">
+        <Skeleton className="h-10 w-full rounded-none" />
+      </div>
+      <div className="p-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="mb-2 h-8 w-full" />
         ))}
       </div>
-      <div className="flex flex-wrap gap-2">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-7 w-24 rounded-full" />
-        ))}
-      </div>
+      <Skeleton className="h-24 w-full rounded-none" />
     </div>
   );
 }
@@ -22,13 +22,15 @@ export function HomeLoadingSkeleton() {
   return (
     <div className="home-page">
       <div className="home-dashboard">
-        <LaneSkeleton />
-        <LaneSkeleton />
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="home-chain-grid">
+          <HubPanelSkeleton />
+          <HubPanelSkeleton />
+        </div>
+        <div className="home-holders-grid">
           <SkeletonPanel rows={5} />
           <SkeletonPanel rows={5} />
         </div>
-        <Skeleton className="h-8 w-full max-w-xl" />
+        <Skeleton className="h-20 w-full rounded-lg" />
       </div>
     </div>
   );
