@@ -74,7 +74,7 @@ export function ChainHubSection({
   return (
     <section
       className={cn(
-        'chain-hub-section block-chain-section flex h-full flex-col overflow-hidden rounded-xl border border-border bg-bg-panel shadow-sm',
+        'chain-hub-section block-chain-section flex h-full flex-col overflow-hidden',
         'chain-hub-section--accent'
       )}
       data-chain={chainId}
@@ -86,27 +86,23 @@ export function ChainHubSection({
         } as React.CSSProperties
       }
     >
-      <div className="chain-hub-section__identity flex shrink-0 items-center justify-between gap-4 border-b border-border px-4 py-3 sm:px-5">
+      <div className="chain-hub-section__identity flex shrink-0 items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="chain-hub-section__logo-ring flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-bg-subtle/60">
+          <span className="chain-hub-section__logo-ring flex h-11 w-11 shrink-0 items-center justify-center">
             <Image
               src={config.logo}
               alt=""
-              width={28}
-              height={28}
-              className="h-7 w-7 object-contain"
+              width={32}
+              height={32}
+              className="h-8 w-8 object-contain"
             />
           </span>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base font-semibold tracking-tight text-fg sm:text-lg">
-                {config.name}
-              </h2>
-              <span className="chain-hub-section__ticker rounded-md px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider">
-                {config.ticker}
-              </span>
-              <span className="text-xs text-fg-subtle">{config.consensus}</span>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <h2 className="chain-hub-section__name">{config.name}</h2>
+              <span className="chain-hub-section__ticker">{config.ticker}</span>
             </div>
+            <p className="chain-hub-section__consensus">{config.consensus}</p>
           </div>
         </div>
         {config.exploreHref ? (
@@ -114,13 +110,13 @@ export function ChainHubSection({
             href={config.exploreHref}
             prefetch
             className={cn(
-              'chain-explore-btn shrink-0 rounded-md px-3 py-1.5 text-xs sm:text-sm',
+              'chain-explore-btn shrink-0 rounded-lg px-3.5 py-2 text-xs font-semibold sm:text-sm',
               chainId === 'vrm' ? 'chain-explore-btn-vrm' : 'chain-explore-btn-vrc'
             )}
           >
             <span className="inline-flex items-center gap-1">
               Explore
-              <ChevronRight className="h-3.5 w-3.5" />
+              <ChevronRight className="h-3.5 w-3.5" aria-hidden />
             </span>
           </Link>
         ) : (
@@ -131,15 +127,15 @@ export function ChainHubSection({
       </div>
 
       <div className="chain-hub-section__blocks chain-hub-section__blocks--hero min-h-0 flex-1">
-        <header className="chain-hub-blocks-head flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3 sm:px-5">
+        <header className="chain-hub-blocks-head flex flex-wrap items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2.5">
-            <span className="chain-hub-blocks-head__icon flex h-8 w-8 items-center justify-center rounded-md border border-border/70 bg-bg-subtle/50">
-              <Blocks className="h-4 w-4 text-fg-muted" aria-hidden />
+            <span className="chain-hub-blocks-head__icon">
+              <Blocks className="h-4 w-4" aria-hidden />
             </span>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-base font-bold text-fg sm:text-lg">Latest blocks</h3>
-                <span className="chain-hub-blocks-live inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success">
+                <h3 className="chain-hub-blocks-head__title">Latest blocks</h3>
+                <span className="chain-hub-blocks-live">
                   <Radio
                     className={cn('h-2.5 w-2.5', isRefreshing && 'animate-pulse')}
                     aria-hidden
@@ -150,13 +146,7 @@ export function ChainHubSection({
             </div>
           </div>
           {config.exploreHref ? (
-            <Link
-              href={config.exploreHref}
-              className={cn(
-                'chain-hub-blocks-head__link inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-sm font-semibold transition-colors',
-                chainId === 'vrm' ? 'text-[var(--chain-vrm)]' : 'text-[var(--chain-vrc)]'
-              )}
-            >
+            <Link href={config.exploreHref} className="chain-hub-blocks-head__link">
               View all
               <ExternalLink className="h-3 w-3 opacity-70" aria-hidden />
             </Link>

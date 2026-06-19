@@ -1,4 +1,7 @@
+'use client';
+
 import Image from 'next/image';
+import { Search } from 'lucide-react';
 import { ChainExploreButton } from '@/components/explorer/home/ChainExploreButton';
 import { StatusDot } from '@/components/explorer/ExplorerUi';
 import { CHAIN_EXPLORERS } from '@/lib/chainDisplay';
@@ -13,64 +16,82 @@ export function BinaryChainHero({ vrmLive, vrcLive }: BinaryChainHeroProps) {
   const vrm = CHAIN_EXPLORERS.vrm;
   const vrc = CHAIN_EXPLORERS.vrc;
 
-  //   return (
-  //     <section className="binary-chain-hero overflow-hidden rounded-xl border border-border bg-gradient-to-br from-bg-panel via-bg-panel to-accent/5 shadow-sm">
-  //       <div className="px-6 py-8 sm:px-8">
-  //         <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-  //           <div className="flex items-start gap-5">
-  //             <div className="hidden shrink-0 -space-x-2 sm:flex">
-  //               <Image
-  //                 src={vrm.logo}
-  //                 alt=""
-  //                 width={56}
-  //                 height={56}
-  //                 className="relative z-10 h-14 w-14 rounded-full border-2 border-bg-panel bg-bg-panel object-contain"
-  //               />
-  //               <Image
-  //                 src={vrc.logo}
-  //                 alt=""
-  //                 width={56}
-  //                 height={56}
-  //                 className="relative h-14 w-14 rounded-full border-2 border-bg-panel bg-bg-panel object-contain"
-  //               />
-  //             </div>
-  //             <div>
-  //               <h5 className="text-sm font-semibold uppercase tracking-wider text-fg-muted">
-  //                 VeriConomy Binary Chain block explorer
-  //               </h5>
+  return (
+    <section className="home-hero" aria-labelledby="home-hero-title">
+      <div className="home-hero__glow home-hero__glow--vrm" aria-hidden />
+      <div className="home-hero__glow home-hero__glow--vrc" aria-hidden />
 
-  //               <p className="mt-3 max-w-3xl text-base leading-relaxed text-fg-muted sm:text-lg">
-  //                 Live market data, network stats, and on-chain activity for Verium
-  //                 (PoWT) and VeriCoin (PoST).
-  //               </p>
-  //               <div className="mt-4 flex flex-wrap items-center gap-4">
-  //                 <LiveBadge label={vrm.ticker} live={vrmLive} />
-  //                 <LiveBadge label={vrc.ticker} live={vrcLive} />
-  //               </div>
-  //             </div>
-  //           </div>
-  //           <div className="flex shrink-0 flex-wrap gap-2">
-  //             <ChainExploreButton chainId="vrm" />
-  //             <ChainExploreButton chainId="vrc" />
-  //           </div>
-  //         </div>
-  //       </div>
-  //     </section>
-  //   );
-  // }
+      <div className="home-hero__inner">
+        <div className="home-hero__main">
+          <div className="home-hero__logos" aria-hidden>
+            <Image
+              src={vrm.logo}
+              alt=""
+              width={48}
+              height={48}
+              className="home-hero__logo home-hero__logo--vrm"
+            />
+            <Image
+              src={vrc.logo}
+              alt=""
+              width={48}
+              height={48}
+              className="home-hero__logo home-hero__logo--vrc"
+            />
+          </div>
 
-  // function LiveBadge({ label, live }: { label: string; live: boolean }) {
-  //   return (
-  //     <span
-  //       className={cn(
-  //         "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-sm font-semibold",
-  //         live
-  //           ? "border-success/30 bg-success/10 text-success"
-  //           : "border-border bg-bg-subtle text-fg-muted",
-  //       )}
-  //     >
-  //       <StatusDot tone={live ? "success" : "neutral"} pulse={live} />
-  //       {label} {live ? "Live" : "Offline"}
-  //     </span>
-  //   );
+          <div className="home-hero__copy">
+            <p className="home-hero__eyebrow">Vericonomy · Binary chain</p>
+            <h1 id="home-hero-title" className="home-hero__title">
+              Block Explorer
+            </h1>
+            <p className="home-hero__subtitle">
+              Live blocks, network metrics, and top balances for Verium (PoWT) and VeriCoin (PoST).
+            </p>
+          </div>
+        </div>
+
+        <div className="home-hero__aside">
+          <div className="home-hero__pills">
+            <LivePill chainId="vrm" ticker={vrm.ticker} live={vrmLive} />
+            <LivePill chainId="vrc" ticker={vrc.ticker} live={vrcLive} />
+          </div>
+
+          <div className="home-hero__search-hint">
+            <Search className="home-hero__search-icon" aria-hidden />
+            <span>Search by block, transaction, or address in the header</span>
+          </div>
+
+          <div className="home-hero__actions">
+            <ChainExploreButton chainId="vrm" label="Verium" />
+            <ChainExploreButton chainId="vrc" label="VeriCoin" />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LivePill({
+  chainId,
+  ticker,
+  live,
+}: {
+  chainId: 'vrm' | 'vrc';
+  ticker: string;
+  live: boolean;
+}) {
+  return (
+    <span
+      className={cn(
+        'home-hero__pill',
+        chainId === 'vrm' ? 'home-hero__pill--vrm' : 'home-hero__pill--vrc',
+        live && 'home-hero__pill--live'
+      )}
+    >
+      <StatusDot tone={live ? 'success' : 'neutral'} pulse={live} />
+      <span className="home-hero__pill-ticker">{ticker}</span>
+      <span className="home-hero__pill-status">{live ? 'Live' : 'Syncing'}</span>
+    </span>
+  );
 }

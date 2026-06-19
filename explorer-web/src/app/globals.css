@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './home-dashboard.css';
 
 /* Explicit scan paths for Tailwind v4 (Next.js app router + src/) */
 @source "../**/*.{js,ts,jsx,tsx,mdx}";
@@ -500,8 +501,8 @@
   position: relative;
   border-top: 2px solid var(--block-chain-accent, var(--accent));
   box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.05),
-    0 0 0 1px color-mix(in srgb, var(--block-chain-accent) 6%, transparent);
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 0 0 1px color-mix(in srgb, var(--block-chain-accent) 8%, transparent);
 }
 
 .chain-hub-section__logo-ring {
@@ -1350,10 +1351,6 @@ html:not(.light)
 }
 
 @media (max-width: 640px) {
-  .home-page {
-    gap: 1.5rem;
-  }
-
   .chain-hub-section__identity {
     flex-direction: column;
     align-items: flex-start;
@@ -1604,63 +1601,6 @@ li[role='presentation'] + .search-dropdown-section {
 .address-balance-chart .recharts-wrapper,
 .insights-chart-canvas .recharts-wrapper {
   overflow: visible;
-}
-
-/* ── Home page layout & richlist ── */
-.home-page .chain-hub-stat-cell {
-  min-height: 3.5rem;
-}
-
-.home-page .chain-hub-stat-cell__label {
-  font-size: 0.6875rem;
-}
-
-.home-page .chain-hub-stat-cell__value {
-  font-size: 0.9375rem;
-  font-weight: 700;
-}
-
-.home-page .chain-hub-section .bc-table th,
-.home-page .chain-hub-section .bc-table td {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.8125rem;
-}
-
-.home-page .chain-hub-section .bc-table th {
-  font-size: 0.6875rem;
-}
-
-.home-richlist-panel > div:first-child {
-  padding: 1rem 1.25rem;
-}
-
-.home-richlist-panel > div:first-child h2 {
-  font-size: 1.125rem;
-}
-
-.home-richlist-panel--vrm {
-  border-top: 2px solid var(--chain-vrm);
-}
-
-.home-richlist-panel--vrc {
-  border-top: 2px solid var(--chain-vrc);
-}
-
-.home-page .rounded-xl.border.border-border.bg-bg-panel.p-5 {
-  padding: 1.5rem;
-}
-
-.home-page .rounded-xl.border.border-border.bg-bg-panel.p-5 h3 {
-  font-size: 0.9375rem;
-  font-weight: 600;
-}
-
-.home-page .rounded-xl.border.border-border.bg-bg-panel.p-5 p {
-  font-size: 0.9375rem;
-}
-
-.home-page .rounded-xl.border.border-border.bg-bg-panel.p-5 a {
-  font-size: 0.9375rem;
 }
 
 .richlist-balance-list {

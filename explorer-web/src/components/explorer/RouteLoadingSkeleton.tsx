@@ -4,7 +4,7 @@ function PulseBlock({ className }: { className?: string }) {
 
 function PanelSkeleton({ rows = 4 }: { rows?: number }) {
   return (
-    <section className="overflow-hidden rounded-xl border border-border bg-bg-panel shadow-sm">
+    <section className="overflow-hidden rounded-2xl border border-border bg-bg-panel shadow-sm">
       <div className="border-b border-border px-5 py-4">
         <PulseBlock className="h-5 w-40" />
       </div>
@@ -30,30 +30,41 @@ function StatGridSkeleton() {
   );
 }
 
-export function HomeLoadingSkeleton() {
+function LaneSkeleton() {
   return (
-    <div className="space-y-8">
-      <PulseBlock className="h-32 w-full rounded-xl" />
-      <div className="grid gap-4 xl:grid-cols-2">
-        <PanelSkeleton rows={0} />
-        <PanelSkeleton rows={0} />
-      </div>
-      <div className="grid gap-4 xl:grid-cols-2">
-        {Array.from({ length: 2 }).map((_, index) => (
-          <section
-            key={index}
-            className="overflow-hidden rounded-xl border border-border bg-bg-panel shadow-sm"
-          >
-            <div className="border-b border-border px-4 py-3">
-              <PulseBlock className="h-4 w-32" />
-            </div>
-            <StatGridSkeleton />
-          </section>
+    <div className="space-y-4 pl-4">
+      <PulseBlock className="h-12 w-64" />
+      <div className="flex gap-3 overflow-hidden">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <PulseBlock key={i} className="h-32 w-44 shrink-0 rounded-xl" />
         ))}
       </div>
-      <div className="grid gap-6 xl:grid-cols-2">
-        <PanelSkeleton />
-        <PanelSkeleton />
+      <div className="flex flex-wrap gap-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <PulseBlock key={i} className="h-7 w-24 rounded-full" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function HomeLoadingSkeleton() {
+  return (
+    <div className="home-page">
+      <div className="home-dashboard">
+        <div className="space-y-3 py-2">
+          <PulseBlock className="h-4 w-28" />
+          <PulseBlock className="h-12 w-full max-w-lg" />
+          <PulseBlock className="h-5 w-full max-w-md" />
+        </div>
+        <PulseBlock className="h-16 w-full" />
+        <LaneSkeleton />
+        <LaneSkeleton />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <PanelSkeleton rows={5} />
+          <PanelSkeleton rows={5} />
+        </div>
+        <PulseBlock className="h-8 w-full max-w-xl" />
       </div>
     </div>
   );

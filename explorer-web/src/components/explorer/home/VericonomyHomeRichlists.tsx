@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { BcPanel } from '@/components/explorer/BlockchairUi';
 import { RichlistBalanceList } from '@/components/explorer/home/RichlistBalanceList';
 import { useHomeNetworkLive } from '@/hooks/useHomeNetworkLive';
 import type {
@@ -64,10 +63,23 @@ export function VericonomyHomeRichlists({
   );
 
   return (
-    <div className="grid gap-6 xl:grid-cols-2">
-      <ChainRichlistPanel richlist={vrmRichlist} totalSupply={vrmSupply} />
-      <ChainRichlistPanel richlist={vrcRichlist} totalSupply={vrcSupply} />
-    </div>
+    <section className="home-richlists" aria-labelledby="home-richlists-title">
+      <div className="home-section-head">
+        <div>
+          <h2 id="home-richlists-title" className="home-section-head__title">
+            Top holders
+          </h2>
+          <p className="home-section-head__subtitle">
+            Largest positive balances on each chain, ranked by supply share.
+          </p>
+        </div>
+      </div>
+
+      <div className="home-richlists__grid grid gap-6 xl:grid-cols-2">
+        <ChainRichlistPanel richlist={vrmRichlist} totalSupply={vrmSupply} />
+        <ChainRichlistPanel richlist={vrcRichlist} totalSupply={vrcSupply} />
+      </div>
+    </section>
   );
 }
 
@@ -82,44 +94,43 @@ function ChainRichlistPanel({
   if (!config) return null;
 
   const chainId = richlist.chainId as 'vrm' | 'vrc';
-  const action =
-    config.richlistHref && richlist.enabled !== false ? (
-      <Link
-        href={config.richlistHref}
-        className={cn(
-          'rounded-md px-2.5 py-1 text-sm font-semibold transition-colors hover:underline',
-          chainId === 'vrm' ? 'text-[var(--chain-vrm)]' : 'text-[var(--chain-vrc)]'
-        )}
-        prefetch
-      >
-        View all
-      </Link>
-    ) : null;
 
   return (
-    <BcPanel
-      title={`Top ${config.ticker} balances`}
-      action={action}
+    <article
       className={cn(
-        'home-richlist-panel',
-        chainId === 'vrm' ? 'home-richlist-panel--vrm' : 'home-richlist-panel--vrc'
+        'home-richlist-card',
+        chainId === 'vrm' ? 'home-richlist-card--vrm' : 'home-richlist-card--vrc'
       )}
-      flush
+      data-chain={chainId}
     >
-      {!richlist.enabled && richlist.message ? (
-        <p className="px-5 py-4 text-base text-fg-muted">
-          {formatExplorerUserMessage(richlist.message)}
-        </p>
-      ) : richlist.items.length === 0 ? (
-        <p className="px-5 py-4 text-base text-fg-muted">No ranked balances yet.</p>
-      ) : (
-        <RichlistBalanceList
-          chainId={chainId}
-          items={richlist.items}
-          totalSupply={totalSupply}
-          addressHref={(address) => (config.exploreHref ? chainAddressPath(chainId, address) : '#')}
-        />
-      )}
-    </BcPanel>
+      <header className="home-richlist-card__head">
+        <div className="home-richlist-card__title-wrap">
+          <h3 className="home-richlist-card__title">{config.name}</h3>
+          <span className="home-richlist-card__ticker">{config.ticker}</span>
+        </div>
+        {config.richlistHref && richlist.enabled !== false ? (
+          <Link href={config.richlistHref} prefetch className="home-richlist-card__action">
+            View all
+          </Link>
+        ) : null}
+      </header>
+
+      <div className="home-richlist-card__body">
+        {!richlist.enabled && richlist.message ? (
+          <p className="home-richlist-card__empty">
+            {formatExplorerUserMessage(richlist.message)}
+          </p>
+        ) : richlist.items.length === 0 ? (
+          <p className="home-richlist-card__empty">No ranked balances yet.</p>
+        ) : (
+          <RichlistBalanceList
+            chainId={chainId}
+            items={richlist.items}
+            totalSupply={totalSupply}
+            addressHref={(address) => (config.exploreHref ? chainAddressPath(chainId, address) : '#')}
+          />
+        )}
+      </div>
+    </article>
   );
 }

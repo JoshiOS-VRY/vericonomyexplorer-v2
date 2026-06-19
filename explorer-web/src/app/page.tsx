@@ -2,9 +2,7 @@ import type { Metadata } from 'next';
 import { HomeJsonLd } from '@/components/seo/HomeJsonLd';
 import { AlertBanner } from '@/components/explorer/ExplorerUi';
 import { UserMessageBanner } from '@/components/explorer/UserMessageBanner';
-import { VericonomyHomeLiveBand } from '@/components/explorer/home/VericonomyHomeLiveBand';
-import { VericonomyHomeRichlists } from '@/components/explorer/home/VericonomyHomeRichlists';
-import { VericonomyHomeStatic } from '@/components/explorer/home/VericonomyHomeSections';
+import { HomeDashboard } from '@/components/explorer/home/HomeDashboard';
 import { getHomeNetwork, getHomeShell, getLandingData } from '@/lib/api/indexer';
 import type {
   ChainSummary,
@@ -54,20 +52,10 @@ export default async function HomePage() {
   const normalized = normalizeShell(shell);
 
   return (
-    <div className="home-page space-y-10">
+    <div className="home-page">
       <HomeJsonLd />
       <UserMessageBanner />
-      <VericonomyHomeLiveBand initialShell={normalized} initialNetwork={network ?? undefined} />
-
-      <VericonomyHomeRichlists
-        vrmRichlist={normalized.vrm.richlist}
-        vrcRichlist={normalized.vrc.richlist}
-        vrmSummary={normalized.vrm.summary}
-        vrcSummary={normalized.vrc.summary}
-        initialNetwork={network ?? undefined}
-      />
-
-      <VericonomyHomeStatic />
+      <HomeDashboard initialShell={normalized} initialNetwork={network ?? undefined} />
     </div>
   );
 }

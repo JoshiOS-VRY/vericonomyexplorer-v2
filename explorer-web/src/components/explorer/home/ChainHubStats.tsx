@@ -3,15 +3,9 @@ import { cn } from '@/lib/utils';
 
 export function ChainHubSectionHead({ title, meta }: { title: string; meta?: React.ReactNode }) {
   return (
-    <div className="chain-hub-section-head flex min-h-[2.125rem] items-center justify-between gap-3 border-b border-border px-4 py-2 sm:px-5">
-      <h4 className="shrink-0 text-[11px] font-bold uppercase tracking-wide text-fg-subtle">
-        {title}
-      </h4>
-      {meta != null ? (
-        <span className="min-w-0 truncate text-right text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
-          {meta}
-        </span>
-      ) : null}
+    <div className="chain-hub-section-head">
+      <h4 className="chain-hub-section-head__title">{title}</h4>
+      {meta != null ? <span className="chain-hub-section-head__meta">{meta}</span> : null}
     </div>
   );
 }

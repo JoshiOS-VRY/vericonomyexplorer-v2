@@ -1,6 +1,5 @@
 'use client';
 
-import { BinaryChainActivity } from '@/components/explorer/home/BinaryChainActivity';
 import { BinaryChainHero } from '@/components/explorer/home/BinaryChainHero';
 import { ChainHubSection } from '@/components/explorer/home/LatestBlocksChainStrip';
 import { useDualChainLive } from '@/hooks/useDualChainLive';
@@ -46,11 +45,13 @@ export function VericonomyHomeLiveBand({
   );
 
   return (
-    <div className="space-y-8">
-      <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+    <div className="home-live-band space-y-8">
+      <BinaryChainHero vrmLive={vrmLive} vrcLive={vrcLive} />
+
+      <div className="home-chain-grid grid items-stretch gap-6 xl:grid-cols-2">
         <ChainHubSection
           chainId="vrm"
-          summary={hydrated ? live.vrm.summary : initialShell.vrm.summary}
+          summary={vrmSummary}
           chainHeight={
             hydrated
               ? live.vrm.chainHeight
@@ -64,7 +65,7 @@ export function VericonomyHomeLiveBand({
         />
         <ChainHubSection
           chainId="vrc"
-          summary={hydrated ? live.vrc.summary : initialShell.vrc.summary}
+          summary={vrcSummary}
           chainHeight={
             hydrated
               ? live.vrc.chainHeight
