@@ -113,3 +113,22 @@ export function RichlistLoadingSkeleton() {
     </div>
   );
 }
+
+export function InsightsLoadingSkeleton() {
+  return (
+    <div className="insights-page space-y-6">
+      <Skeleton className="h-44 w-full rounded-2xl" />
+      <div className="insights-kpi-grid">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 rounded-xl" />
+        ))}
+      </div>
+      <div className="grid gap-5 xl:grid-cols-2">
+        <SkeletonPanel rows={1} />
+        <SkeletonPanel rows={1} />
+        <SkeletonPanel rows={1} />
+        <SkeletonPanel rows={1} />
+      </div>
+    </div>
+  );
+}

@@ -234,9 +234,11 @@ export function ChainNetworkCard({
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-border bg-bg-panel shadow-sm">
-      <div className="border-b border-border px-4 py-3">
-        <h3 className="text-sm font-bold text-fg">{config.name} Network (PoST)</h3>
+    <section className="chain-hub-card">
+      <div className="chain-hub-card__head">
+        <h3 className="chain-hub-card__title">
+          {config.name} Network{chainId === 'vrc' ? ' (PoST)' : ''}
+        </h3>
       </div>
       {body}
     </section>

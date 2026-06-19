@@ -137,14 +137,10 @@ export function ChainMarketCard({
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-border bg-bg-panel shadow-sm">
-      <div className="border-b border-border px-4 py-3">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-bold text-fg">{config.name} Market</h3>
-          <span className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
-            {sourceLabel}
-          </span>
-        </div>
+    <section className="chain-hub-card">
+      <div className="chain-hub-card__head">
+        <h3 className="chain-hub-card__title">{config.name} Market</h3>
+        <span className="chain-hub-card__meta">{sourceLabel}</span>
       </div>
       {body}
     </section>

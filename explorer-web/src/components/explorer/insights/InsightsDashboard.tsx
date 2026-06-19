@@ -1,7 +1,6 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import { BcPageHeader } from '@/components/explorer/BlockchairUi';
+import { InsightsPageHero } from '@/components/explorer/insights/InsightsPageHero';
 import { ChainActivityInsightsChart } from '@/components/explorer/insights/ChainActivityInsightsChart';
 import { InsightsKpiStrip } from '@/components/explorer/insights/InsightsKpiStrip';
 import { InsightsMarketChart } from '@/components/explorer/insights/InsightsMarketChart';
@@ -12,7 +11,7 @@ import { useStableChainLive } from '@/hooks/useStableChainLive';
 import type { ChainMarket, ChainSummary, VrcNetworkStats, VrmNetworkStats } from '@/lib/api/types';
 import { getChainAccentVar } from '@/lib/insightsChartConfig';
 import { emptyMarketPayload, emptyNetworkPayload } from '@/lib/homeDefaults';
-import { cn } from '@/lib/utils';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export function InsightsDashboard({
   chainId: initialChainId,
@@ -60,54 +59,12 @@ export function InsightsDashboard({
   const chainAccent = getChainAccentVar(chainId);
 
   return (
-    <div className="insights-dashboard space-y-6">
-      <BcPageHeader
-        title="Insights"
-        subtitle="Network metrics, chain activity, and market history"
-        badge={
-          <span
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide',
-              live ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'
-            )}
-          >
-            <span
-              className={cn(
-                'h-1.5 w-1.5 rounded-full',
-                live ? 'bg-success animate-pulse' : 'bg-warning'
-              )}
-            />
-            {live ? 'Live' : 'Updating'}
-          </span>
-        }
-        action={
-          <div className="insights-chain-toggle inline-flex rounded-lg border border-border/80 bg-bg-subtle/80 p-0.5 backdrop-blur-sm">
-            {(['vrm', 'vrc'] as const).map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setChain(item)}
-                className={cn(
-                  'rounded-md px-3.5 py-1.5 text-sm font-semibold transition-all duration-200',
-                  chainId === item
-                    ? 'shadow-sm ring-1 ring-border/60'
-                    : 'text-fg-muted hover:text-fg'
-                )}
-                style={
-                  chainId === item
-                    ? {
-                        background: getChainAccentVar(item),
-                        color: 'var(--chain-btn-fg)',
-                      }
-                    : undefined
-                }
-              >
-                {item === 'vrm' ? 'Verium' : 'Vericoin'}
-              </button>
-            ))}
-          </div>
-        }
-      />
+    <div
+      className="insights-page"
+      data-chain={chainId}
+      style={{ '--hub-accent': chainAccent } as React.CSSProperties}
+    >
+      <InsightsPageHero chainId={chainId} live={live} onChainChange={setChain} />
 
       <InsightsKpiStrip
         chainId={chainId}
@@ -116,14 +73,19 @@ export function InsightsDashboard({
         market={market}
       />
 
-      <div
-        className="insights-chart-grid grid gap-5 xl:grid-cols-2"
-        style={{ '--insights-accent': chainAccent } as React.CSSProperties}
-      >
-        <InsightsNetworkCharts chainId={chainId} maxSupply={network.maxSupply} />
-        <ChainActivityInsightsChart chainId={chainId} />
-        <InsightsMarketChart chainId={chainId} />
-      </div>
+      <section aria-labelledby="insights-charts-heading">
+        <h2 id="insights-charts-heading" className="chain-hub-section-label">
+          Historical charts
+        </h2>
+        <div
+          className="insights-chart-grid mt-4"
+          style={{ '--insights-accent': chainAccent } as React.CSSProperties}
+        >
+          <InsightsNetworkCharts chainId={chainId} maxSupply={network.maxSupply} />
+          <ChainActivityInsightsChart chainId={chainId} />
+          <InsightsMarketChart chainId={chainId} />
+        </div>
+      </section>
     </div>
   );
 }

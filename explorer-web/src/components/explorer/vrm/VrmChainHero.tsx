@@ -1,8 +1,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { BarChart3, Radio } from 'lucide-react';
 import { StatusDot, formatHeight } from '@/components/explorer/ExplorerUi';
 import type { ChainHealth, IndexedBlock } from '@/lib/api/types';
-import { CHAIN_EXPLORERS, isChainLive } from '@/lib/chainDisplay';
+import { CHAIN_EXPLORERS, CHAIN_THEME, isChainLive } from '@/lib/chainDisplay';
 import { cn } from '@/lib/utils';
 
 export function ChainExplorerHero({
@@ -19,41 +20,44 @@ export function ChainExplorerHero({
   tipBlock: IndexedBlock | undefined;
 }) {
   const config = CHAIN_EXPLORERS[chainId];
+  const theme = CHAIN_THEME[chainId];
   const live = isChainLive(health, tipBlock?.height, chainHeight);
   const tipHref = tipBlock && config.blockHref ? config.blockHref(tipBlock.height) : null;
   const chainLabel = chainId === 'vrm' ? 'Verium blockchain' : 'VeriCoin blockchain';
   const description =
     chainId === 'vrm'
-      ? 'Explore blocks, transactions, and addresses on the Verium proof-of-work-time chain.'
-      : 'Explore blocks, transactions, and balances on the VeriCoin proof-of-stake-time chain.';
+      ? 'Proof-of-work-time reserve chain — blocks, mining, transactions, and addresses indexed in real time.'
+      : 'Proof-of-stake-time currency chain — staking, transfers, and balances indexed in real time.';
 
   return (
-    <section className="wallet-panel overflow-hidden rounded-xl border border-border bg-gradient-to-br from-bg-panel via-bg-panel to-accent/5 shadow-sm">
-      <div className="border-b border-border/70 px-5 py-6 sm:px-6">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-start gap-4">
-            <Image
-              src={config.logo}
-              alt=""
-              width={48}
-              height={48}
-              className="h-12 w-12 shrink-0 rounded-full border-2 border-bg-panel bg-bg-panel object-contain"
-            />
+    <section
+      className="chain-hero"
+      style={
+        {
+          '--hub-accent': theme.accent,
+          '--hub-accent-soft': theme.accentSoft,
+          '--hub-glow': chainId === 'vrm' ? 'var(--glow-vrm)' : 'var(--glow-vrc)',
+        } as React.CSSProperties
+      }
+    >
+      <div className="chain-hero__mesh" aria-hidden>
+        <div className="chain-hero__orb chain-hero__orb--primary" />
+      </div>
+
+      <div className="chain-hero__body">
+        <div className="chain-hero__top">
+          <div className="chain-hero__identity">
+            <Image src={config.logo} alt="" width={52} height={52} className="chain-hero__logo" />
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-fg-subtle">
-                {chainLabel}
-              </p>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">
-                  {config.name}
-                </h1>
-                <span className="rounded bg-accent/10 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-accent">
-                  {config.ticker}
-                </span>
-                <span className="text-xs text-fg-subtle">{config.consensus}</span>
+              <p className="chain-hero__eyebrow">{chainLabel}</p>
+              <div className="chain-hero__title-row">
+                <h1 className="chain-hero__title">{config.name}</h1>
+                <span className="chain-hero__ticker">{config.ticker}</span>
+                <span className="chain-hero__consensus">{config.consensus}</span>
               </div>
-              <p className="mt-2 max-w-2xl text-sm text-fg-muted">{description}</p>
-              <div className="mt-3 flex flex-wrap items-center gap-4">
+              <p className="chain-hero__desc">{description}</p>
+
+              <div className="chain-hero__actions">
                 <span
                   className={cn(
                     'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold',
@@ -63,21 +67,33 @@ export function ChainExplorerHero({
                   )}
                 >
                   <StatusDot tone={live ? 'success' : 'neutral'} pulse={live} />
-                  {live ? 'Live' : 'Offline'}
+                  {live ? 'Live' : 'Syncing'}
                 </span>
-                {chainHeight != null ? (
-                  <span
-                    className={cn(
-                      'text-sm font-semibold tabular-nums text-fg',
-                      heightPulse && 'live-height-pulse'
-                    )}
-                  >
-                    Height {formatHeight(chainHeight)}
-                  </span>
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-success">
+                  <Radio className={cn('h-3 w-3', live && 'animate-pulse')} aria-hidden />
+                  Real-time feed
+                </span>
+                <Link href={`/insights?chain=${chainId}`} className="chain-hero__link">
+                  <BarChart3 className="h-3.5 w-3.5" aria-hidden />
+                  Insights
+                </Link>
+                {tipHref ? (
+                  <Link href={tipHref} className="chain-hero__link">
+                    Latest block →
+                  </Link>
                 ) : null}
               </div>
             </div>
           </div>
+
+          {chainHeight != null ? (
+            <div className="chain-hero__height-block">
+              <p className="chain-hero__height-label">Block height</p>
+              <p className={cn('chain-hero__height-value', heightPulse && 'live-height-pulse')}>
+                {formatHeight(chainHeight)}
+              </p>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

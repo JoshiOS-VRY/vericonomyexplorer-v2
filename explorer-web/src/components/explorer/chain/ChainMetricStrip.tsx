@@ -1,5 +1,4 @@
 import { LiveRelativeTime } from '@/components/explorer/LiveRelativeTime';
-import { BcStat, BcStatGrid } from '@/components/explorer/BlockchairUi';
 import { formatHeight } from '@/components/explorer/ExplorerUi';
 import type { IndexedBlock, VrcNetworkStats, VrmNetworkStats } from '@/lib/api/types';
 import type { ChainId } from '@/lib/chainDisplay';
@@ -26,35 +25,53 @@ export function ChainMetricStrip({
   const vrcNetwork = chainId === 'vrc' ? (network as VrcNetworkStats | null) : null;
   const vrmDifficulty = tipDifficulty ?? vrmNetwork?.difficulty ?? null;
 
-  return (
-    <BcStatGrid className="grid-cols-1 sm:grid-cols-4">
-      <BcStat label="Block height" value={formatHeight(chainHeight)} pulse={heightPulse} />
-      <BcStat label="Addresses" value={formatHeight(addressCount)} />
-      <BcStat
-        label="Latest block"
-        value={
-          tipBlock?.time ? (
-            <LiveRelativeTime
-              time={tipBlock.time}
-              interval="second"
-              className="text-lg font-bold sm:text-xl truncate"
-            />
-          ) : (
-            '—'
-          )
-        }
-      />
-      {chainId === 'vrc' ? (
-        <BcStat
-          label="Interest rate"
-          value={formatPercent(vrcNetwork?.interestRatePercent ?? tipBlock?.interestRatePercent)}
+  const tiles = [
+    {
+      label: 'Block height',
+      value: formatHeight(chainHeight),
+      pulse: heightPulse,
+    },
+    {
+      label: 'Addresses',
+      value: formatHeight(addressCount),
+    },
+    {
+      label: 'Latest block',
+      value: tipBlock?.time ? (
+        <LiveRelativeTime
+          time={tipBlock.time}
+          interval="second"
+          className="truncate text-lg font-bold sm:text-xl"
         />
       ) : (
-        <BcStat
-          label="Difficulty"
-          value={vrmDifficulty != null ? formatDifficulty(vrmDifficulty) : '—'}
-        />
-      )}
-    </BcStatGrid>
+        '—'
+      ),
+    },
+    chainId === 'vrc'
+      ? {
+          label: 'Interest rate',
+          value: formatPercent(vrcNetwork?.interestRatePercent ?? tipBlock?.interestRatePercent),
+        }
+      : {
+          label: 'Difficulty',
+          value: vrmDifficulty != null ? formatDifficulty(vrmDifficulty) : '—',
+        },
+  ];
+
+  return (
+    <div className="chain-metric-strip" role="region" aria-label="Chain metrics">
+      {tiles.map((tile) => (
+        <div key={tile.label} className="chain-metric-tile">
+          <p className="chain-metric-tile__label">{tile.label}</p>
+          <p
+            className={
+              tile.pulse ? 'chain-metric-tile__value live-height-pulse' : 'chain-metric-tile__value'
+            }
+          >
+            {tile.value}
+          </p>
+        </div>
+      ))}
+    </div>
   );
 }

@@ -145,16 +145,13 @@ export function FeatureTile({
   hrefLabel: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-bg-panel p-5 shadow-sm transition hover:border-border-strong">
+    <div className="premium-feature-tile">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="text-sm font-medium uppercase tracking-wide text-fg-muted">{title}</h3>
+        <h3 className="premium-feature-tile__title">{title}</h3>
         {badge}
       </div>
-      <p className="mt-3 text-sm leading-relaxed text-fg-muted">{description}</p>
-      <Link
-        href={href}
-        className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-accent underline-offset-2 hover:underline"
-      >
+      <p className="premium-feature-tile__desc">{description}</p>
+      <Link href={href} className="premium-feature-tile__link">
         {hrefLabel}
         <span aria-hidden>→</span>
       </Link>

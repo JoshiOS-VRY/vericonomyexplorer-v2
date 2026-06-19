@@ -44,7 +44,7 @@ export function InsightsChartPanel({
       {loading && !children ? (
         <AddressChartSkeleton />
       ) : empty ? (
-        <div className="insights-chart-empty flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border/80 bg-bg-subtle/40 px-6 py-10 text-center">
+        <div className="insights-chart-empty flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border/80 bg-bg-subtle/30 px-6 py-10 text-center">
           <p className="max-w-sm text-sm leading-relaxed text-fg-muted">{empty}</p>
         </div>
       ) : (

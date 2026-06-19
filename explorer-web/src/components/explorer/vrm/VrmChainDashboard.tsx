@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ChainMarketCard } from '@/components/explorer/home/ChainMarketCard';
 import { ChainNetworkCard } from '@/components/explorer/home/ChainNetworkCard';
 import { ChainBlocksPanel } from '@/components/explorer/chain/ChainBlocksPanel';
+import { ChainHubPageShell, ChainHubSection } from '@/components/explorer/chain/ChainHubPageShell';
 import { LazyChainActivityChart } from '@/components/explorer/chain/LazyChainActivityChart';
 import { ChainMetricStrip } from '@/components/explorer/chain/ChainMetricStrip';
 import { ChainQuickNav } from '@/components/explorer/chain/ChainQuickNav';
@@ -71,7 +72,7 @@ export function VrmChainDashboard({
   const richlistSupply = resolveRichlistTotalSupply(network.supply, market);
 
   return (
-    <div className="space-y-6">
+    <ChainHubPageShell chainId="vrm">
       <ChainExplorerHero
         chainId="vrm"
         health={summary.health}
@@ -89,34 +90,44 @@ export function VrmChainDashboard({
         network={network}
       />
 
-      <div className="grid gap-4 xl:grid-cols-2">
-        <ChainMarketCard chainId="vrm" market={market} />
-        <ChainNetworkCard chainId="vrm" network={network} />
-      </div>
-
-      <LazyChainActivityChart chainId="vrm" />
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] xl:items-stretch">
-        <ChainBlocksPanel
-          chainId="vrm"
-          liveBlocks={latestBlocks.length > 0 ? latestBlocks : summary.latestBlocks}
-          chainHeight={chainHeight}
-          maxIndexedHeight={summary.health.heights.maxIndexedHeight}
-        />
-        <div className="flex h-full min-h-0 flex-col gap-6">
-          <ChainRichlistPreview
-            chainId="vrm"
-            richlist={initialRichlist}
-            totalSupply={richlistSupply}
-          />
-          <VrmMinersPreview miners={initialMiners} />
-          <ChainLeaderboardPreview chainId="vrm" leaderboard={initialLeaderboard} />
+      <ChainHubSection title="Market & network">
+        <div className="chain-hub-grid-2">
+          <ChainMarketCard chainId="vrm" market={market} />
+          <ChainNetworkCard chainId="vrm" network={network} />
         </div>
-      </div>
+      </ChainHubSection>
 
-      <ChainTransactionsPanel chainId="vrm" transactions={summary.recentTransactions} />
+      <ChainHubSection title="Chain activity">
+        <LazyChainActivityChart chainId="vrm" />
+      </ChainHubSection>
 
-      <ChainQuickNav chainId="vrm" tipBlockHref={tipBlockHref} />
-    </div>
+      <ChainHubSection title="On-chain data">
+        <div className="chain-hub-grid-main">
+          <ChainBlocksPanel
+            chainId="vrm"
+            liveBlocks={latestBlocks.length > 0 ? latestBlocks : summary.latestBlocks}
+            chainHeight={chainHeight}
+            maxIndexedHeight={summary.health.heights.maxIndexedHeight}
+          />
+          <div className="chain-hub-sidebar">
+            <ChainRichlistPreview
+              chainId="vrm"
+              richlist={initialRichlist}
+              totalSupply={richlistSupply}
+            />
+            <VrmMinersPreview miners={initialMiners} />
+            <ChainLeaderboardPreview chainId="vrm" leaderboard={initialLeaderboard} />
+          </div>
+        </div>
+      </ChainHubSection>
+
+      <ChainHubSection title="Recent transactions">
+        <ChainTransactionsPanel chainId="vrm" transactions={summary.recentTransactions} />
+      </ChainHubSection>
+
+      <ChainHubSection title="Explore further">
+        <ChainQuickNav chainId="vrm" tipBlockHref={tipBlockHref} />
+      </ChainHubSection>
+    </ChainHubPageShell>
   );
 }
