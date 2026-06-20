@@ -26,7 +26,7 @@ async function meanSpacingOverWindow(call, tipHeight, windowBlocks) {
         return null;
     return meanBlockSpacingSec(startTime, tipTime, windowBlocks);
 }
-/** Measured spacing over the primary ~1 hour window. */
+/** Measured spacing over the primary ~30 min window. */
 export async function fetchRecentBlockSpacingSec(call, tipHeight) {
     return meanSpacingOverWindow(call, tipHeight, VRM_HASHRATE_WINDOW_BLOCKS);
 }

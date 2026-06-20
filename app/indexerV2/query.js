@@ -2962,6 +2962,355 @@ async function getIndexedSupplyAtHeight(chainId, options = {}) {
   };
 }
 
+const VERIUM_POOL_PAYOUT_ADDRESS = 'VRq98Nm2P6anLHPgnHdb6NnibJ6GoG3Jm9';
+const VERIUM_POOL_DISPLAY_NAME = 'Verium Pool';
+const MINERS_TREND_OTHERS_ID = '__others__';
+
+function resolveMinersTrendGroupBy(period) {
+  if (period === 'week' || period === 'month') {
+    return 'day';
+  }
+
+  return 'week';
+}
+
+function formatMinerChartLabel(address) {
+  if (address === VERIUM_POOL_PAYOUT_ADDRESS) {
+    return VERIUM_POOL_DISPLAY_NAME;
+  }
+
+  if (typeof address !== 'string' || address.length <= 14) {
+    return address || 'Unknown';
+  }
+
+  return `${address.slice(0, 6)}…${address.slice(-4)}`;
+}
+
+function buildMinersTrendBuckets(rangeStart, rangeEnd, groupBy, maxPoints) {
+  const start = getInsightsGroupStart(rangeStart, groupBy);
+  const buckets = [];
+  let cursor = start;
+
+  while (cursor <= rangeEnd && buckets.length < maxPoints) {
+    const endTime = endOfInsightsGroup(cursor, groupBy, rangeEnd);
+    buckets.push({
+      startTime: cursor,
+      endTime,
+      label: formatInsightsGroupLabel(cursor, groupBy),
+      groupStart: cursor,
+    });
+    cursor = advanceInsightsGroupStart(cursor, groupBy);
+  }
+
+  if (buckets.length > maxPoints) {
+    return buckets.slice(buckets.length - maxPoints);
+  }
+
+  return buckets;
+}
+
+function findMinersTrendBucketIndex(buckets, dayStart, groupBy) {
+  const groupStart = getInsightsGroupStart(dayStart, groupBy);
+  return buckets.findIndex((bucket) => bucket.groupStart === groupStart);
+}
+
+async function queryMinerDailyBlocks(db, chain, since, sinceHeight) {
+  const hasRollup = await db.get(
+    'SELECT 1 AS present FROM miner_stats WHERE chain_id = ? LIMIT 1',
+    [chain]
+  );
+
+  if (hasRollup) {
+    const sinceDay = since == null ? null : Math.floor(since / 86_400) * 86_400;
+    const filterSql = sinceDay == null ? 'chain_id = ?' : 'chain_id = ? AND day_start >= ?';
+    const filterParams = sinceDay == null ? [chain] : [chain, sinceDay];
+
+    return db.all(
+      `
+			SELECT address, day_start, blocks_mined
+			FROM miner_stats
+			WHERE ${filterSql}
+				AND blocks_mined > 0
+		`,
+      filterParams
+    );
+  }
+
+  if (since != null && sinceHeight == null) {
+    return [];
+  }
+
+  const period = buildMinedPeriodFilter(since, sinceHeight);
+
+  return db.all(
+    `
+		SELECT
+			v.address AS address,
+			(b.time / 86400) * 86400 AS day_start,
+			COUNT(DISTINCT t.block_height) AS blocks_mined
+		FROM transactions t
+		INNER JOIN vouts v
+			ON v.chain_id = t.chain_id
+			AND v.txid = v.txid
+		INNER JOIN blocks b
+			ON b.chain_id = t.chain_id
+			AND b.height = t.block_height
+			AND b.status = 'main'
+		WHERE t.chain_id = ?
+			AND t.is_coinbase = 1
+			AND t.block_height != ?
+			AND v.value_sats > 0
+			AND v.address IS NOT NULL
+			${period.sql}
+		GROUP BY v.address, (b.time / 86400) * 86400
+		HAVING COUNT(DISTINCT t.block_height) > 0
+	`,
+    [chain, MINERS_EXCLUDED_BLOCK_HEIGHT, ...period.params]
+  );
+}
+
+async function getMinerShareTrend(chainId, options = {}) {
+  const db = options.db || dbModule.openDatabase();
+  const chain = normalizeChainId(chainId);
+  const period = normalizeMinersPeriod(options.period);
+  const topN = Math.min(Math.max(toNumber(options.top) || 10, 1), 15);
+  const maxPoints = Math.min(Math.max(toNumber(options.maxPoints) || 60, 8), 120);
+  const groupBy = resolveMinersTrendGroupBy(period);
+  const chainHealth = await resolveChainHealth(chain, options);
+
+  if (chain !== 'vrm') {
+    return {
+      chainId: chain,
+      enabled: false,
+      trusted: false,
+      source: getSource(chainHealth, 'leaderboards'),
+      message: 'Miner share trends are only available for Verium (VRM).',
+      series: [],
+      points: [],
+    };
+  }
+
+  if (!chainHealth.checks.hasBlocks) {
+    return Object.assign(disabledResponse(chain, chainHealth, 'leaderboards'), {
+      series: [],
+      points: [],
+    });
+  }
+
+  const periodBounds = getMinersPeriodBounds(period, options.now);
+  const since = periodBounds.since;
+  const sinceHeight = since == null ? null : await resolveMinedSinceHeight(db, chain, since);
+  const rows = await queryMinerDailyBlocks(db, chain, since, sinceHeight);
+
+  if (!rows.length) {
+    return {
+      chainId: chain,
+      trusted: chainHealth.trusted,
+      source: getSource(chainHealth, 'leaderboards'),
+      period: periodBounds,
+      groupBy,
+      series: [],
+      points: [],
+    };
+  }
+
+  const totalsByAddress = new Map();
+  for (const row of rows) {
+    totalsByAddress.set(
+      row.address,
+      (totalsByAddress.get(row.address) || 0) + toNumber(row.blocks_mined)
+    );
+  }
+
+  const topAddresses = [...totalsByAddress.entries()]
+    .sort((left, right) => right[1] - left[1] || String(left[0]).localeCompare(String(right[0])))
+    .slice(0, topN)
+    .map(([address]) => address);
+  const topSet = new Set(topAddresses);
+
+  let rangeStart = since;
+  if (rangeStart == null) {
+    rangeStart = Math.min(...rows.map((row) => toNumber(row.day_start)));
+  }
+  const rangeEnd = periodBounds.end;
+  const buckets = buildMinersTrendBuckets(rangeStart, rangeEnd, groupBy, maxPoints);
+  const bucketTotals = buckets.map(() => ({ miners: {} }));
+
+  for (const row of rows) {
+    const bucketIndex = findMinersTrendBucketIndex(buckets, toNumber(row.day_start), groupBy);
+    if (bucketIndex < 0) {
+      continue;
+    }
+
+    const blocks = toNumber(row.blocks_mined);
+    const key = topSet.has(row.address) ? row.address : MINERS_TREND_OTHERS_ID;
+    bucketTotals[bucketIndex].miners[key] =
+      (bucketTotals[bucketIndex].miners[key] || 0) + blocks;
+  }
+
+  const series = topAddresses.map((address) => ({
+    id: address,
+    address,
+    label: formatMinerChartLabel(address),
+  }));
+
+  const hasOthers = bucketTotals.some(
+    (bucket) => (bucket.miners[MINERS_TREND_OTHERS_ID] || 0) > 0
+  );
+  if (hasOthers) {
+    series.push({
+      id: MINERS_TREND_OTHERS_ID,
+      address: null,
+      label: 'Others',
+    });
+  }
+
+  const points = buckets
+    .map((bucket, index) => {
+      const counts = bucketTotals[index].miners;
+      const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
+      if (total <= 0) {
+        return null;
+      }
+
+      const point = {
+        label: bucket.label,
+        startTime: bucket.startTime,
+        endTime: bucket.endTime,
+        totalBlocks: total,
+      };
+
+      for (const item of series) {
+        point[item.id] = counts[item.id] || 0;
+      }
+
+      return point;
+    })
+    .filter(Boolean);
+
+  return {
+    chainId: chain,
+    trusted: chainHealth.trusted,
+    source: getSource(chainHealth, 'leaderboards'),
+    period: periodBounds,
+    groupBy,
+    series,
+    points,
+  };
+}
+
+async function getMinerBlockDistribution(chainId, options = {}) {
+  const db = options.db || dbModule.openDatabase();
+  const chain = normalizeChainId(chainId);
+  const blockCount = Math.min(Math.max(toNumber(options.blocks) || 1000, 100), 5000);
+  const topN = Math.min(Math.max(toNumber(options.top) || 9, 1), 14);
+  const chainHealth = await resolveChainHealth(chain, options);
+
+  if (chain !== 'vrm') {
+    return {
+      chainId: chain,
+      enabled: false,
+      trusted: false,
+      source: getSource(chainHealth, 'leaderboards'),
+      message: 'Miner distribution is only available for Verium (VRM).',
+      segments: [],
+    };
+  }
+
+  if (!chainHealth.checks.hasBlocks) {
+    return Object.assign(disabledResponse(chain, chainHealth, 'leaderboards'), {
+      segments: [],
+    });
+  }
+
+  const tipRow = await db.get(
+    `
+		SELECT MAX(height) AS height
+		FROM blocks
+		WHERE chain_id = ? AND status = 'main'
+	`,
+    [chain]
+  );
+  const tipHeight = toNullableNumber(tipRow?.height);
+
+  if (tipHeight == null) {
+    return {
+      chainId: chain,
+      trusted: chainHealth.trusted,
+      source: getSource(chainHealth, 'leaderboards'),
+      blockWindow: { count: blockCount, fromHeight: null, toHeight: null },
+      totalBlocks: 0,
+      segments: [],
+    };
+  }
+
+  const minHeight = Math.max(MINERS_EXCLUDED_BLOCK_HEIGHT + 1, tipHeight - blockCount + 1);
+  const rows = await db.all(
+    `
+		SELECT
+			v.address AS address,
+			COUNT(DISTINCT t.block_height) AS block_count
+		FROM transactions t
+		INNER JOIN vouts v
+			ON v.chain_id = t.chain_id
+			AND v.txid = v.txid
+		INNER JOIN blocks b
+			ON b.chain_id = t.chain_id
+			AND b.height = t.block_height
+			AND b.status = 'main'
+		WHERE t.chain_id = ?
+			AND t.is_coinbase = 1
+			AND t.block_height >= ?
+			AND t.block_height <= ?
+			AND t.block_height != ?
+			AND v.value_sats > 0
+			AND v.address IS NOT NULL
+		GROUP BY v.address
+		HAVING COUNT(DISTINCT t.block_height) > 0
+		ORDER BY block_count DESC, address ASC
+	`,
+    [chain, minHeight, tipHeight, MINERS_EXCLUDED_BLOCK_HEIGHT]
+  );
+
+  const totalBlocks = rows.reduce((sum, row) => sum + toNumber(row.block_count), 0);
+  const topRows = rows.slice(0, topN);
+  const othersBlocks = rows.slice(topN).reduce((sum, row) => sum + toNumber(row.block_count), 0);
+
+  const segments = topRows.map((row) => {
+    const blocks = toNumber(row.block_count);
+    return {
+      id: row.address,
+      address: row.address,
+      label: formatMinerChartLabel(row.address),
+      blocks,
+      sharePct: totalBlocks > 0 ? (blocks / totalBlocks) * 100 : 0,
+    };
+  });
+
+  if (othersBlocks > 0) {
+    segments.push({
+      id: MINERS_TREND_OTHERS_ID,
+      address: null,
+      label: 'Others',
+      blocks: othersBlocks,
+      sharePct: totalBlocks > 0 ? (othersBlocks / totalBlocks) * 100 : 0,
+    });
+  }
+
+  return {
+    chainId: chain,
+    trusted: chainHealth.trusted,
+    source: getSource(chainHealth, 'leaderboards'),
+    blockWindow: {
+      count: blockCount,
+      fromHeight: minHeight,
+      toHeight: tipHeight,
+    },
+    totalBlocks,
+    segments,
+  };
+}
+
 module.exports = {
   getChainSummary,
   getChainSummaryLite,
@@ -2971,6 +3320,8 @@ module.exports = {
   getRichlist,
   getLeaderboard,
   getMinedLeaderboard,
+  getMinerShareTrend,
+  getMinerBlockDistribution,
   getAddress,
   getAddressBalanceHistory,
   getChainActivityHistory,

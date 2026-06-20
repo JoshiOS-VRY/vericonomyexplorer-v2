@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
 import { AlertBanner, PageHero } from '@/components/explorer/ExplorerUi';
 import { VrmMinersPageClient } from '@/components/explorer/vrm/VrmMinersPageClient';
-import { getMinersLeaderboard } from '@/lib/api/indexer';
+import {
+  getMinerBlockDistribution,
+  getMinersLeaderboard,
+  getMinerShareTrend,
+} from '@/lib/api/indexer';
 import { formatExplorerUserMessage } from '@/lib/explorerCopy';
 import { normalizeMinersPeriod, type MinersPeriodId } from '@/lib/minersPeriods';
 import { normalizeLimit, normalizeOffset } from '@/lib/utils';
@@ -24,8 +28,14 @@ export default async function MinersPage({
   const offset = normalizeOffset(params.offset);
 
   let miners;
+  let shareTrend;
+  let distribution;
   try {
-    miners = await getMinersLeaderboard('vrm', { period, limit, offset });
+    [miners, shareTrend, distribution] = await Promise.all([
+      getMinersLeaderboard('vrm', { period, limit, offset }),
+      getMinerShareTrend('vrm', { period, top: 10 }),
+      getMinerBlockDistribution('vrm', { blocks: 1000, top: 9 }),
+    ]);
   } catch {
     return <AlertBanner title="Miners Unavailable">Unable to load VRM top miners.</AlertBanner>;
   }
@@ -53,6 +63,8 @@ export default async function MinersPage({
       <VrmMinersPageClient
         key={`${period}-${offset}`}
         initialMiners={miners}
+        initialShareTrend={shareTrend}
+        initialDistribution={distribution}
         initialPeriod={period}
         limit={limit}
         offset={offset}

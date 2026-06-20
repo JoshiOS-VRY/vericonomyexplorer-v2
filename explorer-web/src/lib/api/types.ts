@@ -200,6 +200,55 @@ export interface MinersLeaderboardResult {
   items: MinersLeaderboardItem[];
 }
 
+export interface MinerChartSeries {
+  id: string;
+  address: string | null;
+  label: string;
+}
+
+export interface MinerShareTrendPoint {
+  label: string;
+  startTime: number;
+  endTime: number;
+  totalBlocks: number;
+  [seriesId: string]: string | number;
+}
+
+export interface MinerShareTrendResult {
+  chainId: string;
+  trusted?: boolean;
+  enabled?: boolean;
+  message?: string;
+  source: SourceInfo;
+  period?: { type: string; start: number | null; end: number };
+  groupBy?: string;
+  series: MinerChartSeries[];
+  points: MinerShareTrendPoint[];
+}
+
+export interface MinerDistributionSegment {
+  id: string;
+  address: string | null;
+  label: string;
+  blocks: number;
+  sharePct: number;
+}
+
+export interface MinerBlockDistributionResult {
+  chainId: string;
+  trusted?: boolean;
+  enabled?: boolean;
+  message?: string;
+  source: SourceInfo;
+  blockWindow?: {
+    count: number;
+    fromHeight: number | null;
+    toHeight: number | null;
+  };
+  totalBlocks: number;
+  segments: MinerDistributionSegment[];
+}
+
 export interface AddressTransaction {
   txid: string;
   blockHeight: number;

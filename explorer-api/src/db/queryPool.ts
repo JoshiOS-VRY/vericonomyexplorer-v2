@@ -45,6 +45,8 @@ const METHOD_PRIORITY: Record<string, number> = {
   getRichlist: 1,
   getLeaderboard: 1,
   getMinedLeaderboard: 1,
+  getMinerShareTrend: 1,
+  getMinerBlockDistribution: 1,
   getChainHealth: 1,
   getAddressBalanceHistory: 1,
   getAddressUtxos: 1,

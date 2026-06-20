@@ -111,6 +111,8 @@ const handlers = {
   getRichlist: query.getRichlist,
   getLeaderboard: query.getLeaderboard,
   getMinedLeaderboard: query.getMinedLeaderboard,
+  getMinerShareTrend: query.getMinerShareTrend,
+  getMinerBlockDistribution: query.getMinerBlockDistribution,
   getAddress: query.getAddress,
   getAddressBalanceHistory: query.getAddressBalanceHistory,
   getChainActivityHistory: query.getChainActivityHistory,

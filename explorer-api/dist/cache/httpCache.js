@@ -2,6 +2,8 @@ const CACHE_RULES = [
     { pattern: /^\/v1\/[^/]+\/block\//, maxAge: 60, swr: 120 },
     { pattern: /^\/v1\/[^/]+\/tx\//, maxAge: 120, swr: 300 },
     { pattern: /^\/v1\/[^/]+\/richlist/, maxAge: 30, swr: 60 },
+    { pattern: /^\/v1\/[^/]+\/miners\/share-trend/, maxAge: 30, swr: 120 },
+    { pattern: /^\/v1\/[^/]+\/miners\/distribution/, maxAge: 30, swr: 120 },
     { pattern: /^\/v1\/[^/]+\/miners/, maxAge: 30, swr: 120 },
     { pattern: /^\/v1\/[^/]+\/leaderboard/, maxAge: 30, swr: 120 },
     { pattern: /^\/v1\/[^/]+\/peers/, maxAge: 30, swr: 60 },

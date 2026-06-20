@@ -126,6 +126,58 @@ export const minersSchema = z.object({
   items: z.array(z.record(z.string(), z.unknown())).optional().default([]),
 });
 
+const minerChartSeriesSchema = z.object({
+  id: z.string(),
+  address: z.string().nullable().optional(),
+  label: z.string(),
+});
+
+export const minerShareTrendSchema = z.object({
+  chainId: z.string(),
+  trusted: z.boolean().optional(),
+  enabled: z.boolean().optional(),
+  message: z.string().optional(),
+  source: sourceSchema,
+  period: z
+    .object({
+      type: z.string(),
+      start: z.number().nullable().optional(),
+      end: z.number(),
+    })
+    .optional(),
+  groupBy: z.string().optional(),
+  series: z.array(minerChartSeriesSchema).optional().default([]),
+  points: z.array(z.record(z.string(), z.unknown())).optional().default([]),
+});
+
+export const minerBlockDistributionSchema = z.object({
+  chainId: z.string(),
+  trusted: z.boolean().optional(),
+  enabled: z.boolean().optional(),
+  message: z.string().optional(),
+  source: sourceSchema,
+  blockWindow: z
+    .object({
+      count: z.number(),
+      fromHeight: z.number().nullable(),
+      toHeight: z.number().nullable(),
+    })
+    .optional(),
+  totalBlocks: z.number().optional().default(0),
+  segments: z
+    .array(
+      z.object({
+        id: z.string(),
+        address: z.string().nullable().optional(),
+        label: z.string(),
+        blocks: z.number(),
+        sharePct: z.number(),
+      })
+    )
+    .optional()
+    .default([]),
+});
+
 const amountSchema = z.object({
   amount: z.string(),
   ticker: z.string(),

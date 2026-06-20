@@ -78,6 +78,18 @@ export function fetchMinedLeaderboard(chainId, options = {}) {
         priority: 1,
     });
 }
+export function fetchMinerShareTrend(chainId, options = {}) {
+    return runIndexerQuery('getMinerShareTrend', [chainId], options, {
+        timeoutMs: Number(process.env.VCEXP_API_MINERS_TIMEOUT_MS ?? 5_000),
+        priority: 1,
+    });
+}
+export function fetchMinerBlockDistribution(chainId, options = {}) {
+    return runIndexerQuery('getMinerBlockDistribution', [chainId], options, {
+        timeoutMs: Number(process.env.VCEXP_API_MINERS_TIMEOUT_MS ?? 5_000),
+        priority: 1,
+    });
+}
 export function fetchAddressBalanceHistory(chainId, address, options = {}) {
     return runIndexerQuery('getAddressBalanceHistory', [chainId, address], options);
 }

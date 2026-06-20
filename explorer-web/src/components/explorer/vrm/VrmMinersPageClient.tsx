@@ -6,25 +6,40 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { DataTable, PaginationLinks, formatHeight } from '@/components/explorer/ExplorerUi';
 import { MinersPeriodPicker } from '@/components/explorer/vrm/MinersPeriodPicker';
+import { VrmMinersCharts } from '@/components/explorer/vrm/VrmMinersCharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { fetchMinersLeaderboardClient } from '@/lib/api/client';
-import type { MinersLeaderboardResult } from '@/lib/api/types';
+import {
+  fetchMinerBlockDistributionClient,
+  fetchMinersLeaderboardClient,
+  fetchMinerShareTrendClient,
+} from '@/lib/api/client';
+import type {
+  MinerBlockDistributionResult,
+  MinersLeaderboardResult,
+  MinerShareTrendResult,
+} from '@/lib/api/types';
 import { normalizeMinersPeriod, type MinersPeriodId } from '@/lib/minersPeriods';
 import { cn } from '@/lib/utils';
 
 export function VrmMinersPageClient({
   initialMiners,
+  initialShareTrend,
+  initialDistribution,
   initialPeriod,
   limit,
   offset,
 }: {
   initialMiners: MinersLeaderboardResult;
+  initialShareTrend: MinerShareTrendResult;
+  initialDistribution: MinerBlockDistributionResult;
   initialPeriod: MinersPeriodId;
   limit: number;
   offset: number;
 }) {
   const router = useRouter();
   const [miners, setMiners] = useState(initialMiners);
+  const [shareTrend, setShareTrend] = useState(initialShareTrend);
+  const [distribution, setDistribution] = useState(initialDistribution);
   const [period, setPeriod] = useState<MinersPeriodId>(normalizeMinersPeriod(initialPeriod));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,12 +61,18 @@ export function VrmMinersPageClient({
       router.replace(`/vrm/miners?${params.toString()}`, { scroll: false });
 
       try {
-        const result = await fetchMinersLeaderboardClient('vrm', {
-          period: nextPeriod,
-          limit,
-          offset: 0,
-        });
-        setMiners(result);
+        const [minersResult, shareTrendResult, distributionResult] = await Promise.all([
+          fetchMinersLeaderboardClient('vrm', {
+            period: nextPeriod,
+            limit,
+            offset: 0,
+          }),
+          fetchMinerShareTrendClient('vrm', { period: nextPeriod, top: 10 }),
+          fetchMinerBlockDistributionClient('vrm', { blocks: 1000, top: 9 }),
+        ]);
+        setMiners(minersResult);
+        setShareTrend(shareTrendResult);
+        setDistribution(distributionResult);
       } catch {
         setError('Unable to load miners for this period.');
       } finally {
@@ -67,6 +88,13 @@ export function VrmMinersPageClient({
         period={period}
         loading={loading}
         onSelect={(next) => void loadPeriod(next)}
+      />
+
+      <VrmMinersCharts
+        shareTrend={shareTrend}
+        distribution={distribution}
+        period={period}
+        loading={loading}
       />
 
       <Card>

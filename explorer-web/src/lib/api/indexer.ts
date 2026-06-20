@@ -6,6 +6,8 @@ import {
   richlistSchema,
   leaderboardSchema,
   minersSchema,
+  minerShareTrendSchema,
+  minerBlockDistributionSchema,
   transactionResultSchema,
   blockResultSchema,
 } from '@/lib/api/schemas';
@@ -23,6 +25,8 @@ import type {
   IndexerHealth,
   LeaderboardResult,
   MinersLeaderboardResult,
+  MinerBlockDistributionResult,
+  MinerShareTrendResult,
   PeersResult,
   RichlistResult,
   TransactionRelatedAddressesResult,
@@ -190,6 +194,39 @@ export async function getMinersLeaderboard(
     timeoutMs: 5_000,
   });
   return parseOrThrow(minersSchema, data) as unknown as MinersLeaderboardResult;
+}
+
+export async function getMinerShareTrend(
+  chainId: string,
+  params: { period?: string; top?: number } = {}
+): Promise<MinerShareTrendResult> {
+  const search = new URLSearchParams();
+  if (params.period) search.set('period', params.period);
+  if (params.top != null) search.set('top', String(params.top));
+  const qs = search.toString();
+  const data = await v1Fetch<unknown>(`/${chainId}/miners/share-trend${qs ? `?${qs}` : ''}`, {
+    revalidate: SUMMARY_REVALIDATE_SECONDS,
+    timeoutMs: 5_000,
+  });
+  return parseOrThrow(minerShareTrendSchema, data) as unknown as MinerShareTrendResult;
+}
+
+export async function getMinerBlockDistribution(
+  chainId: string,
+  params: { blocks?: number; top?: number } = {}
+): Promise<MinerBlockDistributionResult> {
+  const search = new URLSearchParams();
+  if (params.blocks != null) search.set('blocks', String(params.blocks));
+  if (params.top != null) search.set('top', String(params.top));
+  const qs = search.toString();
+  const data = await v1Fetch<unknown>(`/${chainId}/miners/distribution${qs ? `?${qs}` : ''}`, {
+    revalidate: SUMMARY_REVALIDATE_SECONDS,
+    timeoutMs: 5_000,
+  });
+  return parseOrThrow(
+    minerBlockDistributionSchema,
+    data
+  ) as unknown as MinerBlockDistributionResult;
 }
 
 export async function getAddress(

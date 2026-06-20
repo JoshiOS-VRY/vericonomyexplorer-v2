@@ -1,4 +1,5 @@
 import type { IndexedBlock } from '@/lib/api/types';
+import { cn } from '@/lib/utils';
 
 /** Vericonomy-operated pool (coinbase tag /VRMPOOL/ or pool payout address). */
 export const VERIUM_POOL_DISPLAY_NAME = 'Verium Pool';
@@ -24,6 +25,10 @@ export function isVeriumPoolExtracted(
   return link.includes(VERIUM_POOL_SITE_HOST);
 }
 
+/** Matches verium/desktop ExplorerRecentBlockRow pool miner pill. */
+export const VERIUM_POOL_PILL_BASE_CLASS =
+  'verium-pool-badge inline-flex max-w-full shrink-0 items-center rounded-md bg-accent px-2.5 py-0.5 text-xs font-semibold text-white no-underline shadow-sm hover:bg-accent/90 hover:no-underline';
+
 export function veriumPoolPillClassName(className?: string): string {
-  return className ? `extracted-by-verium-pool ${className}` : 'extracted-by-verium-pool';
+  return cn(VERIUM_POOL_PILL_BASE_CLASS, className);
 }

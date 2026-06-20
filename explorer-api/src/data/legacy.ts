@@ -170,6 +170,26 @@ export function fetchMinedLeaderboard(
   });
 }
 
+export function fetchMinerShareTrend(
+  chainId: string,
+  options: { period?: string; top?: number; maxPoints?: number } = {}
+) {
+  return runIndexerQuery('getMinerShareTrend', [chainId], options, {
+    timeoutMs: Number(process.env.VCEXP_API_MINERS_TIMEOUT_MS ?? 5_000),
+    priority: 1,
+  });
+}
+
+export function fetchMinerBlockDistribution(
+  chainId: string,
+  options: { blocks?: number; top?: number } = {}
+) {
+  return runIndexerQuery('getMinerBlockDistribution', [chainId], options, {
+    timeoutMs: Number(process.env.VCEXP_API_MINERS_TIMEOUT_MS ?? 5_000),
+    priority: 1,
+  });
+}
+
 export function fetchAddressBalanceHistory(
   chainId: string,
   address: string,

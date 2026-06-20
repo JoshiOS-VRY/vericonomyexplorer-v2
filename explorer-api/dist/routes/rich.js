@@ -1,6 +1,6 @@
 import { heavyRateLimitRouteConfig } from '../env.js';
 import { createSwrCache, swrFetch } from '../cache/swrCache.js';
-import { fetchLeaderboard, fetchMinedLeaderboard, fetchRichlist } from '../data/legacy.js';
+import { fetchLeaderboard, fetchMinedLeaderboard, fetchMinerBlockDistribution, fetchMinerShareTrend, fetchRichlist, } from '../data/legacy.js';
 import { parseChainId } from '../types.js';
 import { withTimeout } from '../util/timeout.js';
 const heavyRouteTimeoutMs = Number(process.env.VCEXP_API_HEAVY_ROUTE_TIMEOUT_MS ?? 5_000);
@@ -44,6 +44,27 @@ const minersCache = createSwrCache({
             period: period || undefined,
             limit: limit ? Number(limit) : undefined,
             offset: offset ? Number(offset) : undefined,
+        });
+    },
+});
+const minersChartsCache = createSwrCache({
+    max: 32,
+    ttlMs: 30_000,
+    fetch: async (key, signal) => {
+        if (signal.aborted)
+            throw new Error('aborted');
+        const [kind, chainId, ...rest] = key.split(':');
+        if (kind === 'share') {
+            const [period, top] = rest;
+            return fetchMinerShareTrend(chainId, {
+                period: period || undefined,
+                top: top ? Number(top) : undefined,
+            });
+        }
+        const [blocks, top] = rest;
+        return fetchMinerBlockDistribution(chainId, {
+            blocks: blocks ? Number(blocks) : undefined,
+            top: top ? Number(top) : undefined,
         });
     },
 });
@@ -110,6 +131,56 @@ export async function registerRichRoutes(app) {
                 trusted: false,
                 items: [],
                 paging: { limit: 0, offset: 0, total: 0, hasMore: false },
+            }));
+        }
+    });
+    app.get('/v1/:chain/miners/share-trend', { ...heavyRateLimitRouteConfig }, async (request, reply) => {
+        const chainId = parseChainId(request.params.chain);
+        if (!chainId) {
+            return reply.code(400).send({ error: 'Invalid chain id' });
+        }
+        const key = `share:${chainId}:${request.query.period ?? ''}:${request.query.top ?? ''}`;
+        try {
+            return await withTimeout(minersChartsCache.fetch(key), heavyRouteTimeoutMs, 'miners-share-trend');
+        }
+        catch {
+            const stale = minersChartsCache.get(key, { allowStale: true });
+            if (stale)
+                return stale;
+            return fetchMinerShareTrend(chainId, {
+                period: request.query.period,
+                top: request.query.top ? Number(request.query.top) : undefined,
+            }).catch(() => ({
+                chainId,
+                enabled: true,
+                trusted: false,
+                series: [],
+                points: [],
+            }));
+        }
+    });
+    app.get('/v1/:chain/miners/distribution', { ...heavyRateLimitRouteConfig }, async (request, reply) => {
+        const chainId = parseChainId(request.params.chain);
+        if (!chainId) {
+            return reply.code(400).send({ error: 'Invalid chain id' });
+        }
+        const key = `distribution:${chainId}:${request.query.blocks ?? ''}:${request.query.top ?? ''}`;
+        try {
+            return await withTimeout(minersChartsCache.fetch(key), heavyRouteTimeoutMs, 'miners-distribution');
+        }
+        catch {
+            const stale = minersChartsCache.get(key, { allowStale: true });
+            if (stale)
+                return stale;
+            return fetchMinerBlockDistribution(chainId, {
+                blocks: request.query.blocks ? Number(request.query.blocks) : undefined,
+                top: request.query.top ? Number(request.query.top) : undefined,
+            }).catch(() => ({
+                chainId,
+                enabled: true,
+                trusted: false,
+                segments: [],
+                totalBlocks: 0,
             }));
         }
     });

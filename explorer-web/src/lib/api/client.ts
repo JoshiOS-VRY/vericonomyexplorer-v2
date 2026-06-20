@@ -6,7 +6,9 @@ import type {
   HomeMarketPayload,
   HomeNetworkPayload,
   IndexedBlock,
+  MinerBlockDistributionResult,
   MinersLeaderboardResult,
+  MinerShareTrendResult,
   RichlistResult,
   TransactionResult,
 } from '@/lib/api/types';
@@ -173,6 +175,32 @@ export async function fetchMinersLeaderboardClient(
   const qs = search.toString();
 
   return clientApiFetch<MinersLeaderboardResult>(`/${chainId}/miners${qs ? `?${qs}` : ''}`);
+}
+
+export async function fetchMinerShareTrendClient(
+  chainId: string,
+  params: { period?: string; top?: number } = {}
+): Promise<MinerShareTrendResult> {
+  const search = new URLSearchParams();
+  if (params.period) search.set('period', params.period);
+  if (params.top != null) search.set('top', String(params.top));
+  const qs = search.toString();
+  return clientApiFetch<MinerShareTrendResult>(
+    `/${chainId}/miners/share-trend${qs ? `?${qs}` : ''}`
+  );
+}
+
+export async function fetchMinerBlockDistributionClient(
+  chainId: string,
+  params: { blocks?: number; top?: number } = {}
+): Promise<MinerBlockDistributionResult> {
+  const search = new URLSearchParams();
+  if (params.blocks != null) search.set('blocks', String(params.blocks));
+  if (params.top != null) search.set('top', String(params.top));
+  const qs = search.toString();
+  return clientApiFetch<MinerBlockDistributionResult>(
+    `/${chainId}/miners/distribution${qs ? `?${qs}` : ''}`
+  );
 }
 
 import { sanitizeSearchQuery } from '@/lib/searchSuggestions';

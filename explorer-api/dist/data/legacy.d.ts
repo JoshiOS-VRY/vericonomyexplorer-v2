@@ -86,6 +86,15 @@ export declare function fetchMinedLeaderboard(chainId: string, options?: {
     limit?: number;
     offset?: number;
 }): Promise<unknown>;
+export declare function fetchMinerShareTrend(chainId: string, options?: {
+    period?: string;
+    top?: number;
+    maxPoints?: number;
+}): Promise<unknown>;
+export declare function fetchMinerBlockDistribution(chainId: string, options?: {
+    blocks?: number;
+    top?: number;
+}): Promise<unknown>;
 export declare function fetchAddressBalanceHistory(chainId: string, address: string, options?: {
     maxPoints?: number;
     since?: number;
