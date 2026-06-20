@@ -4,10 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -36,18 +33,16 @@ import {
 import { cn } from '@/lib/utils';
 import type { RechartsTooltipContentProps } from '@/components/explorer/charts/ThemedChartTooltip';
 import { niceYAxisProps } from '@/components/explorer/charts/chartAxis';
+import {
+  AddressActivityChart,
+  balanceAtBucketEnd,
+} from '@/components/explorer/charts/AddressActivityChart';
+import type { ChainId } from '@/lib/chainDisplay';
 
 const CHART_VIEWS: { id: AddressBalanceChartView; label: string }[] = [
   { id: 'activity', label: 'Activity' },
   { id: 'balance', label: 'Balance' },
 ];
-
-const CATEGORY_COLORS: Record<string, keyof ReturnType<typeof useChartTheme>> = {
-  mined: 'success',
-  staked: 'warning',
-  received: 'accent',
-  spent: 'danger',
-};
 
 function ChartHeaderControls({
   view,
@@ -103,73 +98,9 @@ type ActivityChartRow = {
   staked: number;
   received: number;
   spent: number;
+  netChange: number;
+  balanceAtEnd: number | null;
 };
-
-const ACTIVITY_TOOLTIP_SERIES: { key: keyof ActivityChartRow; name: string }[] = [
-  { key: 'mined', name: 'Mined' },
-  { key: 'staked', name: 'Staked' },
-  { key: 'received', name: 'Received' },
-  { key: 'spent', name: 'Spent' },
-];
-
-function ActivityChartTooltip({
-  active,
-  payload,
-  colors,
-}: RechartsTooltipContentProps & {
-  colors: ReturnType<typeof useChartTheme>;
-}) {
-  if (!active || !payload?.length) {
-    return null;
-  }
-
-  const row = payload[0]?.payload as ActivityChartRow | undefined;
-  if (!row) {
-    return null;
-  }
-
-  const ticker = row.ticker ?? 'VRM';
-  const entries = ACTIVITY_TOOLTIP_SERIES.map((series) => ({
-    name: series.name,
-    value: series.key === 'spent' ? Math.abs(row.spent) : Number(row[series.key]),
-  }))
-    .filter((item) => item.value > 0)
-    .sort((a, b) => b.value - a.value);
-
-  if (!entries.length) {
-    return null;
-  }
-
-  return (
-    <div
-      className="rounded-md border px-3 py-2 shadow-md"
-      style={{
-        background: colors.bgPanel,
-        borderColor: colors.border,
-        color: colors.fg,
-      }}
-    >
-      <p className="text-[11px] font-medium" style={{ color: colors.fgMuted }}>
-        {row.axisLabel}
-      </p>
-      <p className="text-[10px]" style={{ color: colors.fgSubtle }}>
-        UTC · {formatChartDateTime(row.endTime)}
-      </p>
-      <ul className="mt-2 space-y-1">
-        {entries.map((item) => (
-          <li key={item.name} className="flex items-center justify-between gap-4 text-xs">
-            <span className="font-medium" style={{ color: colors.fgMuted }}>
-              {item.name}
-            </span>
-            <span className="font-semibold tabular-nums">
-              {item.value.toLocaleString(undefined, { maximumFractionDigits: 8 })} {ticker}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 
 function BalanceChartTooltip({
   active,
@@ -281,66 +212,6 @@ function BalanceHistoryPeriodControls({
         </select>
       </label>
     </>
-  );
-}
-
-function ActivityBarChart({
-  chartData,
-  colors,
-  period,
-}: {
-  chartData: ActivityChartRow[];
-  colors: ReturnType<typeof useChartTheme>;
-  period: AddressBalanceHistoryPeriodId;
-}) {
-  const categoryFill = (id: string) => colors[CATEGORY_COLORS[id] ?? 'accent'];
-
-  const formatActivityTick = (value: string | number) => {
-    const row = chartData.find((item) => item.bucketKey === String(value));
-    return row?.axisLabel ?? '';
-  };
-
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={chartData} margin={{ top: 12, right: 12, left: 4, bottom: 4 }}>
-        <CartesianGrid
-          stroke={colors.border}
-          strokeOpacity={0.5}
-          strokeDasharray="3 3"
-          vertical={false}
-        />
-        <XAxis
-          dataKey="bucketKey"
-          tick={{ fill: colors.fgSubtle, fontSize: 11 }}
-          tickLine={false}
-          axisLine={{ stroke: colors.border, strokeOpacity: 0.6 }}
-          minTickGap={period === '7d' ? 16 : 28}
-          dy={6}
-          tickFormatter={formatActivityTick}
-        />
-        <YAxis
-          tick={{ fill: colors.fgSubtle, fontSize: 11 }}
-          tickLine={false}
-          axisLine={false}
-          width={76}
-          tickFormatter={(value: number) =>
-            Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 4 })
-          }
-        />
-        <Tooltip
-          cursor={{ fill: colors.bgSubtle, opacity: 0.35 }}
-          content={<ActivityChartTooltip colors={colors} />}
-        />
-        <Legend
-          wrapperStyle={{ fontSize: 11, color: colors.fgMuted }}
-          formatter={(value) => <span style={{ color: colors.fgMuted }}>{value}</span>}
-        />
-        <Bar dataKey="mined" name="Mined" fill={categoryFill('mined')} maxBarSize={28} />
-        <Bar dataKey="staked" name="Staked" fill={categoryFill('staked')} maxBarSize={28} />
-        <Bar dataKey="received" name="Received" fill={categoryFill('received')} maxBarSize={28} />
-        <Bar dataKey="spent" name="Spent" fill={categoryFill('spent')} maxBarSize={28} />
-      </BarChart>
-    </ResponsiveContainer>
   );
 }
 
@@ -563,17 +434,34 @@ export function AddressBalanceChart({
     );
   }
 
-  const activityData = history.buckets.map((bucket) => ({
-    bucketKey: String(bucket.startTime),
-    axisLabel: formatActivityBucketAxisLabel(bucket.startTime, bucket.endTime),
-    startTime: bucket.startTime,
-    endTime: bucket.endTime,
-    ticker: bucket.ticker,
-    mined: bucket.minedAmount,
-    staked: bucket.stakedAmount,
-    received: bucket.receivedAmount,
-    spent: bucket.spentAmount,
+  const activityChainId: ChainId = chainId === 'vrc' ? 'vrc' : 'vrm';
+  const balancePoints = history.points.map((point) => ({
+    time: point.time,
+    balanceAmount: point.balanceAmount,
   }));
+
+  const activityData: ActivityChartRow[] = history.buckets.map((bucket) => {
+    const mined = bucket.minedAmount;
+    const staked = bucket.stakedAmount;
+    const received = bucket.receivedAmount;
+    const spent = bucket.spentAmount;
+    const netChange =
+      activityChainId === 'vrc' ? staked : mined + received + spent;
+
+    return {
+      bucketKey: String(bucket.startTime),
+      axisLabel: formatActivityBucketAxisLabel(bucket.startTime, bucket.endTime),
+      startTime: bucket.startTime,
+      endTime: bucket.endTime,
+      ticker: bucket.ticker,
+      mined,
+      staked,
+      received,
+      spent,
+      netChange,
+      balanceAtEnd: balanceAtBucketEnd(balancePoints, bucket.endTime),
+    };
+  });
 
   const balanceData = history.points.map((point) => ({
     balance: point.balanceAmount,
@@ -627,7 +515,12 @@ export function AddressBalanceChart({
                 fillBottomOpacity={fillBottomOpacity}
               />
             ) : (
-              <ActivityBarChart chartData={activityData} colors={colors} period={period} />
+              <AddressActivityChart
+                chainId={activityChainId}
+                chartData={activityData}
+                colors={colors}
+                period={period}
+              />
             )
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-fg-muted">
@@ -646,6 +539,11 @@ export function AddressBalanceChart({
               : `${history.buckets.length.toLocaleString()} period${history.buckets.length === 1 ? '' : 's'}`}
             {periodMeta?.label ? ` · ${periodMeta.label}` : ''}
             {history.eventCount != null ? ` · ${history.eventCount.toLocaleString()} events` : ''}
+            {view === 'activity'
+              ? activityChainId === 'vrc'
+                ? ' · bars = staked · line = balance'
+                : ' · bars = in/out per period · line = balance'
+              : null}
           </>
         ) : null}
       </p>

@@ -1,5 +1,9 @@
 'use client';
 
+/**
+ * Chain-level activity charts (tx counts on hub/insights pages).
+ * Address balance activity uses AddressActivityChart.tsx instead.
+ */
 import {
   Bar,
   BarChart,
