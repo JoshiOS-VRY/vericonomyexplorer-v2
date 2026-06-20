@@ -7,7 +7,7 @@ import { useChartTheme } from '@/hooks/useChartTheme';
 import type { MinerBlockDistributionResult } from '@/lib/api/types';
 import { CHART_ANIMATION } from '@/lib/chartVisuals';
 import { getMinerSeriesColor } from '@/lib/minerChartColors';
-import { minersPeriodLabel } from '@/lib/minersPeriods';
+import { MINERS_CHART_BODY_HEIGHT } from '@/lib/minersChartLayout';
 import { cn } from '@/lib/utils';
 
 function formatShare(value: number): string {
@@ -18,7 +18,7 @@ type ChartRow = MinerBlockDistributionResult['segments'][number] & { color: stri
 
 export function MinersDistributionChart({
   data,
-  period,
+  period: _period,
 }: {
   data: MinerBlockDistributionResult;
   period: string;
@@ -37,7 +37,12 @@ export function MinersDistributionChart({
 
   if (!chartRows.length || data.totalBlocks <= 0) {
     return (
-      <div className="flex h-72 items-center justify-center text-sm text-fg-muted sm:h-80">
+      <div
+        className={cn(
+          MINERS_CHART_BODY_HEIGHT,
+          'flex items-center justify-center text-sm text-fg-muted'
+        )}
+      >
         No block distribution data for this period yet.
       </div>
     );
@@ -45,16 +50,17 @@ export function MinersDistributionChart({
 
   const highlightedIndex = activeIndex ?? 0;
   const highlighted = chartRows[highlightedIndex];
+  const topMinerCount = chartRows.filter((row) => row.id !== '__others__').length;
 
   return (
-    <div className="miners-distribution-chart">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:gap-6">
-        <div
-          className="relative mx-auto w-full max-w-[15rem] shrink-0 lg:max-w-[16rem]"
-          onMouseLeave={() => setActiveIndex(null)}
-        >
+    <div className={cn('miners-distribution-chart flex h-full flex-col', MINERS_CHART_BODY_HEIGHT)}>
+      <div
+        className="grid min-h-0 flex-1 grid-cols-1 gap-4 sm:grid-cols-[9.5rem_minmax(0,1fr)] sm:items-center"
+        onMouseLeave={() => setActiveIndex(null)}
+      >
+        <div className="relative mx-auto w-full max-w-[9.5rem] shrink-0 sm:mx-0">
           <div
-            className="pointer-events-none absolute inset-6 rounded-full opacity-60 blur-2xl"
+            className="pointer-events-none absolute inset-4 rounded-full opacity-60 blur-2xl"
             style={{
               background: `radial-gradient(circle, color-mix(in srgb, ${highlighted.color} 35%, transparent) 0%, transparent 70%)`,
             }}
@@ -121,7 +127,7 @@ export function MinersDistributionChart({
                   textAnchor="middle"
                   dominantBaseline="middle"
                   fill={colors.fg}
-                  style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em' }}
+                  style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em' }}
                 >
                   {data.totalBlocks.toLocaleString()}
                 </text>
@@ -131,7 +137,7 @@ export function MinersDistributionChart({
                   textAnchor="middle"
                   dominantBaseline="middle"
                   fill={colors.fgSubtle}
-                  style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em' }}
+                  style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em' }}
                 >
                   BLOCKS
                 </text>
@@ -140,35 +146,35 @@ export function MinersDistributionChart({
           </div>
         </div>
 
-        <ul className="min-w-0 flex-1 space-y-2.5" onMouseLeave={() => setActiveIndex(null)}>
+        <ul className="min-h-0 space-y-1.5 overflow-y-auto pr-1 sm:max-h-full">
           {chartRows.map((segment, index) => {
             const isActive = highlightedIndex === index;
             return (
               <li
                 key={segment.id}
                 className={cn(
-                  'rounded-lg border px-3 py-2.5 transition-all duration-200',
+                  'rounded-md border px-2.5 py-2 transition-all duration-200',
                   isActive
                     ? 'border-border/80 bg-bg-subtle/80 shadow-sm'
                     : 'border-transparent bg-transparent hover:border-border/50 hover:bg-bg-subtle/40'
                 )}
                 onMouseEnter={() => setActiveIndex(index)}
               >
-                <div className="mb-1.5 flex items-center justify-between gap-3">
-                  <span className="flex min-w-0 items-center gap-2 text-xs font-semibold text-fg">
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <span className="flex min-w-0 items-center gap-1.5 text-[11px] font-semibold text-fg">
                     <span
-                      className="inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-offset-1 ring-offset-bg-panel"
+                      className="inline-block h-2 w-2 shrink-0 rounded-full"
                       style={{
                         background: segment.color,
                         boxShadow: isActive
-                          ? `0 0 10px color-mix(in srgb, ${segment.color} 50%, transparent)`
+                          ? `0 0 8px color-mix(in srgb, ${segment.color} 50%, transparent)`
                           : undefined,
                       }}
                     />
                     <span className="truncate">{segment.label}</span>
                   </span>
-                  <span className="shrink-0 text-right">
-                    <span className="block text-sm font-bold tabular-nums text-fg">
+                  <span className="shrink-0 text-right leading-tight">
+                    <span className="block text-xs font-bold tabular-nums text-fg">
                       {formatShare(segment.sharePct)}
                     </span>
                     <span className="text-[10px] font-medium tabular-nums text-fg-subtle">
@@ -176,7 +182,7 @@ export function MinersDistributionChart({
                     </span>
                   </span>
                 </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-border/40">
+                <div className="h-1 overflow-hidden rounded-full bg-border/40">
                   <div
                     className="h-full rounded-full transition-all duration-300"
                     style={{
@@ -192,9 +198,8 @@ export function MinersDistributionChart({
         </ul>
       </div>
 
-      <p className="mt-4 text-[11px] leading-relaxed text-fg-subtle">
-        {minersPeriodLabel(period)} · share of blocks found · top{' '}
-        {chartRows.filter((row) => row.id !== '__others__').length} miners
+      <p className="mt-2 shrink-0 text-[11px] leading-relaxed text-fg-subtle">
+        Share of blocks found · top {topMinerCount} miners · one block counted once
       </p>
     </div>
   );

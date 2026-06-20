@@ -35,6 +35,7 @@ export function InsightsChartPanel({
         chainId === 'vrc' && 'insights-chart-panel-vrc',
         className
       )}
+      bodyClassName="flex min-h-0 flex-1 flex-col"
     >
       {error ? (
         <p className="mb-3 rounded-md border border-danger/20 bg-danger/5 px-3 py-2 text-sm text-danger">
@@ -47,16 +48,16 @@ export function InsightsChartPanel({
         <div className="insights-chart-empty flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border/80 bg-bg-subtle/40 px-6 py-10 text-center">
           <p className="max-w-sm text-sm leading-relaxed text-fg-muted">{empty}</p>
         </div>
-      ) : (
+      ) : children ? (
         <div
           className={cn(
-            'overflow-visible transition-opacity duration-300',
+            'flex min-h-0 flex-1 flex-col overflow-visible transition-opacity duration-300',
             loading && 'pointer-events-none opacity-70'
           )}
         >
           {children}
         </div>
-      )}
+      ) : null}
       {footer ? (
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
           {footer.split(' · ').map((part, index) => (

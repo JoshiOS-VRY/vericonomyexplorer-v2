@@ -2971,7 +2971,53 @@ function resolveMinersTrendGroupBy(period) {
     return 'day';
   }
 
+  if (period === 'all') {
+    return 'month';
+  }
+
   return 'week';
+}
+
+function formatMinerTrendRangeLabel(startBucket, endBucket) {
+  if (startBucket.startTime === endBucket.startTime) {
+    return startBucket.label;
+  }
+
+  return `${startBucket.label} – ${endBucket.label}`;
+}
+
+function mergeMinerTrendBuckets(buckets, bucketTotals, maxPoints) {
+  if (buckets.length <= maxPoints) {
+    return { buckets, bucketTotals };
+  }
+
+  const mergedBuckets = [];
+  const mergedTotals = [];
+  const groupSize = buckets.length / maxPoints;
+
+  for (let index = 0; index < maxPoints; index += 1) {
+    const startIdx = Math.floor(index * groupSize);
+    const endIdx = Math.min(buckets.length - 1, Math.floor((index + 1) * groupSize) - 1);
+    const startBucket = buckets[startIdx];
+    const endBucket = buckets[endIdx];
+
+    mergedBuckets.push({
+      startTime: startBucket.startTime,
+      endTime: endBucket.endTime,
+      label: formatMinerTrendRangeLabel(startBucket, endBucket),
+      groupStart: startBucket.groupStart,
+    });
+
+    const merged = { miners: {} };
+    for (let bucketIndex = startIdx; bucketIndex <= endIdx; bucketIndex += 1) {
+      for (const [minerKey, blocks] of Object.entries(bucketTotals[bucketIndex].miners)) {
+        merged.miners[minerKey] = (merged.miners[minerKey] || 0) + toNumber(blocks);
+      }
+    }
+    mergedTotals.push(merged);
+  }
+
+  return { buckets: mergedBuckets, bucketTotals: mergedTotals };
 }
 
 function formatMinerChartLabel(address) {
@@ -2991,7 +3037,7 @@ function buildMinersTrendBuckets(rangeStart, rangeEnd, groupBy, maxPoints) {
   const buckets = [];
   let cursor = start;
 
-  while (cursor <= rangeEnd && buckets.length < maxPoints) {
+  while (cursor <= rangeEnd) {
     const endTime = endOfInsightsGroup(cursor, groupBy, rangeEnd);
     buckets.push({
       startTime: cursor,
@@ -3000,10 +3046,6 @@ function buildMinersTrendBuckets(rangeStart, rangeEnd, groupBy, maxPoints) {
       groupStart: cursor,
     });
     cursor = advanceInsightsGroupStart(cursor, groupBy);
-  }
-
-  if (buckets.length > maxPoints) {
-    return buckets.slice(buckets.length - maxPoints);
   }
 
   return buckets;
@@ -3074,7 +3116,8 @@ async function getMinerShareTrend(chainId, options = {}) {
   const chain = normalizeChainId(chainId);
   const period = normalizeMinersPeriod(options.period);
   const topN = Math.min(Math.max(toNumber(options.top) || 10, 1), 15);
-  const maxPoints = Math.min(Math.max(toNumber(options.maxPoints) || 60, 8), 120);
+  const defaultMaxPoints = period === 'all' ? 96 : 60;
+  const maxPoints = Math.min(Math.max(toNumber(options.maxPoints) || defaultMaxPoints, 8), 120);
   const groupBy = resolveMinersTrendGroupBy(period);
   const chainHealth = await resolveChainHealth(chain, options);
 
@@ -3133,8 +3176,8 @@ async function getMinerShareTrend(chainId, options = {}) {
     rangeStart = Math.min(...rows.map((row) => toNumber(row.day_start)));
   }
   const rangeEnd = periodBounds.end;
-  const buckets = buildMinersTrendBuckets(rangeStart, rangeEnd, groupBy, maxPoints);
-  const bucketTotals = buckets.map(() => ({ miners: {} }));
+  let buckets = buildMinersTrendBuckets(rangeStart, rangeEnd, groupBy, maxPoints);
+  let bucketTotals = buckets.map(() => ({ miners: {} }));
 
   for (const row of rows) {
     const bucketIndex = findMinersTrendBucketIndex(buckets, toNumber(row.day_start), groupBy);
@@ -3147,6 +3190,8 @@ async function getMinerShareTrend(chainId, options = {}) {
     bucketTotals[bucketIndex].miners[key] =
       (bucketTotals[bucketIndex].miners[key] || 0) + blocks;
   }
+
+  ({ buckets, bucketTotals } = mergeMinerTrendBuckets(buckets, bucketTotals, maxPoints));
 
   const series = topAddresses.map((address) => ({
     id: address,
@@ -3226,65 +3271,55 @@ async function getMinerBlockDistribution(chainId, options = {}) {
   const periodBounds = getMinersPeriodBounds(period, options.now);
   const since = periodBounds.since;
   const sinceHeight = since == null ? null : await resolveMinedSinceHeight(db, chain, since);
-  let rows = [];
 
-  const hasRollup = await db.get(
-    'SELECT 1 AS present FROM miner_stats WHERE chain_id = ? LIMIT 1',
-    [chain]
-  );
-
-  if (hasRollup) {
-    const sinceDay = since == null ? null : Math.floor(since / 86_400) * 86_400;
-    const filterSql = sinceDay == null ? 'chain_id = ?' : 'chain_id = ? AND day_start >= ?';
-    const filterParams = sinceDay == null ? [chain] : [chain, sinceDay];
-
-    rows = await db.all(
-      `
-			SELECT
-				address,
-				SUM(blocks_mined) AS block_count
-			FROM miner_stats
-			WHERE ${filterSql}
-				AND blocks_mined > 0
-			GROUP BY address
-			HAVING SUM(blocks_mined) > 0
-			ORDER BY block_count DESC, address ASC
-		`,
-      filterParams
-    );
-  } else {
-    const timeSql = since == null ? '' : 'AND time >= ?';
-    const heightSql =
-      sinceHeight != null ? 'AND height >= ?' : since != null && sinceHeight == null ? 'AND 1 = 0' : '';
-    const params = [chain, MINERS_EXCLUDED_BLOCK_HEIGHT];
-    if (since != null) {
-      params.push(since);
-    }
-    if (sinceHeight != null) {
-      params.push(sinceHeight);
-    }
-
-    rows = await db.all(
-      `
-			SELECT
-				COALESCE(NULLIF(extracted_by_address, ''), NULLIF(extracted_by, '')) AS address,
-				COUNT(*) AS block_count
-			FROM blocks
-			WHERE chain_id = ?
-				AND status = 'main'
-				AND height != ?
-				${timeSql}
-				${heightSql}
-				AND COALESCE(NULLIF(extracted_by_address, ''), NULLIF(extracted_by, '')) IS NOT NULL
-			GROUP BY address
-			HAVING COUNT(*) > 0
-			ORDER BY block_count DESC, address ASC
-		`,
-      params
-    );
+  const timeSql = since == null ? '' : 'AND time >= ?';
+  const heightSql =
+    sinceHeight != null
+      ? 'AND height >= ?'
+      : since != null && sinceHeight == null
+        ? 'AND 1 = 0'
+        : '';
+  const params = [chain, MINERS_EXCLUDED_BLOCK_HEIGHT];
+  if (since != null) {
+    params.push(since);
+  }
+  if (sinceHeight != null) {
+    params.push(sinceHeight);
   }
 
-  const totalBlocks = rows.reduce((sum, row) => sum + toNumber(row.block_count), 0);
+  const rows = await db.all(
+    `
+		SELECT
+			COALESCE(NULLIF(extracted_by_address, ''), NULLIF(extracted_by, '')) AS address,
+			COUNT(*) AS block_count
+		FROM blocks
+		WHERE chain_id = ?
+			AND status = 'main'
+			AND height != ?
+			${timeSql}
+			${heightSql}
+			AND COALESCE(NULLIF(extracted_by_address, ''), NULLIF(extracted_by, '')) IS NOT NULL
+		GROUP BY address
+		HAVING COUNT(*) > 0
+		ORDER BY block_count DESC, address ASC
+	`,
+    params
+  );
+
+  const totalRow = await db.get(
+    `
+		SELECT COUNT(*) AS block_count
+		FROM blocks
+		WHERE chain_id = ?
+			AND status = 'main'
+			AND height != ?
+			${timeSql}
+			${heightSql}
+			AND COALESCE(NULLIF(extracted_by_address, ''), NULLIF(extracted_by, '')) IS NOT NULL
+	`,
+    params
+  );
+  const totalBlocks = toNumber(totalRow?.block_count);
   const topRows = rows.slice(0, topN);
   const othersBlocks = rows.slice(topN).reduce((sum, row) => sum + toNumber(row.block_count), 0);
 
