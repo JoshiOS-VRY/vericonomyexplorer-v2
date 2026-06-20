@@ -15,7 +15,7 @@ import type { RechartsTooltipContentProps } from '@/components/explorer/charts/T
 import { niceYAxisProps } from '@/components/explorer/charts/chartAxis';
 import type { ChartThemeColors } from '@/hooks/useChartTheme';
 import type { AddressBalanceHistoryPeriodId } from '@/lib/api/types';
-import { CHART_ANIMATION, CHART_MARGINS } from '@/lib/chartVisuals';
+import { CHART_ANIMATION, CHART_MARGINS, formatCompactAxisValue } from '@/lib/chartVisuals';
 
 export type AddressActivityChartRow = {
   bucketKey: string;
@@ -35,10 +35,45 @@ const VRM_SERIES = [
   { key: 'mined' as const, name: 'Mined', colorKey: 'success' as const },
   { key: 'received' as const, name: 'Received', colorKey: 'accent' as const },
   { key: 'spent' as const, name: 'Spent', colorKey: 'danger' as const },
-];
+] as const;
+
+/** Overlay line — must not reuse bar series colors (Received uses accent). */
+function balanceSeriesColor(colors: ChartThemeColors): string {
+  return colors.fg || '#e2e8f0';
+}
 
 function categoryFill(colors: ChartThemeColors, colorKey: keyof ChartThemeColors): string {
   return colors[colorKey] || '#418bca';
+}
+
+function formatSignedAxisValue(value: number): string {
+  if (!Number.isFinite(value)) return '—';
+  if (value === 0) return '0';
+  return formatCompactAxisValue(value);
+}
+
+function yAxisTitleLabel(
+  title: string,
+  colors: ChartThemeColors,
+  side: 'left' | 'right'
+): {
+  value: string;
+  angle: number;
+  position: 'insideLeft' | 'insideRight';
+  fill: string;
+  fontSize: number;
+  fontWeight: number;
+  dx: number;
+} {
+  return {
+    value: title,
+    angle: side === 'left' ? -90 : 90,
+    position: side === 'left' ? 'insideLeft' : 'insideRight',
+    fill: side === 'right' ? balanceSeriesColor(colors) : colors.fgSubtle || '#64748b',
+    fontSize: 11,
+    fontWeight: 600,
+    dx: side === 'left' ? -10 : 10,
+  };
 }
 
 function formatAmount(value: number, ticker: string): string {
@@ -149,17 +184,27 @@ export function AddressActivityChart({
   period: AddressBalanceHistoryPeriodId;
 }) {
   const tickFill = colors.fgSubtle || '#64748b';
-  const flowValues = chartData.flatMap((row) =>
-    chainId === 'vrc'
-      ? [row.staked]
-      : [row.mined, row.received, row.spent, row.netChange]
-  );
+  const flowValues = chartData.flatMap((row) => {
+    if (chainId === 'vrc') {
+      return [row.staked];
+    }
+    const positiveStack = row.mined + row.received;
+    return [positiveStack, row.spent, row.netChange];
+  });
   const balanceValues = chartData
     .map((row) => row.balanceAtEnd)
     .filter((value): value is number => value != null);
 
-  const flowAxis = niceYAxisProps(colors, flowValues, { floor: undefined, width: 72 });
-  const balanceAxis = niceYAxisProps(colors, balanceValues, { floor: 0, width: 72 });
+  const flowAxis = niceYAxisProps(colors, flowValues, {
+    floor: undefined,
+    width: 76,
+    tickFormatter: formatSignedAxisValue,
+  });
+  const balanceAxis = niceYAxisProps(colors, balanceValues, {
+    floor: 0,
+    width: 76,
+    tickFormatter: formatSignedAxisValue,
+  });
 
   const formatActivityTick = (value: string | number) => {
     const row = chartData.find((item) => item.bucketKey === String(value));
@@ -171,7 +216,7 @@ export function AddressActivityChart({
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
           data={chartData}
-          margin={{ ...CHART_MARGINS, right: 16 }}
+          margin={{ ...CHART_MARGINS, left: 4, right: 20 }}
           stackOffset="sign"
         >
           <CartesianGrid
@@ -194,9 +239,8 @@ export function AddressActivityChart({
             {...flowAxis}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(value: number) =>
-              Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 4 })
-            }
+            label={yAxisTitleLabel('Primary', colors, 'left')}
+            tickFormatter={formatSignedAxisValue}
           />
           <YAxis
             yAxisId="balance"
@@ -204,10 +248,9 @@ export function AddressActivityChart({
             {...balanceAxis}
             tickLine={false}
             axisLine={false}
-            tick={{ fill: colors.accent, fontSize: 11 }}
-            tickFormatter={(value: number) =>
-              value.toLocaleString(undefined, { maximumFractionDigits: 2 })
-            }
+            tick={{ fill: balanceSeriesColor(colors), fontSize: 11 }}
+            label={yAxisTitleLabel('Secondary', colors, 'right')}
+            tickFormatter={formatSignedAxisValue}
           />
           <Tooltip
             cursor={{ fill: colors.bgSubtle, opacity: 0.35 }}
@@ -266,12 +309,12 @@ export function AddressActivityChart({
             type="monotone"
             dataKey="balanceAtEnd"
             name="Balance"
-            stroke={colors.accent}
+            stroke={balanceSeriesColor(colors)}
             strokeWidth={2.25}
             dot={false}
             activeDot={{
               r: 4,
-              fill: colors.accent,
+              fill: balanceSeriesColor(colors),
               stroke: colors.bgPanel,
               strokeWidth: 2,
             }}
