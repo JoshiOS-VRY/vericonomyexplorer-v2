@@ -182,7 +182,7 @@ export function fetchMinerShareTrend(
 
 export function fetchMinerBlockDistribution(
   chainId: string,
-  options: { blocks?: number; top?: number } = {}
+  options: { period?: string; top?: number } = {}
 ) {
   return runIndexerQuery('getMinerBlockDistribution', [chainId], options, {
     timeoutMs: Number(process.env.VCEXP_API_MINERS_TIMEOUT_MS ?? 5_000),

@@ -27,8 +27,8 @@ export function isVeriumPoolExtracted(
 
 /** Matches verium/desktop ExplorerRecentBlockRow pool miner pill. */
 export const VERIUM_POOL_PILL_BASE_CLASS =
-  'verium-pool-badge inline-flex max-w-full shrink-0 items-center rounded-md bg-accent px-2.5 py-0.5 text-xs font-semibold text-white no-underline shadow-sm hover:bg-accent/90 hover:no-underline';
+  'verium-pool-badge inline-flex w-fit max-w-full shrink-0 items-center rounded-md bg-accent px-2.5 py-0.5 text-xs font-semibold text-accent-fg no-underline shadow-sm hover:bg-accent/90 hover:text-accent-fg hover:no-underline';
 
 export function veriumPoolPillClassName(className?: string): string {
-  return cn(VERIUM_POOL_PILL_BASE_CLASS, className);
+  return cn(className, VERIUM_POOL_PILL_BASE_CLASS);
 }

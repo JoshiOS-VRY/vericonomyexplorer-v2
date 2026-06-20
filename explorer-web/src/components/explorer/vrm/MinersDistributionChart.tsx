@@ -1,105 +1,200 @@
 'use client';
 
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { useMemo, useState } from 'react';
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { ThemedChartTooltip } from '@/components/explorer/charts/ThemedChartTooltip';
 import { useChartTheme } from '@/hooks/useChartTheme';
 import type { MinerBlockDistributionResult } from '@/lib/api/types';
 import { CHART_ANIMATION } from '@/lib/chartVisuals';
 import { getMinerSeriesColor } from '@/lib/minerChartColors';
-import { formatHeight } from '../ExplorerUi';
+import { minersPeriodLabel } from '@/lib/minersPeriods';
+import { cn } from '@/lib/utils';
 
 function formatShare(value: number): string {
   return `${value.toFixed(1)}%`;
 }
 
-export function MinersDistributionChart({ data }: { data: MinerBlockDistributionResult }) {
+type ChartRow = MinerBlockDistributionResult['segments'][number] & { color: string };
+
+export function MinersDistributionChart({
+  data,
+  period,
+}: {
+  data: MinerBlockDistributionResult;
+  period: string;
+}) {
   const colors = useChartTheme();
-  const tickFill = colors.fgSubtle || '#64748b';
-  const chartRows = data.segments.map((segment, index) => ({
-    ...segment,
-    color: getMinerSeriesColor(segment.id, index),
-  }));
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
+  const chartRows = useMemo<ChartRow[]>(
+    () =>
+      data.segments.map((segment, index) => ({
+        ...segment,
+        color: getMinerSeriesColor(segment.id, index),
+      })),
+    [data.segments]
+  );
 
   if (!chartRows.length || data.totalBlocks <= 0) {
     return (
       <div className="flex h-72 items-center justify-center text-sm text-fg-muted sm:h-80">
-        No block distribution data yet.
+        No block distribution data for this period yet.
       </div>
     );
   }
 
-  const fromHeight = data.blockWindow?.fromHeight;
-  const toHeight = data.blockWindow?.toHeight;
+  const highlightedIndex = activeIndex ?? 0;
+  const highlighted = chartRows[highlightedIndex];
 
   return (
-    <div className="miners-distribution-chart h-72 w-full min-h-[288px] sm:h-80">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Tooltip
-            content={
-              <ThemedChartTooltip
-                colors={colors}
-                valueFormatter={(value, name) => {
-                  const segment = chartRows.find((row) => row.label === name);
-                  const blocks = segment?.blocks ?? Number(value);
-                  const share = segment?.sharePct ?? 0;
-                  return `${formatShare(share)} · ${blocks.toLocaleString()} blocks`;
-                }}
-              />
-            }
+    <div className="miners-distribution-chart">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:gap-6">
+        <div
+          className="relative mx-auto w-full max-w-[15rem] shrink-0 lg:max-w-[16rem]"
+          onMouseLeave={() => setActiveIndex(null)}
+        >
+          <div
+            className="pointer-events-none absolute inset-6 rounded-full opacity-60 blur-2xl"
+            style={{
+              background: `radial-gradient(circle, color-mix(in srgb, ${highlighted.color} 35%, transparent) 0%, transparent 70%)`,
+            }}
           />
-          <Pie
-            data={chartRows}
-            dataKey="blocks"
-            nameKey="label"
-            cx="50%"
-            cy="46%"
-            innerRadius="58%"
-            outerRadius="82%"
-            paddingAngle={1.5}
-            stroke={colors.bgPanel}
-            strokeWidth={2}
-            animationDuration={CHART_ANIMATION.duration}
-          >
-            {chartRows.map((segment) => (
-              <Cell key={segment.id} fill={segment.color} />
-            ))}
-          </Pie>
-          <Legend
-            layout="horizontal"
-            verticalAlign="bottom"
-            align="center"
-            wrapperStyle={{ fontSize: 11, color: tickFill, paddingTop: 8 }}
-            iconType="circle"
-            iconSize={8}
-          />
-          <text
-            x="50%"
-            y="44%"
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill={colors.fg}
-            style={{ fontSize: 22, fontWeight: 700 }}
-          >
-            {data.totalBlocks.toLocaleString()}
-          </text>
-          <text
-            x="50%"
-            y="50%"
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill={colors.fgSubtle}
-            style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.04em' }}
-          >
-            BLOCKS
-          </text>
-        </PieChart>
-      </ResponsiveContainer>
-      <p className="mt-3 text-[11px] leading-relaxed text-fg-subtle">
-        Last {data.blockWindow?.count?.toLocaleString() ?? '1,000'} blocks
-        {fromHeight != null && toHeight != null
-          ? ` · heights ${formatHeight(fromHeight)}–${formatHeight(toHeight)}`
-          : null}
+          <div className="relative aspect-square w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <defs>
+                  {chartRows.map((segment) => (
+                    <linearGradient
+                      key={`grad-${segment.id}`}
+                      id={`miner-dist-${segment.id}`}
+                      x1="0"
+                      y1="0"
+                      x2="1"
+                      y2="1"
+                    >
+                      <stop offset="0%" stopColor={segment.color} stopOpacity={1} />
+                      <stop offset="100%" stopColor={segment.color} stopOpacity={0.72} />
+                    </linearGradient>
+                  ))}
+                </defs>
+                <Tooltip
+                  content={
+                    <ThemedChartTooltip
+                      colors={colors}
+                      surface="light"
+                      valueFormatter={(value, name) => {
+                        const segment = chartRows.find((row) => row.label === name);
+                        const blocks = segment?.blocks ?? Number(value);
+                        const share = segment?.sharePct ?? 0;
+                        return `${formatShare(share)} · ${blocks.toLocaleString()} blocks`;
+                      }}
+                    />
+                  }
+                />
+                <Pie
+                  data={chartRows}
+                  dataKey="blocks"
+                  nameKey="label"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius="62%"
+                  outerRadius="88%"
+                  paddingAngle={2}
+                  stroke={colors.bgPanel}
+                  strokeWidth={2}
+                  onMouseEnter={(_, index) => setActiveIndex(index)}
+                  animationDuration={CHART_ANIMATION.duration}
+                >
+                  {chartRows.map((segment, index) => (
+                    <Cell
+                      key={segment.id}
+                      fill={`url(#miner-dist-${segment.id})`}
+                      opacity={activeIndex == null || activeIndex === index ? 1 : 0.38}
+                      stroke={activeIndex === index ? segment.color : colors.bgPanel}
+                      strokeWidth={activeIndex === index ? 3 : 2}
+                    />
+                  ))}
+                </Pie>
+                <text
+                  x="50%"
+                  y="46%"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill={colors.fg}
+                  style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em' }}
+                >
+                  {data.totalBlocks.toLocaleString()}
+                </text>
+                <text
+                  x="50%"
+                  y="56%"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill={colors.fgSubtle}
+                  style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em' }}
+                >
+                  BLOCKS
+                </text>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <ul className="min-w-0 flex-1 space-y-2.5" onMouseLeave={() => setActiveIndex(null)}>
+          {chartRows.map((segment, index) => {
+            const isActive = highlightedIndex === index;
+            return (
+              <li
+                key={segment.id}
+                className={cn(
+                  'rounded-lg border px-3 py-2.5 transition-all duration-200',
+                  isActive
+                    ? 'border-border/80 bg-bg-subtle/80 shadow-sm'
+                    : 'border-transparent bg-transparent hover:border-border/50 hover:bg-bg-subtle/40'
+                )}
+                onMouseEnter={() => setActiveIndex(index)}
+              >
+                <div className="mb-1.5 flex items-center justify-between gap-3">
+                  <span className="flex min-w-0 items-center gap-2 text-xs font-semibold text-fg">
+                    <span
+                      className="inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-offset-1 ring-offset-bg-panel"
+                      style={{
+                        background: segment.color,
+                        boxShadow: isActive
+                          ? `0 0 10px color-mix(in srgb, ${segment.color} 50%, transparent)`
+                          : undefined,
+                      }}
+                    />
+                    <span className="truncate">{segment.label}</span>
+                  </span>
+                  <span className="shrink-0 text-right">
+                    <span className="block text-sm font-bold tabular-nums text-fg">
+                      {formatShare(segment.sharePct)}
+                    </span>
+                    <span className="text-[10px] font-medium tabular-nums text-fg-subtle">
+                      {segment.blocks.toLocaleString()} blk
+                    </span>
+                  </span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-border/40">
+                  <div
+                    className="h-full rounded-full transition-all duration-300"
+                    style={{
+                      width: `${Math.max(segment.sharePct, 0.5)}%`,
+                      background: `linear-gradient(90deg, ${segment.color}, color-mix(in srgb, ${segment.color} 70%, white))`,
+                      opacity: isActive ? 1 : 0.85,
+                    }}
+                  />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      <p className="mt-4 text-[11px] leading-relaxed text-fg-subtle">
+        {minersPeriodLabel(period)} · share of blocks found · top{' '}
+        {chartRows.filter((row) => row.id !== '__others__').length} miners
       </p>
     </div>
   );

@@ -18,6 +18,9 @@ export function ExtractedByCell({
   className?: string;
 }) {
   const showVeriumPoolPill = chainId === 'vrm' && isVeriumPoolExtracted(block);
+  const addressLinkClassName = showVeriumPoolPill
+    ? veriumPoolPillClassName()
+    : (className ?? 'text-sm font-medium text-accent hover:underline');
 
   if (block.extractedBy && block.extractedByLink) {
     return (
@@ -26,7 +29,7 @@ export function ExtractedByCell({
         title={block.extractedBy}
         className={
           showVeriumPoolPill
-            ? veriumPoolPillClassName(className)
+            ? veriumPoolPillClassName()
             : (className ?? 'text-sm font-medium text-accent hover:underline')
         }
         target="_blank"
@@ -44,7 +47,7 @@ export function ExtractedByCell({
           chainId={chainId}
           address={VERIUM_POOL_PAYOUT_ADDRESS}
           maxLength={24}
-          className={veriumPoolPillClassName(className)}
+          className={addressLinkClassName}
         />
       );
     }

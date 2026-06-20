@@ -79,9 +79,9 @@ const minersChartsCache = createSwrCache({
         top: top ? Number(top) : undefined,
       }) as Promise<Record<string, unknown>>;
     }
-    const [blocks, top] = rest;
+    const [period, top] = rest;
     return fetchMinerBlockDistribution(chainId, {
-      blocks: blocks ? Number(blocks) : undefined,
+      period: period || undefined,
       top: top ? Number(top) : undefined,
     }) as Promise<Record<string, unknown>>;
   },
@@ -198,13 +198,13 @@ export async function registerRichRoutes(app: FastifyInstance): Promise<void> {
 
   app.get<{
     Params: { chain: string };
-    Querystring: { blocks?: string; top?: string };
+    Querystring: { period?: string; top?: string };
   }>('/v1/:chain/miners/distribution', { ...heavyRateLimitRouteConfig }, async (request, reply) => {
     const chainId = parseChainId(request.params.chain);
     if (!chainId) {
       return reply.code(400).send({ error: 'Invalid chain id' });
     }
-    const key = `distribution:${chainId}:${request.query.blocks ?? ''}:${request.query.top ?? ''}`;
+    const key = `distribution:${chainId}:${request.query.period ?? ''}:${request.query.top ?? ''}`;
     try {
       return await withTimeout(
         minersChartsCache.fetch(key),
@@ -215,7 +215,7 @@ export async function registerRichRoutes(app: FastifyInstance): Promise<void> {
       const stale = minersChartsCache.get(key, { allowStale: true });
       if (stale) return stale;
       return fetchMinerBlockDistribution(chainId, {
-        blocks: request.query.blocks ? Number(request.query.blocks) : undefined,
+        period: request.query.period,
         top: request.query.top ? Number(request.query.top) : undefined,
       }).catch(() => ({
         chainId,

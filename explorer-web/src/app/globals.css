@@ -406,6 +406,13 @@
   border-bottom: none;
 }
 
+.bc-table a.verium-pool-badge,
+.bc-table a.verium-pool-badge:hover,
+.bc-table a.verium-pool-badge:focus-visible {
+  color: var(--accent-fg);
+  text-decoration: none;
+}
+
 /* Mobile: tighten padding so the (horizontally scrollable) blockchain tables
    fit more columns on screen before scrolling kicks in. */
 @media (max-width: 640px) {

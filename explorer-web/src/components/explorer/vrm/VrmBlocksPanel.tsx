@@ -45,12 +45,14 @@ export function VrmBlocksPanel({ blocks }: { blocks: IndexedBlock[] }) {
                 <td className="text-right tabular-nums text-fg-muted">
                   {block.difficulty ? formatDifficulty(block.difficulty) : '—'}
                 </td>
-                <td className="min-w-[8rem] max-w-[14rem] truncate">
-                  <ExtractedByCell
-                    block={block}
-                    chainId="vrm"
-                    className="block truncate text-sm font-medium text-accent hover:underline"
-                  />
+                <td className="min-w-[8rem] max-w-[14rem]">
+                  <div className="min-w-0 truncate">
+                    <ExtractedByCell
+                      block={block}
+                      chainId="vrm"
+                      className="text-sm font-medium text-accent hover:underline"
+                    />
+                  </div>
                 </td>
               </tr>
             ))}

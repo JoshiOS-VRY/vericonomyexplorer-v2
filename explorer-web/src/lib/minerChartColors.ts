@@ -21,7 +21,7 @@ export function getMinerSeriesColor(seriesId: string, index: number): string {
     return MINER_CHART_OTHERS_COLOR;
   }
 
-  if (seriesId === VERIUM_POOL_PAYOUT_ADDRESS) {
+  if (seriesId === VERIUM_POOL_PAYOUT_ADDRESS || seriesId === 'Verium Pool') {
     return MINER_CHART_PALETTE[0];
   }
 

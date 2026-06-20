@@ -192,10 +192,10 @@ export async function fetchMinerShareTrendClient(
 
 export async function fetchMinerBlockDistributionClient(
   chainId: string,
-  params: { blocks?: number; top?: number } = {}
+  params: { period?: string; top?: number } = {}
 ): Promise<MinerBlockDistributionResult> {
   const search = new URLSearchParams();
-  if (params.blocks != null) search.set('blocks', String(params.blocks));
+  if (params.period) search.set('period', params.period);
   if (params.top != null) search.set('top', String(params.top));
   const qs = search.toString();
   return clientApiFetch<MinerBlockDistributionResult>(

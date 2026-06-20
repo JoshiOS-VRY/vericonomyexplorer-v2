@@ -68,7 +68,7 @@ export function VrmMinersPageClient({
             offset: 0,
           }),
           fetchMinerShareTrendClient('vrm', { period: nextPeriod, top: 10 }),
-          fetchMinerBlockDistributionClient('vrm', { blocks: 1000, top: 9 }),
+          fetchMinerBlockDistributionClient('vrm', { period: nextPeriod, top: 9 }),
         ]);
         if (minersResult.status !== 'fulfilled') {
           throw new Error('miners leaderboard failed');

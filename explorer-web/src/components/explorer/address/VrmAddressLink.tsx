@@ -50,8 +50,7 @@ export function VrmAddressLink({
       className={cn(
         isPool
           ? veriumPoolPillClassName()
-          : 'text-sm font-medium text-accent hover:underline hash-mono',
-        className
+          : cn('text-sm font-medium text-accent hover:underline hash-mono', className)
       )}
     >
       {display}

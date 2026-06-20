@@ -156,6 +156,13 @@ export const minerBlockDistributionSchema = z.object({
   enabled: z.boolean().optional(),
   message: z.string().optional(),
   source: sourceSchema,
+  period: z
+    .object({
+      type: z.string(),
+      start: z.number().nullable().optional(),
+      end: z.number(),
+    })
+    .optional(),
   blockWindow: z
     .object({
       count: z.number(),

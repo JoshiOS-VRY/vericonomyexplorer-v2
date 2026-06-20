@@ -36,7 +36,7 @@ export default async function MinersPage({
 
   const [shareTrendResult, distributionResult] = await Promise.allSettled([
     getMinerShareTrend('vrm', { period, top: 10 }),
-    getMinerBlockDistribution('vrm', { blocks: 1000, top: 9 }),
+    getMinerBlockDistribution('vrm', { period, top: 9 }),
   ]);
   const shareTrend =
     shareTrendResult.status === 'fulfilled'

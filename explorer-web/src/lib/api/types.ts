@@ -240,6 +240,11 @@ export interface MinerBlockDistributionResult {
   enabled?: boolean;
   message?: string;
   source: SourceInfo;
+  period?: {
+    type: string;
+    start?: number | null;
+    end: number;
+  };
   blockWindow?: {
     count: number;
     fromHeight: number | null;

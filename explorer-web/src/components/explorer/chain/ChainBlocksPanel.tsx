@@ -37,18 +37,20 @@ function BlockTableRow({ block, chainId }: { block: IndexedBlock; chainId: Chain
       <td className="text-right tabular-nums text-fg-muted">
         {block.difficulty ? formatDifficulty(block.difficulty) : '—'}
       </td>
-      <td className="min-w-[8rem] max-w-[14rem] truncate">
-        {chainId === 'vrm' ? (
-          <ExtractedByCell
-            block={block}
-            chainId={chainId}
-            className="block truncate text-sm font-medium text-accent hover:underline"
-          />
-        ) : (
-          <span className="text-sm tabular-nums text-fg-muted">
-            {formatPercent(block.interestRatePercent)}
-          </span>
-        )}
+      <td className="min-w-[8rem] max-w-[14rem]">
+        <div className="min-w-0 truncate">
+          {chainId === 'vrm' ? (
+            <ExtractedByCell
+              block={block}
+              chainId={chainId}
+              className="text-sm font-medium text-accent hover:underline"
+            />
+          ) : (
+            <span className="text-sm tabular-nums text-fg-muted">
+              {formatPercent(block.interestRatePercent)}
+            </span>
+          )}
+        </div>
       </td>
     </tr>
   );

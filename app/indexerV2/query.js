@@ -3202,7 +3202,7 @@ async function getMinerShareTrend(chainId, options = {}) {
 async function getMinerBlockDistribution(chainId, options = {}) {
   const db = options.db || dbModule.openDatabase();
   const chain = normalizeChainId(chainId);
-  const blockCount = Math.min(Math.max(toNumber(options.blocks) || 1000, 100), 5000);
+  const period = normalizeMinersPeriod(options.period);
   const topN = Math.min(Math.max(toNumber(options.top) || 9, 1), 14);
   const chainHealth = await resolveChainHealth(chain, options);
 
@@ -3223,46 +3223,66 @@ async function getMinerBlockDistribution(chainId, options = {}) {
     });
   }
 
-  const tipRow = await db.get(
-    `
-		SELECT MAX(height) AS height
-		FROM blocks
-		WHERE chain_id = ? AND status = 'main'
-	`,
+  const periodBounds = getMinersPeriodBounds(period, options.now);
+  const since = periodBounds.since;
+  const sinceHeight = since == null ? null : await resolveMinedSinceHeight(db, chain, since);
+  let rows = [];
+
+  const hasRollup = await db.get(
+    'SELECT 1 AS present FROM miner_stats WHERE chain_id = ? LIMIT 1',
     [chain]
   );
-  const tipHeight = toNullableNumber(tipRow?.height);
 
-  if (tipHeight == null) {
-    return {
-      chainId: chain,
-      trusted: chainHealth.trusted,
-      source: getSource(chainHealth, 'leaderboards'),
-      blockWindow: { count: blockCount, fromHeight: null, toHeight: null },
-      totalBlocks: 0,
-      segments: [],
-    };
+  if (hasRollup) {
+    const sinceDay = since == null ? null : Math.floor(since / 86_400) * 86_400;
+    const filterSql = sinceDay == null ? 'chain_id = ?' : 'chain_id = ? AND day_start >= ?';
+    const filterParams = sinceDay == null ? [chain] : [chain, sinceDay];
+
+    rows = await db.all(
+      `
+			SELECT
+				address,
+				SUM(blocks_mined) AS block_count
+			FROM miner_stats
+			WHERE ${filterSql}
+				AND blocks_mined > 0
+			GROUP BY address
+			HAVING SUM(blocks_mined) > 0
+			ORDER BY block_count DESC, address ASC
+		`,
+      filterParams
+    );
+  } else {
+    const timeSql = since == null ? '' : 'AND time >= ?';
+    const heightSql =
+      sinceHeight != null ? 'AND height >= ?' : since != null && sinceHeight == null ? 'AND 1 = 0' : '';
+    const params = [chain, MINERS_EXCLUDED_BLOCK_HEIGHT];
+    if (since != null) {
+      params.push(since);
+    }
+    if (sinceHeight != null) {
+      params.push(sinceHeight);
+    }
+
+    rows = await db.all(
+      `
+			SELECT
+				COALESCE(NULLIF(extracted_by_address, ''), NULLIF(extracted_by, '')) AS address,
+				COUNT(*) AS block_count
+			FROM blocks
+			WHERE chain_id = ?
+				AND status = 'main'
+				AND height != ?
+				${timeSql}
+				${heightSql}
+				AND COALESCE(NULLIF(extracted_by_address, ''), NULLIF(extracted_by, '')) IS NOT NULL
+			GROUP BY address
+			HAVING COUNT(*) > 0
+			ORDER BY block_count DESC, address ASC
+		`,
+      params
+    );
   }
-
-  const minHeight = Math.max(MINERS_EXCLUDED_BLOCK_HEIGHT + 1, tipHeight - blockCount + 1);
-  const rows = await db.all(
-    `
-		SELECT
-			COALESCE(NULLIF(extracted_by_address, ''), NULLIF(extracted_by, '')) AS address,
-			COUNT(*) AS block_count
-		FROM blocks
-		WHERE chain_id = ?
-			AND status = 'main'
-			AND height >= ?
-			AND height <= ?
-			AND height != ?
-			AND COALESCE(NULLIF(extracted_by_address, ''), NULLIF(extracted_by, '')) IS NOT NULL
-		GROUP BY address
-		HAVING COUNT(*) > 0
-		ORDER BY block_count DESC, address ASC
-	`,
-    [chain, minHeight, tipHeight, MINERS_EXCLUDED_BLOCK_HEIGHT]
-  );
 
   const totalBlocks = rows.reduce((sum, row) => sum + toNumber(row.block_count), 0);
   const topRows = rows.slice(0, topN);
@@ -3293,11 +3313,7 @@ async function getMinerBlockDistribution(chainId, options = {}) {
     chainId: chain,
     trusted: chainHealth.trusted,
     source: getSource(chainHealth, 'leaderboards'),
-    blockWindow: {
-      count: blockCount,
-      fromHeight: minHeight,
-      toHeight: tipHeight,
-    },
+    period: periodBounds,
     totalBlocks,
     segments,
   };

@@ -47,9 +47,9 @@ export function VrmMinersCharts({
             ? 'Block finder distribution will populate as recent blocks are indexed.'
             : null
         }
-        footer="Past 1,000 blocks"
+        footer={minersPeriodLabel(period)}
       >
-        <MinersDistributionChart data={distribution} />
+        <MinersDistributionChart data={distribution} period={period} />
       </InsightsChartPanel>
     </div>
   );

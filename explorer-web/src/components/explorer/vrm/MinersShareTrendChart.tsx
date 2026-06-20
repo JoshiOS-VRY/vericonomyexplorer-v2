@@ -10,7 +10,10 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { ThemedChartTooltip } from '@/components/explorer/charts/ThemedChartTooltip';
+import {
+  ThemedChartTooltip,
+  type RechartsTooltipContentProps,
+} from '@/components/explorer/charts/ThemedChartTooltip';
 import { chartGridProps, chartXAxisProps } from '@/components/explorer/charts/chartAxis';
 import { useChartTheme } from '@/hooks/useChartTheme';
 import type { MinerShareTrendResult } from '@/lib/api/types';
@@ -20,6 +23,35 @@ import { minersPeriodLabel } from '@/lib/minersPeriods';
 
 function formatShare(value: number): string {
   return `${value.toFixed(1)}%`;
+}
+
+function MinersShareTrendTooltip({
+  active,
+  payload,
+  label,
+  colors,
+}: RechartsTooltipContentProps & { colors: ReturnType<typeof useChartTheme> }) {
+  const row = payload?.[0]?.payload as { totalBlocks?: number } | undefined;
+  const totalBlocks = row?.totalBlocks ?? 0;
+  const visiblePayload = payload?.filter(
+    (item) => typeof item.value === 'number' && Number(item.value) > 0
+  );
+
+  return (
+    <ThemedChartTooltip
+      active={active}
+      payload={visiblePayload}
+      label={label}
+      colors={colors}
+      surface="light"
+      valueFormatter={(value) => {
+        if (totalBlocks <= 0) {
+          return formatShare(0);
+        }
+        return formatShare((Number(value) / totalBlocks) * 100);
+      }}
+    />
+  );
 }
 
 export function MinersShareTrendChart({
@@ -75,14 +107,7 @@ export function MinersShareTrendChart({
             domain={[0, 1]}
             ticks={[0, 0.25, 0.5, 0.75, 1]}
           />
-          <Tooltip
-            content={
-              <ThemedChartTooltip
-                colors={colors}
-                valueFormatter={(value) => formatShare(Number(value) * 100)}
-              />
-            }
-          />
+          <Tooltip content={<MinersShareTrendTooltip colors={colors} />} />
           <Legend
             wrapperStyle={{ fontSize: 11, color: tickFill, paddingTop: 10 }}
             iconType="circle"

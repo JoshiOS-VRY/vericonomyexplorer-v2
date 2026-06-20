@@ -213,10 +213,10 @@ export async function getMinerShareTrend(
 
 export async function getMinerBlockDistribution(
   chainId: string,
-  params: { blocks?: number; top?: number } = {}
+  params: { period?: string; top?: number } = {}
 ): Promise<MinerBlockDistributionResult> {
   const search = new URLSearchParams();
-  if (params.blocks != null) search.set('blocks', String(params.blocks));
+  if (params.period) search.set('period', params.period);
   if (params.top != null) search.set('top', String(params.top));
   const qs = search.toString();
   const data = await v1Fetch<unknown>(`/${chainId}/miners/distribution${qs ? `?${qs}` : ''}`, {
