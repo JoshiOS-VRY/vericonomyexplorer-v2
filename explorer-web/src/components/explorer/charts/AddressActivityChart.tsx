@@ -12,7 +12,7 @@ import {
   YAxis,
 } from 'recharts';
 import type { RechartsTooltipContentProps } from '@/components/explorer/charts/ThemedChartTooltip';
-import { niceYAxisProps } from '@/components/explorer/charts/chartAxis';
+import { chartYAxisProps, niceAlignedZeroYAxisDomains } from '@/components/explorer/charts/chartAxis';
 import type { ChartThemeColors } from '@/hooks/useChartTheme';
 import type { AddressBalanceHistoryPeriodId } from '@/lib/api/types';
 import { CHART_ANIMATION, CHART_MARGINS, formatCompactAxisValue } from '@/lib/chartVisuals';
@@ -59,20 +59,22 @@ function yAxisTitleLabel(
 ): {
   value: string;
   angle: number;
-  position: 'insideLeft' | 'insideRight';
+  position: 'left' | 'right';
   fill: string;
   fontSize: number;
   fontWeight: number;
-  dx: number;
+  style: { textAnchor: 'middle' };
+  offset: number;
 } {
   return {
     value: title,
     angle: side === 'left' ? -90 : 90,
-    position: side === 'left' ? 'insideLeft' : 'insideRight',
+    position: side,
     fill: side === 'right' ? balanceSeriesColor(colors) : colors.fgSubtle || '#64748b',
     fontSize: 11,
     fontWeight: 600,
-    dx: side === 'left' ? -10 : 10,
+    style: { textAnchor: 'middle' },
+    offset: side === 'left' ? 8 : 8,
   };
 }
 
@@ -195,14 +197,27 @@ export function AddressActivityChart({
     .map((row) => row.balanceAtEnd)
     .filter((value): value is number => value != null);
 
-  const flowAxis = niceYAxisProps(colors, flowValues, {
-    floor: undefined,
+  const { flowDomain, balanceDomain, flowTicks, balanceTicks } = niceAlignedZeroYAxisDomains(
+    flowValues,
+    balanceValues
+  );
+
+  const subUnit =
+    flowValues.some((value) => Math.abs(value) > 0 && Math.abs(value) < 1) ||
+    balanceValues.some((value) => Math.abs(value) > 0 && Math.abs(value) < 1);
+
+  const flowAxis = chartYAxisProps(colors, {
     width: 76,
+    domain: flowDomain,
+    ticks: flowTicks,
+    allowDecimals: subUnit,
     tickFormatter: formatSignedAxisValue,
   });
-  const balanceAxis = niceYAxisProps(colors, balanceValues, {
-    floor: 0,
+  const balanceAxis = chartYAxisProps(colors, {
     width: 76,
+    domain: balanceDomain,
+    ticks: balanceTicks,
+    allowDecimals: subUnit,
     tickFormatter: formatSignedAxisValue,
   });
 
@@ -211,12 +226,15 @@ export function AddressActivityChart({
     return row?.axisLabel ?? '';
   };
 
+  const flowAxisTitle = 'Incoming / Outgoing';
+  const balanceAxisTitle = 'Balance';
+
   return (
     <div className="address-activity-chart h-full w-full min-h-[320px]">
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
           data={chartData}
-          margin={{ ...CHART_MARGINS, left: 4, right: 20 }}
+          margin={{ top: CHART_MARGINS.top, right: 44, left: 28, bottom: CHART_MARGINS.bottom }}
           stackOffset="sign"
         >
           <CartesianGrid
@@ -239,7 +257,7 @@ export function AddressActivityChart({
             {...flowAxis}
             tickLine={false}
             axisLine={false}
-            label={yAxisTitleLabel('Primary', colors, 'left')}
+            label={yAxisTitleLabel(flowAxisTitle, colors, 'left')}
             tickFormatter={formatSignedAxisValue}
           />
           <YAxis
@@ -249,7 +267,7 @@ export function AddressActivityChart({
             tickLine={false}
             axisLine={false}
             tick={{ fill: balanceSeriesColor(colors), fontSize: 11 }}
-            label={yAxisTitleLabel('Secondary', colors, 'right')}
+            label={yAxisTitleLabel(balanceAxisTitle, colors, 'right')}
             tickFormatter={formatSignedAxisValue}
           />
           <Tooltip

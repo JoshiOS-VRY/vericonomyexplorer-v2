@@ -129,6 +129,116 @@ export function niceChartTicks(domain: [number, number], tickCount = 5): number[
   return ticks;
 }
 
+/** Share of axis span below zero (0 = flat at bottom, 1 = flat at top). */
+function zeroLineRatio(min: number, max: number): number {
+  if (max <= 0) return 1;
+  if (min >= 0) return 0;
+  return -min / (max - min);
+}
+
+/** Expand [min,max] so zero sits at `targetRatio` of the total span. */
+function domainForZeroRatio(
+  dataMin: number,
+  dataMax: number,
+  targetRatio: number
+): [number, number] {
+  const min = Math.min(dataMin, 0);
+  const max = Math.max(dataMax, 0);
+
+  if (targetRatio <= 0) {
+    return [min, max];
+  }
+  if (targetRatio >= 1) {
+    return [min, max];
+  }
+
+  const neg = -min;
+  const pos = max;
+  const span = Math.max(neg / targetRatio, pos / (1 - targetRatio), neg + pos || 1);
+
+  return [-targetRatio * span, (1 - targetRatio) * span];
+}
+
+function snapAlignedDomain(
+  domain: [number, number],
+  targetRatio: number,
+  tickCount: number
+): [number, number] {
+  const [min, max] = domain;
+
+  if (min === max) {
+    const step = niceStep(Math.abs(min) || 1, tickCount);
+    return domainForZeroRatio(min - step, max + step, targetRatio);
+  }
+
+  const step = niceStep(max - min, tickCount);
+  return domainForZeroRatio(snapDown(min, step), snapUp(max, step), targetRatio);
+}
+
+function ticksIncludingZero(domain: [number, number], tickCount: number): number[] {
+  const ticks = niceChartTicks(domain, tickCount);
+  const [min, max] = domain;
+  if (min > 0 || max < 0) {
+    return ticks;
+  }
+  if (ticks.some((tick) => Math.abs(tick) < 1e-12)) {
+    return ticks;
+  }
+  return [...ticks, 0].sort((a, b) => a - b);
+}
+
+/** Dual-axis domains with zero at the same vertical position on both sides. */
+export function niceAlignedZeroYAxisDomains(
+  flowValues: number[],
+  balanceValues: number[],
+  options?: {
+    tickCount?: number;
+    paddingRatio?: number;
+  }
+): {
+  flowDomain: [number, number];
+  balanceDomain: [number, number];
+  flowTicks: number[];
+  balanceTicks: number[];
+} {
+  const tickCount = options?.tickCount ?? 5;
+  const paddingRatio = options?.paddingRatio ?? CHART_DOMAIN_PADDING_RATIO;
+
+  const [flowPaddedMin, flowPaddedMax] = paddedChartDomain(flowValues, paddingRatio);
+  const [balancePaddedMin, balancePaddedMax] = paddedChartDomain(
+    balanceValues.length ? balanceValues : [0],
+    paddingRatio
+  );
+
+  const flowMin = Math.min(flowPaddedMin, 0);
+  const flowMax = Math.max(flowPaddedMax, 0);
+  const balanceMin = Math.min(balancePaddedMin, 0);
+  const balanceMax = Math.max(balancePaddedMax, 0);
+
+  const targetRatio = Math.max(
+    zeroLineRatio(flowMin, flowMax),
+    zeroLineRatio(balanceMin, balanceMax)
+  );
+
+  const flowDomain = snapAlignedDomain(
+    domainForZeroRatio(flowMin, flowMax, targetRatio),
+    targetRatio,
+    tickCount
+  );
+  const balanceDomain = snapAlignedDomain(
+    domainForZeroRatio(balanceMin, balanceMax, targetRatio),
+    targetRatio,
+    tickCount
+  );
+
+  return {
+    flowDomain,
+    balanceDomain,
+    flowTicks: ticksIncludingZero(flowDomain, tickCount),
+    balanceTicks: ticksIncludingZero(balanceDomain, tickCount),
+  };
+}
+
 export function formatIntegerAxisValue(value: number): string {
   if (!Number.isFinite(value)) return '—';
   return Math.round(value).toLocaleString(undefined, { maximumFractionDigits: 0 });
