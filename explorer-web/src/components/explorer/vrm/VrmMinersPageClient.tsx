@@ -61,7 +61,7 @@ export function VrmMinersPageClient({
       router.replace(`/vrm/miners?${params.toString()}`, { scroll: false });
 
       try {
-        const [minersResult, shareTrendResult, distributionResult] = await Promise.all([
+        const [minersResult, shareTrendResult, distributionResult] = await Promise.allSettled([
           fetchMinersLeaderboardClient('vrm', {
             period: nextPeriod,
             limit,
@@ -70,9 +70,26 @@ export function VrmMinersPageClient({
           fetchMinerShareTrendClient('vrm', { period: nextPeriod, top: 10 }),
           fetchMinerBlockDistributionClient('vrm', { blocks: 1000, top: 9 }),
         ]);
-        setMiners(minersResult);
-        setShareTrend(shareTrendResult);
-        setDistribution(distributionResult);
+        if (minersResult.status !== 'fulfilled') {
+          throw new Error('miners leaderboard failed');
+        }
+        setMiners(minersResult.value);
+        setShareTrend(
+          shareTrendResult.status === 'fulfilled'
+            ? shareTrendResult.value
+            : { chainId: 'vrm', trusted: false, source: minersResult.value.source, series: [], points: [] }
+        );
+        setDistribution(
+          distributionResult.status === 'fulfilled'
+            ? distributionResult.value
+            : {
+                chainId: 'vrm',
+                trusted: false,
+                source: minersResult.value.source,
+                totalBlocks: 0,
+                segments: [],
+              }
+        );
       } catch {
         setError('Unable to load miners for this period.');
       } finally {

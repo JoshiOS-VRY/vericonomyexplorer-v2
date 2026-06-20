@@ -28,17 +28,36 @@ export default async function MinersPage({
   const offset = normalizeOffset(params.offset);
 
   let miners;
-  let shareTrend;
-  let distribution;
   try {
-    [miners, shareTrend, distribution] = await Promise.all([
-      getMinersLeaderboard('vrm', { period, limit, offset }),
-      getMinerShareTrend('vrm', { period, top: 10 }),
-      getMinerBlockDistribution('vrm', { blocks: 1000, top: 9 }),
-    ]);
+    miners = await getMinersLeaderboard('vrm', { period, limit, offset });
   } catch {
     return <AlertBanner title="Miners Unavailable">Unable to load VRM top miners.</AlertBanner>;
   }
+
+  const [shareTrendResult, distributionResult] = await Promise.allSettled([
+    getMinerShareTrend('vrm', { period, top: 10 }),
+    getMinerBlockDistribution('vrm', { blocks: 1000, top: 9 }),
+  ]);
+  const shareTrend =
+    shareTrendResult.status === 'fulfilled'
+      ? shareTrendResult.value
+      : {
+          chainId: 'vrm',
+          trusted: false,
+          source: miners.source,
+          series: [],
+          points: [],
+        };
+  const distribution =
+    distributionResult.status === 'fulfilled'
+      ? distributionResult.value
+      : {
+          chainId: 'vrm',
+          trusted: false,
+          source: miners.source,
+          totalBlocks: 0,
+          segments: [],
+        };
 
   if (!miners.enabled && miners.message) {
     return (

@@ -3248,25 +3248,17 @@ async function getMinerBlockDistribution(chainId, options = {}) {
   const rows = await db.all(
     `
 		SELECT
-			v.address AS address,
-			COUNT(DISTINCT t.block_height) AS block_count
-		FROM transactions t
-		INNER JOIN vouts v
-			ON v.chain_id = t.chain_id
-			AND v.txid = v.txid
-		INNER JOIN blocks b
-			ON b.chain_id = t.chain_id
-			AND b.height = t.block_height
-			AND b.status = 'main'
-		WHERE t.chain_id = ?
-			AND t.is_coinbase = 1
-			AND t.block_height >= ?
-			AND t.block_height <= ?
-			AND t.block_height != ?
-			AND v.value_sats > 0
-			AND v.address IS NOT NULL
-		GROUP BY v.address
-		HAVING COUNT(DISTINCT t.block_height) > 0
+			COALESCE(NULLIF(extracted_by_address, ''), NULLIF(extracted_by, '')) AS address,
+			COUNT(*) AS block_count
+		FROM blocks
+		WHERE chain_id = ?
+			AND status = 'main'
+			AND height >= ?
+			AND height <= ?
+			AND height != ?
+			AND COALESCE(NULLIF(extracted_by_address, ''), NULLIF(extracted_by, '')) IS NOT NULL
+		GROUP BY address
+		HAVING COUNT(*) > 0
 		ORDER BY block_count DESC, address ASC
 	`,
     [chain, minHeight, tipHeight, MINERS_EXCLUDED_BLOCK_HEIGHT]

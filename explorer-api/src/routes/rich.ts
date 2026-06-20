@@ -12,6 +12,16 @@ import { parseChainId } from '../types.js';
 import { withTimeout } from '../util/timeout.js';
 
 const heavyRouteTimeoutMs = Number(process.env.VCEXP_API_HEAVY_ROUTE_TIMEOUT_MS ?? 5_000);
+const minersDistributionTimeoutMs = Number(
+  process.env.VCEXP_API_MINERS_DISTRIBUTION_TIMEOUT_MS ?? 15_000
+);
+
+const degradedMinersSource = {
+  label: 'index',
+  trustLevel: 'partial',
+  healthStatus: 'degraded',
+  message: 'Miners chart data temporarily unavailable.',
+};
 
 const richlistCache = createSwrCache({
   max: 32,
@@ -147,6 +157,7 @@ export async function registerRichRoutes(app: FastifyInstance): Promise<void> {
         chainId,
         enabled: true,
         trusted: false,
+        source: degradedMinersSource,
         items: [],
         paging: { limit: 0, offset: 0, total: 0, hasMore: false },
       }));
@@ -178,6 +189,7 @@ export async function registerRichRoutes(app: FastifyInstance): Promise<void> {
         chainId,
         enabled: true,
         trusted: false,
+        source: degradedMinersSource,
         series: [],
         points: [],
       }));
@@ -196,7 +208,7 @@ export async function registerRichRoutes(app: FastifyInstance): Promise<void> {
     try {
       return await withTimeout(
         minersChartsCache.fetch(key),
-        heavyRouteTimeoutMs,
+        minersDistributionTimeoutMs,
         'miners-distribution'
       );
     } catch {
@@ -209,6 +221,7 @@ export async function registerRichRoutes(app: FastifyInstance): Promise<void> {
         chainId,
         enabled: true,
         trusted: false,
+        source: degradedMinersSource,
         segments: [],
         totalBlocks: 0,
       }));
