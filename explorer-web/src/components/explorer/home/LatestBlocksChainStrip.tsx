@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Blocks, ChevronRight, ExternalLink, Radio } from 'lucide-react';
+import { Blocks, ChevronRight, Radio } from 'lucide-react';
 import { LiveRelativeTime } from '@/components/explorer/LiveRelativeTime';
 import { BcTableLink } from '@/components/explorer/BlockchairUi';
 import { ExtractedByCell } from '@/components/explorer/block/ExtractedByCell';
@@ -29,7 +29,7 @@ import {
   isChainAtTip,
   type ChainId,
 } from '@/lib/chainDisplay';
-import { isIndexedBlockTableReady, isOptimisticTipBlock } from '@/lib/liveBlocksMerge';
+import { isOptimisticTipBlock } from '@/lib/liveBlocksMerge';
 import { formatPercent } from '@/lib/formatMarket';
 import { isVeriumPoolExtracted } from '@/lib/veriumPoolExtracted';
 import { cn, formatDifficulty } from '@/lib/utils';
@@ -131,34 +131,26 @@ export function ChainHubSection({
       </div>
 
       <div className="chain-hub-section__blocks chain-hub-section__blocks--hero min-h-0 flex-1">
-        <header className="chain-hub-blocks-head flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3 sm:px-5">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="chain-hub-blocks-head__icon flex h-8 w-8 items-center justify-center rounded-md border border-border/70 bg-bg-subtle/50">
-              <Blocks className="h-4 w-4 text-fg-muted" aria-hidden />
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2 sm:px-5">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h4 className="text-[11px] font-bold uppercase tracking-wide text-fg-subtle">
+              Latest blocks
+            </h4>
+            <span className="chain-hub-blocks-live inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success">
+              <Radio
+                className={cn('h-2.5 w-2.5', isRefreshing && 'animate-pulse')}
+                aria-hidden
+              />
+              Live
             </span>
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-base font-bold text-fg sm:text-lg">Latest blocks</h3>
-                <span className="chain-hub-blocks-live inline-flex items-center gap-1 rounded-full border border-success/30 bg-success/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-success">
-                  <Radio
-                    className={cn('h-2.5 w-2.5', isRefreshing && 'animate-pulse')}
-                    aria-hidden
-                  />
-                  Live
-                </span>
-              </div>
-            </div>
           </div>
           {config.exploreHref ? (
             <Link
               href={config.exploreHref}
-              className={cn(
-                'chain-hub-blocks-head__link inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-sm font-semibold transition-colors',
-                chainId === 'vrm' ? 'text-[var(--chain-vrm)]' : 'text-[var(--chain-vrc)]'
-              )}
+              prefetch
+              className="text-xs font-semibold text-accent hover:underline"
             >
               View all
-              <ExternalLink className="h-3 w-3 opacity-70" aria-hidden />
             </Link>
           ) : null}
         </header>
@@ -170,8 +162,8 @@ export function ChainHubSection({
         ) : null}
 
         {tableRows.length === 0 ? (
-          <div className="chain-hub-blocks-empty mx-3 my-6 rounded-lg border border-dashed border-border px-4 py-10 text-center">
-            <Blocks className="mx-auto h-8 w-8 text-fg-subtle/50" aria-hidden />
+          <div className="chain-hub-blocks-empty flex flex-1 flex-col items-center justify-center px-4 py-12 text-center">
+            <Blocks className="h-8 w-8 text-fg-subtle/50" aria-hidden />
             <p className="mt-3 text-sm font-medium text-fg-muted">No blocks indexed yet</p>
             <p className="mt-1 text-xs text-fg-subtle">
               Blocks will appear here as the chain syncs.
@@ -180,127 +172,81 @@ export function ChainHubSection({
         ) : (
           <>
             {stripBlocks.length > 0 ? (
-              <>
-                <div className="block-chain-strip-panel mx-3 mb-3 mt-3 hidden sm:block">
-                  <div className="block-chain-strip-panel__meta">
-                    <span>Older</span>
-                    <span className="block-chain-strip-panel__meta-divider" />
-                    <span>Newest</span>
-                  </div>
-                  <div
-                    className="block-chain-strip"
-                    aria-label={`Latest ${stripBlocks.length} ${config.ticker} blocks, oldest to newest`}
-                  >
-                    <div className="block-chain-strip__track" aria-hidden>
-                      <span className="block-chain-strip__track-base" />
-                      <span className="block-chain-strip__track-flow" />
-                    </div>
-                    <div className="block-chain-strip__nodes">
-                      {stripBlocks.map((block, index) => (
-                        <BlockChainStripCell
-                          key={block.hash}
-                          block={block}
-                          chainLogo={config.logo}
-                          blockHref={config.blockHref?.(block.height)}
-                          isTip={index === stripBlocks.length - 1}
-                          tipLive={atTip && index === stripBlocks.length - 1}
-                          indexing={
-                            index === stripBlocks.length - 1 && isOptimisticTipBlock(block, chainId)
-                          }
-                          ageIndex={index}
-                          totalCount={stripBlocks.length}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div className="mx-3 mb-3 mt-3 sm:hidden">
-                  <div
-                    className="block-chain-strip-mobile"
-                    aria-label={`Latest ${stripBlocks.length} ${config.ticker} blocks`}
-                  >
-                    {stripBlocks.map((block, index) => (
-                      <BlockChainStripMobileCard
-                        key={block.hash}
-                        block={block}
-                        blockHref={config.blockHref?.(block.height)}
-                        isTip={index === stripBlocks.length - 1}
-                        tipLive={atTip && index === stripBlocks.length - 1}
-                        indexing={
-                          index === stripBlocks.length - 1 && isOptimisticTipBlock(block, chainId)
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
-              </>
+              <BlockTimelineStrip
+                blocks={stripBlocks}
+                ticker={config.ticker}
+                atTip={atTip}
+                chainId={chainId}
+                blockHref={(height) => config.blockHref?.(height)}
+              />
             ) : null}
 
-            <div className="block-chain-table-mobile-list mx-3 mb-3 space-y-2 sm:hidden">
-              {tableRows.map((block) => (
+            <div className="block-chain-table-mobile-list space-y-0 divide-y divide-border sm:hidden">
+              {tableRows.map((block, index) => (
                 <BlockChainMobileCard
                   key={block.hash}
                   block={block}
                   chainId={chainId}
                   producerColumnLabel={producerColumnLabel}
                   blockHref={config.blockHref?.(block.height)}
+                  isNewest={index === 0}
                 />
               ))}
             </div>
 
-            <div className="block-chain-table-wrap hidden overflow-x-auto border-t border-border sm:block">
-              <div className="block-chain-table-shell">
-                <table
-                  className="bc-table block-chain-table data-table data-table--stack"
-                  aria-describedby={`${chainId}-latest-blocks-caption`}
-                >
-                  <caption id={`${chainId}-latest-blocks-caption`} className="sr-only">
-                    Latest {tableRows.length} {config.ticker} blocks with hash, producer, mined
-                    time, transactions, size, and difficulty.
-                  </caption>
-                  <colgroup>
-                    <col className="block-chain-table__col--height" />
-                    <col className="block-chain-table__col--hash" />
-                    <col className="block-chain-table__col--producer" />
-                    <col className="block-chain-table__col--age" />
-                    <col className="block-chain-table__col--txs" />
-                    <col className="block-chain-table__col--size" />
-                    <col className="block-chain-table__col--diff" />
-                  </colgroup>
-                  <thead>
-                    <tr>
-                      <th className="block-chain-table__col block-chain-table__col--height">
-                        Height
-                      </th>
-                      <th className="block-chain-table__col block-chain-table__col--hash">Hash</th>
-                      <th className="block-chain-table__col block-chain-table__col--producer">
-                        {producerColumnLabel}
-                      </th>
-                      <th className="block-chain-table__col block-chain-table__col--age">Mined</th>
-                      <th className="block-chain-table__col block-chain-table__col--txs text-right">
-                        Txs
-                      </th>
-                      <th className="block-chain-table__col block-chain-table__col--size text-right">
-                        Size
-                      </th>
-                      <th className="block-chain-table__col block-chain-table__col--diff text-right">
-                        Difficulty
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tableRows.map((block, index) => (
-                      <BlockChainTableRow
-                        key={block.hash}
-                        block={block}
-                        chainId={chainId}
-                        blockHref={config.blockHref?.(block.height)}
-                        isNewest={index === 0}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+            <div className="block-chain-table-wrap hidden overflow-x-auto sm:block">
+              <table
+                className="bc-table bc-table-fixed block-chain-table"
+                aria-describedby={`${chainId}-latest-blocks-caption`}
+              >
+                <caption id={`${chainId}-latest-blocks-caption`} className="sr-only">
+                  Latest {tableRows.length} {config.ticker} blocks with hash, producer, mined
+                  time, transactions, size, and difficulty.
+                </caption>
+                <colgroup>
+                  <col className="block-chain-table__col--height" />
+                  <col className="block-chain-table__col--hash" />
+                  <col className="block-chain-table__col--producer" />
+                  <col className="block-chain-table__col--age" />
+                  <col className="block-chain-table__col--txs" />
+                  <col className="block-chain-table__col--size" />
+                  <col className="block-chain-table__col--diff" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th className="block-chain-table__col block-chain-table__col--height">
+                      Height
+                    </th>
+                    <th className="block-chain-table__col block-chain-table__col--hash">Hash</th>
+                    <th className="block-chain-table__col block-chain-table__col--producer">
+                      {producerColumnLabel}
+                    </th>
+                    <th className="block-chain-table__col block-chain-table__col--age bc-col-age">
+                      Mined
+                    </th>
+                    <th className="block-chain-table__col block-chain-table__col--txs text-right">
+                      Txs
+                    </th>
+                    <th className="block-chain-table__col block-chain-table__col--size text-right">
+                      Size
+                    </th>
+                    <th className="block-chain-table__col block-chain-table__col--diff text-right">
+                      Difficulty
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tableRows.map((block, index) => (
+                    <BlockChainTableRow
+                      key={block.hash}
+                      block={block}
+                      chainId={chainId}
+                      blockHref={config.blockHref?.(block.height)}
+                      isNewest={index === 0}
+                    />
+                  ))}
+                </tbody>
+              </table>
             </div>
           </>
         )}
@@ -340,132 +286,102 @@ export function ChainHubSection({
   );
 }
 
-function BlockChainStripCell({
-  block,
-  chainLogo,
+function BlockTimelineStrip({
+  blocks,
+  ticker,
+  atTip,
+  chainId,
   blockHref,
-  isTip,
-  tipLive = false,
-  indexing = false,
-  ageIndex,
-  totalCount,
 }: {
-  block: IndexedBlock;
-  chainLogo: string;
-  blockHref?: string;
-  isTip: boolean;
-  tipLive?: boolean;
-  indexing?: boolean;
-  ageIndex: number;
-  totalCount: number;
+  blocks: IndexedBlock[];
+  ticker: string;
+  atTip: boolean;
+  chainId: ChainId;
+  blockHref: (height: number) => string | undefined;
 }) {
-  const recency = totalCount > 1 ? ageIndex / (totalCount - 1) : 1;
-  const tooltip = indexing
-    ? `Block #${formatHeight(block.height)} · indexing…`
-    : `Block #${formatHeight(block.height)} · ${block.txCount} transaction${
-        block.txCount === 1 ? '' : 's'
-      }`;
-
-  const nodeSlot = (
-    <span
-      className="block-chain-strip__node-slot"
-      style={
-        {
-          '--block-recency': recency,
-          '--block-stagger': `${ageIndex * 45}ms`,
-        } as React.CSSProperties
-      }
-    >
-      <span
-        className={cn(
-          'block-chain-strip__node',
-          isTip && 'block-chain-strip__node--tip',
-          tipLive && 'block-chain-strip__node--live',
-          indexing && 'block-chain-strip__node--indexing'
-        )}
-        title={tooltip}
-      >
-        <span className="block-chain-strip__logo-badge" aria-hidden>
-          <Image
-            src={chainLogo}
-            alt=""
-            width={20}
-            height={20}
-            className="block-chain-strip__logo"
-          />
-        </span>
-      </span>
-    </span>
-  );
-
   return (
     <div
-      className="block-chain-strip__cell"
-      style={{ '--block-stagger': `${ageIndex * 45}ms` } as React.CSSProperties}
+      className="block-timeline hidden border-b border-border sm:block"
+      aria-label={`Latest ${blocks.length} ${ticker} blocks, oldest to newest`}
     >
-      {blockHref ? (
-        <Link
-          href={blockHref}
-          className="block-chain-strip__link"
-          prefetch
-          title={tooltip}
-          aria-label={tooltip}
-        >
-          {nodeSlot}
-        </Link>
-      ) : (
-        nodeSlot
-      )}
-      <span
-        className={cn(
-          'block-chain-strip__label tabular-nums',
-          isTip && 'block-chain-strip__label--tip'
-        )}
-      >
-        {isTip && tipLive ? <span className="block-chain-strip__label-dot" aria-hidden /> : null}
-        <span className="block-chain-strip__label-height">#{formatHeight(block.height)}</span>
-      </span>
-      <span className="block-chain-strip__txs tabular-nums" aria-hidden>
-        {`${block.txCount} tx`}
-      </span>
+      <div className="block-timeline__meta">
+        <span>Older</span>
+        <span className="block-timeline__meta-line" aria-hidden />
+        <span>Newest</span>
+      </div>
+      <div className="block-timeline__cells">
+        {blocks.map((block, index) => (
+          <BlockTimelineCell
+            key={block.hash}
+            block={block}
+            href={blockHref(block.height)}
+            isTip={index === blocks.length - 1}
+            tipLive={atTip && index === blocks.length - 1}
+            indexing={index === blocks.length - 1 && isOptimisticTipBlock(block, chainId)}
+            recency={blocks.length > 1 ? index / (blocks.length - 1) : 1}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
-function BlockChainStripMobileCard({
+function BlockTimelineCell({
   block,
-  blockHref,
+  href,
   isTip,
   tipLive = false,
   indexing = false,
+  recency,
 }: {
   block: IndexedBlock;
-  blockHref?: string;
+  href?: string;
   isTip: boolean;
   tipLive?: boolean;
   indexing?: boolean;
+  recency: number;
 }) {
-  const card = (
+  const label = `#${formatHeight(block.height)}`;
+  const meta = indexing ? (
+    'Indexing…'
+  ) : (
     <>
-      <div className="block-chain-strip-mobile__head">
-        <span className="tabular-nums">#{formatHeight(block.height)}</span>
-        {isTip && tipLive ? <span className="block-chain-strip-mobile__live">Live</span> : null}
-      </div>
-      <div className="block-chain-strip-mobile__meta">
-        <span className="tabular-nums">{formatHeight(block.txCount)} tx</span>
-        <span className="truncate">
-          {indexing ? 'indexing…' : <LiveRelativeTime time={block.time} interval="second" />}
-        </span>
-      </div>
+      {formatHeight(block.txCount)} tx ·{' '}
+      <LiveRelativeTime time={block.time} interval="second" className="inline" />
     </>
   );
 
-  return blockHref ? (
-    <Link href={blockHref} prefetch className="block-chain-strip-mobile__card">
-      {card}
-    </Link>
-  ) : (
-    <div className="block-chain-strip-mobile__card">{card}</div>
+  const content = (
+    <>
+      <span
+        className={cn(
+          'block-timeline__dot',
+          isTip && 'block-timeline__dot--tip',
+          tipLive && 'block-timeline__dot--live',
+          indexing && 'block-timeline__dot--indexing'
+        )}
+        aria-hidden
+      />
+      <span className={cn('block-timeline__height tabular-nums', isTip && 'block-timeline__height--tip')}>
+        {label}
+      </span>
+      <span className="block-timeline__meta-cell tabular-nums">{meta}</span>
+    </>
+  );
+
+  return (
+    <div
+      className="block-timeline__cell"
+      style={{ opacity: `calc(0.55 + ${recency} * 0.45)` }}
+    >
+      {href ? (
+        <Link href={href} prefetch className="block-timeline__link" title={label}>
+          {content}
+        </Link>
+      ) : (
+        <div className="block-timeline__link">{content}</div>
+      )}
+    </div>
   );
 }
 
@@ -474,11 +390,13 @@ function BlockChainMobileCard({
   chainId,
   producerColumnLabel,
   blockHref,
+  isNewest = false,
 }: {
   block: IndexedBlock;
   chainId: ChainId;
   producerColumnLabel: string;
   blockHref?: string;
+  isNewest?: boolean;
 }) {
   const hashShort = formatBlockHashShort(block.hash);
   const indexing = isOptimisticTipBlock(block, chainId);
@@ -486,7 +404,14 @@ function BlockChainMobileCard({
   const difficultyPending = indexing && !block.difficulty;
 
   return (
-    <article className="block-chain-mobile-card" aria-busy={indexing}>
+    <article
+      className={cn(
+        'block-chain-mobile-card',
+        isNewest && 'block-chain-mobile-card--latest',
+        indexing && 'block-chain-mobile-card--indexing'
+      )}
+      aria-busy={indexing}
+    >
       <div className="block-chain-mobile-card__head">
         <div className="block-chain-mobile-card__height">
           <span className="block-chain-mobile-card__label">Height</span>
@@ -607,7 +532,7 @@ function BlockChainTableRow({
   return (
     <tr
       className={cn(
-        'block-chain-table-row transition-colors hover:bg-bg-subtle/80',
+        'block-chain-table-row',
         isNewest && 'block-chain-table-row--latest',
         indexing && 'block-chain-table-row--indexing'
       )}
